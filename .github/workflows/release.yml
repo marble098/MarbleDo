@@ -112,11 +112,28 @@ jobs:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
-          artifacts=(app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab "$RUNNER_TEMP/SHA256SUMS.txt")
+          # Expand the build output globs in the shell so that gh only ever
+          # receives real file paths. nullglob keeps an unmatched glob from
+          # reaching gh as a literal pattern, which gh rejects with
+          # "syntax error in pattern".
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/release/*.apk)
+          bundles=(app/build/outputs/bundle/release/*.aab)
+          if (( ${#apks[@]} == 0 || ${#bundles[@]} == 0 )); then
+            echo "::error title=Missing release artifacts::Expected a signed APK and an AAB under app/build/outputs before publishing."
+            exit 1
+          fi
+          artifacts=("${apks[@]}" "${bundles[@]}" "$RUNNER_TEMP/SHA256SUMS.txt")
+          for artifact in "${artifacts[@]}"; do
+            test -f "$artifact" || { echo "::error title=Missing release artifact::'$artifact' does not exist."; exit 1; }
+          done
+          # Each arm of the next command is continued with a single backslash.
+          # A doubled backslash is not a continuation: it becomes a literal
+          # backslash argument, which gh treats as a malformed glob pattern.
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${artifacts[@]}" --clobber
           else
-            gh release create "$RELEASE_TAG" "${artifacts[@]}" \\
-              --title "MarbleDo $RELEASE_TAG" \\
+            gh release create "$RELEASE_TAG" "${artifacts[@]}" \
+              --title "MarbleDo $RELEASE_TAG" \
               --generate-notes
           fi
