@@ -1,0 +1,6 @@
+<resources>
+    <!-- android:windowLightNavigationBar was added in API 27; the app still supports API 26. -->
+    <style name="Theme.MarbleDo" parent="Theme.MarbleDo.Base">
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>
