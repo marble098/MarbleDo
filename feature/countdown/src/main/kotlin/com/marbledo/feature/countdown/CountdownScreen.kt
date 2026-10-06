@@ -196,7 +196,7 @@ fun CountdownFocusDialog(
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     Text(task.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                    task.dueAtEpochMillis?.let { CountdownFace(it, task.title, CountdownTheme.from(themeId), Modifier.fillMaxWidth()) }
+                    task.dueAtEpochMillis?.let { CountdownFace(task.title, it, CountdownTheme.from(themeId), Modifier.fillMaxWidth()) }
                     Text(stringResource(R.string.countdown_focus_mode), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 }
             }
@@ -272,7 +272,7 @@ private fun CountdownFace(
         CountdownTheme.CIRCULAR -> Card(modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.fillMaxWidth().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                CircularCountdown(time, accent, days, Modifier.size(180.dp))
+                CircularCountdown(time, Brush.linearGradient(listOf(accent, onSurface)), days, Modifier.size(180.dp))
             }
         }
         CountdownTheme.LIQUID -> {
