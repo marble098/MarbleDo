@@ -6,6 +6,7 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import androidx.annotation.SuppressLint
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
 
@@ -39,8 +40,13 @@ class QuickAddTileService : TileService() {
             )
             startActivityAndCollapse(pendingLaunch)
         } else {
-            @Suppress("DEPRECATION")
-            startActivityAndCollapse(launch)
+            collapseWithIntent(launch)
         }
     }
+
+    // The Intent overload of startActivityAndCollapse is the only one available below API 34,
+    // where the PendingIntent overload recommended by lint does not exist yet.
+    @Suppress("DEPRECATION")
+    @SuppressLint("StartActivityAndCollapseDeprecated")
+    private fun collapseWithIntent(launch: Intent) = startActivityAndCollapse(launch)
 }
