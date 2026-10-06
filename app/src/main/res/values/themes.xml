@@ -1,16 +1,15 @@
 <resources>
-    <style name="Theme.MarbleDo" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Theme.MarbleDo.Base" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/marble_splash_bg</item>
-        <item name="android:windowLightNavigationBar">false</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:windowIsTranslucent">false</item>
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">false</item>
     </style>
+
+    <style name="Theme.MarbleDo" parent="Theme.MarbleDo.Base" />
 
     <style name="Theme.MarbleDo.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/marble_splash_bg</item>

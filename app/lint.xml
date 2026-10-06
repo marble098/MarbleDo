@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!--
+        TileService.startActivityAndCollapse(Intent) is the only API available below API 34: the
+        PendingIntent overload that this check recommends was introduced in API 34. The app still
+        supports API 26, and QuickAddTileService already uses the PendingIntent overload on API 34+.
+        See app/src/main/kotlin/com/marbledo/app/tiles/QuickAddTileService.kt.
+    -->
+    <issue id="StartActivityAndCollapseDeprecated" severity="Warning" />
+</lint>
