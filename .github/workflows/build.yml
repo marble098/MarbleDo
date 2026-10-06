@@ -76,7 +76,7 @@ jobs:
               for a, b in (("%", "%25"), ("\r", "%0D"), ("\n", "%0A")):
                   msg = msg.replace(a, b)
               where = f"{os.path.basename(loc.group(1))}:{loc.group(2)}" if loc else "?"
-              print(f"::error title=Lint {attrs.get('id','?')} [{attrs.get('severity','?')}] {where}::{msg}")
+              print(f"::error title=Lint::[{attrs.get('severity','?')}] {attrs.get('id','?')} {where} {msg}")
           PY
 
       - name: Add Gradle diagnostics to the job summary

@@ -1,11 +1,15 @@
 package com.marble098.marbledo.tiles
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.drawable.Icon
+import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
+
+private const val REQUEST_CODE_QUICK_ADD = 1
 
 class QuickAddTileService : TileService() {
     override fun onStartListening() {
@@ -24,6 +28,19 @@ class QuickAddTileService : TileService() {
             putExtra(MainActivity.EXTRA_OPEN_ADD, true)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
-        startActivityAndCollapse(launch)
+        // TileService.startActivityAndCollapse(Intent) is deprecated in favour of the
+        // PendingIntent overload, which only exists from API 34 on.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val pendingLaunch = PendingIntent.getActivity(
+                this,
+                REQUEST_CODE_QUICK_ADD,
+                launch,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            startActivityAndCollapse(pendingLaunch)
+        } else {
+            @Suppress("DEPRECATION")
+            startActivityAndCollapse(launch)
+        }
     }
 }
