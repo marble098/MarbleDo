@@ -8,13 +8,14 @@ MarbleDo is an offline-first Android task and countdown app. The interface defau
 
 ## What is implemented
 
-- **Tasks:** Compose UI, smart Persian/English quick-add parsing, speech input through the device's installed recognizer, search, filters, priorities, checklists, tags, archive/completion, recurring tasks, undo, and task reminders.
+- **Tasks:** Compose UI, smart Persian/English quick-add parsing, guided multi-step voice task creation (category, title, Persian date, time, and priority), search, filters, pinning, sorting, user-created categories, priorities, checklists, tags, archive/completion, recurring tasks, undo, and task reminders.
 - **Calendar:** Persian/Gregorian/Islamic date display, month/agenda/year views, Saturday-first preference, local holiday data, a user-adjustable lunar offset, and daily local occasion notifications.
-- **Countdowns:** 12 display themes, full-screen focus view, Glance home-screen widget, and a Quick Settings tile for quick-add.
-- **Preferences:** app language, RTL/LTR, Persian/Latin/Arabic-Indic numerals, light/dark/AMOLED/dynamic themes, font scaling, reduced motion, calendar-category visibility/alerts, and notification setup guidance.
-- **Storage:** Room database with an explicit v1→v2 migration and exported schema configuration; Proto DataStore preferences; WorkManager snapshots; local SAF export/import with optional AES-GCM passphrase encryption.
+- **Countdowns:** create countdowns directly with one-tap hour/day/week/month/year presets or a validated date/time, select Persian/Gregorian/Islamic-civil date entry and display, 12 display themes, full-screen focus view, Glance home-screen widget, and a Quick Settings tile for quick-add.
+- **Preferences:** app language, RTL/LTR, Persian/Latin/Arabic-Indic numerals, Vazirmatn variable font with role-appropriate weights in Persian UI, light/dark/AMOLED/dynamic themes, font scaling, reduced motion, calendar-category visibility/alerts, and notification setup guidance.
+- **Storage:** Room database with explicit v1→v2→v3 migrations, pinned/category task fields, and exported schema configuration; Proto DataStore preferences; WorkManager snapshots; local SAF export/import with optional AES-GCM passphrase encryption.
 - **Privacy:** no Firebase, analytics, advertising, or network permission in the app. Android system speech recognition may use an external recognition provider according to the device's configuration.
 - **Engineering:** Kotlin/Compose, modular feature/core structure, Koin DI, Navigation 3, R8 for release, StrictMode in debug, unit tests, a baseline-profile/Macrobenchmark test module, dependency-update automation, and signed GitHub Release automation.
+- **Font license:** the bundled Vazirmatn variable TTF is from [rastikerdar/vazirmatn](https://github.com/rastikerdar/vazirmatn) and is distributed under SIL OFL 1.1; the license is included in `core/designsystem/licenses/`.
 
 ## Build and test
 
@@ -113,11 +114,11 @@ Backups can be exported through Android's Storage Access Framework to a user-sel
 
 ## امکانات پیاده‌سازی‌شده
 
-- **کارها:** رابط Compose، افزودن هوشمند فارسی/انگلیسی، ورودی صوتی از سرویس تشخیص گفتار نصب‌شده، جست‌وجو، فیلتر، اولویت، چک‌لیست، برچسب، بایگانی، انجام/بازگشت، تکرار و یادآوری.
+- **کارها:** افزودن هوشمند فارسی/انگلیسی، راهنمای صوتی مرحله‌به‌مرحله برای دسته، عنوان، تاریخ شمسی، ساعت و اولویت، جست‌وجو، فیلتر، سنجاق، مرتب‌سازی، ساخت دسته‌بندی، اولویت، چک‌لیست، برچسب، بایگانی، تکرار و یادآوری.
 - **تقویم:** نمایش تاریخ شمسی، میلادی و قمری، نمای ماه/برنامه/سال، شروع هفته از شنبه، اصلاح قمری قابل‌تنظیم و اعلان روزانهٔ مناسبت‌های محلی.
-- **شمارش معکوس:** ۱۲ تم، نمای تمرکز تمام‌صفحه، ویجت Glance و کاشی Quick Settings برای افزودن سریع.
-- **تنظیمات:** فارسی/انگلیسی و RTL/LTR، رقم فارسی/لاتین/عربی، تم روشن/تیره/AMOLED/پویا، اندازهٔ نوشته، کاهش حرکت، انتخاب دسته‌های تقویم/اعلان و راهنمای اعلان.
-- **ذخیره‌سازی:** Room با Migration نسخهٔ ۱ به ۲ و پیکربندی خروجی schema، Proto DataStore، پشتیبان خودکار با WorkManager و وارد/خارج‌کردن پشتیبان محلی از SAF با رمزگذاری اختیاری AES-GCM.
+- **شمارش معکوس:** ساخت سریع با زمان‌های آمادهٔ یک‌ساعته/روزانه/هفتگی/ماهانه/سالانه یا تاریخ‌وساعت دقیق، ورود و نمایش تاریخ شمسی/میلادی/قمری، ۱۲ تم، نمای تمرکز تمام‌صفحه و ویجت Glance.
+- **تنظیمات:** فارسی/انگلیسی و RTL/LTR، رقم فارسی/لاتین/عربی، فونت متغیر وزیرمتن با وزن متناسب برای عنوان/متن/برچسب، تم روشن/تیره/AMOLED/پویا، اندازهٔ نوشته، کاهش حرکت و ترجیحات تقویم.
+- **ذخیره‌سازی:** Room با Migration نسخهٔ ۱ به ۲ و ۳، نگهداری سنجاق و دستهٔ کار، Proto DataStore، پشتیبان خودکار با WorkManager و وارد/خارج‌کردن پشتیبان محلی از SAF با رمزگذاری اختیاری AES-GCM.
 - **حریم خصوصی:** بدون Firebase، تحلیل‌گر، تبلیغ یا مجوز اینترنت در برنامه. سرویس تشخیص گفتار اندروید ممکن است بر اساس تنظیمات دستگاه از ارائه‌دهندهٔ بیرونی استفاده کند.
 - **معماری و کیفیت:** Kotlin/Compose، ماژول‌های feature/core، Koin، Navigation 3، R8 نسخهٔ انتشار، StrictMode در debug، تست واحد، ماژول Baseline Profile/Macrobenchmark و گردش‌کارهای CI، به‌روزرسانی وابستگی و انتشار امضاشده.
 

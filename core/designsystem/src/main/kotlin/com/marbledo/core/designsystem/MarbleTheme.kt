@@ -16,11 +16,16 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.marbledo.domain.model.NumeralMode
+import com.marble098.marbledo.core.designsystem.R
 
 val LocalReduceMotion = staticCompositionLocalOf { false }
 val LocalAppFontScale = staticCompositionLocalOf { 1f }
@@ -76,6 +81,7 @@ fun MarbleTheme(
     reduceMotion: Boolean = false,
     fontScale: Float = 1f,
     numeralMode: NumeralMode = NumeralMode.PERSIAN,
+    languageTag: String = "fa",
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -107,7 +113,7 @@ fun MarbleTheme(
     ) {
         MaterialTheme(
             colorScheme = scheme,
-            typography = Typography(),
+            typography = if (languageTag == "fa") PersianTypography else Typography(),
             shapes = Shapes(
                 extraSmall = RoundedCornerShape(12.dp),
                 small = RoundedCornerShape(16.dp),
@@ -120,5 +126,38 @@ fun MarbleTheme(
     }
 }
 
-/** System sans-serif includes an offline Arabic/Persian fallback on Android devices. */
-val MarbleFontFamily: FontFamily = FontFamily.SansSerif
+/**
+ * Vazirmatn's single bundled variable face is registered at every common `wght` axis value.
+ * Compose can then pick a real variable weight instead of synthesizing bold text.
+ */
+@OptIn(ExperimentalTextApi::class)
+val MarbleFontFamily: FontFamily = FontFamily(
+    Font(R.font.vazirmatn_variable, weight = FontWeight.Thin, variationSettings = FontVariation.Settings(FontVariation.weight(100))),
+    Font(R.font.vazirmatn_variable, weight = FontWeight.ExtraLight, variationSettings = FontVariation.Settings(FontVariation.weight(200))),
+    Font(R.font.vazirmatn_variable, weight = FontWeight.Light, variationSettings = FontVariation.Settings(FontVariation.weight(300))),
+    Font(R.font.vazirmatn_variable, weight = FontWeight.Normal, variationSettings = FontVariation.Settings(FontVariation.weight(400))),
+    Font(R.font.vazirmatn_variable, weight = FontWeight.Medium, variationSettings = FontVariation.Settings(FontVariation.weight(500))),
+    Font(R.font.vazirmatn_variable, weight = FontWeight.SemiBold, variationSettings = FontVariation.Settings(FontVariation.weight(600))),
+    Font(R.font.vazirmatn_variable, weight = FontWeight.Bold, variationSettings = FontVariation.Settings(FontVariation.weight(700))),
+    Font(R.font.vazirmatn_variable, weight = FontWeight.ExtraBold, variationSettings = FontVariation.Settings(FontVariation.weight(800))),
+    Font(R.font.vazirmatn_variable, weight = FontWeight.Black, variationSettings = FontVariation.Settings(FontVariation.weight(900))),
+)
+
+private val defaultTypography = Typography()
+private val PersianTypography = defaultTypography.copy(
+    displayLarge = defaultTypography.displayLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Light),
+    displayMedium = defaultTypography.displayMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
+    displaySmall = defaultTypography.displaySmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
+    headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
+    headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
+    headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
+    titleLarge = defaultTypography.titleLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
+    titleMedium = defaultTypography.titleMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
+    titleSmall = defaultTypography.titleSmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
+    bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
+    bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
+    bodySmall = defaultTypography.bodySmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
+    labelLarge = defaultTypography.labelLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
+    labelMedium = defaultTypography.labelMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
+    labelSmall = defaultTypography.labelSmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
+)

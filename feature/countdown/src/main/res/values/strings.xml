@@ -32,4 +32,27 @@
     <string name="countdown_theme_retro">Retro digital</string>
     <string name="countdown_widget_name">MarbleDo countdown</string>
     <string name="countdown_widget_description">A glance at your next important moment</string>
+    <string name="countdown_add">New countdown</string>
+    <string name="countdown_add_first">Create your first countdown</string>
+    <string name="countdown_calendar_display">Calendar for display and date entry</string>
+    <string name="countdown_calendar_persian">Persian</string>
+    <string name="countdown_calendar_gregorian">Gregorian</string>
+    <string name="countdown_calendar_lunar">Islamic lunar</string>
+    <string name="countdown_create_title">Create a countdown</string>
+    <string name="countdown_create_hint">Name your moment, choose a calendar, then tap a quick preset or enter a date and time.</string>
+    <string name="countdown_title_field">Important moment</string>
+    <string name="countdown_date_field">Date (year/month/day)</string>
+    <string name="countdown_date_hint">Example: 1405/08/25. Invalid dates and impossible days are rejected.</string>
+    <string name="countdown_date_preview">Selected target: %1$s</string>
+    <string name="countdown_time_field">Hour and minute</string>
+    <string name="countdown_time_hint">Example: 14:30 or 14 and 30 minutes</string>
+    <string name="countdown_quick_presets">Quick time presets</string>
+    <string name="countdown_preset_hour">In one hour</string>
+    <string name="countdown_preset_tomorrow">Tomorrow</string>
+    <string name="countdown_preset_week">One week</string>
+    <string name="countdown_preset_month">One month</string>
+    <string name="countdown_preset_year">One year</string>
+    <string name="countdown_create_action">Save countdown</string>
+    <string name="countdown_cancel">Cancel</string>
+    <string name="countdown_target_date">Target: %1$s</string>
 </resources>

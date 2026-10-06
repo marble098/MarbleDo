@@ -20,4 +20,6 @@ message MarbleDoSettingsProto {
   float font_scale = 14;
   bool reduce_motion = 15;
   int32 lunar_offset_days = 16;
+  string countdown_calendar = 17;
+  repeated string task_categories = 18;
 }

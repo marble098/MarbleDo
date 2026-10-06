@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TaskDao {
     @Query(
-        "SELECT * FROM tasks ORDER BY isArchived ASC, isCompleted ASC, " +
+        "SELECT * FROM tasks ORDER BY isArchived ASC, isCompleted ASC, isPinned DESC, " +
             "CASE WHEN dueAtEpochMillis IS NULL THEN 1 ELSE 0 END, dueAtEpochMillis ASC, " +
             "CASE priority WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'NORMAL' THEN 2 ELSE 3 END ASC",
     )

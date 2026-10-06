@@ -19,6 +19,8 @@ data class TaskEntity(
     @ColumnInfo(defaultValue = "4285424088") val colorArgb: Long = 0xFF6E61D8,
     @ColumnInfo(defaultValue = "'[]'") val tagsJson: String = "[]",
     @ColumnInfo(defaultValue = "''") val project: String = "",
+    @ColumnInfo(defaultValue = "''") val category: String = "",
+    @ColumnInfo(defaultValue = "0") val isPinned: Boolean = false,
     @ColumnInfo(defaultValue = "'[]'") val checklistJson: String = "[]",
     val link: String? = null,
     val attachmentUri: String? = null,

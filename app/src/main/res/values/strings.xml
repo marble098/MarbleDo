@@ -21,6 +21,10 @@
     <string name="numerals_latin">English (123)</string>
     <string name="numerals_arabic">Arabic (١٢٣)</string>
     <string name="settings_calendar">Calendar preferences</string>
+    <string name="settings_countdown_calendar">Countdown date calendar</string>
+    <string name="calendar_display_persian">Persian</string>
+    <string name="calendar_display_gregorian">Gregorian</string>
+    <string name="calendar_display_lunar">Islamic lunar</string>
     <string name="settings_saturday_start">Week starts on Saturday</string>
     <string name="settings_lunar_offset">Lunar date adjustment: %1$d days</string>
     <string name="settings_calendar_notifications">Calendar occasion notifications</string>
