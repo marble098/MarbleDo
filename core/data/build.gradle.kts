@@ -40,7 +40,8 @@ protobuf {
     generateProtoTasks {
         all().configureEach {
             builtins {
-                named("java") {
+                // Android projects have no default Protobuf output; register Java-lite explicitly.
+                create("java") {
                     option("lite")
                 }
             }
