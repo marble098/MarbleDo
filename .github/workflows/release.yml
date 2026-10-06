@@ -1,0 +1,99 @@
+name: Signed Android release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing version tag to build (for example v1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Accept SDK licenses and install compile platform
+        run: |
+          COMPILE_SDK="$(sed -n 's/^compileSdk = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
+          BUILD_TOOLS="$(sed -n 's/^buildTools = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
+          test -n "$COMPILE_SDK" && test -n "$BUILD_TOOLS"
+          # The catalog value includes Android's minor API level, for example 37.2.
+          sdkmanager "platform-tools" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Configure release signing and tag version
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          RELEASE_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          version_name="${RELEASE_TAG#v}"
+          if [[ ! "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$ ]]; then
+            echo "Tag must use a semantic version such as v1.2.3." >&2
+            exit 2
+          fi
+          echo "MARBLE_VERSION_NAME=$version_name" >> "$GITHUB_ENV"
+          echo "MARBLE_VERSION_CODE=$RELEASE_RUN_NUMBER" >> "$GITHUB_ENV"
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "Release signing secrets are required. See README.md (Release signing)." >&2
+            exit 2
+          fi
+          key_file="$RUNNER_TEMP/marbledo-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$key_file"
+          {
+            echo "MARBLE_SIGNING_STORE_FILE=$key_file"
+            echo "MARBLE_SIGNING_STORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
+            echo "MARBLE_SIGNING_KEY_ALIAS=$ANDROID_KEY_ALIAS"
+            echo "MARBLE_SIGNING_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Build signed APK and AAB
+        run: ./gradlew --no-daemon --stacktrace :app:assembleRelease :app:bundleRelease
+
+      - name: Generate artifact checksums
+        run: |
+          cd app/build/outputs
+          sha256sum apk/release/*.apk bundle/release/*.aab > "$RUNNER_TEMP/SHA256SUMS.txt"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          artifacts=(app/build/outputs/apk/release/*.apk app/build/outputs/bundle/release/*.aab "$RUNNER_TEMP/SHA256SUMS.txt")
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${artifacts[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${artifacts[@]}" \\
+              --title "MarbleDo $RELEASE_TAG" \\
+              --generate-notes
+          fi

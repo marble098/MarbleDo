@@ -1,0 +1,87 @@
+name: Weekly dependency refresh
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      stable_only:
+        description: "Ignore alpha, beta, RC, preview, canary, milestone, and EAP releases"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependency-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Check official Maven and Gradle metadata
+        env:
+          STABLE_ONLY: ${{ inputs.stable_only }}
+        run: |
+          args=()
+          if [[ "$STABLE_ONLY" == "true" ]]; then args+=(--stable-only); fi
+          python scripts/update_versions.py "${args[@]}"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Accept SDK licenses and install compile platform
+        run: |
+          COMPILE_SDK="$(sed -n 's/^compileSdk = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
+          BUILD_TOOLS="$(sed -n 's/^buildTools = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
+          test -n "$COMPILE_SDK" && test -n "$BUILD_TOOLS"
+          # The catalog value includes Android's minor API level, for example 37.2.
+          sdkmanager "platform-tools" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Build, lint, and test refreshed dependencies
+        run: >-
+          ./gradlew --no-daemon --stacktrace
+          :core:domain:test
+          :core:data:testDebugUnitTest
+          :core:designsystem:testDebugUnitTest
+          :feature:tasks:testDebugUnitTest
+          :feature:calendar:testDebugUnitTest
+          :feature:countdown:testDebugUnitTest
+          :app:testDebugUnitTest
+          :app:lintDebug
+          :app:assembleDebug
+
+      - name: Create or update dependency pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/dependency-refresh
+          delete-branch: true
+          commit-message: "build: refresh verified dependency versions"
+          title: "build: refresh verified Android dependencies"
+          body: |
+            Automated weekly dependency refresh from official Gradle and Maven metadata.
+
+            The job includes published alpha, beta, RC, preview, canary, milestone, and EAP versions by default; nightly builds and snapshots are excluded. Re-run with `stable_only` enabled to limit updates to stable versions. Build, lint, and unit tests passed before this pull request was created.

@@ -1,0 +1,77 @@
+name: Android build and test
+
+on:
+  push:
+    branches: [main, "arena/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Accept SDK licenses and install compile platform
+        run: |
+          COMPILE_SDK="$(sed -n 's/^compileSdk = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
+          BUILD_TOOLS="$(sed -n 's/^buildTools = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
+          test -n "$COMPILE_SDK" && test -n "$BUILD_TOOLS"
+          # The catalog value includes Android's minor API level, for example 37.2.
+          sdkmanager "platform-tools" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Build, lint, and test all modules
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --stacktrace --console=plain \
+            :core:domain:test \
+            :core:data:testDebugUnitTest \
+            :core:designsystem:testDebugUnitTest \
+            :feature:tasks:testDebugUnitTest \
+            :feature:calendar:testDebugUnitTest \
+            :feature:countdown:testDebugUnitTest \
+            :app:testDebugUnitTest \
+            :app:lintDebug \
+            :app:assembleDebug 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"
+
+      - name: Add Gradle diagnostics to the job summary
+        if: failure()
+        run: |
+          log="$RUNNER_TEMP/gradle-build.log"
+          if [[ -f "$log" ]]; then
+            diagnostics="$(grep -E '(^e: |^w: |^> Task .* FAILED|Execution failed for task|CompilationErrorException:)' "$log" | tail -n 80 || true)"
+            if [[ -z "$diagnostics" ]]; then
+              diagnostics="$(tail -n 120 "$log")"
+            fi
+            {
+              echo '## Gradle failure details'
+              echo '```text'
+              printf '%s\n' "$diagnostics"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            diagnostics="${diagnostics//'%'/'%25'}"
+            diagnostics="${diagnostics//$'\r'/'%0D'}"
+            diagnostics="${diagnostics//$'\n'/'%0A'}"
+            echo "::error title=Gradle failure diagnostics::$diagnostics"
+          fi

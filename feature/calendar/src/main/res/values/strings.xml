@@ -1,0 +1,22 @@
+<resources>
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_month_year">%1$s %2$d</string>
+    <string name="calendar_previous_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_view_month">Month</string>
+    <string name="calendar_view_agenda">Agenda</string>
+    <string name="calendar_view_year">Year</string>
+    <string name="calendar_tasks_count">%1$d tasks</string>
+    <string name="calendar_no_events">No tasks or occasions this month.</string>
+    <string name="calendar_sat">Sat</string><string name="calendar_sun">Sun</string>
+    <string name="calendar_mon">Mon</string><string name="calendar_tue">Tue</string>
+    <string name="calendar_wed">Wed</string><string name="calendar_thu">Thu</string>
+    <string name="calendar_fri">Fri</string>
+    <string name="calendar_month_1">Farvardin</string><string name="calendar_month_2">Ordibehesht</string>
+    <string name="calendar_month_3">Khordad</string><string name="calendar_month_4">Tir</string>
+    <string name="calendar_month_5">Mordad</string><string name="calendar_month_6">Shahrivar</string>
+    <string name="calendar_month_7">Mehr</string><string name="calendar_month_8">Aban</string>
+    <string name="calendar_month_9">Azar</string><string name="calendar_month_10">Dey</string>
+    <string name="calendar_month_11">Bahman</string><string name="calendar_month_12">Esfand</string>
+</resources>

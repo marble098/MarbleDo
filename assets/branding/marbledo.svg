@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">MarbleDo</title>
+  <desc id="desc">A polished violet marble with a clear completion check and a countdown hand.</desc>
+  <defs>
+    <radialGradient id="stone" cx="30%" cy="24%" r="80%">
+      <stop offset="0" stop-color="#f3f0ff"/>
+      <stop offset=".28" stop-color="#c9c0ff"/>
+      <stop offset=".62" stop-color="#7665d6"/>
+      <stop offset="1" stop-color="#352d77"/>
+    </radialGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#231c5a" flood-opacity=".24"/>
+    </filter>
+  </defs>
+  <circle cx="128" cy="128" r="104" fill="url(#stone)" filter="url(#shadow)"/>
+  <path d="M61 102c10-41 45-67 84-65-30 12-49 37-53 69-4 34 11 67 39 89-46-8-81-49-70-93Z" fill="url(#shine)"/>
+  <path d="M84 133l26 26 62-68 18 17-80 88-44-45z" fill="#fff"/>
+  <path d="M181 48h9v32h-9z" fill="#fff" opacity=".96"/>
+</svg>

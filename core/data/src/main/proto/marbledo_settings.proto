@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option java_package = "com.marbledo.core.data.settings";
+option java_multiple_files = true;
+
+message MarbleDoSettingsProto {
+  string theme_mode = 1;
+  string language_tag = 2;
+  string numeral_mode = 3;
+  string countdown_theme = 4;
+  bool week_starts_saturday = 5;
+  bool calendar_notifications_enabled = 6;
+  bool official_events_enabled = 7;
+  bool religious_events_enabled = 8;
+  bool national_events_enabled = 9;
+  bool personal_events_enabled = 10;
+  bool quiet_hours_enabled = 11;
+  int32 quiet_start_minute = 12;
+  int32 quiet_end_minute = 13;
+  float font_scale = 14;
+  bool reduce_motion = 15;
+  int32 lunar_offset_days = 16;
+}

@@ -1,0 +1,4 @@
+<resources>
+    <string name="widget_empty">No upcoming task</string>
+    <string name="widget_time_left">%1$d days · %2$d hours left</string>
+</resources>

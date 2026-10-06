@@ -1,0 +1,1 @@
+-keep class com.marble098.marbledo.core.data.settings.** extends com.google.protobuf.GeneratedMessageLite { *; }
