@@ -15,7 +15,7 @@ private val Context.settingsStore: DataStore<MarbleDoSettingsProto> by dataStore
 )
 
 class SettingsRepository(private val context: Context) {
-    val settings: Flow<AppSettings> = context.settingsStore.data.map(::toDomain)
+    val settings: Flow<AppSettings> = context.settingsStore.data.map { proto -> proto.toDomain() }
 
     suspend fun update(transform: (AppSettings) -> AppSettings) {
         context.settingsStore.updateData { old -> transform(old.toDomain()).toProto() }
