@@ -6,9 +6,7 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/marble_splash_bg</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:windowIsTranslucent">false</item>
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">false</item>
     </style>
 
     <style name="Theme.MarbleDo" parent="Theme.MarbleDo.Base" />

@@ -1,0 +1,6 @@
+<resources>
+    <!-- android:windowOptOutEdgeToEdgeEnforcement was added in API 35. -->
+    <style name="Theme.MarbleDo" parent="Theme.MarbleDo.V27">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">false</item>
+    </style>
+</resources>

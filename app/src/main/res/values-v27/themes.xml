@@ -1,6 +1,9 @@
 <resources>
-    <!-- android:windowLightNavigationBar was added in API 27; the app still supports API 26. -->
-    <style name="Theme.MarbleDo" parent="Theme.MarbleDo.Base">
+    <!-- Window attributes added in API 27. The app still supports API 26, so they live here. -->
+    <style name="Theme.MarbleDo.V27" parent="Theme.MarbleDo.Base">
         <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
+
+    <style name="Theme.MarbleDo" parent="Theme.MarbleDo.V27" />
 </resources>
