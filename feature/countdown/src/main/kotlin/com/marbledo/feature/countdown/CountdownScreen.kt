@@ -557,6 +557,7 @@ private fun CountdownFace(
     }
 }
 
+@Composable
 private fun CountdownTexts(title: String, time: String, caption: String, color: Color, modifier: Modifier, mono: Boolean = false) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = MaterialTheme.typography.titleSmall, color = color, textAlign = TextAlign.Center, maxLines = 2)
@@ -565,12 +566,14 @@ private fun CountdownTexts(title: String, time: String, caption: String, color: 
     }
 }
 
+@Composable
 private fun FlipUnit(value: String) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(10.dp)) {
         Text(value, modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp), fontFamily = FontFamily.Monospace, fontSize = 22.sp, fontWeight = FontWeight.Bold)
     }
 }
 
+@Composable
 private fun CircularCountdown(
     time: String,
     brush: Brush,
@@ -593,6 +596,7 @@ private fun CircularCountdown(
     }
 }
 
+@Composable
 private fun AnalogClock(remaining: Duration, accent: Color, modifier: Modifier) {
     val surfaceColor = MaterialTheme.colorScheme.surface
     val outlineColor = MaterialTheme.colorScheme.onSurfaceVariant
