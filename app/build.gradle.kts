@@ -68,9 +68,9 @@ kotlin {
     }
 }
 
-baselineProfile(project(":baselineprofile"))
-
 dependencies {
+    // Attach the generated profiles from the producer module to the app variants.
+    baselineProfile(project(":baselineprofile"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
