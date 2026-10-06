@@ -42,14 +42,27 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Build, lint, and test all modules
-        run: >-
-          ./gradlew --no-daemon --stacktrace
-          :core:domain:test
-          :core:data:testDebugUnitTest
-          :core:designsystem:testDebugUnitTest
-          :feature:tasks:testDebugUnitTest
-          :feature:calendar:testDebugUnitTest
-          :feature:countdown:testDebugUnitTest
-          :app:testDebugUnitTest
-          :app:lintDebug
-          :app:assembleDebug
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --stacktrace --console=plain \
+            :core:domain:test \
+            :core:data:testDebugUnitTest \
+            :core:designsystem:testDebugUnitTest \
+            :feature:tasks:testDebugUnitTest \
+            :feature:calendar:testDebugUnitTest \
+            :feature:countdown:testDebugUnitTest \
+            :app:testDebugUnitTest \
+            :app:lintDebug \
+            :app:assembleDebug 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"
+
+      - name: Add Gradle diagnostics to the job summary
+        if: failure()
+        run: |
+          if [[ -f "$RUNNER_TEMP/gradle-build.log" ]]; then
+            {
+              echo '## Gradle failure details'
+              echo '```text'
+              tail -n 120 "$RUNNER_TEMP/gradle-build.log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
