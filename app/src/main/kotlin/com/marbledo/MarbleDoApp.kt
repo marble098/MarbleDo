@@ -76,8 +76,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.koin.androidx.compose.koinInject
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @Serializable private data object TasksDestination : NavKey
 @Serializable private data object CalendarDestination : NavKey
