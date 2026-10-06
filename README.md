@@ -76,7 +76,7 @@ Never commit the keystore or passwords. The `.gitignore` excludes common keystor
 
 - `.github/workflows/build.yml` builds, lints, and tests on pushes and pull requests.
 - `.github/workflows/weekly-dependency-update.yml` runs weekly or manually, refreshes catalog versions from official metadata, validates the result, and opens/updates a pull request. `stable_only` is off by default.
-- `.github/workflows/release.yml` runs for `v*` tags or manually for an existing semantic-version tag, derives the app version name from that tag, builds signed APK/AAB files, calculates SHA-256 checksums, and publishes a GitHub Release.
+- `.github/workflows/release.yml` runs for `v*` tags or manually for an existing semantic-version tag, derives the app version name from that tag, builds signed APK/AAB files, calculates SHA-256 checksums, and publishes a GitHub Release. A manual dispatch verifies the requested tag exists before anything else runs and fails fast with an actionable error if it does not — create and push the tag first (`git tag v1.2.3 <commit-sha> && git push origin v1.2.3`).
 
 For release automation, configure these repository Actions secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The Base64 secret must contain the complete keystore bytes. A release intentionally fails when signing secrets are missing.
 

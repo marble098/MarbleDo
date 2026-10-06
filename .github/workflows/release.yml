@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing version tag to build (for example v1.0.0)"
+        description: "Existing version tag to build (for example v1.0.0). The tag must already exist in the repository."
         required: true
         type: string
 
@@ -24,6 +24,29 @@ jobs:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
+      - name: Verify the release tag exists
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG_INPUT: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+          # A manual dispatch must name a tag that already exists. Without this
+          # check, actions/checkout fails on the missing ref with a cryptic
+          # "The process '/usr/bin/git' failed with exit code 1" error before
+          # any release validation, signing, or build step can run.
+          tag="${RELEASE_TAG_INPUT#refs/tags/}"
+          if [[ -z "$tag" ]]; then
+            echo "::error title=Missing release tag::Provide an existing version tag such as v1.2.3."
+            exit 2
+          fi
+          if ! gh api "repos/${{ github.repository }}/git/ref/tags/${tag}" --silent >/dev/null 2>&1; then
+            echo "::error title=Release tag not found::Tag '${tag}' does not exist in ${{ github.repository }}. Push it first (git tag ${tag} <commit-sha> && git push origin ${tag}), then re-run this workflow."
+            echo "This workflow checks out an existing tag; it cannot build a tag that has not been pushed yet."
+            exit 1
+          fi
+          echo "Release tag '${tag}' exists."
+
       - name: Check out source
         uses: actions/checkout@v7
         with:
