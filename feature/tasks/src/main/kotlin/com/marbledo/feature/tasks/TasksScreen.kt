@@ -412,8 +412,10 @@ private fun TaskEditorDialog(
                     placeholder = { Text(stringResource(R.string.tasks_quick_add_hint)) },
                     supportingText = {
                         if (parsedDue != null) Text(localizedTaskDate(parsedDue))
-                        else if (task?.dueAtEpochMillis != null && dueText.isBlank()) {
-                            Text(stringResource(R.string.tasks_due_at, localizedTaskDate(task.dueAtEpochMillis)))
+                        else if (dueText.isBlank()) {
+                            task?.dueAtEpochMillis?.let { dueAt ->
+                                Text(stringResource(R.string.tasks_due_at, localizedTaskDate(dueAt)))
+                            }
                         }
                     },
                 )
