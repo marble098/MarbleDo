@@ -55,6 +55,14 @@ jobs:
             :app:lintDebug \
             :app:assembleDebug 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"
 
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: lint-report-debug
+          path: app/build/reports/
+          if-no-files-found: ignore
+
       - name: Add Gradle diagnostics to the job summary
         if: failure()
         run: |
