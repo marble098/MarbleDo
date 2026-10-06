@@ -76,8 +76,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.koin.androidx.compose.koinInject
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @Serializable private data object TasksDestination : NavKey
 @Serializable private data object CalendarDestination : NavKey
@@ -100,6 +100,8 @@ fun MarbleDoApp(
     onIntentConsumed: () -> Unit,
 ) {
     val context = LocalContext.current
+    // Read the string in composition scope; LocalContext is not configuration-aware.
+    val noAutomaticBackupMessage = stringResource(R.string.settings_no_automatic_backup)
     val taskViewModel: TasksViewModel = koinViewModel()
     val taskState by taskViewModel.state.collectAsStateWithLifecycle()
     val settingsRepository: SettingsRepository = koinInject()
@@ -275,14 +277,14 @@ fun MarbleDoApp(
                                                         .listFiles { file -> file.name.endsWith(".mdo") }
                                                         ?.maxByOrNull(File::lastModified)
                                                         ?.inputStream()?.use { it.readBounded(MAX_BACKUP_FILE_BYTES) }
-                                                        ?: error(context.getString(R.string.settings_no_automatic_backup))
+                                                        ?: error(noAutomaticBackupMessage)
                                                 }
                                                 withContext(Dispatchers.Default) { BackupCodec.decode(latest) }
                                             }.onSuccess { envelope ->
                                                 restoreEnvelope = envelope
                                                 showRestoreChoice = true
                                             }.onFailure {
-                                                Toast.makeText(context, R.string.settings_no_automatic_backup, Toast.LENGTH_LONG).show()
+                                                Toast.makeText(context, noAutomaticBackupMessage, Toast.LENGTH_LONG).show()
                                             }
                                         }
                                     },
