@@ -32,11 +32,11 @@ jobs:
 
       - name: Accept SDK licenses and install compile platform
         run: |
-          yes | sdkmanager --licenses >/dev/null
           COMPILE_SDK="$(sed -n 's/^compileSdk = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
           BUILD_TOOLS="$(sed -n 's/^buildTools = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
           test -n "$COMPILE_SDK" && test -n "$BUILD_TOOLS"
-          sdkmanager "platform-tools" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}"
+          # Android API platform packages now include a minor revision (API 37 -> 37.0).
+          sdkmanager "platform-tools" "platforms;android-${COMPILE_SDK}.0" "build-tools;${BUILD_TOOLS}"
 
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v5
