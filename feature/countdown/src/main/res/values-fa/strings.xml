@@ -1,0 +1,35 @@
+<resources>
+    <string name="countdown_title">شمارش‌های معکوس</string>
+    <string name="countdown_subtitle">لحظه‌های مهمت همیشه جلوی چشمت باشند.</string>
+    <string name="countdown_empty">برای دیدن شمارش زنده، کاری با تاریخ اضافه کن.</string>
+    <string name="countdown_themes">ظاهر دلخواه</string>
+    <string name="countdown_upcoming">لحظه‌های پیش رو</string>
+    <string name="countdown_remaining">%1$s مانده</string>
+    <string name="countdown_focus">تمرکز</string>
+    <string name="countdown_close">بستن حالت تمرکز</string>
+    <string name="countdown_focus_mode">حالت تمرکز</string>
+    <string name="countdown_days_hours_minutes_seconds">روز · ساعت · دقیقه · ثانیه</string>
+    <string name="countdown_days">روز</string>
+    <string name="countdown_glass">شیشه‌ای • نور ملایم</string>
+    <string name="countdown_neon">نئون • رویداد زنده</string>
+    <string name="countdown_flip_units">روز · ساعت · دقیقه · ثانیه</string>
+    <string name="countdown_liquid">زمان، لحظه‌به‌لحظه جاری است</string>
+    <string name="countdown_marble">لحظه‌ای برای به‌یادسپردن</string>
+    <string name="countdown_aurora">نوری در افق</string>
+    <string name="countdown_retro">دیجیتال نوستالژیک</string>
+    <string name="countdown_terminal_status">ماربل‌دو // شمارش معکوس</string>
+    <string name="countdown_theme_minimal">مینیمال</string>
+    <string name="countdown_theme_glass">شیشه‌ای</string>
+    <string name="countdown_theme_neon">نئون</string>
+    <string name="countdown_theme_flip">ساعت ورقی</string>
+    <string name="countdown_theme_circular">دایره‌ای</string>
+    <string name="countdown_theme_liquid">موج مایع</string>
+    <string name="countdown_theme_ring">حلقه گرادیانی</string>
+    <string name="countdown_theme_analog">آنالوگ</string>
+    <string name="countdown_theme_terminal">ترمینال</string>
+    <string name="countdown_theme_marble">مرمر</string>
+    <string name="countdown_theme_aurora">شفق قطبی</string>
+    <string name="countdown_theme_retro">دیجیتال نوستالژیک</string>
+    <string name="countdown_widget_name">شمارش ماربل‌دو</string>
+    <string name="countdown_widget_description">نگاهی سریع به مهم‌ترین لحظه پیش رو</string>
+</resources>

@@ -1,0 +1,24 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="quick_add"
+        android:enabled="true"
+        android:icon="@drawable/ic_stat_marble"
+        android:shortcutShortLabel="@string/shortcut_add_task"
+        android:shortcutLongLabel="@string/shortcut_add_task">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.marble098.marbledo" android:targetClass="com.marble098.marbledo.MainActivity">
+            <extra android:name="com.marble098.marbledo.extra.OPEN_ADD" android:value="true" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="countdowns"
+        android:enabled="true"
+        android:icon="@drawable/ic_stat_marble"
+        android:shortcutShortLabel="@string/shortcut_countdown"
+        android:shortcutLongLabel="@string/shortcut_countdown">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.marble098.marbledo" android:targetClass="com.marble098.marbledo.MainActivity">
+            <extra android:name="com.marble098.marbledo.extra.DESTINATION" android:value="countdown" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

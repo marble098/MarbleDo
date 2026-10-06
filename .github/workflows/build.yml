@@ -1,0 +1,55 @@
+name: Android build and test
+
+on:
+  push:
+    branches: [main, "arena/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept SDK licenses and install compile platform
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          COMPILE_SDK="$(sed -n 's/^compileSdk = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
+          BUILD_TOOLS="$(sed -n 's/^buildTools = "\([^" ]*\)"/\1/p' gradle/libs.versions.toml)"
+          test -n "$COMPILE_SDK" && test -n "$BUILD_TOOLS"
+          sdkmanager "platform-tools" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build, lint, and test all modules
+        run: >-
+          ./gradlew --no-daemon --stacktrace
+          :core:domain:test
+          :core:data:testDebugUnitTest
+          :core:designsystem:testDebugUnitTest
+          :feature:tasks:testDebugUnitTest
+          :feature:calendar:testDebugUnitTest
+          :feature:countdown:testDebugUnitTest
+          :app:testDebugUnitTest
+          :app:lintDebug
+          :app:assembleDebug

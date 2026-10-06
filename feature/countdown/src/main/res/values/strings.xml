@@ -1,0 +1,35 @@
+<resources>
+    <string name="countdown_terminal_status">MARBLEDO // COUNTDOWN</string>
+    <string name="countdown_title">Countdowns</string>
+    <string name="countdown_subtitle">Keep the moments you care about in view.</string>
+    <string name="countdown_empty">Add a task with a date to see its live countdown here.</string>
+    <string name="countdown_themes">Choose a look</string>
+    <string name="countdown_upcoming">Upcoming moments</string>
+    <string name="countdown_remaining">%1$s remaining</string>
+    <string name="countdown_focus">Focus</string>
+    <string name="countdown_close">Close focus mode</string>
+    <string name="countdown_focus_mode">Focus mode</string>
+    <string name="countdown_days_hours_minutes_seconds">Days · Hours · Minutes · Seconds</string>
+    <string name="countdown_days">days</string>
+    <string name="countdown_glass">GLASS • soft light</string>
+    <string name="countdown_neon">NEON • live event</string>
+    <string name="countdown_flip_units">DAYS · HOURS · MINUTES · SECONDS</string>
+    <string name="countdown_liquid">Time flows, one moment at a time</string>
+    <string name="countdown_marble">A moment worth remembering</string>
+    <string name="countdown_aurora">A light on the horizon</string>
+    <string name="countdown_retro">RETRO DIGITAL</string>
+    <string name="countdown_theme_minimal">Minimal</string>
+    <string name="countdown_theme_glass">Glass</string>
+    <string name="countdown_theme_neon">Neon</string>
+    <string name="countdown_theme_flip">Flip clock</string>
+    <string name="countdown_theme_circular">Circular</string>
+    <string name="countdown_theme_liquid">Liquid wave</string>
+    <string name="countdown_theme_ring">Gradient ring</string>
+    <string name="countdown_theme_analog">Analog</string>
+    <string name="countdown_theme_terminal">Terminal</string>
+    <string name="countdown_theme_marble">Marble</string>
+    <string name="countdown_theme_aurora">Aurora</string>
+    <string name="countdown_theme_retro">Retro digital</string>
+    <string name="countdown_widget_name">MarbleDo countdown</string>
+    <string name="countdown_widget_description">A glance at your next important moment</string>
+</resources>

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "calendar": "persian",
+  "coverage": "fixed national holidays only; religious dates are intentionally not guessed",
+  "holidays": [
+    {"month": 1, "day": 1, "titleFa": "نوروز", "titleEn": "Nowruz", "category": "national"},
+    {"month": 1, "day": 2, "titleFa": "تعطیلات نوروز", "titleEn": "Nowruz holiday", "category": "national"},
+    {"month": 1, "day": 3, "titleFa": "تعطیلات نوروز", "titleEn": "Nowruz holiday", "category": "national"},
+    {"month": 1, "day": 4, "titleFa": "تعطیلات نوروز", "titleEn": "Nowruz holiday", "category": "national"},
+    {"month": 1, "day": 12, "titleFa": "روز جمهوری اسلامی ایران", "titleEn": "Islamic Republic Day", "category": "national"},
+    {"month": 1, "day": 13, "titleFa": "روز طبیعت", "titleEn": "Nature Day", "category": "national"},
+    {"month": 3, "day": 14, "titleFa": "رحلت امام خمینی", "titleEn": "Anniversary of Imam Khomeini's passing", "category": "official"},
+    {"month": 3, "day": 15, "titleFa": "قیام پانزده خرداد", "titleEn": "Khordad 15 uprising", "category": "official"},
+    {"month": 11, "day": 22, "titleFa": "پیروزی انقلاب اسلامی", "titleEn": "Islamic Revolution Day", "category": "national"},
+    {"month": 12, "day": 29, "titleFa": "روز ملی شدن صنعت نفت", "titleEn": "Oil Nationalization Day", "category": "national"}
+  ]
+}
