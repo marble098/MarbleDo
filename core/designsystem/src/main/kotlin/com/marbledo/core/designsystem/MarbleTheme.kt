@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.marbledo.domain.model.NumeralMode
 
@@ -96,7 +97,10 @@ fun MarbleTheme(
         else -> LightColors
     }
     CompositionLocalProvider(
-        LocalDensity provides baseDensity.copy(fontScale = effectiveFontScale),
+        LocalDensity provides Density(
+            density = baseDensity.density,
+            fontScale = effectiveFontScale,
+        ),
         LocalReduceMotion provides reduceMotion,
         LocalAppFontScale provides fontScale.coerceIn(0.8f, 1.5f),
         LocalNumeralMode provides numeralMode,
