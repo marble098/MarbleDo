@@ -25,8 +25,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import android.icu.util.PersianCalendar
+import android.icu.util.Calendar as IcuCalendar
 import android.icu.util.TimeZone as IcuTimeZone
+import android.icu.util.ULocale
+
+private val PERSIAN_CALENDAR_LOCALE = ULocale("fa_IR@calendar=persian")
 
 class CalendarOccurrenceWorker(
     appContext: Context,
@@ -36,10 +39,12 @@ class CalendarOccurrenceWorker(
         try {
             val settings = SettingsRepository(applicationContext).settings.first()
             if (!settings.calendarNotificationsEnabled) return@withContext Result.success()
-            val calendar = PersianCalendar(IcuTimeZone.getDefault()).apply { timeInMillis = System.currentTimeMillis() }
-            val year = calendar.get(PersianCalendar.YEAR)
-            val month = calendar.get(PersianCalendar.MONTH) + 1
-            val day = calendar.get(PersianCalendar.DAY_OF_MONTH)
+            val calendar = IcuCalendar.getInstance(IcuTimeZone.getDefault(), PERSIAN_CALENDAR_LOCALE).apply {
+                timeInMillis = System.currentTimeMillis()
+            }
+            val year = calendar.get(IcuCalendar.YEAR)
+            val month = calendar.get(IcuCalendar.MONTH) + 1
+            val day = calendar.get(IcuCalendar.DAY_OF_MONTH)
             val events = loadHolidays(applicationContext).filter { item ->
                 item.optInt("month") == month && item.optInt("day") == day && when (item.optString("category")) {
                     "official" -> settings.officialEventsEnabled

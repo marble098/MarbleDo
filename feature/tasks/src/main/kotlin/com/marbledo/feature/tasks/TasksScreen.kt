@@ -477,7 +477,7 @@ private fun TaskEditorDialog(
                             interval = 1,
                             monthDay = task?.dueAtEpochMillis?.let { millis ->
                                 if (persianRepeat) {
-                                    android.icu.util.PersianCalendar().apply { timeInMillis = millis }
+                                    persianCalendar(android.icu.util.TimeZone.getDefault()).apply { timeInMillis = millis }
                                         .get(android.icu.util.Calendar.DAY_OF_MONTH)
                                 } else {
                                     Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).dayOfMonth

@@ -2,9 +2,8 @@ package com.marbledo.feature.calendar
 
 import android.content.Context
 import android.icu.util.Calendar
-import android.icu.util.IslamicCalendar
-import android.icu.util.PersianCalendar
 import android.icu.util.TimeZone as IcuTimeZone
+import android.icu.util.ULocale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -63,6 +62,9 @@ import java.util.Locale
 import org.json.JSONObject
 
 private enum class CalendarViewMode { MONTH, AGENDA, YEAR }
+
+private val PERSIAN_CALENDAR_LOCALE = ULocale("fa_IR@calendar=persian")
+private val ISLAMIC_CIVIL_CALENDAR_LOCALE = ULocale("ar@calendar=islamic-civil")
 
 private data class Holiday(
     val month: Int,
@@ -352,7 +354,7 @@ private fun buildMonth(
     weekStartsSaturday: Boolean,
     enabledCategories: Set<String>,
 ): MonthData {
-    val current = PersianCalendar(IcuTimeZone.getTimeZone(zone.id)).apply {
+    val current = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), PERSIAN_CALENDAR_LOCALE).apply {
         timeInMillis = System.currentTimeMillis()
         add(Calendar.MONTH, monthOffset)
         set(Calendar.DAY_OF_MONTH, 1)
@@ -365,14 +367,14 @@ private fun buildMonth(
     val year = current.get(Calendar.YEAR)
     val firstDayOfWeek = current.get(Calendar.DAY_OF_WEEK)
     val leadingCells = if (weekStartsSaturday) firstDayOfWeek % 7 else firstDayOfWeek - 1
-    val firstCell = (current.clone() as PersianCalendar).apply { add(Calendar.DAY_OF_MONTH, -leadingCells) }
+    val firstCell = (current.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, -leadingCells) }
     val today = LocalDate.now(zone)
     val taskCounts = tasks.mapNotNull { task ->
         task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
     }.groupingBy { it }.eachCount()
     val eligibleHolidays = holidays.filter { it.category in enabledCategories }
     val cells = (0 until 42).map { offset ->
-        val day = (firstCell.clone() as PersianCalendar).apply { add(Calendar.DAY_OF_MONTH, offset) }
+        val day = (firstCell.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, offset) }
         val epoch = day.timeInMillis
         val date = Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate()
         val isDisplayed = day.get(Calendar.MONTH) == month && day.get(Calendar.YEAR) == year
@@ -407,9 +409,9 @@ private fun loadHolidays(context: Context): List<Holiday> = runCatching {
 private fun tripleCalendarDate(date: LocalDate, lunarOffset: Int, languageTag: String, numeralMode: NumeralMode): String {
     val zone = ZoneId.systemDefault()
     val epoch = date.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
-    val p = PersianCalendar(IcuTimeZone.getTimeZone(zone.id)).apply { timeInMillis = epoch }
+    val p = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), PERSIAN_CALENDAR_LOCALE).apply { timeInMillis = epoch }
     val g = date.format(DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.ROOT))
-    val i = IslamicCalendar(IcuTimeZone.getTimeZone(zone.id)).apply {
+    val i = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), ISLAMIC_CIVIL_CALENDAR_LOCALE).apply {
         timeInMillis = epoch
         add(Calendar.DAY_OF_MONTH, lunarOffset)
     }

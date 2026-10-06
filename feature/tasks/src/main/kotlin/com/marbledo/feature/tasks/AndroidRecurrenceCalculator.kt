@@ -1,7 +1,6 @@
 package com.marbledo.feature.tasks
 
 import android.icu.util.Calendar
-import android.icu.util.PersianCalendar
 import android.icu.util.TimeZone as IcuTimeZone
 import com.marbledo.domain.model.RecurrenceRule
 import com.marbledo.domain.model.RepeatCalendar
@@ -19,7 +18,7 @@ object AndroidRecurrenceCalculator {
             "Persian-calendar rules support monthly and yearly intervals"
         }
         val local = Instant.ofEpochMilli(previousMillis).atZone(zone)
-        val calendar = PersianCalendar(IcuTimeZone.getTimeZone(zone.id)).apply {
+        val calendar = persianCalendar(IcuTimeZone.getTimeZone(zone.id)).apply {
             timeInMillis = previousMillis
         }
         val targetDay = rule.monthDay ?: calendar.get(Calendar.DAY_OF_MONTH)

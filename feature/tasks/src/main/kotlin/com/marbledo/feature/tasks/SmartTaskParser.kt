@@ -1,7 +1,6 @@
 package com.marbledo.feature.tasks
 
 import android.icu.util.Calendar
-import android.icu.util.PersianCalendar
 import android.icu.util.TimeZone as IcuTimeZone
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
@@ -58,7 +57,7 @@ object SmartTaskParser {
             val day = jalaliMatch.groupValues[1].toIntOrNull()
             val month = persianMonths.indexOf(jalaliMatch.groupValues[2])
             if (day != null && month >= 0) {
-                val calendar = PersianCalendar(IcuTimeZone.getTimeZone(zone.id))
+                val calendar = persianCalendar(IcuTimeZone.getTimeZone(zone.id))
                 val currentPersianYear = calendar.apply { timeInMillis = nowMillis }.get(Calendar.YEAR)
                 val candidate = (currentPersianYear..(currentPersianYear + 8))
                     .asSequence()
@@ -152,7 +151,7 @@ object SmartTaskParser {
     }
 
     private fun persianDateMillis(year: Int, month: Int, day: Int, zone: ZoneId): Long? = runCatching {
-        PersianCalendar(IcuTimeZone.getTimeZone(zone.id)).apply {
+        persianCalendar(IcuTimeZone.getTimeZone(zone.id)).apply {
             isLenient = false
             clear()
             set(Calendar.YEAR, year)
