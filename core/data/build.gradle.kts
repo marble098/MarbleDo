@@ -56,7 +56,9 @@ protobuf {
 
 dependencies {
     implementation(project(":core:domain"))
-    implementation(libs.androidx.room.runtime)
+    // MarbleDatabase extends RoomDatabase and is part of this module's public API, so
+    // consumers need Room on their compile classpath to resolve inherited members.
+    api(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore)
