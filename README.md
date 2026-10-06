@@ -21,7 +21,7 @@ MarbleDo is an offline-first Android task and countdown app. The interface defau
 ### Requirements
 
 - JDK 17.
-- Android SDK platform **37** and Build Tools **36.0.0** (the current catalog selection); accept SDK licenses.
+- Android SDK Platform **37.2** and Build Tools **37.0.0** (the current catalog selection); accept SDK licenses.
 - Linux/macOS: `curl`, `unzip`, and `sha256sum` for the checked Gradle bootstrap script. Windows: `curl.exe` and PowerShell.
 
 The repository's `gradlew` bootstraps the Gradle distribution named in `gradle/wrapper/gradle-wrapper.properties` from the official Gradle service, verifies its published SHA-256 checksum, then runs it. That required Wrapper URL is synchronized from the `gradle` version-catalog pin by `scripts/update_versions.py`. No binary Wrapper JAR is checked in.
@@ -126,7 +126,7 @@ Backups can be exported through Android's Storage Access Framework to a user-sel
 ### پیش‌نیازها
 
 - JDK 17.
-- Android SDK Platform **37** و Build Tools **36.0.0** (مقادیر فعلی کاتالوگ) و پذیرش مجوز SDK.
+- Android SDK Platform **37.2** و Build Tools **37.0.0** (مقادیر فعلی کاتالوگ) و پذیرش مجوز SDK.
 - لینوکس/مک: `curl`، `unzip` و `sha256sum`. ویندوز: `curl.exe` و PowerShell.
 
 اسکریپت `gradlew` نسخهٔ درج‌شده در `gradle/wrapper/gradle-wrapper.properties` را از سرویس رسمی Gradle دریافت، SHA-256 رسمی را بررسی و سپس اجرا می‌کند. این URL آینهٔ نسخهٔ `gradle` در کاتالوگ است و updater آن را همگام می‌کند؛ فایل باینری Wrapper JAR در مخزن قرار نگرفته است.

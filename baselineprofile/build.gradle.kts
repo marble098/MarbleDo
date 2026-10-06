@@ -5,7 +5,12 @@ plugins {
 
 android {
     namespace = "com.marble098.marbledo.baselineprofile"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk {
+        val sdkParts = libs.versions.compileSdk.get().split('.')
+        version = release(sdkParts[0].toInt()) {
+            minorApiLevel = sdkParts.getOrElse(1) { "0" }.toInt()
+        }
+    }
     buildToolsVersion = libs.versions.buildTools.get()
     targetProjectPath = ":app"
     defaultConfig {

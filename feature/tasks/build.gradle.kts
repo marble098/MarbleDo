@@ -7,7 +7,12 @@ plugins {
 
 android {
     namespace = "com.marbledo.feature.tasks"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk {
+        val sdkParts = libs.versions.compileSdk.get().split('.')
+        version = release(sdkParts[0].toInt()) {
+            minorApiLevel = sdkParts.getOrElse(1) { "0" }.toInt()
+        }
+    }
     buildToolsVersion = libs.versions.buildTools.get()
     defaultConfig { minSdk = libs.versions.minSdk.get().toInt() }
     buildFeatures { compose = true }
