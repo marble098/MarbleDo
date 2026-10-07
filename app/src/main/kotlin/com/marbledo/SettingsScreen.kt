@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
+import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
 
@@ -61,6 +62,7 @@ fun SettingsScreen(
     var themeMenu by remember { mutableStateOf(false) }
     var languageMenu by remember { mutableStateOf(false) }
     var numeralMenu by remember { mutableStateOf(false) }
+    var countdownCalendarMenu by remember { mutableStateOf(false) }
     var showBatteryHelp by remember { mutableStateOf(false) }
 
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 10.dp)) {
@@ -115,6 +117,20 @@ fun SettingsScreen(
         }
 
         SettingsSection(title = stringResource(R.string.settings_calendar), icon = Icons.Outlined.CalendarMonth) {
+            SettingMenuRow(
+                label = stringResource(R.string.settings_countdown_calendar),
+                value = countdownCalendarLabel(settings.countdownCalendar),
+                icon = Icons.Outlined.CalendarMonth,
+                expanded = countdownCalendarMenu,
+                onExpandedChange = { countdownCalendarMenu = it },
+            ) {
+                CalendarDisplayMode.entries.forEach { mode ->
+                    DropdownMenuItem(
+                        text = { Text(countdownCalendarLabel(mode)) },
+                        onClick = { onUpdate(settings.copy(countdownCalendar = mode)); countdownCalendarMenu = false },
+                    )
+                }
+            }
             SettingSwitchRow(
                 text = stringResource(R.string.settings_saturday_start),
                 checked = settings.weekStartsSaturday,
@@ -242,4 +258,11 @@ private fun numeralLabel(mode: NumeralMode): String = when (mode) {
     NumeralMode.PERSIAN -> stringResource(R.string.numerals_persian)
     NumeralMode.LATIN -> stringResource(R.string.numerals_latin)
     NumeralMode.ARABIC -> stringResource(R.string.numerals_arabic)
+}
+
+@Composable
+private fun countdownCalendarLabel(mode: CalendarDisplayMode): String = when (mode) {
+    CalendarDisplayMode.PERSIAN -> stringResource(R.string.calendar_display_persian)
+    CalendarDisplayMode.GREGORIAN -> stringResource(R.string.calendar_display_gregorian)
+    CalendarDisplayMode.ISLAMIC_CIVIL -> stringResource(R.string.calendar_display_lunar)
 }

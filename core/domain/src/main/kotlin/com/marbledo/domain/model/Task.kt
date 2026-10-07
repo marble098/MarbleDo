@@ -11,6 +11,10 @@ enum class RepeatFrequency { NONE, DAILY, WEEKLY, MONTHLY, YEARLY, CUSTOM }
 @Serializable
 enum class RepeatCalendar { GREGORIAN, PERSIAN }
 
+/** Calendar used to enter and present countdown target dates. */
+@Serializable
+enum class CalendarDisplayMode { PERSIAN, GREGORIAN, ISLAMIC_CIVIL }
+
 @Serializable
 data class ChecklistItem(
     val id: String,
@@ -45,6 +49,8 @@ data class Task(
     val colorArgb: Long = 0xFF6E61D8,
     val tags: List<String> = emptyList(),
     val project: String = "",
+    val category: String = "",
+    val isPinned: Boolean = false,
     val checklist: List<ChecklistItem> = emptyList(),
     val link: String? = null,
     val attachmentUri: String? = null,

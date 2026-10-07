@@ -1,6 +1,7 @@
 package com.marbledo.core.data.backup
 
 import com.marbledo.domain.model.AppSettings
+import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.ChecklistItem
 import com.marbledo.domain.model.RecurrenceRule
 import com.marbledo.domain.model.RepeatCalendar
@@ -21,13 +22,21 @@ class BackupCodecTest {
         dueAtEpochMillis = 1_800_000_000_000,
         priority = TaskPriority.HIGH,
         tags = listOf("family", "personal"),
+        category = "Home",
+        isPinned = true,
         checklist = listOf(ChecklistItem("item-1", "Ask about the trip", true)),
         recurrence = RecurrenceRule(RepeatFrequency.MONTHLY, interval = 2, calendar = RepeatCalendar.PERSIAN),
     )
 
     @Test
     fun `plain backup round trips tasks and settings`() {
-        val settings = AppSettings(languageTag = "en", lunarOffsetDays = 1, reduceMotion = true)
+        val settings = AppSettings(
+            languageTag = "en",
+            lunarOffsetDays = 1,
+            reduceMotion = true,
+            countdownCalendar = CalendarDisplayMode.ISLAMIC_CIVIL,
+            taskCategories = listOf("Home", "Work"),
+        )
         val encoded = BackupCodec.encode(listOf(task), settings)
 
         assertFalse(BackupCodec.isEncrypted(encoded))

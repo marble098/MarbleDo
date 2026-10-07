@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [TaskEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class MarbleDatabase : RoomDatabase() {
@@ -39,12 +39,20 @@ abstract class MarbleDatabase : RoomDatabase() {
             }
         }
 
+        /** v3 adds task categories and pin state without changing existing task data. */
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN category TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun create(context: Context): MarbleDatabase = Room.databaseBuilder(
             context.applicationContext,
             MarbleDatabase::class.java,
             DATABASE_NAME,
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .fallbackToDestructiveMigrationOnDowngrade()
             .build()
     }

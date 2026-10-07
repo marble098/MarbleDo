@@ -14,6 +14,8 @@ data class AppSettings(
     val languageTag: String = "fa",
     val numeralMode: NumeralMode = NumeralMode.PERSIAN,
     val countdownTheme: String = "MARBLE",
+    val countdownCalendar: CalendarDisplayMode = CalendarDisplayMode.PERSIAN,
+    val taskCategories: List<String> = emptyList(),
     val weekStartsSaturday: Boolean = true,
     val calendarNotificationsEnabled: Boolean = true,
     val officialEventsEnabled: Boolean = true,

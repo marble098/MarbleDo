@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
+import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.NumeralMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -28,6 +29,8 @@ class SettingsRepository(private val context: Context) {
             languageTag = proto.languageTag.takeIf { it in setOf("fa", "en") } ?: "fa",
             numeralMode = enumOrDefault(proto.numeralMode, NumeralMode.PERSIAN),
             countdownTheme = proto.countdownTheme.ifBlank { "MARBLE" },
+            countdownCalendar = enumOrDefault(proto.countdownCalendar, CalendarDisplayMode.PERSIAN),
+            taskCategories = proto.taskCategoriesList.map { it.trim() }.filter { it.isNotBlank() }.distinct(),
             weekStartsSaturday = if (configured) proto.weekStartsSaturday else true,
             calendarNotificationsEnabled = if (configured) proto.calendarNotificationsEnabled else true,
             officialEventsEnabled = if (configured) proto.officialEventsEnabled else true,
@@ -48,6 +51,8 @@ class SettingsRepository(private val context: Context) {
         .setLanguageTag(settings.languageTag)
         .setNumeralMode(settings.numeralMode.name)
         .setCountdownTheme(settings.countdownTheme)
+        .setCountdownCalendar(settings.countdownCalendar.name)
+        .addAllTaskCategories(settings.taskCategories.map { it.trim() }.filter { it.isNotBlank() }.distinct())
         .setWeekStartsSaturday(settings.weekStartsSaturday)
         .setCalendarNotificationsEnabled(settings.calendarNotificationsEnabled)
         .setOfficialEventsEnabled(settings.officialEventsEnabled)

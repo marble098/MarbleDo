@@ -32,4 +32,27 @@
     <string name="countdown_theme_retro">دیجیتال نوستالژیک</string>
     <string name="countdown_widget_name">شمارش ماربل‌دو</string>
     <string name="countdown_widget_description">نگاهی سریع به مهم‌ترین لحظه پیش رو</string>
+    <string name="countdown_add">شمارش جدید</string>
+    <string name="countdown_add_first">ساخت اولین شمارش معکوس</string>
+    <string name="countdown_calendar_display">تقویم نمایش و ورود تاریخ</string>
+    <string name="countdown_calendar_persian">شمسی</string>
+    <string name="countdown_calendar_gregorian">میلادی</string>
+    <string name="countdown_calendar_lunar">قمری</string>
+    <string name="countdown_create_title">ساخت شمارش معکوس</string>
+    <string name="countdown_create_hint">عنوان را بنویس، تقویم را انتخاب کن و یک زمان آماده بزن یا تاریخ و ساعت را وارد کن.</string>
+    <string name="countdown_title_field">عنوان لحظهٔ مهم</string>
+    <string name="countdown_date_field">تاریخ (سال/ماه/روز)</string>
+    <string name="countdown_date_hint">نمونه: ۱۴۰۵/۰۸/۲۵. تاریخ نامعتبر یا روز غیرموجود پذیرفته نمی‌شود.</string>
+    <string name="countdown_date_preview">موعد انتخاب‌شده: %1$s</string>
+    <string name="countdown_time_field">ساعت و دقیقه</string>
+    <string name="countdown_time_hint">نمونه: ۱۴:۳۰ یا ۱۴ و ۳۰ دقیقه</string>
+    <string name="countdown_quick_presets">تنظیم فوری زمان</string>
+    <string name="countdown_preset_hour">یک ساعت دیگر</string>
+    <string name="countdown_preset_tomorrow">فردا</string>
+    <string name="countdown_preset_week">یک هفته</string>
+    <string name="countdown_preset_month">یک ماه</string>
+    <string name="countdown_preset_year">یک سال</string>
+    <string name="countdown_create_action">ذخیرهٔ شمارش</string>
+    <string name="countdown_cancel">لغو</string>
+    <string name="countdown_target_date">موعد: %1$s</string>
 </resources>

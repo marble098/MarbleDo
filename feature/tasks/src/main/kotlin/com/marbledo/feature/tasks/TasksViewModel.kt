@@ -22,12 +22,20 @@ fun interface TaskActionSink {
 }
 
 enum class TaskFilter { TODAY, TOMORROW, UPCOMING, ALL, COMPLETED, ARCHIVED }
+enum class TaskSort { DUE_DATE, PRIORITY, TITLE, RECENT }
+
+private data class TaskOrganization(
+    val sortBy: TaskSort = TaskSort.DUE_DATE,
+    val category: String? = null,
+)
 
 data class TasksUiState(
     val allTasks: List<Task> = emptyList(),
     val visibleTasks: List<Task> = emptyList(),
     val filter: TaskFilter = TaskFilter.TODAY,
     val query: String = "",
+    val sortBy: TaskSort = TaskSort.DUE_DATE,
+    val selectedCategory: String? = null,
     val selectedIds: Set<Long> = emptySet(),
     val completedCount: Int = 0,
     val activeCount: Int = 0,
@@ -41,9 +49,10 @@ class TasksViewModel(
     private val filter = MutableStateFlow(TaskFilter.TODAY)
     private val query = MutableStateFlow("")
     private val selected = MutableStateFlow<Set<Long>>(emptySet())
+    private val organization = MutableStateFlow(TaskOrganization())
     private var lastChanged: Task? = null
 
-    val state = combine(repository.observeTasks(), filter, query, selected) { tasks, currentFilter, search, ids ->
+    val state = combine(repository.observeTasks(), filter, query, selected, organization) { tasks, currentFilter, search, ids, org ->
         val zone = ZoneId.systemDefault()
         val today = LocalDate.now(zone)
         val filtered = tasks.filter { task ->
@@ -58,15 +67,28 @@ class TasksViewModel(
             }
             val needle = TextNormalizer.searchKey(search)
             val haystack = TextNormalizer.searchKey(
-                listOf(task.title, task.description, task.project, task.tags.joinToString(" ")).joinToString(" "),
+                listOf(task.title, task.description, task.project, task.category, task.tags.joinToString(" ")).joinToString(" "),
             )
-            matchesFilter && (needle.isBlank() || haystack.contains(needle))
+            val matchesCategory = org.category == null || task.category == org.category
+            matchesFilter && matchesCategory && (needle.isBlank() || haystack.contains(needle))
         }
+        val sorted = filtered.sortedWith(Comparator { left, right ->
+            if (left.isPinned != right.isPinned) return@Comparator right.isPinned.compareTo(left.isPinned)
+            val primary = when (org.sortBy) {
+                TaskSort.DUE_DATE -> compareValues(left.dueAtEpochMillis ?: Long.MAX_VALUE, right.dueAtEpochMillis ?: Long.MAX_VALUE)
+                TaskSort.PRIORITY -> priorityRank(right).compareTo(priorityRank(left))
+                TaskSort.TITLE -> TextNormalizer.searchKey(left.title).compareTo(TextNormalizer.searchKey(right.title))
+                TaskSort.RECENT -> right.updatedAtEpochMillis.compareTo(left.updatedAtEpochMillis)
+            }
+            if (primary != 0) primary else left.id.compareTo(right.id)
+        })
         TasksUiState(
             allTasks = tasks,
-            visibleTasks = filtered,
+            visibleTasks = sorted,
             filter = currentFilter,
             query = search,
+            sortBy = org.sortBy,
+            selectedCategory = org.category,
             selectedIds = ids,
             completedCount = tasks.count { it.isCompleted && !it.isArchived },
             activeCount = tasks.count { !it.isCompleted && !it.isArchived },
@@ -75,6 +97,8 @@ class TasksViewModel(
 
     fun setFilter(value: TaskFilter) { filter.value = value }
     fun setQuery(value: String) { query.value = value }
+    fun setSort(value: TaskSort) { organization.value = organization.value.copy(sortBy = value) }
+    fun setCategory(value: String?) { organization.value = organization.value.copy(category = value?.takeIf { it.isNotBlank() }) }
 
     fun addTask(task: Task) {
         viewModelScope.launch {
@@ -182,5 +206,12 @@ class TasksViewModel(
         val task = lastChanged ?: return
         lastChanged = null
         editTask(task)
+    }
+
+    private fun priorityRank(task: Task): Int = when (task.priority) {
+        com.marbledo.domain.model.TaskPriority.LOW -> 0
+        com.marbledo.domain.model.TaskPriority.NORMAL -> 1
+        com.marbledo.domain.model.TaskPriority.HIGH -> 2
+        com.marbledo.domain.model.TaskPriority.URGENT -> 3
     }
 }

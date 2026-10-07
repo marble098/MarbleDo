@@ -211,6 +211,7 @@ fun MarbleDoApp(
             reduceMotion = settings.reduceMotion,
             fontScale = settings.fontScale,
             numeralMode = settings.numeralMode,
+            languageTag = settings.languageTag,
         ) {
             Surface(Modifier.fillMaxSize()) {
                 val content: @Composable (Modifier) -> Unit = { contentModifier ->
@@ -235,6 +236,17 @@ fun MarbleDoApp(
                                 TasksScreen(
                                     viewModel = taskViewModel,
                                     onOpenCountdown = { task -> focusTask = task; navigateTo(CountdownDestination) },
+                                    categoryNames = settings.taskCategories,
+                                    languageTag = settings.languageTag,
+                                    onAddCategory = { name ->
+                                        val key = TextNormalizer.searchKey(name)
+                                        coroutineScope.launch {
+                                            settingsRepository.update { current ->
+                                                if (current.taskCategories.any { TextNormalizer.searchKey(it) == key }) current
+                                                else current.copy(taskCategories = current.taskCategories + name.trim())
+                                            }
+                                        }
+                                    },
                                     initialShareText = initialShareText,
                                     initialOpenAdd = initialOpenAdd,
                                     onInitialIntentConsumed = onIntentConsumed,
@@ -259,7 +271,10 @@ fun MarbleDoApp(
                                 CountdownScreen(
                                     tasks = taskState.allTasks,
                                     selectedThemeId = settings.countdownTheme,
+                                    calendarDisplay = settings.countdownCalendar,
                                     onThemeSelected = { id -> coroutineScope.launch { settingsRepository.update { it.copy(countdownTheme = id) } } },
+                                    onCalendarDisplaySelected = { mode -> coroutineScope.launch { settingsRepository.update { it.copy(countdownCalendar = mode) } } },
+                                    onAddCountdown = taskViewModel::addTask,
                                     onOpenFocus = { focusTask = it },
                                 )
                             }
@@ -357,7 +372,7 @@ fun MarbleDoApp(
     }
 
     focusTask?.let { task ->
-        CountdownFocusDialog(task = task, themeId = settings.countdownTheme, onDismiss = { focusTask = null })
+        CountdownFocusDialog(task = task, themeId = settings.countdownTheme, calendarDisplay = settings.countdownCalendar, onDismiss = { focusTask = null })
     }
 
     if (showRestoreChoice && restoreEnvelope != null) {

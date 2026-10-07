@@ -21,6 +21,10 @@
     <string name="numerals_latin">انگلیسی (123)</string>
     <string name="numerals_arabic">عربی (١٢٣)</string>
     <string name="settings_calendar">تنظیمات تقویم</string>
+    <string name="settings_countdown_calendar">تقویم تاریخ شمارش معکوس</string>
+    <string name="calendar_display_persian">شمسی</string>
+    <string name="calendar_display_gregorian">میلادی</string>
+    <string name="calendar_display_lunar">قمری</string>
     <string name="settings_saturday_start">شروع هفته از شنبه</string>
     <string name="settings_lunar_offset">اصلاح قمری: %1$d روز</string>
     <string name="settings_calendar_notifications">اعلان مناسبت‌های تقویم</string>

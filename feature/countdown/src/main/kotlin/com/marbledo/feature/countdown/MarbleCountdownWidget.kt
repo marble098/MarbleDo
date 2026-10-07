@@ -54,6 +54,14 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                 .let { TextNormalizer.formatDigits(it, settings.numeralMode) }
         }
         val title = task?.title ?: widgetContext.getString(R.string.widget_empty)
+        val targetDate = task?.dueAtEpochMillis?.let { due ->
+            CountdownDateUtils.format(
+                epochMillis = due,
+                mode = settings.countdownCalendar,
+                locale = widgetContext.resources.configuration.locales[0],
+                numeralMode = settings.numeralMode,
+            )
+        }
         val widgetName = widgetContext.getString(R.string.countdown_widget_name)
         // Glance has no Intent-based launch helper, so resolve the launcher ComponentName instead.
         val launchComponent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.component
@@ -77,6 +85,14 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                         style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 17.sp, fontWeight = FontWeight.Bold),
                         maxLines = 2,
                     )
+                    targetDate?.let {
+                        Spacer(GlanceModifier.height(3.dp))
+                        Text(
+                            text = widgetContext.getString(R.string.widget_target_date, it),
+                            style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 11.sp),
+                            maxLines = 1,
+                        )
+                    }
                     remaining?.let {
                         Spacer(GlanceModifier.height(5.dp))
                         Text(

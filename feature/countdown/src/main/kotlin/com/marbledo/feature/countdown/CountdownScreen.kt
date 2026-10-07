@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,21 +23,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -59,6 +66,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -69,10 +77,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.marbledo.core.designsystem.LocalReduceMotion
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.Task
+import com.marbledo.domain.model.TaskPriority
 import com.marbledo.domain.util.TextNormalizer
 import kotlinx.coroutines.delay
 import java.time.Duration
+import java.time.ZonedDateTime
 
 private enum class CountdownTheme(val id: String, val stringId: Int) {
     MINIMAL("MINIMAL", R.string.countdown_theme_minimal),
@@ -98,23 +109,62 @@ private enum class CountdownTheme(val id: String, val stringId: Int) {
 fun CountdownScreen(
     tasks: List<Task>,
     selectedThemeId: String,
+    calendarDisplay: CalendarDisplayMode,
     onThemeSelected: (String) -> Unit,
+    onCalendarDisplaySelected: (CalendarDisplayMode) -> Unit,
+    onAddCountdown: (Task) -> Unit,
     onOpenFocus: (Task) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     val active = remember(tasks) {
         tasks.filter { !it.isCompleted && !it.isArchived && it.dueAtEpochMillis != null }
             .sortedBy { it.dueAtEpochMillis }
     }
     val theme = CountdownTheme.from(selectedThemeId)
     Column(modifier.fillMaxSize()) {
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
-            Text(stringResource(R.string.countdown_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(stringResource(R.string.countdown_subtitle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.countdown_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.countdown_subtitle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Button(onClick = { showCreateDialog = true }) {
+                Icon(Icons.Outlined.Add, contentDescription = null)
+                Spacer(Modifier.width(5.dp))
+                Text(stringResource(R.string.countdown_add))
+            }
+        }
+        Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+            Text(
+                stringResource(R.string.countdown_calendar_display),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 18.dp, bottom = 4.dp),
+            )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(CalendarDisplayMode.entries) { mode ->
+                    FilterChip(
+                        selected = calendarDisplay == mode,
+                        onClick = { onCalendarDisplaySelected(mode) },
+                        label = { Text(calendarDisplayLabel(mode)) },
+                    )
+                }
+            }
         }
         if (active.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.countdown_empty), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Box(Modifier.weight(1f).fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stringResource(R.string.countdown_empty), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+                    TextButton(onClick = { showCreateDialog = true }) { Text(stringResource(R.string.countdown_add_first)) }
+                }
             }
         } else {
             LazyColumn(
@@ -128,6 +178,13 @@ fun CountdownScreen(
                         dueAtEpochMillis = active.first().dueAtEpochMillis!!,
                         theme = theme,
                         modifier = Modifier.fillMaxWidth().clickable { onOpenFocus(active.first()) },
+                    )
+                    Text(
+                        stringResource(R.string.countdown_target_date, countdownDateLabel(active.first().dueAtEpochMillis!!, calendarDisplay)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 5.dp),
+                        textAlign = TextAlign.Center,
                     )
                 }
                 item {
@@ -161,6 +218,7 @@ fun CountdownScreen(
                             Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                                 Text(task.title, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                                Text(stringResource(R.string.countdown_target_date, countdownDateLabel(task.dueAtEpochMillis!!, calendarDisplay)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(stringResource(R.string.countdown_remaining, TextNormalizer.formatDigits(remainingLabel(task.dueAtEpochMillis!!), LocalNumeralMode.current)), style = MaterialTheme.typography.bodySmall)
                             }
                             TextButton(onClick = { onOpenFocus(task) }) { Text(stringResource(R.string.countdown_focus)) }
@@ -170,12 +228,143 @@ fun CountdownScreen(
             }
         }
     }
+
+    if (showCreateDialog) {
+        CountdownCreateDialog(
+            calendarDisplay = calendarDisplay,
+            onCalendarDisplaySelected = onCalendarDisplaySelected,
+            onDismiss = { showCreateDialog = false },
+            onCreate = { task -> onAddCountdown(task); showCreateDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun CountdownCreateDialog(
+    calendarDisplay: CalendarDisplayMode,
+    onCalendarDisplaySelected: (CalendarDisplayMode) -> Unit,
+    onDismiss: () -> Unit,
+    onCreate: (Task) -> Unit,
+) {
+    val initialTarget = remember { ZonedDateTime.now().plusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0).toInstant().toEpochMilli() }
+    var title by rememberSaveable { mutableStateOf("") }
+    var selectedCalendar by rememberSaveable { mutableStateOf(calendarDisplay) }
+    var dateText by rememberSaveable { mutableStateOf(CountdownDateUtils.dateInput(initialTarget, calendarDisplay)) }
+    var timeText by rememberSaveable { mutableStateOf(CountdownDateUtils.timeInput(initialTarget)) }
+    val parsedDate = remember(dateText, selectedCalendar) { CountdownDateUtils.parseDateInput(dateText, selectedCalendar) }
+    val parsedTime = remember(timeText) { CountdownDateUtils.parseTimeInput(timeText) }
+    val targetMillis = remember(dateText, timeText, selectedCalendar) {
+        CountdownDateUtils.parseDateTime(dateText, timeText, selectedCalendar)
+    }
+
+    fun applyPreset(target: ZonedDateTime) {
+        val epoch = target.withSecond(0).withNano(0).toInstant().toEpochMilli()
+        dateText = CountdownDateUtils.dateInput(epoch, selectedCalendar)
+        timeText = CountdownDateUtils.timeInput(epoch)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.countdown_create_title)) },
+        text = {
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(stringResource(R.string.countdown_create_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(stringResource(R.string.countdown_title_field)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(stringResource(R.string.countdown_calendar_display), style = MaterialTheme.typography.labelLarge)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(CalendarDisplayMode.entries) { mode ->
+                        FilterChip(
+                            selected = selectedCalendar == mode,
+                            onClick = {
+                                val previousTarget = targetMillis
+                                selectedCalendar = mode
+                                if (previousTarget != null) dateText = CountdownDateUtils.dateInput(previousTarget, mode)
+                                onCalendarDisplaySelected(mode)
+                            },
+                            label = { Text(calendarDisplayLabel(mode), maxLines = 1) },
+                        )
+                    }
+                }
+                Text(stringResource(R.string.countdown_quick_presets), style = MaterialTheme.typography.labelLarge)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusHours(1)) }, label = { Text(stringResource(R.string.countdown_preset_hour)) }) }
+                    item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusDays(1)) }, label = { Text(stringResource(R.string.countdown_preset_tomorrow)) }) }
+                    item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusWeeks(1)) }, label = { Text(stringResource(R.string.countdown_preset_week)) }) }
+                    item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusMonths(1)) }, label = { Text(stringResource(R.string.countdown_preset_month)) }) }
+                    item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusYears(1)) }, label = { Text(stringResource(R.string.countdown_preset_year)) }) }
+                }
+                OutlinedTextField(
+                    value = dateText,
+                    onValueChange = { dateText = it },
+                    label = { Text(stringResource(R.string.countdown_date_field)) },
+                    placeholder = { Text("YYYY/MM/DD") },
+                    supportingText = {
+                        when {
+                            parsedDate == null -> Text(stringResource(R.string.countdown_date_hint))
+                            targetMillis != null -> Text(stringResource(R.string.countdown_date_preview, countdownDateLabel(targetMillis, selectedCalendar)))
+                        }
+                    },
+                    isError = dateText.isNotBlank() && parsedDate == null,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = timeText,
+                    onValueChange = { timeText = it },
+                    label = { Text(stringResource(R.string.countdown_time_field)) },
+                    placeholder = { Text("14:30") },
+                    supportingText = {
+                        if (parsedTime == null) Text(stringResource(R.string.countdown_time_hint))
+                    },
+                    isError = timeText.isNotBlank() && parsedTime == null,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = title.isNotBlank() && targetMillis != null,
+                onClick = {
+                    val dueAt = targetMillis ?: return@TextButton
+                    onCreate(Task(title = title.trim(), dueAtEpochMillis = dueAt, priority = TaskPriority.NORMAL))
+                },
+            ) { Text(stringResource(R.string.countdown_create_action)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.countdown_cancel)) } },
+    )
+}
+
+@Composable
+private fun calendarDisplayLabel(mode: CalendarDisplayMode): String = when (mode) {
+    CalendarDisplayMode.PERSIAN -> stringResource(R.string.countdown_calendar_persian)
+    CalendarDisplayMode.GREGORIAN -> stringResource(R.string.countdown_calendar_gregorian)
+    CalendarDisplayMode.ISLAMIC_CIVIL -> stringResource(R.string.countdown_calendar_lunar)
+}
+
+@Composable
+private fun countdownDateLabel(epochMillis: Long, mode: CalendarDisplayMode): String {
+    val locale = LocalConfiguration.current.locales[0]
+    val numeralMode = LocalNumeralMode.current
+    return remember(epochMillis, mode, locale, numeralMode) {
+        CountdownDateUtils.format(epochMillis, mode, locale, numeralMode)
+    }
 }
 
 @Composable
 fun CountdownFocusDialog(
     task: Task,
     themeId: String,
+    calendarDisplay: CalendarDisplayMode = CalendarDisplayMode.PERSIAN,
     onDismiss: () -> Unit,
 ) {
     Dialog(
@@ -196,14 +385,16 @@ fun CountdownFocusDialog(
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     Text(task.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                    task.dueAtEpochMillis?.let { CountdownFace(task.title, it, CountdownTheme.from(themeId), Modifier.fillMaxWidth()) }
+                    task.dueAtEpochMillis?.let {
+                        CountdownFace(task.title, it, CountdownTheme.from(themeId), Modifier.fillMaxWidth())
+                        Text(stringResource(R.string.countdown_target_date, countdownDateLabel(it, calendarDisplay)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     Text(stringResource(R.string.countdown_focus_mode), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
     }
 }
-
 @Composable
 private fun CountdownFace(
     title: String,
