@@ -8,6 +8,9 @@
     <string name="settings_title">Preferences</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_theme">App theme</string>
+    <string name="settings_countdown_theme">Countdown theme</string>
+    <string name="settings_countdown_theme_hint">This is the default look for new countdowns; existing tasks keep their own style.</string>
+    <string name="settings_browse_themes">Browse</string>
     <string name="theme_auto">Follow system</string>
     <string name="theme_glass">Glass light</string>
     <string name="theme_dark">Dark</string>
@@ -20,6 +23,12 @@
     <string name="numerals_persian">Persian (۱۲۳)</string>
     <string name="numerals_latin">English (123)</string>
     <string name="numerals_arabic">Arabic (١٢٣)</string>
+    <string name="settings_home_widget">Home-screen widget</string>
+    <string name="settings_home_widget_hint">Pin a live countdown card to your launcher for a quick glance at your next moment.</string>
+    <string name="settings_add_widget">Add countdown widget</string>
+    <string name="settings_widget_pin_requested">Your launcher will ask you to confirm adding the widget.</string>
+    <string name="settings_widget_pin_unsupported">This launcher does not support pinning. Add MarbleDo from the widget picker instead.</string>
+    <string name="settings_widget_pin_failed">Could not start widget pinning. Add MarbleDo from the widget picker instead.</string>
     <string name="settings_calendar">Calendar preferences</string>
     <string name="settings_countdown_calendar">Countdown date calendar</string>
     <string name="calendar_display_persian">Persian</string>
@@ -72,7 +81,9 @@
     <string name="channel_tasks_description">Due-time task reminders and actions</string>
     <string name="channel_countdown">Countdown</string>
     <string name="channel_countdown_description">Ongoing countdown notifications</string>
-    <string name="calendar_notification_body">A calendar occasion is today.</string>
+    <string name="calendar_notification_title">Today’s calendar highlights</string>
+    <string name="calendar_notification_summary">%1$s · %2$s</string>
+    <string name="calendar_notification_open">Open calendar</string>
     <string name="channel_calendar">Calendar occasions</string>
     <string name="channel_calendar_description">Official and personal calendar dates</string>
     <string name="channel_backup">Backup status</string>
@@ -103,7 +114,6 @@
     <string name="dash_countdown_none_title">No live countdown yet</string>
     <string name="dash_countdown_none_body">Give a task a date, then switch its countdown on and it appears here in real time.</string>
     <string name="dash_create_countdown">Create a countdown</string>
-    <string name="dash_gallery">Theme gallery</string>
     <string name="dash_upcoming_countdowns">Upcoming moments</string>
     <string name="dash_occasions_today">Today\'s occasions</string>
     <string name="dash_no_occasion">No occasion is recorded for today.</string>

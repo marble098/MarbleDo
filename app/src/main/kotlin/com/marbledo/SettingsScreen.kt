@@ -19,12 +19,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -42,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,12 +52,14 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CalendarDisplayMode
+import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.countdown.CountdownThemeGallerySheet
+import com.marbledo.feature.countdown.countdownThemeLabel
 import com.marbledo.feature.calendar.OccasionState
 import com.marbledo.feature.calendar.PersianDateUtils
 
@@ -65,6 +70,7 @@ fun SettingsScreen(
     exactAlarmGranted: Boolean,
     occasionState: OccasionState,
     onUpdate: (AppSettings) -> Unit,
+    onAddWidget: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onRestoreAutomatic: () -> Unit,
@@ -78,6 +84,7 @@ fun SettingsScreen(
     var languageMenu by remember { mutableStateOf(false) }
     var numeralMenu by remember { mutableStateOf(false) }
     var countdownCalendarMenu by remember { mutableStateOf(false) }
+    var showCountdownThemeGallery by rememberSaveable { mutableStateOf(false) }
     var showBatteryHelp by remember { mutableStateOf(false) }
     val permissionsSatisfied = notificationsGranted && exactAlarmGranted
 
@@ -110,6 +117,25 @@ fun SettingsScreen(
                 DropdownMenuItem(text = { Text(stringResource(R.string.language_persian)) }, onClick = { onUpdate(settings.copy(languageTag = "fa")); languageMenu = false })
                 DropdownMenuItem(text = { Text(stringResource(R.string.language_english)) }, onClick = { onUpdate(settings.copy(languageTag = "en")); languageMenu = false })
             }
+            Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+                    Text(stringResource(R.string.settings_countdown_theme), style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        countdownThemeLabel(CountdownTheme.from(settings.countdownTheme)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        stringResource(R.string.settings_countdown_theme_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = { showCountdownThemeGallery = true }) {
+                    Text(stringResource(R.string.settings_browse_themes))
+                }
+            }
             SettingMenuRow(
                 label = stringResource(R.string.settings_numerals),
                 value = numeralLabel(settings.numeralMode),
@@ -134,6 +160,17 @@ fun SettingsScreen(
                 checked = settings.reduceMotion,
                 onCheckedChange = { onUpdate(settings.copy(reduceMotion = it)) },
             )
+        }
+
+        SettingsSection(title = stringResource(R.string.settings_home_widget), icon = Icons.Outlined.Home) {
+            Text(
+                stringResource(R.string.settings_home_widget_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = onAddWidget, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.settings_add_widget))
+            }
         }
 
         SettingsSection(title = stringResource(R.string.settings_calendar), icon = Icons.Outlined.CalendarMonth) {
@@ -231,6 +268,16 @@ fun SettingsScreen(
             modifier = Modifier.padding(14.dp),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    if (showCountdownThemeGallery) {
+        CountdownThemeGallerySheet(
+            selectedThemeId = settings.countdownTheme,
+            previewTitle = stringResource(R.string.app_name),
+            previewDueAtEpochMillis = remember { System.currentTimeMillis() + 6L * 24L * 60L * 60L * 1000L },
+            onThemeSelected = { themeId -> onUpdate(settings.copy(countdownTheme = themeId)) },
+            onDismiss = { showCountdownThemeGallery = false },
         )
     }
 

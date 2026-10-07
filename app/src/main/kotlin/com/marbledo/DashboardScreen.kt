@@ -29,7 +29,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Flag
@@ -84,7 +83,6 @@ import com.marbledo.feature.calendar.categoryColor
 import com.marbledo.feature.countdown.CountdownCreateSheet
 import com.marbledo.feature.countdown.CountdownFace
 import com.marbledo.feature.countdown.CountdownMiniCard
-import com.marbledo.feature.countdown.CountdownThemeGallerySheet
 import com.marbledo.feature.countdown.ThemeSwatchRow
 import com.marbledo.feature.countdown.countdownThemeLabel as themeLabelOf
 import com.marbledo.feature.tasks.SectionHeader
@@ -98,8 +96,8 @@ import com.marbledo.feature.tasks.localizedTaskDate
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.LocalTime
 import java.time.ZonedDateTime
+import kotlinx.coroutines.delay
 
 private enum class TaskGroup(val labelRes: Int) {
     OVERDUE(R.string.dash_group_overdue),
@@ -122,7 +120,6 @@ fun DashboardScreen(
     settings: AppSettings,
     occasionCatalog: OccasionCatalog,
     enabledOccasionCategories: Set<OccasionCategory>,
-    onThemeSelected: (String) -> Unit,
     onOpenFocus: (Task) -> Unit,
     onOpenCalendar: () -> Unit,
     onAddCategory: (String) -> Unit,
@@ -138,7 +135,6 @@ fun DashboardScreen(
     var showQuickAdd by rememberSaveable { mutableStateOf(false) }
     var sharedText by rememberSaveable { mutableStateOf("") }
     var editingTask by remember { mutableStateOf<Task?>(null) }
-    var showGallery by rememberSaveable { mutableStateOf(false) }
     var showCreateCountdown by rememberSaveable { mutableStateOf(false) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var showUndo by remember { mutableStateOf(false) }
@@ -151,7 +147,13 @@ fun DashboardScreen(
         }
     }
 
-    val now = remember { ZonedDateTime.now(zone) }
+    var now by remember(zone) { mutableStateOf(ZonedDateTime.now(zone)) }
+    LaunchedEffect(zone) {
+        while (true) {
+            now = ZonedDateTime.now(zone)
+            delay(60_000L)
+        }
+    }
     val todayPersian = remember(zone, now) { PersianDateUtils.today(zone) }
     val todayEpoch = remember(zone, now) { now.toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli() }
     val occasionIndex = remember(occasionCatalog, enabledOccasionCategories, settings.lunarOffsetDays, todayPersian.year) {
@@ -190,18 +192,9 @@ fun DashboardScreen(
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { DashboardHeader(state.query, viewModel::setQuery, todayOpen, state.completedCount, activeTasks.size, progress, todayEpoch, settings, numeralMode, onOpenCalendar) }
+            item { DashboardHeader(state.query, viewModel::setQuery, todayOpen, state.completedCount, activeTasks.size, progress, todayEpoch, now.hour, settings, numeralMode, onOpenCalendar) }
 
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SectionHeader(stringResource(R.string.dash_countdown_hero), modifier = Modifier.weight(1f))
-                    TextButton(onClick = { showGallery = true }) {
-                        Icon(Icons.Outlined.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.dash_gallery))
-                    }
-                }
-            }
+            item { SectionHeader(stringResource(R.string.dash_countdown_hero)) }
 
             if (heroCountdown == null) {
                 item {
@@ -230,8 +223,6 @@ fun DashboardScreen(
                         task = heroCountdown,
                         themeId = heroCountdown.countdownTheme.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme,
                         calendarLabel = { epoch -> localizedTaskDate(epoch) },
-                        onThemeSelected = { theme -> onThemeSelected(theme.id) },
-                        onSelectThemeForTask = { theme -> viewModel.editTask(heroCountdown.copy(countdownTheme = theme.id)) },
                         onToggleCountdown = { enabled ->
                             viewModel.editTask(heroCountdown.copy(countdownEnabled = enabled))
                         },
@@ -422,19 +413,10 @@ fun DashboardScreen(
         )
     }
 
-    if (showGallery) {
-        CountdownThemeGallerySheet(
-            selectedThemeId = settings.countdownTheme,
-            previewTitle = heroCountdown?.title ?: stringResource(R.string.app_name),
-            previewDueAtEpochMillis = heroCountdown?.dueAtEpochMillis ?: (System.currentTimeMillis() + 6L * 24L * 60L * 60L * 1000L),
-            onThemeSelected = { id -> onThemeSelected(id) },
-            onDismiss = { showGallery = false },
-        )
-    }
-
     if (showCreateCountdown) {
         CountdownCreateSheet(
             calendarDisplay = settings.countdownCalendar,
+            defaultThemeId = settings.countdownTheme,
             onCalendarDisplaySelected = { },
             onDismiss = { showCreateCountdown = false },
             onCreate = { task -> viewModel.addTask(task); showCreateCountdown = false; showUndo = true },
@@ -451,11 +433,12 @@ private fun DashboardHeader(
     openCount: Int,
     progress: Float,
     todayEpoch: Long,
+    currentHour: Int,
     settings: AppSettings,
     numeralMode: NumeralMode,
     onOpenCalendar: () -> Unit,
 ) {
-    val hour = remember { LocalTime.now().hour }
+    val hour = currentHour
     val greeting = when {
         hour < 12 -> stringResource(R.string.dash_greeting_morning)
         hour < 18 -> stringResource(R.string.dash_greeting_afternoon)
@@ -543,8 +526,6 @@ private fun CountdownHero(
     task: Task,
     themeId: String,
     calendarLabel: @Composable (Long) -> String,
-    onThemeSelected: (CountdownTheme) -> Unit,
-    onSelectThemeForTask: (CountdownTheme) -> Unit,
     onToggleCountdown: (Boolean) -> Unit,
     onOpenFocus: () -> Unit,
     onDisableRequested: () -> Unit,
@@ -577,13 +558,6 @@ private fun CountdownHero(
             }
             TextButton(onClick = onDisableRequested) { Text(stringResource(R.string.dash_turn_off)) }
         }
-        ThemeSwatchRow(
-            selected = theme,
-            onSelect = { selected ->
-                onThemeSelected(selected)
-                onSelectThemeForTask(selected)
-            },
-        )
     }
 }
 

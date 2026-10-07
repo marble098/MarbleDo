@@ -1,5 +1,12 @@
 <resources>
-    <string name="widget_empty">No upcoming task</string>
-    <string name="widget_time_left">%1$d days · %2$d hours left</string>
-    <string name="widget_target_date">Target: %1$s</string>
+    <string name="widget_countdown_label">NEXT MOMENT</string>
+    <string name="widget_empty_title">Your next moment awaits</string>
+    <string name="widget_empty">Add a dated task to see a live countdown here.</string>
+    <string name="widget_time_left">%1$s days · %2$s hr · %3$s min</string>
+    <string name="widget_target_date">Target · %1$s</string>
+    <string name="widget_unit_days">DAYS</string>
+    <string name="widget_unit_hours">HRS</string>
+    <string name="widget_unit_minutes">MIN</string>
+    <string name="widget_due">The moment is here</string>
+    <string name="widget_open_app">Open MarbleDo</string>
 </resources>

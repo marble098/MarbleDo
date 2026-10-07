@@ -9,8 +9,8 @@ MarbleDo is an offline-first Android task and countdown app. The interface defau
 ## What is implemented
 
 - **Tasks:** Compose UI, smart Persian/English quick-add parsing, guided multi-step voice task creation (category, title, Persian date, time, and priority), search, filters, pinning, sorting, user-created categories, priorities, checklists, tags, archive/completion, recurring tasks, undo, and task reminders.
-- **Calendar:** Persian/Gregorian/Islamic date display, month/agenda/year views, Saturday-first preference, local holiday data, a user-adjustable lunar offset, and daily local occasion notifications.
-- **Countdowns:** create countdowns directly with one-tap hour/day/week/month/year presets or a validated date/time, select Persian/Gregorian/Islamic-civil date entry and display, 12 display themes, full-screen focus view, Glance home-screen widget, and a Quick Settings tile for quick-add.
+- **Calendar:** Persian/Gregorian/Islamic date display, month/agenda/year views, Saturday-first preference, local holiday data, a user-adjustable lunar offset, and localized daily occasion notifications with a date header and expanded event list.
+- **Countdowns:** create countdowns directly with one-tap hour/day/week/month/year presets or a validated date/time, select Persian/Gregorian/Islamic-civil date entry and display, choose the default look from the 12-theme gallery in Settings, use a focused full-screen view, pin a localized Glance widget to the home screen, and quick-add from a Quick Settings tile.
 - **Preferences:** app language, RTL/LTR, Persian/Latin/Arabic-Indic numerals, Vazirmatn variable font with role-appropriate weights in Persian UI, light/dark/AMOLED/dynamic themes, font scaling, reduced motion, calendar-category visibility/alerts, and notification setup guidance.
 - **Storage:** Room database with explicit v1→v2→v3 migrations, pinned/category task fields, and exported schema configuration; Proto DataStore preferences; WorkManager snapshots; local SAF export/import with optional AES-GCM passphrase encryption.
 - **Privacy:** no Firebase, analytics, advertising, or network permission in the app. Android system speech recognition may use an external recognition provider according to the device's configuration.
@@ -115,8 +115,8 @@ Backups can be exported through Android's Storage Access Framework to a user-sel
 ## امکانات پیاده‌سازی‌شده
 
 - **کارها:** افزودن هوشمند فارسی/انگلیسی، راهنمای صوتی مرحله‌به‌مرحله برای دسته، عنوان، تاریخ شمسی، ساعت و اولویت، جست‌وجو، فیلتر، سنجاق، مرتب‌سازی، ساخت دسته‌بندی، اولویت، چک‌لیست، برچسب، بایگانی، تکرار و یادآوری.
-- **تقویم:** نمایش تاریخ شمسی، میلادی و قمری، نمای ماه/برنامه/سال، شروع هفته از شنبه، اصلاح قمری قابل‌تنظیم و اعلان روزانهٔ مناسبت‌های محلی.
-- **شمارش معکوس:** ساخت سریع با زمان‌های آمادهٔ یک‌ساعته/روزانه/هفتگی/ماهانه/سالانه یا تاریخ‌وساعت دقیق، ورود و نمایش تاریخ شمسی/میلادی/قمری، ۱۲ تم، نمای تمرکز تمام‌صفحه و ویجت Glance.
+- **تقویم:** نمایش تاریخ شمسی، میلادی و قمری، نمای ماه/برنامه/سال، شروع هفته از شنبه، اصلاح قمری قابل‌تنظیم و اعلان‌های روزانهٔ دوزبانه و راست‌چین با سربرگ تاریخ و فهرست بازشوندهٔ مناسبت‌ها.
+- **شمارش معکوس:** ساخت سریع با زمان‌های آمادهٔ یک‌ساعته/روزانه/هفتگی/ماهانه/سالانه یا تاریخ‌وساعت دقیق، ورود و نمایش تاریخ شمسی/میلادی/قمری، انتخاب تم پیش‌فرض از گالری ۱۲تایی در تنظیمات، نمای تمرکز تمام‌صفحه و ویجت زنده و راست‌چین Glance که از تنظیمات به صفحهٔ اصلی سنجاق می‌شود.
 - **تنظیمات:** فارسی/انگلیسی و RTL/LTR، رقم فارسی/لاتین/عربی، فونت متغیر وزیرمتن با وزن متناسب برای عنوان/متن/برچسب، تم روشن/تیره/AMOLED/پویا، اندازهٔ نوشته، کاهش حرکت و ترجیحات تقویم.
 - **ذخیره‌سازی:** Room با Migration نسخهٔ ۱ به ۲ و ۳، نگهداری سنجاق و دستهٔ کار، Proto DataStore، پشتیبان خودکار با WorkManager و وارد/خارج‌کردن پشتیبان محلی از SAF با رمزگذاری اختیاری AES-GCM.
 - **حریم خصوصی:** بدون Firebase، تحلیل‌گر، تبلیغ یا مجوز اینترنت در برنامه. سرویس تشخیص گفتار اندروید ممکن است بر اساس تنظیمات دستگاه از ارائه‌دهندهٔ بیرونی استفاده کند.

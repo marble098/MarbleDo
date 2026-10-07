@@ -40,7 +40,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -75,8 +74,13 @@ import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionRefreshResult
 import com.marbledo.feature.calendar.OccasionRepository
 import com.marbledo.feature.countdown.CountdownFocusDialog
+import com.marbledo.feature.countdown.CountdownWidgetPinResult
+import com.marbledo.feature.countdown.requestCountdownWidgetPin
+import com.marbledo.feature.countdown.updateMarbleCountdownWidgets
 import com.marbledo.feature.tasks.TasksViewModel
+import com.marble098.marbledo.notifications.NotificationChannels
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -117,7 +121,19 @@ fun MarbleDoApp(
     val taskState by taskViewModel.state.collectAsStateWithLifecycle()
     val settingsRepository: SettingsRepository = koinInject()
     val occasionRepository: OccasionRepository = koinInject()
-    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
+    // Keep the not-yet-loaded state distinct from the default profile. Applying the default
+    // language during this gap can race the persisted locale during Activity recreation and
+    // repeatedly flip locales (and recreate the Activity) when the user chose English.
+    val settingsFlow = remember(settingsRepository) {
+        settingsRepository.settings.map<AppSettings, AppSettings?> { it }
+    }
+    val persistedSettings by settingsFlow.collectAsStateWithLifecycle(initialValue = null)
+    val activeAppLanguage = AppCompatDelegate.getApplicationLocales()
+        .toLanguageTags()
+        .substringBefore(',')
+        .substringBefore('-')
+        .takeIf { it == "fa" || it == "en" }
+    val settings = persistedSettings ?: AppSettings(languageTag = activeAppLanguage ?: "fa")
     val occasionState by occasionRepository.state.collectAsStateWithLifecycle()
     val backStack = rememberNavBackStack(HomeDestination)
     val coroutineScope = rememberCoroutineScope()
@@ -215,11 +231,30 @@ fun MarbleDoApp(
 
     val selectedDestination = destinations.firstOrNull { it.key == backStack.lastOrNull() } ?: destinations.first()
 
-    SideEffect {
-        val currentTags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-        if (currentTags.substringBefore(',') != settings.languageTag) {
-            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(settings.languageTag))
-        }
+    LaunchedEffect(persistedSettings?.languageTag) {
+        val languageTag = applicationLanguageToApply(
+            persistedLanguageTag = persistedSettings?.languageTag,
+            currentLocaleTags = AppCompatDelegate.getApplicationLocales().toLanguageTags(),
+        ) ?: return@LaunchedEffect
+        // Locale changes recreate AppCompat activities. This effect is keyed to the persisted
+        // language and waits for DataStore, so a temporary default can never cause a second
+        // recreation in the opposite direction.
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTag))
+    }
+
+    LaunchedEffect(persistedSettings?.languageTag) {
+        if (persistedSettings != null) NotificationChannels.create(context)
+    }
+
+    LaunchedEffect(
+        taskState.allTasks,
+        settings.languageTag,
+        settings.themeMode,
+        settings.numeralMode,
+        settings.countdownCalendar,
+        settings.countdownTheme,
+    ) {
+        updateMarbleCountdownWidgets(context)
     }
 
     androidx.compose.runtime.CompositionLocalProvider(
@@ -263,7 +298,6 @@ fun MarbleDoApp(
                                     settings = settings,
                                     occasionCatalog = occasionState.catalog,
                                     enabledOccasionCategories = enabledOccasionCategories,
-                                    onThemeSelected = { id -> coroutineScope.launch { settingsRepository.update { it.copy(countdownTheme = id) } } },
                                     onOpenFocus = { task -> focusTask = task },
                                     onOpenCalendar = { navigateTo(CalendarDestination) },
                                     onAddCategory = { name ->
@@ -305,6 +339,14 @@ fun MarbleDoApp(
                                     exactAlarmGranted = exactAlarmGranted,
                                     occasionState = occasionState,
                                     onUpdate = { updated -> coroutineScope.launch { settingsRepository.update { updated } } },
+                                    onAddWidget = {
+                                        val message = when (requestCountdownWidgetPin(context)) {
+                                            CountdownWidgetPinResult.REQUESTED -> R.string.settings_widget_pin_requested
+                                            CountdownWidgetPinResult.UNSUPPORTED -> R.string.settings_widget_pin_unsupported
+                                            CountdownWidgetPinResult.FAILED -> R.string.settings_widget_pin_failed
+                                        }
+                                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                    },
                                     onExport = { showExportPasswordDialog = true },
                                     onImport = { openBackup.launch(arrayOf("application/octet-stream", "application/json", "*/*")) },
                                     onRestoreAutomatic = {
@@ -407,7 +449,6 @@ fun MarbleDoApp(
             task = task,
             themeId = task.countdownTheme.takeIf { com.marbledo.domain.model.CountdownTheme.isKnown(it) } ?: settings.countdownTheme,
             calendarDisplay = settings.countdownCalendar,
-            onThemeSelected = { id -> coroutineScope.launch { settingsRepository.update { it.copy(countdownTheme = id) } } },
             onDismiss = { focusTask = null },
         )
     }
