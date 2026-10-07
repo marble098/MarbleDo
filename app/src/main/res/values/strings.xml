@@ -105,7 +105,7 @@
     <string name="dash_create_countdown">Create a countdown</string>
     <string name="dash_gallery">Theme gallery</string>
     <string name="dash_upcoming_countdowns">Upcoming moments</string>
-    <string name="dash_occasions_today">Today's occasions</string>
+    <string name="dash_occasions_today">Today\'s occasions</string>
     <string name="dash_no_occasion">No occasion is recorded for today.</string>
     <string name="dash_search_hint">Search tasks, categories, tags</string>
     <string name="dash_tasks">Tasks</string>
