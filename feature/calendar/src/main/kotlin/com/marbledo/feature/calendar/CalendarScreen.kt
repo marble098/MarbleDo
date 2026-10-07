@@ -272,7 +272,7 @@ fun CalendarScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 14.dp, bottom = 12.dp),
+                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 12.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             items(monthOccasions) { (day, occasion) ->
