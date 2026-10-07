@@ -147,7 +147,7 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.height(8.dp))
                         Text(
                             text = widgetContext.getString(R.string.widget_open_app),
-                            style = TextStyle(color = ColorProvider(palette.accent), fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
+                            style = TextStyle(color = ColorProvider(palette.accent), fontSize = 11.sp, fontWeight = FontWeight.Medium),
                             maxLines = 1,
                         )
                     } else {
