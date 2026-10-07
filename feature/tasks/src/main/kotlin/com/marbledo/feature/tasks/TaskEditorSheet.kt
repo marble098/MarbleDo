@@ -127,6 +127,9 @@ fun TaskEditorSheet(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            val todayLabel = stringResource(R.string.tasks_today)
+            val tomorrowLabel = stringResource(R.string.tasks_tomorrow)
+            val nextWeekLabel = stringResource(R.string.tasks_date_next_week)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
                 item {
                     FilterChip(
@@ -135,9 +138,9 @@ fun TaskEditorSheet(
                         label = { Text(stringResource(R.string.tasks_date_none)) },
                     )
                 }
-                item { FilterChip(selected = false, onClick = { clearDue = false; dueText = stringResource(R.string.tasks_today) }, label = { Text(stringResource(R.string.tasks_today)) }) }
-                item { FilterChip(selected = false, onClick = { clearDue = false; dueText = stringResource(R.string.tasks_tomorrow) }, label = { Text(stringResource(R.string.tasks_tomorrow)) }) }
-                item { FilterChip(selected = false, onClick = { clearDue = false; dueText = stringResource(R.string.tasks_date_next_week) }, label = { Text(stringResource(R.string.tasks_date_next_week)) }) }
+                item { FilterChip(selected = false, onClick = { clearDue = false; dueText = todayLabel }, label = { Text(todayLabel) }) }
+                item { FilterChip(selected = false, onClick = { clearDue = false; dueText = tomorrowLabel }, label = { Text(tomorrowLabel) }) }
+                item { FilterChip(selected = false, onClick = { clearDue = false; dueText = nextWeekLabel }, label = { Text(nextWeekLabel) }) }
             }
 
             OutlinedTextField(
