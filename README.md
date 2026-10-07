@@ -77,7 +77,7 @@ Never commit the keystore or passwords. The `.gitignore` excludes common keystor
 
 - `.github/workflows/build.yml` builds, lints, and tests on pushes and pull requests.
 - `.github/workflows/weekly-dependency-update.yml` runs weekly or manually, refreshes catalog versions from official metadata, validates the result, and opens/updates a pull request. `stable_only` is off by default.
-- `.github/workflows/release.yml` runs for `v*` tags or manually for an existing semantic-version tag, derives the app version name from that tag, builds signed APK/AAB files, calculates SHA-256 checksums, and publishes a GitHub Release. A manual dispatch verifies the requested tag exists before anything else runs and fails fast with an actionable error if it does not — create and push the tag first (`git tag v1.2.3 <commit-sha> && git push origin v1.2.3`).
+- `.github/workflows/release.yml` runs for pushed `v*` tags or manually. For a manual run, choose the source ref and enter a version such as `1.2.3` or `v1.2.3`; the workflow normalizes it to a `v`-prefixed tag, creates that tag at the selected commit if it is missing, and never moves an existing tag. It then builds signed APK/AAB files, calculates SHA-256 checksums, and publishes a GitHub Release.
 
 For release automation, configure these repository Actions secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The Base64 secret must contain the complete keystore bytes. A release intentionally fails when signing secrets are missing.
 
@@ -177,7 +177,7 @@ keystore یا رمزها را commit نکنید؛ `.gitignore` فایل‌های
 
 - `build.yml` روی push و pull request، همهٔ ماژول‌ها را build، lint و test می‌کند.
 - `weekly-dependency-update.yml` هفتگی یا دستی نسخه‌ها را از metadata رسمی به‌روز می‌کند، Build/Test را می‌گذراند و pull request می‌سازد. ورودی `stable_only` پیش‌فرض خاموش است.
-- `release.yml` با تگ نسخهٔ معنایی `v*` یا اجرای دستی برای تگ موجود، نام نسخهٔ برنامه را از تگ می‌گیرد، APK/AAB امضاشده و checksum می‌سازد و GitHub Release منتشر می‌کند.
+- `release.yml` با push تگ `v*` یا اجرای دستی فعال می‌شود. در اجرای دستی، ref مبدأ را انتخاب و نسخه‌ای مثل `1.2.3` یا `v1.2.3` وارد کنید؛ workflow آن را به تگ `v`دار تبدیل می‌کند و اگر تگ وجود نداشته باشد، آن را روی commit انتخاب‌شده می‌سازد (تگ موجود را جابه‌جا نمی‌کند). سپس APK/AAB امضاشده و checksum می‌سازد و GitHub Release منتشر می‌کند.
 
 برای انتشار خودکار این Secrets را در GitHub Actions ثبت کنید: `ANDROID_KEYSTORE_BASE64`، `ANDROID_KEYSTORE_PASSWORD`، `ANDROID_KEY_ALIAS` و `ANDROID_KEY_PASSWORD`. secret اول باید کل فایل keystore را به Base64 داشته باشد. بدون این secrets انتشار عمداً fail می‌شود.
 
