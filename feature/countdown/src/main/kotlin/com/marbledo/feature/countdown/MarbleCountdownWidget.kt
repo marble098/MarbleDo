@@ -38,33 +38,76 @@ import com.marbledo.core.data.repository.RoomTaskRepository
 import com.marbledo.core.data.settings.SettingsRepository
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CountdownTheme
+import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.calendar.OccasionCategory
+import com.marbledo.feature.calendar.OccasionIndex
+import com.marbledo.feature.calendar.OccasionRepository
+import com.marbledo.feature.calendar.PersianDateUtils
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
-/** A resizable, localized Glance card for the next active countdown. */
+/** A resizable daily-planner widget: local dates, today’s occasions, next task and countdown. */
 class MarbleCountdownWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val settings = withContext(Dispatchers.IO) {
             SettingsRepository(context).settings.first()
         }
         val widgetContext = context.forLanguage(settings.languageTag)
-        val task = withContext(Dispatchers.IO) {
+        val tasks = withContext(Dispatchers.IO) {
             val database = MarbleDatabase.create(context)
             try {
-                RoomTaskRepository(database.taskDao())
-                    .snapshot()
-                    .asSequence()
-                    .filter { !it.isCompleted && !it.isArchived && it.countdownEnabled && it.dueAtEpochMillis != null }
-                    .minByOrNull { it.dueAtEpochMillis ?: Long.MAX_VALUE }
+                RoomTaskRepository(database.taskDao()).snapshot()
+                    .filter { !it.isCompleted && !it.isArchived }
             } finally {
                 database.close()
             }
         }
-
-        val dueAt = task?.dueAtEpochMillis
+        val nowMillis = System.currentTimeMillis()
+        val zone = java.time.ZoneId.systemDefault()
+        val today = PersianDateUtils.today(zone, nowMillis)
+        val catalog = withContext(Dispatchers.IO) {
+            OccasionRepository(context).also { it.load() }.state.value.catalog
+        }
+        val enabledCategories = buildSet {
+            if (settings.officialEventsEnabled) add(OccasionCategory.OFFICIAL)
+            if (settings.nationalEventsEnabled) add(OccasionCategory.NATIONAL)
+            if (settings.religiousEventsEnabled) add(OccasionCategory.RELIGIOUS)
+            if (settings.personalEventsEnabled) add(OccasionCategory.PERSONAL)
+        }
+        val occasionIndex = OccasionIndex.build(
+            catalog = catalog,
+            jalaliYears = listOf(today.year),
+            lunarOffsetDays = settings.lunarOffsetDays,
+            enabledCategories = enabledCategories,
+            zone = zone,
+        )
+        val todayOccasions = occasionIndex.on(today.year, today.month, today.day)
+        val visibleOccasions = todayOccasions.take(2).map { it.title(settings.languageTag) }
+        val remainingOccasions = todayOccasions.size - visibleOccasions.size
+        val occasionSummary = when {
+            visibleOccasions.isEmpty() -> widgetContext.getString(R.string.widget_no_occasions)
+            remainingOccasions > 0 -> widgetContext.getString(
+                R.string.widget_more_occasions,
+                TextNormalizer.formatDigits(remainingOccasions.toString(), settings.numeralMode),
+            ).let { visibleOccasions.joinToString(" · ") + " · " + it }
+            else -> visibleOccasions.joinToString(" · ")
+        }
+        val dateSummary = PersianDateUtils.tripleDate(
+            epochMillis = nowMillis,
+            languageTag = settings.languageTag,
+            numeralMode = settings.numeralMode,
+            lunarOffsetDays = settings.lunarOffsetDays,
+            locale = widgetContext.resources.configuration.locales[0],
+            zone = zone,
+        )
+        val nextTask = nextWidgetTask(tasks, nowMillis)
+        val countdownTask = tasks.asSequence()
+            .filter { it.countdownEnabled && it.dueAtEpochMillis != null }
+            .minByOrNull { it.dueAtEpochMillis ?: Long.MAX_VALUE }
+        val dueAt = countdownTask?.dueAtEpochMillis
         val targetDate = dueAt?.let {
             CountdownDateUtils.format(
                 epochMillis = it,
@@ -73,7 +116,7 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                 numeralMode = settings.numeralMode,
             )
         }
-        val remainingMillis = dueAt?.let { (it - System.currentTimeMillis()).coerceAtLeast(0L) }
+        val remainingMillis = dueAt?.let { (it - nowMillis).coerceAtLeast(0L) }
         val remainingSeconds = remainingMillis?.div(1_000L)
         val days = remainingSeconds?.div(86_400L)
         val hours = remainingSeconds?.div(3_600L)?.rem(24L)?.toInt()
@@ -81,24 +124,24 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         val dayValue = days?.let { TextNormalizer.formatDigits(it.toString(), settings.numeralMode) }
         val hourValue = hours?.let { TextNormalizer.formatDigits(it.toString().padStart(2, '0'), settings.numeralMode) }
         val minuteValue = minutes?.let { TextNormalizer.formatDigits(it.toString().padStart(2, '0'), settings.numeralMode) }
-        val themeId = task?.countdownTheme?.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme
+        val themeId = countdownTask?.countdownTheme?.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme
         val palette = widgetPalette(widgetContext, settings.themeMode, themeId)
 
-        // The explicit component keeps the widget independent of app navigation internals.
+        // A tap anywhere on the glance card opens the calendar/planner in the app.
         val launchComponent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.component
         val openApp = launchComponent?.let { component -> actionStartActivity(component) }
         val baseModifier = GlanceModifier
             .fillMaxSize()
             .background(ColorProvider(palette.background))
-            .cornerRadius(26.dp)
-            .padding(15.dp)
+            .cornerRadius(28.dp)
+            .padding(horizontal = 12.dp, vertical = 10.dp)
         val rootModifier = if (openApp != null) baseModifier.clickable(openApp) else baseModifier
 
         provideContent {
             GlanceTheme {
                 Column(
                     modifier = rootModifier,
-                    verticalAlignment = Alignment.Vertical.CenterVertically,
+                    verticalAlignment = Alignment.Vertical.Top,
                 ) {
                     Row(
                         modifier = GlanceModifier.fillMaxWidth(),
@@ -106,9 +149,9 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                     ) {
                         Box(
                             modifier = GlanceModifier
-                                .size(36.dp)
+                                .size(38.dp)
                                 .background(ColorProvider(palette.accentContainer))
-                                .cornerRadius(12.dp),
+                                .cornerRadius(14.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -119,78 +162,87 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.width(10.dp))
                         Column(modifier = GlanceModifier.defaultWeight()) {
                             Text(
-                                text = widgetContext.getString(R.string.countdown_widget_name),
-                                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 13.sp, fontWeight = FontWeight.Bold),
+                                text = widgetContext.getString(R.string.widget_today_label),
+                                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 12.sp, fontWeight = FontWeight.Bold),
                                 maxLines = 1,
                             )
                             Text(
-                                text = widgetContext.getString(R.string.widget_countdown_label),
-                                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Medium),
-                                maxLines = 1,
+                                text = dateSummary,
+                                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 10.sp),
+                                maxLines = 2,
                             )
                         }
                     }
 
-                    Spacer(GlanceModifier.height(12.dp))
-                    if (task == null) {
-                        Text(
-                            text = widgetContext.getString(R.string.widget_empty_title),
-                            style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 17.sp, fontWeight = FontWeight.Bold),
-                            maxLines = 2,
-                        )
-                        Spacer(GlanceModifier.height(4.dp))
-                        Text(
-                            text = widgetContext.getString(R.string.widget_empty),
-                            style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 12.sp),
-                            maxLines = 2,
-                        )
-                        Spacer(GlanceModifier.height(8.dp))
-                        Text(
-                            text = widgetContext.getString(R.string.widget_open_app),
-                            style = TextStyle(color = ColorProvider(palette.accent), fontSize = 11.sp, fontWeight = FontWeight.Medium),
-                            maxLines = 1,
-                        )
-                    } else {
-                        Text(
-                            text = task.title,
-                            style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 17.sp, fontWeight = FontWeight.Bold),
-                            maxLines = 2,
-                        )
-                        Spacer(GlanceModifier.height(10.dp))
-                        Row(
+                    Spacer(GlanceModifier.height(10.dp))
+                    GlanceInfoCard(
+                        title = widgetContext.getString(R.string.widget_occasions_label),
+                        body = occasionSummary,
+                        palette = palette,
+                    )
+                    Spacer(GlanceModifier.height(7.dp))
+                    GlanceInfoCard(
+                        title = widgetContext.getString(R.string.widget_next_task_label),
+                        body = nextTask?.title ?: widgetContext.getString(R.string.widget_no_next_task),
+                        palette = palette,
+                    )
+                    Spacer(GlanceModifier.height(9.dp))
+
+                    if (countdownTask == null) {
+                        Column(
                             modifier = GlanceModifier
                                 .fillMaxWidth()
-                                .background(ColorProvider(palette.surface))
+                                .background(ColorProvider(palette.accentContainer))
                                 .cornerRadius(18.dp)
-                                .padding(horizontal = 8.dp, vertical = 9.dp),
-                            verticalAlignment = Alignment.Vertical.CenterVertically,
+                                .padding(11.dp),
                         ) {
-                            WidgetTimeUnit(
-                                value = dayValue.orEmpty(),
-                                label = widgetContext.getString(R.string.widget_unit_days),
-                                palette = palette,
-                                modifier = GlanceModifier.defaultWeight(),
+                            Text(
+                                text = widgetContext.getString(R.string.widget_countdown_label),
+                                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                maxLines = 1,
                             )
-                            Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 18.sp))
-                            WidgetTimeUnit(
-                                value = hourValue.orEmpty(),
-                                label = widgetContext.getString(R.string.widget_unit_hours),
-                                palette = palette,
-                                modifier = GlanceModifier.defaultWeight(),
-                            )
-                            Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 18.sp))
-                            WidgetTimeUnit(
-                                value = minuteValue.orEmpty(),
-                                label = widgetContext.getString(R.string.widget_unit_minutes),
-                                palette = palette,
-                                modifier = GlanceModifier.defaultWeight(),
+                            Spacer(GlanceModifier.height(3.dp))
+                            Text(
+                                text = widgetContext.getString(R.string.widget_no_countdown),
+                                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 11.sp),
+                                maxLines = 2,
                             )
                         }
-                        Spacer(GlanceModifier.height(8.dp))
-                        Row(
-                            modifier = GlanceModifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.Vertical.CenterVertically,
+                    } else {
+                        Column(
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .background(ColorProvider(palette.accentContainer))
+                                .cornerRadius(18.dp)
+                                .padding(11.dp),
                         ) {
+                            Text(
+                                text = widgetContext.getString(R.string.widget_countdown_label),
+                                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                            )
+                            Spacer(GlanceModifier.height(3.dp))
+                            Text(
+                                text = countdownTask.title,
+                                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                            )
+                            Spacer(GlanceModifier.height(7.dp))
+                            Row(
+                                modifier = GlanceModifier
+                                    .fillMaxWidth()
+                                    .background(ColorProvider(palette.surface))
+                                    .cornerRadius(14.dp)
+                                    .padding(horizontal = 7.dp, vertical = 7.dp),
+                                verticalAlignment = Alignment.Vertical.CenterVertically,
+                            ) {
+                                WidgetTimeUnit(dayValue.orEmpty(), widgetContext.getString(R.string.widget_unit_days), palette, GlanceModifier.defaultWeight())
+                                Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp))
+                                WidgetTimeUnit(hourValue.orEmpty(), widgetContext.getString(R.string.widget_unit_hours), palette, GlanceModifier.defaultWeight())
+                                Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp))
+                                WidgetTimeUnit(minuteValue.orEmpty(), widgetContext.getString(R.string.widget_unit_minutes), palette, GlanceModifier.defaultWeight())
+                            }
+                            Spacer(GlanceModifier.height(5.dp))
                             val targetText = if (remainingMillis == 0L) {
                                 widgetContext.getString(R.string.widget_due)
                             } else {
@@ -198,19 +250,36 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                             }
                             Text(
                                 text = targetText,
-                                modifier = GlanceModifier.defaultWeight(),
-                                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 11.sp),
-                                maxLines = 1,
-                            )
-                            Text(
-                                text = widgetContext.getString(R.string.widget_open_app),
-                                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Medium),
+                                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 10.sp),
                                 maxLines = 1,
                             )
                         }
                     }
                 }
             }
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun GlanceInfoCard(title: String, body: String, palette: WidgetPalette) {
+        Column(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .background(ColorProvider(palette.surface))
+                .cornerRadius(17.dp)
+                .padding(horizontal = 11.dp, vertical = 6.dp),
+        ) {
+            Text(
+                text = title,
+                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                maxLines = 1,
+            )
+            Spacer(GlanceModifier.height(2.dp))
+            Text(
+                text = body,
+                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 12.sp, fontWeight = FontWeight.Medium),
+                maxLines = 2,
+            )
         }
     }
 
@@ -227,16 +296,24 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         ) {
             Text(
                 text = value,
-                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 21.sp, fontWeight = FontWeight.Bold),
+                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 19.sp, fontWeight = FontWeight.Bold),
                 maxLines = 1,
             )
             Text(
                 text = label,
-                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 9.sp, fontWeight = FontWeight.Medium),
+                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 8.sp, fontWeight = FontWeight.Medium),
                 maxLines = 1,
             )
         }
     }
+}
+
+private fun nextWidgetTask(tasks: List<Task>, nowMillis: Long): Task? {
+    val dated = tasks.filter { it.dueAtEpochMillis != null }
+    return dated.asSequence()
+        .filter { (it.dueAtEpochMillis ?: Long.MIN_VALUE) >= nowMillis }
+        .minByOrNull { it.dueAtEpochMillis ?: Long.MAX_VALUE }
+        ?: dated.maxByOrNull { it.dueAtEpochMillis ?: Long.MIN_VALUE }
 }
 
 class MarbleCountdownWidgetReceiver : GlanceAppWidgetReceiver() {

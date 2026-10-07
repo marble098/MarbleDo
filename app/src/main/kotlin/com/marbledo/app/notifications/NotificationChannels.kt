@@ -12,6 +12,7 @@ object NotificationChannels {
     const val CALENDAR = "marbledo_calendar"
     const val BACKUP = "marbledo_backup"
     const val DAILY = "marbledo_daily_summary"
+    const val PERSISTENT_CALENDAR = "marbledo_persistent_calendar"
 
     fun create(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -33,6 +34,10 @@ object NotificationChannels {
             },
             NotificationChannel(DAILY, context.getString(R.string.channel_daily), NotificationManager.IMPORTANCE_DEFAULT).apply {
                 description = context.getString(R.string.channel_daily_description)
+            },
+            NotificationChannel(PERSISTENT_CALENDAR, context.getString(R.string.channel_persistent_calendar), NotificationManager.IMPORTANCE_LOW).apply {
+                description = context.getString(R.string.channel_persistent_calendar_description)
+                setShowBadge(false)
             },
         )
         manager.createNotificationChannels(channels)

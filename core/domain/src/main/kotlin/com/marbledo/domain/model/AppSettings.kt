@@ -30,6 +30,8 @@ data class AppSettings(
     val lunarOffsetDays: Int = 0,
     /** When true, MarbleDo refreshes the occasion catalog from the internet in the background. */
     val occasionAutoUpdateEnabled: Boolean = true,
+    /** Keeps a quiet, user-requested calendar/date summary notification visible. */
+    val persistentDateNotificationEnabled: Boolean = false,
 ) {
     init {
         require(languageTag in setOf("fa", "en"))

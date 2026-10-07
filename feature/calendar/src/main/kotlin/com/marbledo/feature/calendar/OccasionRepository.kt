@@ -1,19 +1,26 @@
 package com.marbledo.feature.calendar
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 
+/** The local asset and cache are usable even when every remote mirror is unavailable. */
 enum class OccasionSource { BUNDLED, CACHED, NETWORK }
 
-enum class OccasionRefreshResult { UPDATED, UNCHANGED, SKIPPED, FAILED }
+enum class OccasionRefreshResult { UPDATED, UNCHANGED, SKIPPED, OFFLINE, FAILED }
 
 data class OccasionState(
     val catalog: OccasionCatalog = OccasionCatalog.EMPTY,
@@ -22,95 +29,126 @@ data class OccasionState(
     val source: OccasionSource = OccasionSource.BUNDLED,
     val lastUpdatedEpochMillis: Long? = null,
     val lastError: Boolean = false,
+    val lastRefreshWasOffline: Boolean = false,
 ) {
     val occasionCount: Int get() = catalog.occasions.size
-    val isFromInternet: Boolean get() = source != OccasionSource.BUNDLED
+    val isFromInternet: Boolean get() = source == OccasionSource.NETWORK
 }
 
 /**
- * Keeps the occasion catalog in sync: the bundled asset is the offline baseline, the cached copy is
- * what the last successful download produced, and the remote file is this repository's asset.
+ * Keeps the occasion catalog available offline and refreshes it from several mirrors of the
+ * versioned catalog in this repository. A bad response never replaces a good cache or bundled copy.
  */
 class OccasionRepository(private val context: Context) {
     private val _state = MutableStateFlow(OccasionState())
     val state: StateFlow<OccasionState> = _state.asStateFlow()
 
+    private val loadMutex = Mutex()
+    private val refreshMutex = Mutex()
     @Volatile private var loaded = false
-    @Volatile private var refreshing = false
 
     suspend fun load() {
-        if (loaded) return
-        loaded = true
-        val bundled = readAsset()
-        val cached = readCache()
-        val catalog = cached?.first ?: bundled ?: OccasionCatalog.EMPTY
-        val source = when {
-            cached != null -> OccasionSource.CACHED
-            bundled != null -> OccasionSource.BUNDLED
-            else -> OccasionSource.BUNDLED
+        loadMutex.lock()
+        try {
+            if (loaded) return
+            val bundled = readAsset()
+            val cached = readCache()
+            val catalog = cached?.first ?: bundled ?: OccasionCatalog.EMPTY
+            _state.value = _state.value.copy(
+                catalog = catalog,
+                isLoaded = true,
+                source = if (cached != null) OccasionSource.CACHED else OccasionSource.BUNDLED,
+                lastUpdatedEpochMillis = cached?.second,
+                lastError = false,
+                lastRefreshWasOffline = false,
+            )
+            // Mark loaded only after both sources were examined. If an unexpected failure escapes,
+            // the next caller can retry instead of remaining stuck with an empty catalog.
+            loaded = true
+        } finally {
+            loadMutex.unlock()
         }
-        _state.value = _state.value.copy(
-            catalog = catalog,
-            isLoaded = true,
-            source = source,
-            lastUpdatedEpochMillis = cached?.second,
-            lastError = false,
-        )
     }
 
-    /** Fetches the catalog from the internet. Never throws: the previous catalog always survives. */
+    /** Fetches and validates mirrors in order. Never removes the currently visible catalog. */
     suspend fun refresh(): OccasionRefreshResult {
-        if (refreshing) return OccasionRefreshResult.SKIPPED
-        refreshing = true
-        _state.value = _state.value.copy(isRefreshing = true, lastError = false)
-        return try {
-            var outcome = OccasionRefreshResult.FAILED
-            for (url in CATALOG_URLS) {
-                val body = download(url)
-                val parsed = body?.let(OccasionCatalog::parse)
-                if (parsed == null) continue
-                val current = _state.value.catalog
-                if (current.occasions.isNotEmpty() && parsed.occasions.size == current.occasions.size && parsed.dataVersion == current.dataVersion) {
-                    outcome = OccasionRefreshResult.UNCHANGED
-                    writeCache(body)
-                    _state.value = _state.value.copy(
-                        isRefreshing = false,
-                        source = OccasionSource.NETWORK,
-                        lastUpdatedEpochMillis = cacheFile().lastModified(),
-                        lastError = false,
-                    )
-                    break
-                }
-                writeCache(body)
-                _state.value = OccasionState(
+        load()
+        if (!refreshMutex.tryLock()) return OccasionRefreshResult.SKIPPED
+        try {
+            if (!hasInternetConnection()) {
+                _state.value = _state.value.copy(
+                    isRefreshing = false,
+                    lastError = false,
+                    lastRefreshWasOffline = true,
+                )
+                return OccasionRefreshResult.OFFLINE
+            }
+
+            _state.value = _state.value.copy(
+                isRefreshing = true,
+                lastError = false,
+                lastRefreshWasOffline = false,
+            )
+            for (source in CATALOG_SOURCES) {
+                val body = download(source) ?: continue
+                val parsed = OccasionCatalog.parse(body) ?: continue
+                // Reject short, partial, or accidentally returned error documents before they can
+                // replace the much richer offline catalog.
+                if (parsed.occasions.size !in MIN_REMOTE_OCCASIONS..MAX_REMOTE_OCCASIONS) continue
+
+                val changed = parsed.occasions != _state.value.catalog.occasions
+                val downloadedAt = System.currentTimeMillis()
+                val cachedAt = writeCache(body) ?: downloadedAt
+                _state.value = _state.value.copy(
                     catalog = parsed,
                     isLoaded = true,
                     isRefreshing = false,
                     source = OccasionSource.NETWORK,
-                    lastUpdatedEpochMillis = cacheFile().lastModified(),
+                    lastUpdatedEpochMillis = cachedAt,
                     lastError = false,
+                    lastRefreshWasOffline = false,
                 )
-                outcome = OccasionRefreshResult.UPDATED
-                break
+                loaded = true
+                return if (changed) OccasionRefreshResult.UPDATED else OccasionRefreshResult.UNCHANGED
             }
-            if (outcome == OccasionRefreshResult.FAILED) {
-                _state.value = _state.value.copy(isRefreshing = false, lastError = true)
-            }
-            outcome
+
+            _state.value = _state.value.copy(
+                isRefreshing = false,
+                lastError = true,
+                lastRefreshWasOffline = false,
+            )
+            return OccasionRefreshResult.FAILED
+        } catch (cancelled: CancellationException) {
+            _state.value = _state.value.copy(isRefreshing = false)
+            throw cancelled
         } catch (_: Exception) {
-            _state.value = _state.value.copy(isRefreshing = false, lastError = true)
-            OccasionRefreshResult.FAILED
+            _state.value = _state.value.copy(
+                isRefreshing = false,
+                lastError = true,
+                lastRefreshWasOffline = false,
+            )
+            return OccasionRefreshResult.FAILED
         } finally {
-            refreshing = false
+            refreshMutex.unlock()
         }
     }
 
-    /** Background-friendly refresh that skips the download while the cached copy is still fresh. */
+    /** Background refresh which avoids a download while the last successful copy is still fresh. */
     suspend fun refreshIfStale(maxAgeMillis: Long = DEFAULT_MAX_AGE_MILLIS): OccasionRefreshResult {
         load()
         val lastUpdated = _state.value.lastUpdatedEpochMillis
-        if (lastUpdated != null && System.currentTimeMillis() - lastUpdated < maxAgeMillis) return OccasionRefreshResult.SKIPPED
+        val now = System.currentTimeMillis()
+        if (lastUpdated != null && now >= lastUpdated && now - lastUpdated < maxAgeMillis) {
+            return OccasionRefreshResult.SKIPPED
+        }
         return refresh()
+    }
+
+    private fun hasInternetConnection(): Boolean {
+        val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return true
+        val network = connectivity.activeNetwork ?: return false
+        val capabilities = connectivity.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     private suspend fun readAsset(): OccasionCatalog? = withContext(Dispatchers.IO) {
@@ -126,36 +164,54 @@ class OccasionRepository(private val context: Context) {
         OccasionCatalog.parse(text)?.let { it to file.lastModified() }
     }
 
-    private suspend fun writeCache(body: String) = withContext(Dispatchers.IO) {
+    /** Writes to a temporary file and atomically replaces the previous cache when supported. */
+    private suspend fun writeCache(body: String): Long? = withContext(Dispatchers.IO) {
         runCatching {
-            val file = cacheFile()
-            file.parentFile?.mkdirs()
-            file.writeText(body)
-        }
+            val target = cacheFile()
+            val directory = target.parentFile ?: error("Cache directory is unavailable")
+            if (!directory.exists() && !directory.mkdirs()) error("Could not create cache directory")
+            val temporary = File(directory, "$CATALOG_FILE_NAME.tmp")
+            temporary.writeText(body)
+            try {
+                Files.move(
+                    temporary.toPath(),
+                    target.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (_: Exception) {
+                Files.move(temporary.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+            val timestamp = System.currentTimeMillis()
+            target.setLastModified(timestamp)
+            timestamp
+        }.getOrNull()
     }
 
     private fun cacheFile(): File = File(File(context.filesDir, CACHE_DIRECTORY), CATALOG_FILE_NAME)
 
-    private suspend fun download(url: String): String? = withContext(Dispatchers.IO) {
-        runCatching {
-            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+    private suspend fun download(source: CatalogSource): String? = withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
+        try {
+            connection = (URL(source.url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = CONNECT_TIMEOUT_MILLIS
                 readTimeout = READ_TIMEOUT_MILLIS
                 instanceFollowRedirects = true
-                setRequestProperty("Accept", "application/json")
-                setRequestProperty("User-Agent", "MarbleDo-Android")
+                useCaches = false
+                setRequestProperty("Accept", source.accept)
+                setRequestProperty("User-Agent", USER_AGENT)
             }
-            try {
-                if (connection.responseCode !in 200..299) throw IOException("Unexpected status ${connection.responseCode}")
-                connection.inputStream.bufferedReader().use { reader -> readBounded(reader) }
-            } finally {
-                connection.disconnect()
-            }
-        }.getOrNull()
+            if (connection.responseCode !in 200..299) return@withContext null
+            connection.inputStream.bufferedReader().use { reader -> readBounded(reader) }
+        } catch (_: Exception) {
+            null
+        } finally {
+            connection?.disconnect()
+        }
     }
 
-    /** Reads at most [MAX_CATALOG_BYTES] characters so a hostile or broken response cannot exhaust memory. */
+    /** Reads at most [MAX_CATALOG_CHARS] characters from any source. */
     private fun readBounded(reader: java.io.Reader): String {
         val builder = StringBuilder()
         val buffer = CharArray(8192)
@@ -163,24 +219,40 @@ class OccasionRepository(private val context: Context) {
             val count = reader.read(buffer)
             if (count < 0) break
             builder.append(buffer, 0, count)
-            if (builder.length > MAX_CATALOG_BYTES) throw IOException("Catalog response is too large")
+            if (builder.length > MAX_CATALOG_CHARS) throw IOException("Catalog response is too large")
         }
         return builder.toString()
     }
+
+    private data class CatalogSource(val url: String, val accept: String = "application/json")
 
     companion object {
         const val CACHE_DIRECTORY = "occasions"
         const val CATALOG_FILE_NAME = "occasions-catalog.json"
         private const val CATALOG_ASSET = "calendar/holidays-fa.json"
-        private const val CONNECT_TIMEOUT_MILLIS = 8_000
-        private const val READ_TIMEOUT_MILLIS = 12_000
-        private const val MAX_CATALOG_BYTES = 1_500_000
+        private const val CONNECT_TIMEOUT_MILLIS = 3_000
+        private const val READ_TIMEOUT_MILLIS = 4_000
+        private const val MAX_CATALOG_CHARS = 1_500_000
+        private const val MIN_REMOTE_OCCASIONS = 20
+        private const val MAX_REMOTE_OCCASIONS = 2_000
         private const val DEFAULT_MAX_AGE_MILLIS = 20L * 60L * 60L * 1000L
+        private const val USER_AGENT = "MarbleDo-Android"
 
-        /** The primary source is the project's checked-in catalog; the CDN copy is the fallback. */
-        val CATALOG_URLS = listOf(
-            "https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/holidays-fa.json",
-            "https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/holidays-fa.json",
+        /**
+         * Independent delivery paths for the same checked-in catalog: GitHub raw, two jsDelivr
+         * edges and the GitHub Contents API raw media type. A mirror outage does not block the rest.
+         */
+        private val CATALOG_SOURCES = listOf(
+            CatalogSource("https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/holidays-fa.json"),
+            CatalogSource("https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/holidays-fa.json"),
+            CatalogSource("https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/holidays-fa.json"),
+            CatalogSource(
+                url = "https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/holidays-fa.json?ref=main",
+                accept = "application/vnd.github.raw+json",
+            ),
         )
+
+        /** Kept visible for diagnostics and tests without exposing the HTTP connection details. */
+        val CATALOG_URLS: List<String> = CATALOG_SOURCES.map(CatalogSource::url)
     }
 }

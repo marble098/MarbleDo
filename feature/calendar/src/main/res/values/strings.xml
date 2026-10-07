@@ -35,4 +35,10 @@
     <string name="calendar_month_7">Mehr</string><string name="calendar_month_8">Aban</string>
     <string name="calendar_month_9">Azar</string><string name="calendar_month_10">Dey</string>
     <string name="calendar_month_11">Bahman</string><string name="calendar_month_12">Esfand</string>
+    <string name="calendar_sync_offline">Offline; your saved occasions are still shown.</string>
+    <string name="calendar_all_year_occasions">All occasions in %1$d</string>
+    <string name="calendar_search_occasions">Search occasions</string>
+    <string name="calendar_no_matching_occasions">No occasions match this search.</string>
+    <string name="calendar_year_occasions_count">%1$d occasions this year</string>
+    <string name="calendar_no_year_occasions">No occasions are recorded for this year.</string>
 </resources>

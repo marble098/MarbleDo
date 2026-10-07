@@ -48,8 +48,8 @@
     <string name="countdown_gallery_hint">Each theme has its own layout, palette and motion. Your choice becomes the default for new countdowns; existing tasks keep their own style.</string>
     <string name="countdown_theme_active">Active</string>
 
-    <string name="countdown_widget_name">MarbleDo countdown</string>
-    <string name="countdown_widget_description">A live, resizable countdown to your next important moment</string>
+    <string name="countdown_widget_name">MarbleDo daily planner</string>
+    <string name="countdown_widget_description">A resizable daily view of dates, occasions, your next task and countdown</string>
     <string name="countdown_add">New countdown</string>
     <string name="countdown_add_first">Create your first countdown</string>
     <string name="countdown_calendar_display">Calendar for display and date entry</string>

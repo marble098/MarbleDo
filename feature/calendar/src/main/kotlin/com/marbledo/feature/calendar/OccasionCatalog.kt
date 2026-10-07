@@ -64,7 +64,9 @@ data class OccasionCatalog(
                 addAll(readEntries(root.optJSONArray("lunar"), OccasionCalendar.LUNAR))
                 addAll(readEntries(root.optJSONArray("gregorian"), OccasionCalendar.GREGORIAN))
             }.distinctBy { it.id }
-            if (occasions.isEmpty()) null else OccasionCatalog(occasions, root.optString("updatedAt").takeIf { it.isNotBlank() })
+            val version = root.optString("dataVersion").takeIf { it.isNotBlank() }
+                ?: root.optString("updatedAt").takeIf { it.isNotBlank() }
+            if (occasions.isEmpty()) null else OccasionCatalog(occasions, version)
         }.getOrNull()
 
         private fun readEntries(array: JSONArray?, calendar: OccasionCalendar): List<Occasion> {
@@ -97,6 +99,8 @@ data class OccasionCatalog(
  * Occasions resolved to concrete Jalali days for a set of Jalali years. Lunar occasions are
  * converted with Android's ICU Islamic calendar, so no per-year data download is required.
  */
+data class DatedOccasion(val month: Int, val day: Int, val occasion: Occasion)
+
 class OccasionIndex private constructor(
     private val byYear: Map<Int, Map<Int, List<Occasion>>>,
 ) {
@@ -106,10 +110,14 @@ class OccasionIndex private constructor(
 
     fun isHoliday(jalaliYear: Int, month: Int, day: Int): Boolean = on(jalaliYear, month, day).any(Occasion::isHoliday)
 
-    fun forMonth(jalaliYear: Int, month: Int): List<Pair<Int, Occasion>> = byYear[jalaliYear].orEmpty()
-        .filterKeys { it / 100 == month }
-        .flatMap { (key, value) -> value.map { (key % 100) to it } }
-        .sortedWith(compareBy({ it.first }, { it.second.titleFa }))
+    /** Every enabled occasion resolved to its actual Jalali day for easy whole-year browsing. */
+    fun forYear(jalaliYear: Int): List<DatedOccasion> = byYear[jalaliYear].orEmpty()
+        .flatMap { (key, occasions) -> occasions.map { DatedOccasion(key / 100, key % 100, it) } }
+        .sortedWith(compareBy({ it.month }, { it.day }, { it.occasion.titleFa }))
+
+    fun forMonth(jalaliYear: Int, month: Int): List<Pair<Int, Occasion>> = forYear(jalaliYear)
+        .filter { it.month == month }
+        .map { it.day to it.occasion }
 
     companion object {
         val EMPTY = OccasionIndex(emptyMap())

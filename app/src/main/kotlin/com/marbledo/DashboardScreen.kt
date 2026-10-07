@@ -5,10 +5,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,12 +23,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Search
@@ -48,12 +46,10 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -110,9 +106,10 @@ private enum class TaskGroup(val labelRes: Int) {
 
 private data class GroupedTasks(val group: TaskGroup, val tasks: List<Task>)
 
+private const val MAX_DASHBOARD_OCCASIONS = 3
+
 /**
- * The merged home: a live countdown hero, today's occasions and the task groups, all in one
- * scrolling surface with a floating create button that fades away while the list moves.
+ * A glanceable daily planner: date and workload first, then occasions, a countdown, and collapsible task groups.
  */
 @Composable
 fun DashboardScreen(
@@ -131,13 +128,13 @@ fun DashboardScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val numeralMode = LocalNumeralMode.current
     val zone = remember { ZoneId.systemDefault() }
-    val listState = rememberLazyListState()
     var showQuickAdd by rememberSaveable { mutableStateOf(false) }
     var sharedText by rememberSaveable { mutableStateOf("") }
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var showCreateCountdown by rememberSaveable { mutableStateOf(false) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var showUndo by remember { mutableStateOf(false) }
+    var collapsedTaskGroups by rememberSaveable { mutableStateOf("LATER,NO_DATE") }
 
     LaunchedEffect(initialShareText, initialOpenAdd) {
         if (initialOpenAdd || !initialShareText.isNullOrBlank()) {
@@ -176,23 +173,24 @@ fun DashboardScreen(
     val groups = remember(state.visibleTasks, zone, now) { groupTasks(state.visibleTasks, zone) }
     val todayOpen = remember(activeTasks, zone, now) {
         activeTasks.count { task ->
-            val date = task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
-            date == null || !date.isAfter(now.toLocalDate())
+            task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == now.toLocalDate() } == true
         }
     }
     val progress = if (state.activeCount + state.completedCount == 0) 0f else state.completedCount.toFloat() / (state.activeCount + state.completedCount)
-    val showFab by remember {
-        derivedStateOf { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 260 }
-    }
-
     Box(modifier.fillMaxSize()) {
         LazyColumn(
-            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { DashboardHeader(state.query, viewModel::setQuery, todayOpen, state.completedCount, activeTasks.size, progress, todayEpoch, now.hour, settings, numeralMode, onOpenCalendar) }
+            item { DashboardHeader(todayOpen, state.completedCount, activeTasks.size, progress, todayEpoch, now.hour, settings, numeralMode, onOpenCalendar) }
+
+            item {
+                OccasionsCard(
+                    occasions = todayOccasions.map { it.title(settings.languageTag) to it.category },
+                    onClick = onOpenCalendar,
+                )
+            }
 
             item { SectionHeader(stringResource(R.string.dash_countdown_hero)) }
 
@@ -219,19 +217,22 @@ fun DashboardScreen(
                 }
             } else {
                 item {
-                    CountdownHero(
-                        task = heroCountdown,
-                        themeId = heroCountdown.countdownTheme.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme,
-                        calendarLabel = { epoch -> localizedTaskDate(epoch) },
-                        onToggleCountdown = { enabled ->
-                            viewModel.editTask(heroCountdown.copy(countdownEnabled = enabled))
-                        },
-                        onOpenFocus = { onOpenFocus(heroCountdown) },
-                        onDisableRequested = {
-                            viewModel.editTask(heroCountdown.copy(countdownEnabled = false))
-                            showUndo = true
-                        },
-                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    ) {
+                        CountdownHero(
+                            task = heroCountdown,
+                            themeId = heroCountdown.countdownTheme.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme,
+                            calendarLabel = { epoch -> localizedTaskDate(epoch) },
+                            onOpenFocus = { onOpenFocus(heroCountdown) },
+                            onDisableRequested = {
+                                viewModel.editTask(heroCountdown.copy(countdownEnabled = false))
+                                showUndo = true
+                            },
+                            modifier = Modifier.padding(14.dp),
+                        )
+                    }
                 }
             }
 
@@ -254,13 +255,6 @@ fun DashboardScreen(
             }
 
             item {
-                OccasionsCard(
-                    occasions = todayOccasions.map { it.title(settings.languageTag) to it.category },
-                    onClick = onOpenCalendar,
-                )
-            }
-
-            item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SectionHeader(stringResource(R.string.dash_tasks), state.visibleTasks.size, Modifier.weight(1f))
@@ -280,6 +274,22 @@ fun DashboardScreen(
                             }
                         }
                     }
+                    OutlinedTextField(
+                        value = state.query,
+                        onValueChange = viewModel::setQuery,
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text(stringResource(R.string.dash_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (state.query.isNotBlank()) {
+                                IconButton(onClick = { viewModel.setQuery("") }) {
+                                    Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.dash_clear_search))
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.large,
+                    )
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
                         items(TaskFilter.entries, key = { it.name }) { filter ->
                             FilterChip(
@@ -287,11 +297,6 @@ fun DashboardScreen(
                                 onClick = { viewModel.setFilter(filter) },
                                 label = { Text(filterLabel(filter)) },
                             )
-                        }
-                    }
-                    if (showUndo) {
-                        TextButton(onClick = { viewModel.undoLastChange(); showUndo = false }) {
-                            Text(stringResource(R.string.dash_undo))
                         }
                     }
                     if (state.selectedIds.isNotEmpty()) {
@@ -322,42 +327,48 @@ fun DashboardScreen(
                 }
             } else {
                 groups.forEach { grouped ->
+                    val isCollapsed = grouped.group.name in collapsedTaskGroups.split(',').filter(String::isNotBlank)
                     item(key = "header-${grouped.group.name}") {
-                        SectionHeader(stringResource(grouped.group.labelRes), grouped.tasks.size)
-                    }
-                    items(grouped.tasks, key = { it.id }) { task ->
-                        TaskRowCard(
-                            task = task,
-                            selected = task.id in state.selectedIds,
-                            onToggle = { viewModel.toggleCompleted(task) },
-                            onOpenCountdown = { onOpenFocus(task) },
-                            onEdit = { editingTask = task },
-                            onArchive = { viewModel.archive(task) },
-                            onDelete = { viewModel.delete(task); showUndo = true },
-                            onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
-                            onToggleCountdown = {
-                                viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
-                                showUndo = true
+                        TaskGroupHeader(
+                            group = grouped.group,
+                            count = grouped.tasks.size,
+                            expanded = !isCollapsed,
+                            onClick = {
+                                val next = collapsedTaskGroups.split(',').filter(String::isNotBlank).toMutableSet()
+                                if (!next.add(grouped.group.name)) next.remove(grouped.group.name)
+                                collapsedTaskGroups = next.joinToString(",")
                             },
-                            onLongPress = { viewModel.toggleSelection(task.id) },
                         )
+                    }
+                    if (!isCollapsed) {
+                        items(grouped.tasks, key = { it.id }) { task ->
+                            TaskRowCard(
+                                task = task,
+                                selected = task.id in state.selectedIds,
+                                onToggle = { viewModel.toggleCompleted(task) },
+                                onOpenCountdown = { onOpenFocus(task) },
+                                onEdit = { editingTask = task },
+                                onArchive = { viewModel.archive(task) },
+                                onDelete = { viewModel.delete(task); showUndo = true },
+                                onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
+                                onToggleCountdown = {
+                                    viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
+                                    showUndo = true
+                                },
+                                onLongPress = { viewModel.toggleSelection(task.id) },
+                            )
+                        }
                     }
                 }
             }
         }
 
-        AnimatedVisibility(
-            visible = showFab,
-            enter = fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.85f),
-            exit = fadeOut(tween(140)) + scaleOut(tween(140), targetScale = 0.85f),
+        ExtendedFloatingActionButton(
+            onClick = { sharedText = ""; showQuickAdd = true },
+            icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+            text = { Text(stringResource(R.string.dash_new_task)) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(18.dp),
-        ) {
-            ExtendedFloatingActionButton(
-                onClick = { sharedText = ""; showQuickAdd = true },
-                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.dash_new_task)) },
-            )
-        }
+        )
 
         AnimatedVisibility(
             visible = showUndo,
@@ -426,8 +437,6 @@ fun DashboardScreen(
 
 @Composable
 private fun DashboardHeader(
-    query: String,
-    onQueryChange: (String) -> Unit,
     todayOpen: Int,
     completedCount: Int,
     openCount: Int,
@@ -438,10 +447,9 @@ private fun DashboardHeader(
     numeralMode: NumeralMode,
     onOpenCalendar: () -> Unit,
 ) {
-    val hour = currentHour
     val greeting = when {
-        hour < 12 -> stringResource(R.string.dash_greeting_morning)
-        hour < 18 -> stringResource(R.string.dash_greeting_afternoon)
+        currentHour < 12 -> stringResource(R.string.dash_greeting_morning)
+        currentHour < 18 -> stringResource(R.string.dash_greeting_afternoon)
         else -> stringResource(R.string.dash_greeting_evening)
     }
     val gradient = Brush.linearGradient(
@@ -453,23 +461,20 @@ private fun DashboardHeader(
                 .fillMaxWidth()
                 .background(gradient, MaterialTheme.shapes.extraLarge)
                 .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(11.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(greeting, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Text(
-                        TextNormalizer.formatDigits(stringResource(R.string.dash_summary, openCount, completedCount), numeralMode),
+                        PersianDateUtils.fullDate(todayEpoch, settings.languageTag, numeralMode),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f), modifier = Modifier.padding(end = 4.dp)) {
-                    TextButton(onClick = onOpenCalendar) {
-                        Text(
-                            PersianDateUtils.fullDate(todayEpoch, settings.languageTag, numeralMode),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
+                    IconButton(onClick = onOpenCalendar) {
+                        Icon(Icons.Outlined.CalendarMonth, contentDescription = stringResource(R.string.nav_calendar), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -478,31 +483,17 @@ private fun DashboardHeader(
                 StatPill(stringResource(R.string.dash_stat_done), completedCount, Modifier.weight(1f))
                 StatPill(stringResource(R.string.dash_stat_all), openCount, Modifier.weight(1f))
             }
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                LinearProgressIndicator(
-                    progress = { progress.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     TextNormalizer.formatDigits(stringResource(R.string.dash_progress, (progress * 100).toInt()), numeralMode),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                LinearProgressIndicator(
+                    progress = { progress.coerceIn(0f, 1f) },
+                    modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
+                )
             }
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.dash_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (query.isNotBlank()) {
-                        IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Outlined.Close, contentDescription = null) }
-                    }
-                },
-                singleLine = true,
-                shape = MaterialTheme.shapes.large,
-            )
         }
     }
 }
@@ -526,19 +517,21 @@ private fun CountdownHero(
     task: Task,
     themeId: String,
     calendarLabel: @Composable (Long) -> String,
-    onToggleCountdown: (Boolean) -> Unit,
     onOpenFocus: () -> Unit,
     onDisableRequested: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val due = task.dueAtEpochMillis ?: return
     val theme = CountdownTheme.from(themeId)
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(9.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.dash_next_moment), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 Text(task.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Switch(checked = task.countdownEnabled, onCheckedChange = onToggleCountdown)
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(9.dp).size(20.dp))
+            }
         }
         CountdownFace(title = task.title, dueAtEpochMillis = due, theme = theme, modifier = Modifier.fillMaxWidth())
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -552,8 +545,6 @@ private fun CountdownHero(
                 overflow = TextOverflow.Ellipsis,
             )
             TextButton(onClick = onOpenFocus) {
-                Icon(Icons.Outlined.Timer, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
                 Text(stringResource(R.string.dash_focus_mode))
             }
             TextButton(onClick = onDisableRequested) { Text(stringResource(R.string.dash_turn_off)) }
@@ -564,24 +555,66 @@ private fun CountdownHero(
 @Composable
 private fun OccasionsCard(occasions: List<Pair<String, OccasionCategory>>, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                SectionHeader(stringResource(R.string.dash_occasions_today), modifier = Modifier.weight(1f))
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                    Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(8.dp).size(18.dp))
+                }
+                SectionHeader(stringResource(R.string.dash_occasions_today), occasions.size, Modifier.weight(1f).padding(start = 8.dp))
                 TextButton(onClick = onClick) { Text(stringResource(R.string.nav_calendar)) }
             }
             if (occasions.isEmpty()) {
                 Text(stringResource(R.string.dash_no_occasion), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                occasions.forEach { (title, category) ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                occasions.take(MAX_DASHBOARD_OCCASIONS).forEach { (title, category) ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                         Box(Modifier.size(7.dp).clip(CircleShape).background(categoryColor(category)))
-                        Text(title, style = MaterialTheme.typography.bodyMedium)
+                        Text(title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
+                val remaining = occasions.size - MAX_DASHBOARD_OCCASIONS
+                if (remaining > 0) {
+                    Text(
+                        TextNormalizer.formatDigits(stringResource(R.string.dash_more_occasions, remaining), LocalNumeralMode.current),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(stringResource(group.labelRes), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
+                Text(
+                    TextNormalizer.formatDigits(count.toString(), LocalNumeralMode.current),
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                if (expanded) "−" else "+",
+                modifier = Modifier.padding(start = 12.dp),
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }
