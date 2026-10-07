@@ -83,4 +83,28 @@
     <string name="tasks_voice_current_time">ساعت: %1$s</string>
     <string name="tasks_voice_repeat">گفتن / تکرار</string>
     <string name="tasks_voice_skip">ردکردن</string>
+
+    <string name="tasks_quick_add_title">کار تازه</string>
+    <string name="tasks_quick_add_subtitle">طبیعی بنویس، یک زمان آماده بزن یا از صدا استفاده کن.</string>
+    <string name="tasks_clear_input">پاک کردن متن</string>
+    <string name="tasks_clear_due">پاک کردن تاریخ</string>
+    <string name="tasks_parsed_hint">تاریخ یا ساعت از متن تو تشخیص داده شد</string>
+    <string name="tasks_when">چه زمانی؟</string>
+    <string name="tasks_date_none">بدون تاریخ</string>
+    <string name="tasks_date_next_week">هفتهٔ بعد</string>
+    <string name="tasks_date_next_month">ماه بعد</string>
+    <string name="tasks_date_field">تاریخ</string>
+    <string name="tasks_date_hint">فردا، شنبه، ۱۴۰۵/۰۸/۲۵…</string>
+    <string name="tasks_time_field">ساعت</string>
+    <string name="tasks_time_hint">۰۸:۰۰ یا عصر</string>
+    <string name="tasks_date_unrecognized">این تاریخ تشخیص داده نشد.</string>
+    <string name="tasks_priority">اولویت</string>
+    <string name="tasks_category">دسته</string>
+    <string name="tasks_repeat">تکرار</string>
+    <string name="tasks_countdown_toggle_title">شمارش معکوس زنده</string>
+    <string name="tasks_countdown_toggle_body">این کار در داشبورد و ویجت شمرده شود.</string>
+    <string name="tasks_countdown_needs_date">اول تاریخ یا ساعت بگذار.</string>
+    <string name="tasks_countdown_theme">تم: %1$s</string>
+    <string name="tasks_countdown_on">روشن کردن شمارش معکوس</string>
+    <string name="tasks_countdown_off">خاموش کردن شمارش معکوس</string>
 </resources>

@@ -4,12 +4,14 @@ import android.app.Application
 import android.os.StrictMode
 import com.marble098.marbledo.notifications.AndroidTaskReminderScheduler
 import com.marble098.marbledo.notifications.CalendarNotificationWorkInitializer
+import com.marble098.marbledo.app.sync.OccasionSyncWorker
 import com.marble098.marbledo.notifications.NotificationChannels
 import com.marbledo.core.data.backup.BackupWorkInitializer
 import com.marbledo.core.data.backup.WorkManagerBackupScheduler
 import com.marbledo.core.data.db.MarbleDatabase
 import com.marbledo.core.data.repository.RoomTaskRepository
 import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.feature.calendar.OccasionRepository
 import com.marbledo.domain.repository.TaskBackupScheduler
 import com.marbledo.domain.repository.TaskReminderScheduler
 import com.marbledo.domain.repository.TaskRepository
@@ -30,6 +32,7 @@ class MarbleDoApplication : Application() {
         }
         BackupWorkInitializer.ensureDailyBackup(this)
         CalendarNotificationWorkInitializer.ensureDaily(this)
+        OccasionSyncWorker.ensureDaily(this)
     }
 
     private fun enableDebugStrictMode() {
@@ -54,6 +57,7 @@ private val marbleDoModule = module {
     single { MarbleDatabase.create(androidContext()) }
     single<TaskRepository> { RoomTaskRepository(get<MarbleDatabase>().taskDao()) }
     single { SettingsRepository(androidContext()) }
+    single { OccasionRepository(androidContext()) }
     single { WorkManagerBackupScheduler(androidContext()) }
     single<TaskBackupScheduler> { get<WorkManagerBackupScheduler>() }
     single { AndroidTaskReminderScheduler(androidContext()) }

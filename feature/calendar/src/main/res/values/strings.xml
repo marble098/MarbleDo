@@ -6,9 +6,25 @@
     <string name="calendar_today">Today</string>
     <string name="calendar_view_month">Month</string>
     <string name="calendar_view_agenda">Agenda</string>
+    <string name="calendar_view_occasions">Occasions</string>
     <string name="calendar_view_year">Year</string>
-    <string name="calendar_tasks_count">%1$d tasks</string>
-    <string name="calendar_no_events">No tasks or occasions this month.</string>
+    <string name="calendar_tasks_count">%1$d task(s)</string>
+    <string name="calendar_no_events">Nothing scheduled or celebrated in this range.</string>
+    <string name="calendar_no_occasions">No occasion is recorded for this day.</string>
+    <string name="calendar_no_month_occasions">No occasion is recorded for this month.</string>
+    <string name="calendar_month_occasions_count">%1$d occasions this month</string>
+    <string name="calendar_occasions_available">%1$d occasions available</string>
+    <string name="calendar_occasions_short">%1$d occasions</string>
+    <string name="calendar_holiday_badge">Public holiday</string>
+    <string name="calendar_category_official">Official</string>
+    <string name="calendar_category_national">National</string>
+    <string name="calendar_category_religious">Religious</string>
+    <string name="calendar_category_personal">Personal</string>
+    <string name="calendar_sync_now">Update occasions</string>
+    <string name="calendar_sync_refreshing">Updating occasions…</string>
+    <string name="calendar_sync_error">Update failed; the saved copy is still shown.</string>
+    <string name="calendar_sync_last">Updated %1$s</string>
+    <string name="calendar_sync_bundled">Bundled data; connect to the internet to update</string>
     <string name="calendar_sat">Sat</string><string name="calendar_sun">Sun</string>
     <string name="calendar_mon">Mon</string><string name="calendar_tue">Tue</string>
     <string name="calendar_wed">Wed</string><string name="calendar_thu">Thu</string>

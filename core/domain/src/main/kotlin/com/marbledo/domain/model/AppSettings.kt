@@ -13,7 +13,7 @@ data class AppSettings(
     val themeMode: AppThemeMode = AppThemeMode.AUTO,
     val languageTag: String = "fa",
     val numeralMode: NumeralMode = NumeralMode.PERSIAN,
-    val countdownTheme: String = "MARBLE",
+    val countdownTheme: String = CountdownTheme.DEFAULT.id,
     val countdownCalendar: CalendarDisplayMode = CalendarDisplayMode.PERSIAN,
     val taskCategories: List<String> = emptyList(),
     val weekStartsSaturday: Boolean = true,
@@ -28,6 +28,8 @@ data class AppSettings(
     val fontScale: Float = 1f,
     val reduceMotion: Boolean = false,
     val lunarOffsetDays: Int = 0,
+    /** When true, MarbleDo refreshes the occasion catalog from the internet in the background. */
+    val occasionAutoUpdateEnabled: Boolean = true,
 ) {
     init {
         require(languageTag in setOf("fa", "en"))
