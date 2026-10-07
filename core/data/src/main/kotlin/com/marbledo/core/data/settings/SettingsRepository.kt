@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import com.marbledo.domain.model.AppSettings
+import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.NumeralMode
@@ -28,7 +29,7 @@ class SettingsRepository(private val context: Context) {
             themeMode = enumOrDefault(proto.themeMode, AppThemeMode.AUTO),
             languageTag = proto.languageTag.takeIf { it in setOf("fa", "en") } ?: "fa",
             numeralMode = enumOrDefault(proto.numeralMode, NumeralMode.PERSIAN),
-            countdownTheme = proto.countdownTheme.ifBlank { "MARBLE" },
+            countdownTheme = proto.countdownTheme.ifBlank { CountdownTheme.DEFAULT.id },
             countdownCalendar = enumOrDefault(proto.countdownCalendar, CalendarDisplayMode.PERSIAN),
             taskCategories = proto.taskCategoriesList.map { it.trim() }.filter { it.isNotBlank() }.distinct(),
             weekStartsSaturday = if (configured) proto.weekStartsSaturday else true,
@@ -43,6 +44,7 @@ class SettingsRepository(private val context: Context) {
             fontScale = proto.fontScale.takeIf { it in 0.8f..1.5f } ?: 1f,
             reduceMotion = proto.reduceMotion,
             lunarOffsetDays = proto.lunarOffsetDays.coerceIn(-2, 2),
+            occasionAutoUpdateEnabled = if (configured) proto.occasionAutoUpdateEnabled else true,
         )
     }
 
@@ -65,6 +67,7 @@ class SettingsRepository(private val context: Context) {
         .setFontScale(settings.fontScale)
         .setReduceMotion(settings.reduceMotion)
         .setLunarOffsetDays(settings.lunarOffsetDays)
+        .setOccasionAutoUpdateEnabled(settings.occasionAutoUpdateEnabled)
         .build()
 
     private inline fun <reified T : Enum<T>> enumOrDefault(value: String, default: T): T =

@@ -55,7 +55,9 @@ data class Task(
     val link: String? = null,
     val attachmentUri: String? = null,
     val recurrence: RecurrenceRule? = null,
-    val countdownTheme: String = "MARBLE",
+    val countdownTheme: String = "MARBLE_ORB",
+    /** When true, the task appears in the dashboard countdown hero and live lists. */
+    val countdownEnabled: Boolean = true,
     val isCompleted: Boolean = false,
     val isArchived: Boolean = false,
     val focusMinutes: Int = 0,

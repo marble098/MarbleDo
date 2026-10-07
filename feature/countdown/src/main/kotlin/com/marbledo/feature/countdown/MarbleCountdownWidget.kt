@@ -41,7 +41,7 @@ class MarbleCountdownWidget : GlanceAppWidget() {
             val database = MarbleDatabase.create(context)
             try {
                 RoomTaskRepository(database.taskDao()).snapshot()
-                    .firstOrNull { !it.isCompleted && !it.isArchived && it.dueAtEpochMillis != null }
+                    .firstOrNull { !it.isCompleted && !it.isArchived && it.countdownEnabled && it.dueAtEpochMillis != null }
             } finally {
                 database.close()
             }

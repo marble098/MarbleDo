@@ -83,4 +83,28 @@
     <string name="tasks_voice_current_time">Time: %1$s</string>
     <string name="tasks_voice_repeat">Speak / repeat</string>
     <string name="tasks_voice_skip">Skip</string>
+
+    <string name="tasks_quick_add_title">New task</string>
+    <string name="tasks_quick_add_subtitle">Type naturally, tap a preset, or use your voice.</string>
+    <string name="tasks_clear_input">Clear text</string>
+    <string name="tasks_clear_due">Clear date</string>
+    <string name="tasks_parsed_hint">Date or time recognised in your text</string>
+    <string name="tasks_when">When?</string>
+    <string name="tasks_date_none">No date</string>
+    <string name="tasks_date_next_week">Next week</string>
+    <string name="tasks_date_next_month">Next month</string>
+    <string name="tasks_date_field">Date</string>
+    <string name="tasks_date_hint">Tomorrow, Saturday, 1405/08/25…</string>
+    <string name="tasks_time_field">Time</string>
+    <string name="tasks_time_hint">08:00 or evening</string>
+    <string name="tasks_date_unrecognized">This date was not recognised.</string>
+    <string name="tasks_priority">Priority</string>
+    <string name="tasks_category">Category</string>
+    <string name="tasks_repeat">Repeat</string>
+    <string name="tasks_countdown_toggle_title">Live countdown</string>
+    <string name="tasks_countdown_toggle_body">Count this task down on the dashboard and the widget.</string>
+    <string name="tasks_countdown_needs_date">Add a date or time first.</string>
+    <string name="tasks_countdown_theme">Theme: %1$s</string>
+    <string name="tasks_countdown_on">Turn the countdown on</string>
+    <string name="tasks_countdown_off">Turn the countdown off</string>
 </resources>

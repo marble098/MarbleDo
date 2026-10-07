@@ -60,6 +60,7 @@ class RoomTaskRepository(
         attachmentUri = attachmentUri,
         recurrenceJson = recurrence?.let { json.encodeToString(RecurrenceRule.serializer(), it) },
         countdownTheme = countdownTheme,
+        countdownEnabled = countdownEnabled,
         isCompleted = isCompleted,
         isArchived = isArchived,
         focusMinutes = focusMinutes,
@@ -86,6 +87,7 @@ class RoomTaskRepository(
             runCatching { json.decodeFromString(RecurrenceRule.serializer(), it) }.getOrNull()
         },
         countdownTheme = entity.countdownTheme,
+        countdownEnabled = entity.countdownEnabled,
         isCompleted = entity.isCompleted,
         isArchived = entity.isArchived,
         focusMinutes = entity.focusMinutes,

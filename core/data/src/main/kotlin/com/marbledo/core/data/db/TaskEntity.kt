@@ -25,7 +25,10 @@ data class TaskEntity(
     val link: String? = null,
     val attachmentUri: String? = null,
     val recurrenceJson: String? = null,
-    @ColumnInfo(defaultValue = "'MARBLE'") val countdownTheme: String = "MARBLE",
+    // The SQL default tracks MIGRATION_1_2 so Room's post-migration schema validation stays
+    // happy for databases created before the theme redesign; new rows always set this explicitly.
+    @ColumnInfo(defaultValue = "'MARBLE'") val countdownTheme: String = "MARBLE_ORB",
+    @ColumnInfo(defaultValue = "1") val countdownEnabled: Boolean = true,
     val isCompleted: Boolean = false,
     @ColumnInfo(defaultValue = "0") val isArchived: Boolean = false,
     @ColumnInfo(defaultValue = "0") val focusMinutes: Int = 0,

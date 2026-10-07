@@ -18,18 +18,16 @@ import androidx.work.WorkerParameters
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
 import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.feature.calendar.Occasion
+import com.marbledo.feature.calendar.OccasionCategory
+import com.marbledo.feature.calendar.OccasionIndex
+import com.marbledo.feature.calendar.OccasionRepository
+import com.marbledo.feature.calendar.PersianDateUtils
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
-import android.icu.util.Calendar as IcuCalendar
-import android.icu.util.TimeZone as IcuTimeZone
-import android.icu.util.ULocale
-
-private val PERSIAN_CALENDAR_LOCALE = ULocale("fa_IR@calendar=persian")
 
 class CalendarOccurrenceWorker(
     appContext: Context,
@@ -39,44 +37,41 @@ class CalendarOccurrenceWorker(
         try {
             val settings = SettingsRepository(applicationContext).settings.first()
             if (!settings.calendarNotificationsEnabled) return@withContext Result.success()
-            val calendar = IcuCalendar.getInstance(IcuTimeZone.getDefault(), PERSIAN_CALENDAR_LOCALE).apply {
-                timeInMillis = System.currentTimeMillis()
+            val repository = OccasionRepository(applicationContext)
+            repository.load()
+            val today = PersianDateUtils.today()
+            val enabledCategories = buildSet {
+                if (settings.officialEventsEnabled) add(OccasionCategory.OFFICIAL)
+                if (settings.nationalEventsEnabled) add(OccasionCategory.NATIONAL)
+                if (settings.religiousEventsEnabled) add(OccasionCategory.RELIGIOUS)
+                if (settings.personalEventsEnabled) add(OccasionCategory.PERSONAL)
             }
-            val year = calendar.get(IcuCalendar.YEAR)
-            val month = calendar.get(IcuCalendar.MONTH) + 1
-            val day = calendar.get(IcuCalendar.DAY_OF_MONTH)
-            val events = loadHolidays(applicationContext).filter { item ->
-                item.optInt("month") == month && item.optInt("day") == day && when (item.optString("category")) {
-                    "official" -> settings.officialEventsEnabled
-                    "national" -> settings.nationalEventsEnabled
-                    "religious" -> settings.religiousEventsEnabled
-                    "personal" -> settings.personalEventsEnabled
-                    else -> false
-                }
+            val index = OccasionIndex.build(
+                catalog = repository.state.value.catalog,
+                jalaliYears = listOf(today.year),
+                lunarOffsetDays = settings.lunarOffsetDays,
+                enabledCategories = enabledCategories,
+            )
+            val events = index.on(today.year, today.month, today.day)
+            if (events.isNotEmpty()) {
+                notifyOccurrence(applicationContext, events, today.year, today.month, today.day, settings.languageTag == "fa")
             }
-            if (events.isNotEmpty()) notifyOccurrence(applicationContext, events, year, month, day, settings.languageTag == "fa")
             Result.success()
         } catch (_: Exception) {
             Result.retry()
         }
     }
 
-    private fun loadHolidays(context: Context): List<JSONObject> = runCatching {
-        val root = context.assets.open("calendar/holidays-fa.json").bufferedReader().use { JSONObject(it.readText()) }
-        val array: JSONArray = root.getJSONArray("holidays")
-        (0 until array.length()).map(array::getJSONObject)
-    }.getOrDefault(emptyList())
-
     private fun notifyOccurrence(
         context: Context,
-        events: List<JSONObject>,
+        events: List<Occasion>,
         year: Int,
         month: Int,
         day: Int,
         persian: Boolean,
     ) {
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
-        val titles = events.joinToString("، ") { item -> item.optString(if (persian) "titleFa" else "titleEn") }
+        val titles = events.joinToString("، ") { event -> event.title(if (persian) "fa" else "en") }
         val content = Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             data = Uri.parse("marbledo://calendar/$year/$month/$day")

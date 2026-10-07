@@ -15,31 +15,30 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -52,9 +51,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.os.LocaleListCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -68,20 +71,20 @@ import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.CalendarScreen
+import com.marbledo.feature.calendar.OccasionCategory
+import com.marbledo.feature.calendar.OccasionRefreshResult
+import com.marbledo.feature.calendar.OccasionRepository
 import com.marbledo.feature.countdown.CountdownFocusDialog
-import com.marbledo.feature.countdown.CountdownScreen
-import com.marbledo.feature.tasks.TasksScreen
 import com.marbledo.feature.tasks.TasksViewModel
-import kotlinx.serialization.Serializable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
-@Serializable private data object TasksDestination : NavKey
+@Serializable private data object HomeDestination : NavKey
 @Serializable private data object CalendarDestination : NavKey
-@Serializable private data object CountdownDestination : NavKey
 @Serializable private data object SettingsDestination : NavKey
 
 private data class Destination(
@@ -90,6 +93,14 @@ private data class Destination(
     val label: Int,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
 )
+
+/** Deep-link aliases kept for shortcuts, the quick-settings tile and calendar notifications. */
+private fun destinationForRoute(route: String): String = when (route) {
+    "tasks", "countdown", "home" -> "home"
+    "calendar" -> "calendar"
+    "settings" -> "settings"
+    else -> "home"
+}
 
 @Composable
 fun MarbleDoApp(
@@ -100,13 +111,15 @@ fun MarbleDoApp(
     onIntentConsumed: () -> Unit,
 ) {
     val context = LocalContext.current
-    // Read the string in composition scope; LocalContext is not configuration-aware.
     val noAutomaticBackupMessage = stringResource(R.string.settings_no_automatic_backup)
+    val refreshFailedMessage = stringResource(R.string.settings_occasions_failed)
     val taskViewModel: TasksViewModel = koinViewModel()
     val taskState by taskViewModel.state.collectAsStateWithLifecycle()
     val settingsRepository: SettingsRepository = koinInject()
+    val occasionRepository: OccasionRepository = koinInject()
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
-    val backStack = rememberNavBackStack(TasksDestination)
+    val occasionState by occasionRepository.state.collectAsStateWithLifecycle()
+    val backStack = rememberNavBackStack(HomeDestination)
     val coroutineScope = rememberCoroutineScope()
     var focusTask by remember { mutableStateOf<Task?>(null) }
     var restoreEnvelope by remember { mutableStateOf<BackupEnvelope?>(null) }
@@ -119,13 +132,19 @@ fun MarbleDoApp(
     var restorePassphrase by remember { mutableStateOf("") }
     val configuration = LocalConfiguration.current
     val isLarge = configuration.screenWidthDp >= 600
+    val notificationsGranted = rememberNotificationsGranted()
+    val exactAlarmGranted = rememberExactAlarmGranted()
 
     val destinations = listOf(
-        Destination("tasks", TasksDestination, R.string.nav_home, Icons.Outlined.CheckCircle),
+        Destination("home", HomeDestination, R.string.nav_home, Icons.Outlined.Home),
         Destination("calendar", CalendarDestination, R.string.nav_calendar, Icons.Outlined.CalendarMonth),
-        Destination("countdown", CountdownDestination, R.string.nav_countdown, Icons.Outlined.Timer),
         Destination("settings", SettingsDestination, R.string.nav_settings, Icons.Outlined.Settings),
     )
+
+    LaunchedEffect(Unit) { occasionRepository.load() }
+    LaunchedEffect(settings.occasionAutoUpdateEnabled, occasionState.isLoaded) {
+        if (settings.occasionAutoUpdateEnabled && occasionState.isLoaded) occasionRepository.refreshIfStale()
+    }
 
     val createBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
         if (uri != null) {
@@ -214,6 +233,12 @@ fun MarbleDoApp(
             languageTag = settings.languageTag,
         ) {
             Surface(Modifier.fillMaxSize()) {
+                val enabledOccasionCategories = buildSet {
+                    if (settings.officialEventsEnabled) add(OccasionCategory.OFFICIAL)
+                    if (settings.nationalEventsEnabled) add(OccasionCategory.NATIONAL)
+                    if (settings.religiousEventsEnabled) add(OccasionCategory.RELIGIOUS)
+                    if (settings.personalEventsEnabled) add(OccasionCategory.PERSONAL)
+                }
                 val content: @Composable (Modifier) -> Unit = { contentModifier ->
                     NavDisplay(
                         backStack = backStack,
@@ -232,12 +257,15 @@ fun MarbleDoApp(
                             else fadeIn(tween(180)) togetherWith fadeOut(tween(150))
                         },
                         entryProvider = entryProvider {
-                            entry<TasksDestination> {
-                                TasksScreen(
+                            entry<HomeDestination> {
+                                DashboardScreen(
                                     viewModel = taskViewModel,
-                                    onOpenCountdown = { task -> focusTask = task; navigateTo(CountdownDestination) },
-                                    categoryNames = settings.taskCategories,
-                                    languageTag = settings.languageTag,
+                                    settings = settings,
+                                    occasionCatalog = occasionState.catalog,
+                                    enabledOccasionCategories = enabledOccasionCategories,
+                                    onThemeSelected = { id -> coroutineScope.launch { settingsRepository.update { it.copy(countdownTheme = id) } } },
+                                    onOpenFocus = { task -> focusTask = task },
+                                    onOpenCalendar = { navigateTo(CalendarDestination) },
                                     onAddCategory = { name ->
                                         val key = TextNormalizer.searchKey(name)
                                         coroutineScope.launch {
@@ -253,34 +281,29 @@ fun MarbleDoApp(
                                 )
                             }
                             entry<CalendarDestination> {
-                                val categories = buildSet {
-                                    if (settings.officialEventsEnabled) add("official")
-                                    if (settings.nationalEventsEnabled) add("national")
-                                    if (settings.religiousEventsEnabled) add("religious")
-                                    if (settings.personalEventsEnabled) add("personal")
-                                }
                                 CalendarScreen(
                                     tasks = taskState.allTasks,
+                                    catalog = occasionState.catalog,
+                                    occasionState = occasionState,
+                                    enabledCategories = enabledOccasionCategories,
                                     languageTag = settings.languageTag,
                                     weekStartsSaturday = settings.weekStartsSaturday,
                                     lunarOffsetDays = settings.lunarOffsetDays,
-                                    enabledEventCategories = categories,
-                                )
-                            }
-                            entry<CountdownDestination> {
-                                CountdownScreen(
-                                    tasks = taskState.allTasks,
-                                    selectedThemeId = settings.countdownTheme,
-                                    calendarDisplay = settings.countdownCalendar,
-                                    onThemeSelected = { id -> coroutineScope.launch { settingsRepository.update { it.copy(countdownTheme = id) } } },
-                                    onCalendarDisplaySelected = { mode -> coroutineScope.launch { settingsRepository.update { it.copy(countdownCalendar = mode) } } },
-                                    onAddCountdown = taskViewModel::addTask,
-                                    onOpenFocus = { focusTask = it },
+                                    onRefreshOccasions = {
+                                        coroutineScope.launch {
+                                            if (occasionRepository.refresh() == OccasionRefreshResult.FAILED) {
+                                                Toast.makeText(context, refreshFailedMessage, Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    },
                                 )
                             }
                             entry<SettingsDestination> {
                                 SettingsScreen(
                                     settings = settings,
+                                    notificationsGranted = notificationsGranted,
+                                    exactAlarmGranted = exactAlarmGranted,
+                                    occasionState = occasionState,
                                     onUpdate = { updated -> coroutineScope.launch { settingsRepository.update { updated } } },
                                     onExport = { showExportPasswordDialog = true },
                                     onImport = { openBackup.launch(arrayOf("application/octet-stream", "application/json", "*/*")) },
@@ -308,6 +331,13 @@ fun MarbleDoApp(
                                         else requestNotificationPermission(context)
                                     },
                                     onRequestExactAlarm = { requestExactAlarmSettings(context) },
+                                    onRefreshOccasions = {
+                                        coroutineScope.launch {
+                                            if (occasionRepository.refresh() == OccasionRefreshResult.FAILED) {
+                                                Toast.makeText(context, refreshFailedMessage, Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    },
                                     onCheckUpdates = { openReleasePage(context) },
                                 )
                             }
@@ -353,26 +383,33 @@ fun MarbleDoApp(
 
     LaunchedEffect(initialDestination) {
         initialDestination?.let { route ->
-            destinations.firstOrNull { it.route == route }?.let { navigateTo(it.key) }
+            val target = destinations.firstOrNull { it.route == destinationForRoute(route) }
+            if (target != null) navigateTo(target.key)
         }
     }
 
     LaunchedEffect(initialShareText, initialOpenAdd) {
-        if (initialOpenAdd || !initialShareText.isNullOrBlank()) navigateTo(TasksDestination)
+        if (initialOpenAdd || !initialShareText.isNullOrBlank()) navigateTo(HomeDestination)
     }
 
     LaunchedEffect(initialTaskId, taskState.allTasks) {
         initialTaskId?.let { id ->
             taskState.allTasks.firstOrNull { it.id == id }?.let { task ->
                 focusTask = task
-                navigateTo(CountdownDestination)
+                navigateTo(HomeDestination)
                 onIntentConsumed()
             }
         }
     }
 
     focusTask?.let { task ->
-        CountdownFocusDialog(task = task, themeId = settings.countdownTheme, calendarDisplay = settings.countdownCalendar, onDismiss = { focusTask = null })
+        CountdownFocusDialog(
+            task = task,
+            themeId = task.countdownTheme.takeIf { com.marbledo.domain.model.CountdownTheme.isKnown(it) } ?: settings.countdownTheme,
+            calendarDisplay = settings.countdownCalendar,
+            onThemeSelected = { id -> coroutineScope.launch { settingsRepository.update { it.copy(countdownTheme = id) } } },
+            onDismiss = { focusTask = null },
+        )
     }
 
     if (showRestoreChoice && restoreEnvelope != null) {
@@ -499,6 +536,43 @@ fun MarbleDoApp(
             },
         )
     }
+}
+
+/** Re-reads the notification grant on every resume so the settings screen can hide itself again. */
+@Composable
+private fun rememberNotificationsGranted(): Boolean {
+    val context = LocalContext.current
+    var granted by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) granted = NotificationManagerCompat.from(context).areNotificationsEnabled()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    return granted
+}
+
+/** Exact-alarm access is always considered granted below Android 12. */
+@Composable
+private fun rememberExactAlarmGranted(): Boolean {
+    val context = LocalContext.current
+    fun read(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return false
+        return alarmManager.canScheduleExactAlarms()
+    }
+    var granted by remember { mutableStateOf(read()) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) granted = read()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    return granted
 }
 
 private fun requestNotificationPermission(context: android.content.Context) {

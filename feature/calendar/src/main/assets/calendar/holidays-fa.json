@@ -1,17 +1,699 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "calendar": "persian",
-  "coverage": "fixed national holidays only; religious dates are intentionally not guessed",
-  "holidays": [
-    {"month": 1, "day": 1, "titleFa": "نوروز", "titleEn": "Nowruz", "category": "national"},
-    {"month": 1, "day": 2, "titleFa": "تعطیلات نوروز", "titleEn": "Nowruz holiday", "category": "national"},
-    {"month": 1, "day": 3, "titleFa": "تعطیلات نوروز", "titleEn": "Nowruz holiday", "category": "national"},
-    {"month": 1, "day": 4, "titleFa": "تعطیلات نوروز", "titleEn": "Nowruz holiday", "category": "national"},
-    {"month": 1, "day": 12, "titleFa": "روز جمهوری اسلامی ایران", "titleEn": "Islamic Republic Day", "category": "national"},
-    {"month": 1, "day": 13, "titleFa": "روز طبیعت", "titleEn": "Nature Day", "category": "national"},
-    {"month": 3, "day": 14, "titleFa": "رحلت امام خمینی", "titleEn": "Anniversary of Imam Khomeini's passing", "category": "official"},
-    {"month": 3, "day": 15, "titleFa": "قیام پانزده خرداد", "titleEn": "Khordad 15 uprising", "category": "official"},
-    {"month": 11, "day": 22, "titleFa": "پیروزی انقلاب اسلامی", "titleEn": "Islamic Revolution Day", "category": "national"},
-    {"month": 12, "day": 29, "titleFa": "روز ملی شدن صنعت نفت", "titleEn": "Oil Nationalization Day", "category": "national"}
+  "updatedAt": "2026-10-07",
+  "note": "Jalali and Gregorian entries are fixed dates. Lunar entries are computed on-device from the Islamic (civil) calendar and can be shifted with the lunar adjustment preference.",
+  "jalali": [
+    {
+      "month": 1,
+      "day": 1,
+      "titleFa": "نوروز",
+      "titleEn": "Nowruz",
+      "category": "national",
+      "holiday": true
+    },
+    {
+      "month": 1,
+      "day": 2,
+      "titleFa": "عید نوروز",
+      "titleEn": "Nowruz holiday",
+      "category": "national",
+      "holiday": true
+    },
+    {
+      "month": 1,
+      "day": 3,
+      "titleFa": "عید نوروز",
+      "titleEn": "Nowruz holiday",
+      "category": "national",
+      "holiday": true
+    },
+    {
+      "month": 1,
+      "day": 4,
+      "titleFa": "عید نوروز",
+      "titleEn": "Nowruz holiday",
+      "category": "national",
+      "holiday": true
+    },
+    {
+      "month": 1,
+      "day": 6,
+      "titleFa": "زادروز زرتشت",
+      "titleEn": "Zoroaster's birthday",
+      "category": "national"
+    },
+    {
+      "month": 1,
+      "day": 7,
+      "titleFa": "روز جهانی سلامت",
+      "titleEn": "World Health Day",
+      "category": "official"
+    },
+    {
+      "month": 1,
+      "day": 12,
+      "titleFa": "روز جمهوری اسلامی ایران",
+      "titleEn": "Islamic Republic Day",
+      "category": "national",
+      "holiday": true
+    },
+    {
+      "month": 1,
+      "day": 13,
+      "titleFa": "روز طبیعت (سیزده‌بدر)",
+      "titleEn": "Nature Day",
+      "category": "national",
+      "holiday": true
+    },
+    {
+      "month": 1,
+      "day": 19,
+      "titleFa": "شهادت آیت‌الله سیدمحمدباقر صدر",
+      "titleEn": "Martyrdom of Ayatollah Sadr",
+      "category": "official"
+    },
+    {
+      "month": 1,
+      "day": 20,
+      "titleFa": "روز ملی فناوری هسته‌ای",
+      "titleEn": "National Nuclear Technology Day",
+      "category": "national"
+    },
+    {
+      "month": 1,
+      "day": 25,
+      "titleFa": "روز بزرگداشت عطار نیشابوری",
+      "titleEn": "Attar of Nishapur Day",
+      "category": "official"
+    },
+    {
+      "month": 1,
+      "day": 29,
+      "titleFa": "روز ارتش جمهوری اسلامی ایران",
+      "titleEn": "Army Day",
+      "category": "official"
+    },
+    {
+      "month": 2,
+      "day": 1,
+      "titleFa": "روز بزرگداشت سعدی",
+      "titleEn": "Saadi Day",
+      "category": "official"
+    },
+    {
+      "month": 2,
+      "day": 3,
+      "titleFa": "روز جهانی کار و کارگر",
+      "titleEn": "Labour Day observance",
+      "category": "official"
+    },
+    {
+      "month": 2,
+      "day": 10,
+      "titleFa": "روز ملی خلیج فارس",
+      "titleEn": "National Persian Gulf Day",
+      "category": "national"
+    },
+    {
+      "month": 2,
+      "day": 12,
+      "titleFa": "روز معلم و شهادت استاد مطهری",
+      "titleEn": "Teacher's Day",
+      "category": "official"
+    },
+    {
+      "month": 2,
+      "day": 18,
+      "titleFa": "روز جهانی موزه",
+      "titleEn": "International Museum Day",
+      "category": "official"
+    },
+    {
+      "month": 2,
+      "day": 25,
+      "titleFa": "روز بزرگداشت فردوسی",
+      "titleEn": "Ferdowsi Day",
+      "category": "official"
+    },
+    {
+      "month": 2,
+      "day": 28,
+      "titleFa": "روز جهانی کارگر و زحمتکشان",
+      "titleEn": "International Workers' Day",
+      "category": "official"
+    },
+    {
+      "month": 3,
+      "day": 1,
+      "titleFa": "روز بهره‌وری و بهینه‌سازی مصرف",
+      "titleEn": "Productivity Day",
+      "category": "official"
+    },
+    {
+      "month": 3,
+      "day": 3,
+      "titleFa": "فتح خرمشهر و روز مقاومت",
+      "titleEn": "Liberation of Khorramshahr",
+      "category": "national"
+    },
+    {
+      "month": 3,
+      "day": 10,
+      "titleFa": "روز جهانی محیط زیست",
+      "titleEn": "World Environment Day",
+      "category": "official"
+    },
+    {
+      "month": 3,
+      "day": 14,
+      "titleFa": "رحلت حضرت امام خمینی",
+      "titleEn": "Anniversary of Imam Khomeini's passing",
+      "category": "official",
+      "holiday": true
+    },
+    {
+      "month": 3,
+      "day": 15,
+      "titleFa": "قیام خونین ۱۵ خرداد",
+      "titleEn": "Khordad 15 uprising",
+      "category": "official",
+      "holiday": true
+    },
+    {
+      "month": 3,
+      "day": 20,
+      "titleFa": "روز جهانی صنایع دستی",
+      "titleEn": "World Handicrafts Day",
+      "category": "official"
+    },
+    {
+      "month": 3,
+      "day": 27,
+      "titleFa": "روز جهاد کشاورزی",
+      "titleEn": "Agriculture Day",
+      "category": "official"
+    },
+    {
+      "month": 4,
+      "day": 10,
+      "titleFa": "روز صنعت و معدن",
+      "titleEn": "Industry and Mining Day",
+      "category": "official"
+    },
+    {
+      "month": 4,
+      "day": 14,
+      "titleFa": "روز قلم",
+      "titleEn": "Day of the Pen",
+      "category": "official"
+    },
+    {
+      "month": 4,
+      "day": 25,
+      "titleFa": "روز بهزیستی و تأمین اجتماعی",
+      "titleEn": "Welfare and Social Security Day",
+      "category": "official"
+    },
+    {
+      "month": 5,
+      "day": 5,
+      "titleFa": "روز بزرگداشت خیام نیشابوری",
+      "titleEn": "Omar Khayyam Day",
+      "category": "official"
+    },
+    {
+      "month": 5,
+      "day": 14,
+      "titleFa": "روز بزرگداشت ملک‌الشعرا بهار",
+      "titleEn": "Bahar Day",
+      "category": "official"
+    },
+    {
+      "month": 5,
+      "day": 17,
+      "titleFa": "روز خبرنگار",
+      "titleEn": "Journalist Day",
+      "category": "official"
+    },
+    {
+      "month": 6,
+      "day": 4,
+      "titleFa": "روز کارمند",
+      "titleEn": "Employee Day",
+      "category": "official"
+    },
+    {
+      "month": 6,
+      "day": 5,
+      "titleFa": "روز تعاون",
+      "titleEn": "Cooperation Day",
+      "category": "official"
+    },
+    {
+      "month": 6,
+      "day": 8,
+      "titleFa": "روز مبارزه با تروریسم",
+      "titleEn": "Day against Terrorism",
+      "category": "official"
+    },
+    {
+      "month": 6,
+      "day": 27,
+      "titleFa": "روز شعر و ادب فارسی",
+      "titleEn": "Persian Poetry Day",
+      "category": "official"
+    },
+    {
+      "month": 6,
+      "day": 30,
+      "titleFa": "روز گفتگو و انسجام اسلامی",
+      "titleEn": "Islamic Unity Day",
+      "category": "official"
+    },
+    {
+      "month": 7,
+      "day": 1,
+      "titleFa": "آغاز سال تحصیلی",
+      "titleEn": "Start of the school year",
+      "category": "national"
+    },
+    {
+      "month": 7,
+      "day": 8,
+      "titleFa": "روز بزرگداشت مولوی",
+      "titleEn": "Rumi Day",
+      "category": "official"
+    },
+    {
+      "month": 7,
+      "day": 13,
+      "titleFa": "روز نیروی انتظامی",
+      "titleEn": "Police Day",
+      "category": "official"
+    },
+    {
+      "month": 7,
+      "day": 20,
+      "titleFa": "روز بزرگداشت حافظ",
+      "titleEn": "Hafez Day",
+      "category": "official"
+    },
+    {
+      "month": 7,
+      "day": 24,
+      "titleFa": "روز پیوند اولیا و مربیان",
+      "titleEn": "Parents and Teachers Day",
+      "category": "official"
+    },
+    {
+      "month": 8,
+      "day": 8,
+      "titleFa": "روز نوجوان و بسیج دانش‌آموزی",
+      "titleEn": "Youth Day",
+      "category": "official"
+    },
+    {
+      "month": 8,
+      "day": 13,
+      "titleFa": "روز دانش‌آموز و مبارزه با استکبار",
+      "titleEn": "Student Day",
+      "category": "national",
+      "holiday": true
+    },
+    {
+      "month": 8,
+      "day": 18,
+      "titleFa": "روز ملی کیفیت",
+      "titleEn": "National Quality Day",
+      "category": "official"
+    },
+    {
+      "month": 8,
+      "day": 24,
+      "titleFa": "روز کتاب، کتابخوانی و کتابدار",
+      "titleEn": "Book and Reading Day",
+      "category": "official"
+    },
+    {
+      "month": 9,
+      "day": 2,
+      "titleFa": "روز اطلاعات و امنیت ملی",
+      "titleEn": "National Security Day",
+      "category": "official"
+    },
+    {
+      "month": 9,
+      "day": 5,
+      "titleFa": "روز بسیج مستضعفین",
+      "titleEn": "Basij Day",
+      "category": "official"
+    },
+    {
+      "month": 9,
+      "day": 7,
+      "titleFa": "روز نیروی دریایی",
+      "titleEn": "Navy Day",
+      "category": "official"
+    },
+    {
+      "month": 9,
+      "day": 16,
+      "titleFa": "روز دانشجو",
+      "titleEn": "Student Day (16 Azar)",
+      "category": "official"
+    },
+    {
+      "month": 9,
+      "day": 25,
+      "titleFa": "روز پژوهش",
+      "titleEn": "Research Day",
+      "category": "official"
+    },
+    {
+      "month": 9,
+      "day": 30,
+      "titleFa": "شب یلدا",
+      "titleEn": "Yalda Night",
+      "category": "national"
+    },
+    {
+      "month": 10,
+      "day": 19,
+      "titleFa": "قیام ۱۹ دی مردم قم",
+      "titleEn": "Qom Uprising",
+      "category": "official"
+    },
+    {
+      "month": 11,
+      "day": 12,
+      "titleFa": "بازگشت امام خمینی به ایران",
+      "titleEn": "Return of Imam Khomeini",
+      "category": "national"
+    },
+    {
+      "month": 11,
+      "day": 19,
+      "titleFa": "روز نیروی هوایی",
+      "titleEn": "Air Force Day",
+      "category": "official"
+    },
+    {
+      "month": 11,
+      "day": 22,
+      "titleFa": "پیروزی انقلاب اسلامی",
+      "titleEn": "Islamic Revolution Day",
+      "category": "national",
+      "holiday": true
+    },
+    {
+      "month": 12,
+      "day": 5,
+      "titleFa": "روز بزرگداشت خواجه نصیرالدین طوسی و روز مهندس",
+      "titleEn": "Engineer's Day",
+      "category": "official"
+    },
+    {
+      "month": 12,
+      "day": 20,
+      "titleFa": "روز بزرگداشت نظامی گنجوی",
+      "titleEn": "Nizami Ganjavi Day",
+      "category": "official"
+    },
+    {
+      "month": 12,
+      "day": 25,
+      "titleFa": "روز بزرگداشت پروین اعتصامی",
+      "titleEn": "Parvin Etesami Day",
+      "category": "official"
+    },
+    {
+      "month": 12,
+      "day": 29,
+      "titleFa": "روز ملی شدن صنعت نفت ایران",
+      "titleEn": "Oil Nationalization Day",
+      "category": "national",
+      "holiday": true
+    }
+  ],
+  "lunar": [
+    {
+      "month": 1,
+      "day": 9,
+      "titleFa": "تاسوعای حسینی",
+      "titleEn": "Tasua",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 1,
+      "day": 10,
+      "titleFa": "عاشورای حسینی",
+      "titleEn": "Ashura",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 1,
+      "day": 12,
+      "titleFa": "شهادت امام زین‌العابدین",
+      "titleEn": "Martyrdom of Imam Sajjad",
+      "category": "religious"
+    },
+    {
+      "month": 2,
+      "day": 3,
+      "titleFa": "شهادت امام حسن مجتبی (روایت دوم)",
+      "titleEn": "Martyrdom of Imam Hassan",
+      "category": "religious"
+    },
+    {
+      "month": 2,
+      "day": 20,
+      "titleFa": "اربعین حسینی",
+      "titleEn": "Arbaeen",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 2,
+      "day": 28,
+      "titleFa": "رحلت پیامبر اکرم و شهادت امام حسن مجتبی",
+      "titleEn": "Passing of the Prophet",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 2,
+      "day": 29,
+      "titleFa": "شهادت امام رضا (روایت اول)",
+      "titleEn": "Martyrdom of Imam Reza",
+      "category": "religious"
+    },
+    {
+      "month": 2,
+      "day": 30,
+      "titleFa": "شهادت امام رضا (روایت دوم)",
+      "titleEn": "Martyrdom of Imam Reza",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 3,
+      "day": 8,
+      "titleFa": "شهادت امام حسن عسکری",
+      "titleEn": "Martyrdom of Imam Askari",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 3,
+      "day": 12,
+      "titleFa": "آغاز هفته وحدت",
+      "titleEn": "Start of Islamic Unity Week",
+      "category": "religious"
+    },
+    {
+      "month": 3,
+      "day": 17,
+      "titleFa": "میلاد پیامبر اکرم و امام جعفر صادق",
+      "titleEn": "Prophet's birthday",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 5,
+      "day": 10,
+      "titleFa": "شهادت حضرت فاطمه زهرا (روایت دوم)",
+      "titleEn": "Martyrdom of Fatima",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 6,
+      "day": 3,
+      "titleFa": "شهادت حضرت فاطمه زهرا (روایت اول)",
+      "titleEn": "Martyrdom of Fatima",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 7,
+      "day": 13,
+      "titleFa": "ولادت امام علی",
+      "titleEn": "Birthday of Imam Ali",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 7,
+      "day": 27,
+      "titleFa": "مبعث پیامبر اکرم",
+      "titleEn": "Isra and Mi'raj",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 8,
+      "day": 3,
+      "titleFa": "ولادت امام حسین",
+      "titleEn": "Birthday of Imam Hussain",
+      "category": "religious"
+    },
+    {
+      "month": 8,
+      "day": 4,
+      "titleFa": "ولادت حضرت ابوالفضل",
+      "titleEn": "Birthday of Abbas",
+      "category": "religious"
+    },
+    {
+      "month": 8,
+      "day": 15,
+      "titleFa": "ولادت حضرت مهدی (نیمه شعبان)",
+      "titleEn": "Mid-Sha'ban",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 9,
+      "day": 1,
+      "titleFa": "آغاز ماه مبارک رمضان",
+      "titleEn": "First day of Ramadan",
+      "category": "religious"
+    },
+    {
+      "month": 9,
+      "day": 15,
+      "titleFa": "ولادت امام حسن مجتبی",
+      "titleEn": "Birthday of Imam Hassan",
+      "category": "religious"
+    },
+    {
+      "month": 9,
+      "day": 19,
+      "titleFa": "شب قدر و ضربت خوردن امام علی",
+      "titleEn": "Night of Destiny (19th)",
+      "category": "religious"
+    },
+    {
+      "month": 9,
+      "day": 21,
+      "titleFa": "شهادت امام علی",
+      "titleEn": "Martyrdom of Imam Ali",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 9,
+      "day": 23,
+      "titleFa": "شب قدر",
+      "titleEn": "Night of Destiny (23rd)",
+      "category": "religious"
+    },
+    {
+      "month": 10,
+      "day": 1,
+      "titleFa": "عید سعید فطر",
+      "titleEn": "Eid al-Fitr",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 10,
+      "day": 25,
+      "titleFa": "شهادت امام جعفر صادق",
+      "titleEn": "Martyrdom of Imam Sadiq",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 12,
+      "day": 9,
+      "titleFa": "روز عرفه",
+      "titleEn": "Day of Arafah",
+      "category": "religious"
+    },
+    {
+      "month": 12,
+      "day": 10,
+      "titleFa": "عید سعید قربان",
+      "titleEn": "Eid al-Adha",
+      "category": "religious",
+      "holiday": true
+    },
+    {
+      "month": 12,
+      "day": 18,
+      "titleFa": "عید سعید غدیر خم",
+      "titleEn": "Eid al-Ghadir",
+      "category": "religious",
+      "holiday": true
+    }
+  ],
+  "gregorian": [
+    {
+      "month": 1,
+      "day": 1,
+      "titleFa": "آغاز سال میلادی",
+      "titleEn": "New Year's Day",
+      "category": "official"
+    },
+    {
+      "month": 2,
+      "day": 14,
+      "titleFa": "روز عشق و دوستی",
+      "titleEn": "Valentine's Day",
+      "category": "personal"
+    },
+    {
+      "month": 3,
+      "day": 8,
+      "titleFa": "روز جهانی زنان",
+      "titleEn": "International Women's Day",
+      "category": "official"
+    },
+    {
+      "month": 3,
+      "day": 21,
+      "titleFa": "روز جهانی نوروز",
+      "titleEn": "International Nowruz Day",
+      "category": "national"
+    },
+    {
+      "month": 5,
+      "day": 1,
+      "titleFa": "روز جهانی کارگر",
+      "titleEn": "International Workers' Day",
+      "category": "official",
+      "holiday": true
+    },
+    {
+      "month": 12,
+      "day": 25,
+      "titleFa": "کریسمس",
+      "titleEn": "Christmas",
+      "category": "personal"
+    }
   ]
 }

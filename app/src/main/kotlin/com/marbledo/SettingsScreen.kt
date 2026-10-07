@@ -1,6 +1,12 @@
 package com.marble098.marbledo
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +24,7 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PrivacyTip
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -38,24 +45,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.calendar.OccasionState
+import com.marbledo.feature.calendar.PersianDateUtils
 
 @Composable
 fun SettingsScreen(
     settings: AppSettings,
+    notificationsGranted: Boolean,
+    exactAlarmGranted: Boolean,
+    occasionState: OccasionState,
     onUpdate: (AppSettings) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onRestoreAutomatic: () -> Unit,
     onRequestNotifications: () -> Unit,
     onRequestExactAlarm: () -> Unit,
+    onRefreshOccasions: () -> Unit,
     onCheckUpdates: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -64,10 +79,12 @@ fun SettingsScreen(
     var numeralMenu by remember { mutableStateOf(false) }
     var countdownCalendarMenu by remember { mutableStateOf(false) }
     var showBatteryHelp by remember { mutableStateOf(false) }
+    val permissionsSatisfied = notificationsGranted && exactAlarmGranted
 
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 10.dp)) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(14.dp))
+
         SettingsSection(title = stringResource(R.string.settings_appearance), icon = Icons.Outlined.Palette) {
             SettingMenuRow(
                 label = stringResource(R.string.settings_theme),
@@ -105,7 +122,10 @@ fun SettingsScreen(
                 }
             }
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(TextNormalizer.formatDigits(stringResource(R.string.settings_font_scale, (settings.fontScale * 100).toInt()), settings.numeralMode), modifier = Modifier.weight(1f))
+                Text(
+                    TextNormalizer.formatDigits(stringResource(R.string.settings_font_scale, (settings.fontScale * 100).toInt()), settings.numeralMode),
+                    modifier = Modifier.weight(1f),
+                )
                 IconButton(onClick = { onUpdate(settings.copy(fontScale = (settings.fontScale - 0.1f).coerceAtLeast(0.8f))) }) { Text("−") }
                 IconButton(onClick = { onUpdate(settings.copy(fontScale = (settings.fontScale + 0.1f).coerceAtMost(1.5f))) }) { Text("+") }
             }
@@ -137,7 +157,10 @@ fun SettingsScreen(
                 onCheckedChange = { onUpdate(settings.copy(weekStartsSaturday = it)) },
             )
             Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(TextNormalizer.formatDigits(stringResource(R.string.settings_lunar_offset, settings.lunarOffsetDays), settings.numeralMode), modifier = Modifier.weight(1f))
+                Text(
+                    TextNormalizer.formatDigits(stringResource(R.string.settings_lunar_offset, settings.lunarOffsetDays), settings.numeralMode),
+                    modifier = Modifier.weight(1f),
+                )
                 IconButton(onClick = { onUpdate(settings.copy(lunarOffsetDays = (settings.lunarOffsetDays - 1).coerceAtLeast(-2))) }) { Text("−") }
                 IconButton(onClick = { onUpdate(settings.copy(lunarOffsetDays = (settings.lunarOffsetDays + 1).coerceAtMost(2))) }) { Text("+") }
             }
@@ -152,10 +175,39 @@ fun SettingsScreen(
             SettingSwitchRow(stringResource(R.string.settings_personal_events), settings.personalEventsEnabled) { onUpdate(settings.copy(personalEventsEnabled = it)) }
         }
 
-        SettingsSection(title = stringResource(R.string.settings_notifications), icon = Icons.Outlined.NotificationsActive) {
-            SettingsActionRow(stringResource(R.string.settings_request_notifications), onRequestNotifications)
-            SettingsActionRow(stringResource(R.string.settings_request_exact_alarm), onRequestExactAlarm)
-            TextButton(onClick = { showBatteryHelp = true }) { Text(stringResource(R.string.settings_battery_guide_title)) }
+        SettingsSection(title = stringResource(R.string.settings_occasions), icon = Icons.Outlined.Refresh) {
+            SettingSwitchRow(
+                text = stringResource(R.string.settings_occasions_auto_update),
+                checked = settings.occasionAutoUpdateEnabled,
+                onCheckedChange = { onUpdate(settings.copy(occasionAutoUpdateEnabled = it)) },
+            )
+            Text(
+                TextNormalizer.formatDigits(stringResource(R.string.settings_occasions_count, occasionState.occasionCount), settings.numeralMode),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                occasionStatusText(occasionState, settings.numeralMode),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (occasionState.lastError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SettingsActionRow(stringResource(R.string.settings_occasions_update_now), onRefreshOccasions, enabled = !occasionState.isRefreshing)
+        }
+
+        // Once every permission is in place this whole block fades away instead of nagging the user.
+        AnimatedVisibility(
+            visible = !permissionsSatisfied,
+            enter = fadeIn(tween(220)),
+            exit = fadeOut(tween(260)) + shrinkVertically(tween(260)),
+        ) {
+            SettingsSection(title = stringResource(R.string.settings_notifications), icon = Icons.Outlined.NotificationsActive) {
+                if (!notificationsGranted) {
+                    SettingsActionRow(stringResource(R.string.settings_request_notifications), onRequestNotifications)
+                }
+                if (!exactAlarmGranted) {
+                    SettingsActionRow(stringResource(R.string.settings_request_exact_alarm), onRequestExactAlarm)
+                }
+            }
         }
 
         SettingsSection(title = stringResource(R.string.settings_backup), icon = Icons.Outlined.Backup) {
@@ -168,10 +220,18 @@ fun SettingsScreen(
         }
 
         SettingsSection(title = stringResource(R.string.settings_privacy), icon = Icons.Outlined.PrivacyTip) {
-            Text(stringResource(R.string.settings_local_only), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.settings_privacy_body), style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(6.dp))
+            TextButton(onClick = { showBatteryHelp = true }) { Text(stringResource(R.string.settings_battery_guide_title)) }
             SettingsActionRow(stringResource(R.string.settings_update), onCheckUpdates)
         }
-        Text(stringResource(R.string.settings_version, BuildConfig.VERSION_NAME), modifier = Modifier.padding(14.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        Text(
+            stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+            modifier = Modifier.padding(14.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 
     if (showBatteryHelp) {
@@ -182,6 +242,18 @@ fun SettingsScreen(
             confirmButton = { TextButton(onClick = { showBatteryHelp = false }) { Text(stringResource(R.string.settings_close)) } },
         )
     }
+}
+
+@Composable
+private fun occasionStatusText(state: OccasionState, numeralMode: NumeralMode): String {
+    val locale = LocalConfiguration.current.locales[0]
+    val stamp = state.lastUpdatedEpochMillis
+    return when {
+        state.isRefreshing -> stringResource(R.string.settings_occasions_updating)
+        state.lastError -> stringResource(R.string.settings_occasions_failed)
+        stamp != null -> stringResource(R.string.settings_occasions_updated_at, PersianDateUtils.gregorianDate(stamp, locale))
+        else -> stringResource(R.string.settings_occasions_updated_never)
+    }.let { TextNormalizer.formatDigits(it, numeralMode) }
 }
 
 @Composable
@@ -210,10 +282,10 @@ private fun SettingSwitchRow(text: String, checked: Boolean, onCheckedChange: (B
 }
 
 @Composable
-private fun SettingsActionRow(text: String, onClick: () -> Unit) {
+private fun SettingsActionRow(text: String, onClick: () -> Unit, enabled: Boolean = true) {
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(text, modifier = Modifier.weight(1f))
-        TextButton(onClick = onClick) { Text(stringResource(R.string.settings_action)) }
+        TextButton(onClick = onClick, enabled = enabled) { Text(stringResource(R.string.settings_action)) }
     }
 }
 
@@ -232,15 +304,10 @@ private fun SettingMenuRow(
             Text(label, style = MaterialTheme.typography.bodyMedium)
             Text(value, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        BoxMenu(expanded, onExpandedChange, menuItems)
-    }
-}
-
-@Composable
-private fun BoxMenu(expanded: Boolean, onExpandedChange: (Boolean) -> Unit, content: @Composable () -> Unit) {
-    androidx.compose.foundation.layout.Box {
-        TextButton(onClick = { onExpandedChange(true) }) { Text(stringResource(R.string.settings_change)) }
-        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) { content() }
+        Box {
+            TextButton(onClick = { onExpandedChange(true) }) { Text(stringResource(R.string.settings_change)) }
+            DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) { menuItems() }
+        }
     }
 }
 

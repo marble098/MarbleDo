@@ -1,9 +1,5 @@
 package com.marbledo.feature.calendar
 
-import android.content.Context
-import android.icu.util.Calendar
-import android.icu.util.TimeZone as IcuTimeZone
-import android.icu.util.ULocale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,19 +14,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,13 +43,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.Task
@@ -57,114 +59,129 @@ import com.marbledo.domain.util.TextNormalizer
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-import org.json.JSONObject
 
-private enum class CalendarViewMode { MONTH, AGENDA, YEAR }
-
-private val PERSIAN_CALENDAR_LOCALE = ULocale("fa_IR@calendar=persian")
-private val ISLAMIC_CIVIL_CALENDAR_LOCALE = ULocale("ar@calendar=islamic-civil")
-
-private data class Holiday(
-    val month: Int,
-    val day: Int,
-    val titleFa: String,
-    val titleEn: String,
-    val category: String,
-)
+private enum class CalendarViewMode { MONTH, AGENDA, OCCASIONS, YEAR }
 
 private data class DayCell(
     val epochMillis: Long,
-    val date: LocalDate,
-    val dayNumber: Int,
+    val year: Int,
+    val month: Int,
+    val day: Int,
+    val weekdayIndex: Int,
     val inDisplayedMonth: Boolean,
     val isToday: Boolean,
     val taskCount: Int,
-    val holiday: Holiday?,
 )
+
+private data class MonthData(val monthIndex: Int, val year: Int, val cells: List<DayCell>)
 
 @Composable
 fun CalendarScreen(
     tasks: List<Task>,
+    catalog: OccasionCatalog,
+    occasionState: OccasionState,
+    enabledCategories: Set<OccasionCategory>,
     languageTag: String,
     weekStartsSaturday: Boolean,
     lunarOffsetDays: Int,
-    enabledEventCategories: Set<String> = setOf("official", "national", "religious", "personal"),
+    onRefreshOccasions: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     val zone = remember { ZoneId.systemDefault() }
+    val numeralMode = LocalNumeralMode.current
     var monthOffset by rememberSaveable { mutableIntStateOf(0) }
     var selectedIsoDate by rememberSaveable { mutableStateOf(LocalDate.now(zone).toString()) }
     var viewMode by rememberSaveable { mutableStateOf(CalendarViewMode.MONTH) }
-    val holidays = remember(context) { loadHolidays(context) }
-    val selectedDate = remember(selectedIsoDate) { runCatching { LocalDate.parse(selectedIsoDate) }.getOrDefault(LocalDate.now(zone)) }
-    val monthData = remember(monthOffset, tasks, holidays, weekStartsSaturday, zone, enabledEventCategories) {
-        buildMonth(monthOffset, tasks, holidays, zone, weekStartsSaturday, enabledEventCategories)
+    val selectedDate = remember(selectedIsoDate, zone) {
+        runCatching { LocalDate.parse(selectedIsoDate) }.getOrDefault(LocalDate.now(zone))
     }
-    val monthName = persianMonthName(monthData.monthIndex, languageTag)
-    val numeralMode = LocalNumeralMode.current
-    val dateInfo = remember(selectedDate, lunarOffsetDays, languageTag, numeralMode) {
-        tripleCalendarDate(selectedDate, lunarOffsetDays, languageTag, numeralMode)
+    val monthData = remember(monthOffset, tasks, weekStartsSaturday, zone) {
+        buildMonth(monthOffset, tasks, zone, weekStartsSaturday)
     }
-    val selectedCell = monthData.cells.firstOrNull { it.date == selectedDate }
-    val matchingTasks = tasks.filter { task ->
-        task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == selectedDate } == true
+    val index = remember(catalog, enabledCategories, lunarOffsetDays, monthData.cells.first().year, monthData.year) {
+        OccasionIndex.build(
+            catalog = catalog,
+            jalaliYears = buildSet {
+                add(monthData.year)
+                monthData.cells.forEach { add(it.year) }
+            },
+            lunarOffsetDays = lunarOffsetDays,
+            enabledCategories = enabledCategories,
+            zone = zone,
+        )
     }
-    val holidayTitle = selectedCell?.holiday?.let { if (languageTag == "fa") it.titleFa else it.titleEn }
+    val selectedPersian = PersianDateUtils.of(selectedDate.atStartOfDay(zone).toInstant().toEpochMilli(), zone)
+    val selectedOccasions = index.on(selectedPersian.year, selectedPersian.month, selectedPersian.day)
+    val matchingTasks = remember(tasks, selectedDate, zone) {
+        tasks.filter { task ->
+            task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == selectedDate } == true
+        }
+    }
+    val todayEpoch = remember(zone) { LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli() }
 
     Column(modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 16.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(stringResource(R.string.calendar_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text(dateInfo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+            OccasionSyncButton(occasionState.isRefreshing, onRefreshOccasions)
+        }
+
+        OccasionSyncStatus(
+            state = occasionState,
+            languageTag = languageTag,
+            numeralMode = numeralMode,
+            modifier = Modifier.padding(horizontal = 20.dp),
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
             IconButton(onClick = { monthOffset -= 1 }) {
-                Icon(
-                    if (rtl) Icons.Outlined.ChevronRight else Icons.Outlined.ChevronLeft,
-                    contentDescription = stringResource(R.string.calendar_previous_month),
-                )
+                Icon(if (rtl) Icons.Outlined.ChevronRight else Icons.Outlined.ChevronLeft, contentDescription = stringResource(R.string.calendar_previous_month))
             }
-            IconButton(onClick = { monthOffset += 1 }) {
-                Icon(
-                    if (rtl) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,
-                    contentDescription = stringResource(R.string.calendar_next_month),
-                )
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
             Text(
-                TextNormalizer.formatDigits(stringResource(R.string.calendar_month_year, monthName, monthData.year), numeralMode),
-                style = MaterialTheme.typography.titleLarge,
+                TextNormalizer.formatDigits(stringResource(R.string.calendar_month_year, PersianDateUtils.monthName(monthData.monthIndex, languageTag), monthData.year), numeralMode),
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
             )
-            Text(
-                stringResource(R.string.calendar_today),
-                modifier = Modifier.clip(CircleShape).clickable {
+            IconButton(onClick = { monthOffset += 1 }) {
+                Icon(if (rtl) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
+            }
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.padding(start = 4.dp).clickable {
                     monthOffset = 0
-                    val today = LocalDate.now(zone)
-                    selectedIsoDate = today.toString()
-                }.padding(horizontal = 12.dp, vertical = 7.dp),
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.labelLarge,
-            )
+                    selectedIsoDate = LocalDate.now(zone).toString()
+                },
+            ) {
+                Text(
+                    stringResource(R.string.calendar_today),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            listOf(CalendarViewMode.MONTH, CalendarViewMode.AGENDA, CalendarViewMode.YEAR).forEach { mode ->
+            CalendarViewMode.entries.forEach { mode ->
                 FilterChip(
                     selected = viewMode == mode,
                     onClick = { viewMode = mode },
@@ -173,6 +190,7 @@ fun CalendarScreen(
                             when (mode) {
                                 CalendarViewMode.MONTH -> stringResource(R.string.calendar_view_month)
                                 CalendarViewMode.AGENDA -> stringResource(R.string.calendar_view_agenda)
+                                CalendarViewMode.OCCASIONS -> stringResource(R.string.calendar_view_occasions)
                                 CalendarViewMode.YEAR -> stringResource(R.string.calendar_view_year)
                             },
                         )
@@ -186,104 +204,175 @@ fun CalendarScreen(
                 WeekdayHeader(weekStartsSaturday)
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(7),
-                    modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 10.dp),
+                    modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 8.dp),
                     contentPadding = PaddingValues(bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    items(monthData.cells, key = { it.date.toString() }) { cell ->
+                    items(monthData.cells, key = { it.epochMillis }) { cell ->
+                        val dayOccasions = index.on(cell.year, cell.month, cell.day)
                         DayCellView(
                             cell = cell,
-                            selected = cell.date == selectedDate,
+                            occasions = dayOccasions,
+                            selected = cell.epochMillis == selectedEpoch(selectedDate, zone),
                             languageTag = languageTag,
-                            onClick = { selectedIsoDate = cell.date.toString() },
+                            numeralMode = numeralMode,
+                            onClick = { selectedIsoDate = Instant.ofEpochMilli(cell.epochMillis).atZone(zone).toLocalDate().toString() },
                         )
                     }
                 }
+                SelectedDayCard(
+                    date = selectedDate,
+                    persian = selectedPersian,
+                    occasions = selectedOccasions,
+                    tasks = matchingTasks,
+                    languageTag = languageTag,
+                    numeralMode = numeralMode,
+                    lunarOffsetDays = lunarOffsetDays,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                )
             }
+
             CalendarViewMode.AGENDA -> {
-                val items = monthData.cells.filter { it.inDisplayedMonth && (it.taskCount > 0 || it.holiday != null) }
-                if (items.isEmpty()) {
-                    EmptyCalendarMessage(Modifier.weight(1f))
+                val agenda = monthData.cells.filter { cell ->
+                    cell.inDisplayedMonth && (cell.taskCount > 0 || index.on(cell.year, cell.month, cell.day).isNotEmpty())
+                }
+                if (agenda.isEmpty()) {
+                    EmptyMessage(stringResource(R.string.calendar_no_events), Modifier.weight(1f))
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        items(items.size) { index ->
-                            val cell = items[index]
+                        items(agenda, key = { it.epochMillis }) { cell ->
                             AgendaRow(
-                                date = cell.date,
-                                taskCount = cell.taskCount,
-                                holiday = cell.holiday?.let { if (languageTag == "fa") it.titleFa else it.titleEn },
+                                cell = cell,
+                                occasions = index.on(cell.year, cell.month, cell.day),
                                 languageTag = languageTag,
-                                onClick = { selectedIsoDate = cell.date.toString() },
+                                numeralMode = numeralMode,
+                                onClick = { selectedIsoDate = Instant.ofEpochMilli(cell.epochMillis).atZone(zone).toLocalDate().toString() },
                             )
                         }
                     }
                 }
             }
+
+            CalendarViewMode.OCCASIONS -> {
+                val monthOccasions = index.forMonth(monthData.year, monthData.monthIndex)
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        TextNormalizer.formatDigits(stringResource(R.string.calendar_month_occasions_count, monthOccasions.size), numeralMode),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
+                    )
+                    if (monthOccasions.isEmpty()) {
+                        EmptyMessage(stringResource(R.string.calendar_no_month_occasions), Modifier.weight(1f))
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(monthOccasions) { (day, occasion) ->
+                                OccasionRow(
+                                    day = day,
+                                    occasion = occasion,
+                                    languageTag = languageTag,
+                                    numeralMode = numeralMode,
+                                    weekdayIndex = weekdayIndexFor(monthData.year, monthData.monthIndex, day, zone),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             CalendarViewMode.YEAR -> {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(3),
-                    modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                    modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
                     contentPadding = PaddingValues(bottom = 18.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(12) { index ->
-                        Card(
-                            modifier = Modifier.padding(5.dp).clickable {
-                                val currentMonth = monthData.monthIndex
-                                monthOffset += index - currentMonth
+                    items((1..12).toList()) { month ->
+                        val count = index.forMonth(monthData.year, month).size
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = if (month == monthData.monthIndex) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.clickable {
+                                monthOffset += month - monthData.monthIndex
                                 viewMode = CalendarViewMode.MONTH
                             },
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         ) {
-                            Text(
-                                persianMonthName(index, languageTag),
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.titleSmall,
-                            )
+                            Column(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(PersianDateUtils.monthName(month, languageTag), style = MaterialTheme.typography.titleSmall)
+                                if (count > 0) {
+                                    Text(
+                                        TextNormalizer.formatDigits(stringResource(R.string.calendar_occasions_short, count), numeralMode),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        ) {
-            Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                Text(dateInfo, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(5.dp))
-                if (!holidayTitle.isNullOrBlank()) {
-                    Text(holidayTitle, color = MaterialTheme.colorScheme.tertiary)
-                }
-                Text(
-                    TextNormalizer.formatDigits(stringResource(R.string.calendar_tasks_count, matchingTasks.size), numeralMode),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                matchingTasks.take(3).forEach { task -> Text("• ${task.title}", style = MaterialTheme.typography.bodySmall) }
             }
         }
     }
 }
 
+private fun selectedEpoch(date: LocalDate, zone: ZoneId): Long = date.atStartOfDay(zone).toInstant().toEpochMilli()
+
+@Composable
+private fun OccasionSyncButton(refreshing: Boolean, onRefresh: () -> Unit) {
+    IconButton(onClick = onRefresh, enabled = !refreshing) {
+        if (refreshing) {
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(Icons.Outlined.Refresh, contentDescription = stringResource(R.string.calendar_sync_now), tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+private fun OccasionSyncStatus(state: OccasionState, languageTag: String, numeralMode: NumeralMode, modifier: Modifier = Modifier) {
+    val locale = LocalConfiguration.current.locales[0]
+    val message = when {
+        state.isRefreshing -> stringResource(R.string.calendar_sync_refreshing)
+        state.lastError -> stringResource(R.string.calendar_sync_error)
+        state.lastUpdatedEpochMillis != null -> stringResource(
+            R.string.calendar_sync_last,
+            PersianDateUtils.gregorianDate(state.lastUpdatedEpochMillis, locale),
+        )
+        else -> stringResource(R.string.calendar_sync_bundled)
+    }
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(15.dp))
+        Text(
+            TextNormalizer.formatDigits(stringResource(R.string.calendar_occasions_available, state.occasionCount), numeralMode) + " · " + message,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
 @Composable
 private fun WeekdayHeader(weekStartsSaturday: Boolean) {
-    val saturday = listOf(
+    val order = if (weekStartsSaturday) (0..6).toList() else listOf(1, 2, 3, 4, 5, 6, 0)
+    val labels = listOf(
         R.string.calendar_sat, R.string.calendar_sun, R.string.calendar_mon, R.string.calendar_tue,
         R.string.calendar_wed, R.string.calendar_thu, R.string.calendar_fri,
     )
-    val sunday = listOf(
-        R.string.calendar_sun, R.string.calendar_mon, R.string.calendar_tue, R.string.calendar_wed,
-        R.string.calendar_thu, R.string.calendar_fri, R.string.calendar_sat,
-    )
-    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
-        (if (weekStartsSaturday) saturday else sunday).forEach { label ->
+    Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp)) {
+        order.forEach { weekdayIndex ->
             Text(
-                stringResource(label),
+                stringResource(labels[weekdayIndex]),
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -294,7 +383,15 @@ private fun WeekdayHeader(weekStartsSaturday: Boolean) {
 }
 
 @Composable
-private fun DayCellView(cell: DayCell, selected: Boolean, languageTag: String, onClick: () -> Unit) {
+private fun DayCellView(
+    cell: DayCell,
+    occasions: List<Occasion>,
+    selected: Boolean,
+    languageTag: String,
+    numeralMode: NumeralMode,
+    onClick: () -> Unit,
+) {
+    val isHoliday = occasions.any(Occasion::isHoliday)
     val background = when {
         selected -> MaterialTheme.colorScheme.primary
         cell.isToday -> MaterialTheme.colorScheme.primaryContainer
@@ -302,129 +399,248 @@ private fun DayCellView(cell: DayCell, selected: Boolean, languageTag: String, o
     }
     val foreground = when {
         selected -> MaterialTheme.colorScheme.onPrimary
-        !cell.inDisplayedMonth -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+        !cell.inDisplayedMonth -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f)
+        isHoliday -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurface
     }
     Column(
-        modifier = Modifier.padding(2.dp).size(43.dp).clip(CircleShape).background(background).clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(background)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 2.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
-        Text(TextNormalizer.formatDigits(cell.dayNumber.toString(), LocalNumeralMode.current), color = foreground, style = MaterialTheme.typography.bodySmall)
-        if (cell.taskCount > 0 || cell.holiday != null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                repeat(minOf(cell.taskCount, 2)) {
-                    Box(Modifier.size(3.dp).clip(CircleShape).background(if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.tertiary))
-                }
-                if (cell.holiday != null) {
-                    Box(Modifier.size(3.dp).clip(CircleShape).background(if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.error))
-                }
+        Text(
+            TextNormalizer.formatDigits(cell.day.toString(), numeralMode),
+            color = foreground,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (cell.isToday || isHoliday) FontWeight.SemiBold else FontWeight.Normal,
+        )
+        occasions.firstOrNull()?.let { occasion ->
+            Text(
+                occasion.title(languageTag),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.tertiary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                lineHeight = 12.sp,
+            )
+        }
+        Row(Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (cell.taskCount > 0) {
+                Box(Modifier.size(4.dp).clip(CircleShape).background(if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary))
+            }
+            if (occasions.size > 1) {
+                Box(Modifier.size(4.dp).clip(CircleShape).background(if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.secondary))
             }
         }
     }
 }
 
 @Composable
-private fun AgendaRow(date: LocalDate, taskCount: Int, holiday: String?, languageTag: String, onClick: () -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(TextNormalizer.formatDigits(date.format(DateTimeFormatter.ofPattern(if (languageTag == "fa") "d MMMM" else "MMM d", Locale.forLanguageTag(languageTag))), LocalNumeralMode.current))
-            Column(horizontalAlignment = Alignment.End) {
-                holiday?.let { Text(it, color = MaterialTheme.colorScheme.tertiary) }
-                if (taskCount > 0) Text(stringResource(R.string.calendar_tasks_count, taskCount), style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyCalendarMessage(modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Text(stringResource(R.string.calendar_no_events), color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-private data class MonthData(val monthIndex: Int, val year: Int, val cells: List<DayCell>)
-
-private fun buildMonth(
-    monthOffset: Int,
+private fun SelectedDayCard(
+    date: LocalDate,
+    persian: PersianDate,
+    occasions: List<Occasion>,
     tasks: List<Task>,
-    holidays: List<Holiday>,
-    zone: ZoneId,
-    weekStartsSaturday: Boolean,
-    enabledCategories: Set<String>,
-): MonthData {
-    val current = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), PERSIAN_CALENDAR_LOCALE).apply {
-        timeInMillis = System.currentTimeMillis()
-        add(Calendar.MONTH, monthOffset)
-        set(Calendar.DAY_OF_MONTH, 1)
-        set(Calendar.HOUR_OF_DAY, 12)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
+    languageTag: String,
+    numeralMode: NumeralMode,
+    lunarOffsetDays: Int,
+    modifier: Modifier = Modifier,
+) {
+    val epoch = remember(date, persian.year, persian.month, persian.day) {
+        PersianDateUtils.startOfJalaliDay(persian.year, persian.month, persian.day) ?: System.currentTimeMillis()
     }
-    val month = current.get(Calendar.MONTH)
-    val year = current.get(Calendar.YEAR)
-    val firstDayOfWeek = current.get(Calendar.DAY_OF_WEEK)
-    val leadingCells = if (weekStartsSaturday) firstDayOfWeek % 7 else firstDayOfWeek - 1
-    val firstCell = (current.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, -leadingCells) }
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                PersianDateUtils.fullDateWithWeekday(epoch, languageTag, numeralMode),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                PersianDateUtils.tripleDate(epoch, languageTag, numeralMode, lunarOffsetDays),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (occasions.isEmpty()) {
+                Text(stringResource(R.string.calendar_no_occasions), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                occasions.forEach { occasion ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(Modifier.size(6.dp).clip(CircleShape).background(categoryColor(occasion.category)))
+                        Text(occasion.title(languageTag), style = MaterialTheme.typography.bodyMedium)
+                        if (occasion.isHoliday) {
+                            Text(
+                                stringResource(R.string.calendar_holiday_badge),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
+            Text(
+                TextNormalizer.formatDigits(stringResource(R.string.calendar_tasks_count, tasks.size), numeralMode),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            tasks.take(4).forEach { task ->
+                Text("• ${task.title}", style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+@Composable
+private fun AgendaRow(
+    cell: DayCell,
+    occasions: List<Occasion>,
+    languageTag: String,
+    numeralMode: NumeralMode,
+    onClick: () -> Unit,
+) {
+    val epoch = cell.epochMillis
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(TextNormalizer.formatDigits(cell.day.toString(), numeralMode), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(PersianDateUtils.weekdayShort(cell.weekdayIndex, languageTag), style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                occasions.forEach { occasion ->
+                    Text(
+                        occasion.title(languageTag),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (occasion.isHoliday) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (cell.taskCount > 0) {
+                    Text(
+                        TextNormalizer.formatDigits(stringResource(R.string.calendar_tasks_count, cell.taskCount), numeralMode),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Text(
+                PersianDateUtils.fullDate(epoch, languageTag, numeralMode),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OccasionRow(day: Int, occasion: Occasion, languageTag: String, numeralMode: NumeralMode, weekdayIndex: Int) {
+    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(TextNormalizer.formatDigits(day.toString(), numeralMode), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(PersianDateUtils.weekdayShort(weekdayIndex, languageTag), style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            Column(Modifier.weight(1f)) {
+                Text(occasion.title(languageTag), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                Text(
+                    stringResource(categoryLabelRes(occasion.category)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = categoryColor(occasion.category),
+                )
+            }
+            if (occasion.isHoliday) {
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
+                    Text(
+                        stringResource(R.string.calendar_holiday_badge),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyMessage(text: String, modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.padding(24.dp))
+    }
+}
+
+@Composable
+fun categoryColor(category: OccasionCategory): Color = when (category) {
+    OccasionCategory.OFFICIAL -> MaterialTheme.colorScheme.primary
+    OccasionCategory.NATIONAL -> MaterialTheme.colorScheme.tertiary
+    OccasionCategory.RELIGIOUS -> Color(0xFF2E9E7C)
+    OccasionCategory.PERSONAL -> MaterialTheme.colorScheme.secondary
+}
+
+internal fun categoryLabelRes(category: OccasionCategory): Int = when (category) {
+    OccasionCategory.OFFICIAL -> R.string.calendar_category_official
+    OccasionCategory.NATIONAL -> R.string.calendar_category_national
+    OccasionCategory.RELIGIOUS -> R.string.calendar_category_religious
+    OccasionCategory.PERSONAL -> R.string.calendar_category_personal
+}
+
+private fun weekdayIndexFor(year: Int, month: Int, day: Int, zone: ZoneId): Int {
+    val epoch = PersianDateUtils.startOfJalaliDay(year, month, day, zone) ?: return 0
+    return PersianDateUtils.of(epoch, zone).weekdayIndex
+}
+
+private fun buildMonth(monthOffset: Int, tasks: List<Task>, zone: ZoneId, weekStartsSaturday: Boolean, nowMillis: Long = System.currentTimeMillis()): MonthData {
+    val current = JalaliCalendarMath.persianCalendar(zone).apply {
+        timeInMillis = nowMillis
+        add(android.icu.util.Calendar.MONTH, monthOffset)
+        set(android.icu.util.Calendar.DAY_OF_MONTH, 1)
+        set(android.icu.util.Calendar.HOUR_OF_DAY, 12)
+        set(android.icu.util.Calendar.MINUTE, 0)
+        set(android.icu.util.Calendar.SECOND, 0)
+        set(android.icu.util.Calendar.MILLISECOND, 0)
+    }
+    val month = current.get(android.icu.util.Calendar.MONTH) + 1
+    val year = current.get(android.icu.util.Calendar.YEAR)
+    val firstDayOfWeek = current.get(android.icu.util.Calendar.DAY_OF_WEEK)
+    val firstWeekdayIndex = JalaliCalendarMath.saturdayBasedWeekday(firstDayOfWeek)
+    val leadingCells = if (weekStartsSaturday) firstWeekdayIndex else (firstWeekdayIndex + 6) % 7
+    val firstCell = (current.clone() as android.icu.util.Calendar).apply { add(android.icu.util.Calendar.DAY_OF_MONTH, -leadingCells) }
     val today = LocalDate.now(zone)
-    val taskCounts = tasks.mapNotNull { task ->
-        task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
-    }.groupingBy { it }.eachCount()
-    val eligibleHolidays = holidays.filter { it.category in enabledCategories }
+    val taskCounts = tasks.mapNotNull { task -> task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() } }
+        .groupingBy { it }
+        .eachCount()
     val cells = (0 until 42).map { offset ->
-        val day = (firstCell.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, offset) }
+        val day = (firstCell.clone() as android.icu.util.Calendar).apply { add(android.icu.util.Calendar.DAY_OF_MONTH, offset) }
         val epoch = day.timeInMillis
-        val date = Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate()
-        val isDisplayed = day.get(Calendar.MONTH) == month && day.get(Calendar.YEAR) == year
+        val localDate = Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate()
         DayCell(
             epochMillis = epoch,
-            date = date,
-            dayNumber = day.get(Calendar.DAY_OF_MONTH),
-            inDisplayedMonth = isDisplayed,
-            isToday = date == today,
-            taskCount = taskCounts[date] ?: 0,
-            holiday = eligibleHolidays.firstOrNull { it.month == day.get(Calendar.MONTH) + 1 && it.day == day.get(Calendar.DAY_OF_MONTH) },
+            year = day.get(android.icu.util.Calendar.YEAR),
+            month = day.get(android.icu.util.Calendar.MONTH) + 1,
+            day = day.get(android.icu.util.Calendar.DAY_OF_MONTH),
+            weekdayIndex = JalaliCalendarMath.saturdayBasedWeekday(day.get(android.icu.util.Calendar.DAY_OF_WEEK)),
+            inDisplayedMonth = day.get(android.icu.util.Calendar.MONTH) + 1 == month && day.get(android.icu.util.Calendar.YEAR) == year,
+            isToday = localDate == today,
+            taskCount = taskCounts[localDate] ?: 0,
         )
     }
     return MonthData(month, year, cells)
-}
-
-private fun loadHolidays(context: Context): List<Holiday> = runCatching {
-    val json = context.assets.open("calendar/holidays-fa.json").bufferedReader().use { it.readText() }
-    val array = JSONObject(json).getJSONArray("holidays")
-    (0 until array.length()).map { index ->
-        val item = array.getJSONObject(index)
-        Holiday(
-            month = item.getInt("month"),
-            day = item.getInt("day"),
-            titleFa = item.getString("titleFa"),
-            titleEn = item.getString("titleEn"),
-            category = item.getString("category"),
-        )
-    }
-}.getOrDefault(emptyList())
-
-private fun tripleCalendarDate(date: LocalDate, lunarOffset: Int, languageTag: String, numeralMode: NumeralMode): String {
-    val zone = ZoneId.systemDefault()
-    val epoch = date.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
-    val p = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), PERSIAN_CALENDAR_LOCALE).apply { timeInMillis = epoch }
-    val g = date.format(DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.ROOT))
-    val i = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), ISLAMIC_CIVIL_CALENDAR_LOCALE).apply {
-        timeInMillis = epoch
-        add(Calendar.DAY_OF_MONTH, lunarOffset)
-    }
-    val monthsFa = listOf("محرم", "صفر", "ربیع‌الاول", "ربیع‌الثانی", "جمادی‌الاول", "جمادی‌الثانی", "رجب", "شعبان", "رمضان", "شوال", "ذی‌القعده", "ذی‌الحجه")
-    val monthsEn = listOf("Muharram", "Safar", "Rabi I", "Rabi II", "Jumada I", "Jumada II", "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qadah", "Dhu al-Hijjah")
-    val lunarMonth = (if (languageTag == "fa") monthsFa else monthsEn).getOrElse(i.get(Calendar.MONTH)) { "" }
-    val persian = "${p.get(Calendar.DAY_OF_MONTH)} ${persianMonthName(p.get(Calendar.MONTH), languageTag)} ${p.get(Calendar.YEAR)}"
-    val lunar = "${i.get(Calendar.DAY_OF_MONTH)} $lunarMonth ${i.get(Calendar.YEAR)}"
-    return TextNormalizer.formatDigits("$persian  ·  $g  ·  $lunar", numeralMode)
-}
-
-private fun persianMonthName(month: Int, languageTag: String): String {
-    val namesFa = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند")
-    val namesEn = listOf("Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar", "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand")
-    return (if (languageTag == "fa") namesFa else namesEn).getOrElse(month) { "" }
 }

@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [TaskEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class MarbleDatabase : RoomDatabase() {
@@ -47,12 +47,19 @@ abstract class MarbleDatabase : RoomDatabase() {
             }
         }
 
+        /** v4 lets every task opt in or out of the dashboard countdown. */
+        val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN countdownEnabled INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
         fun create(context: Context): MarbleDatabase = Room.databaseBuilder(
             context.applicationContext,
             MarbleDatabase::class.java,
             DATABASE_NAME,
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .fallbackToDestructiveMigrationOnDowngrade()
             .build()
     }
