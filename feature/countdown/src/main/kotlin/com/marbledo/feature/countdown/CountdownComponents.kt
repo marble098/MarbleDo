@@ -63,14 +63,13 @@ import com.marbledo.domain.util.TextNormalizer
 import java.time.Duration
 import java.time.ZonedDateTime
 
-/** Immersive full-screen countdown with a theme picker that switches the look in place. */
+/** Immersive, read-only countdown view. Theme selection lives in Settings. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CountdownFocusDialog(
     task: Task,
     themeId: String,
     calendarDisplay: CalendarDisplayMode = CalendarDisplayMode.PERSIAN,
-    onThemeSelected: (String) -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     val theme = CountdownTheme.from(themeId)
@@ -98,8 +97,6 @@ fun CountdownFocusDialog(
                             textAlign = TextAlign.Center,
                         )
                     }
-                    Text(stringResource(R.string.countdown_quick_theme), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                    ThemeSwatchRow(selected = theme, onSelect = { onThemeSelected(it.id) })
                     Text(stringResource(R.string.countdown_focus_mode), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -230,6 +227,7 @@ fun CountdownCreateSheet(
     onCalendarDisplaySelected: (CalendarDisplayMode) -> Unit,
     onDismiss: () -> Unit,
     onCreate: (Task) -> Unit,
+    defaultThemeId: String = CountdownTheme.DEFAULT.id,
 ) {
     val initialTarget = remember { ZonedDateTime.now().plusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0).toInstant().toEpochMilli() }
     var title by rememberSaveable { mutableStateOf("") }
@@ -312,7 +310,14 @@ fun CountdownCreateSheet(
                 Button(
                     onClick = {
                         val dueAt = targetMillis ?: return@Button
-                        onCreate(Task(title = title.trim(), dueAtEpochMillis = dueAt, priority = TaskPriority.NORMAL))
+                        onCreate(
+                            Task(
+                                title = title.trim(),
+                                dueAtEpochMillis = dueAt,
+                                priority = TaskPriority.NORMAL,
+                                countdownTheme = defaultThemeId,
+                            ),
+                        )
                     },
                     enabled = title.isNotBlank() && targetMillis != null,
                     modifier = Modifier.weight(1f),

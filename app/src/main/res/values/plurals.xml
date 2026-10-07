@@ -1,0 +1,10 @@
+<resources>
+    <plurals name="calendar_notification_count">
+        <item quantity="one">%1$s occasion today</item>
+        <item quantity="other">%1$s occasions today</item>
+    </plurals>
+    <plurals name="calendar_notification_more">
+        <item quantity="one">and %1$s more</item>
+        <item quantity="other">and %1$s more</item>
+    </plurals>
+</resources>

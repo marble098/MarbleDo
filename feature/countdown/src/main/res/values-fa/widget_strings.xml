@@ -1,5 +1,12 @@
 <resources>
-    <string name="widget_empty">کاری در پیش نیست</string>
-    <string name="widget_time_left">%1$d روز · %2$d ساعت مانده</string>
-    <string name="widget_target_date">موعد: %1$s</string>
+    <string name="widget_countdown_label">لحظهٔ بعدی</string>
+    <string name="widget_empty_title">هنوز لحظه‌ای ثبت نشده</string>
+    <string name="widget_empty">یک کار زمان‌دار بساز تا شمارش معکوسش اینجا نمایش داده شود.</string>
+    <string name="widget_time_left">%1$s روز · %2$s ساعت · %3$s دقیقه</string>
+    <string name="widget_target_date">موعد · %1$s</string>
+    <string name="widget_unit_days">روز</string>
+    <string name="widget_unit_hours">ساعت</string>
+    <string name="widget_unit_minutes">دقیقه</string>
+    <string name="widget_due">لحظهٔ تو همین‌جاست</string>
+    <string name="widget_open_app">بازکردن ماربل‌دو</string>
 </resources>

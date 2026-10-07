@@ -8,6 +8,9 @@
     <string name="settings_title">ترجیحات</string>
     <string name="settings_appearance">ظاهر</string>
     <string name="settings_theme">تم برنامه</string>
+    <string name="settings_countdown_theme">تم شمارش معکوس</string>
+    <string name="settings_countdown_theme_hint">این تم برای شمارش‌های تازه پیش‌فرض است؛ هر کار قبلی ظاهر خودش را نگه می‌دارد.</string>
+    <string name="settings_browse_themes">مشاهدهٔ تم‌ها</string>
     <string name="theme_auto">پیروی از سیستم</string>
     <string name="theme_glass">شیشه‌ای روشن</string>
     <string name="theme_dark">تیره</string>
@@ -20,6 +23,12 @@
     <string name="numerals_persian">فارسی (۱۲۳)</string>
     <string name="numerals_latin">انگلیسی (123)</string>
     <string name="numerals_arabic">عربی (١٢٣)</string>
+    <string name="settings_home_widget">ویجت صفحهٔ اصلی</string>
+    <string name="settings_home_widget_hint">کارت زندهٔ شمارش معکوس را به صفحهٔ اصلی اضافه کن تا لحظهٔ بعدی را یک‌نگاه ببینی.</string>
+    <string name="settings_add_widget">افزودن ویجت شمارش</string>
+    <string name="settings_widget_pin_requested">راه‌انداز گوشی برای افزودن ویجت از تو تأیید می‌خواهد.</string>
+    <string name="settings_widget_pin_unsupported">این راه‌انداز افزودن مستقیم ویجت را پشتیبانی نمی‌کند؛ ماربل‌دو را از فهرست ویجت‌ها اضافه کن.</string>
+    <string name="settings_widget_pin_failed">شروع افزودن ویجت ممکن نشد؛ ماربل‌دو را از فهرست ویجت‌ها اضافه کن.</string>
     <string name="settings_calendar">تنظیمات تقویم</string>
     <string name="settings_countdown_calendar">تقویم تاریخ شمارش معکوس</string>
     <string name="calendar_display_persian">شمسی</string>
@@ -72,7 +81,9 @@
     <string name="channel_tasks_description">یادآوری موعد و کارهای داخل اعلان</string>
     <string name="channel_countdown">شمارش معکوس</string>
     <string name="channel_countdown_description">اعلان‌های شمارش معکوس</string>
-    <string name="calendar_notification_body">امروز یک مناسبت تقویمی است.</string>
+    <string name="calendar_notification_title">مناسبت‌های امروز</string>
+    <string name="calendar_notification_summary">%1$s · %2$s</string>
+    <string name="calendar_notification_open">مشاهدهٔ تقویم</string>
     <string name="channel_calendar">مناسبت‌های تقویم</string>
     <string name="channel_calendar_description">تاریخ‌های رسمی و شخصی تقویم</string>
     <string name="channel_backup">وضعیت پشتیبان</string>
@@ -103,7 +114,6 @@
     <string name="dash_countdown_none_title">هنوز شمارش زنده‌ای نداری</string>
     <string name="dash_countdown_none_body">به یک کار تاریخ بده و شمارش معکوسش را روشن کن تا همین‌جا زنده ببینی.</string>
     <string name="dash_create_countdown">ساخت شمارش معکوس</string>
-    <string name="dash_gallery">گالری تم‌ها</string>
     <string name="dash_upcoming_countdowns">لحظه‌های پیش رو</string>
     <string name="dash_occasions_today">مناسبت‌های امروز</string>
     <string name="dash_no_occasion">برای امروز مناسبتی ثبت نشده است.</string>

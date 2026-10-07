@@ -1,0 +1,10 @@
+<resources>
+    <plurals name="calendar_notification_count">
+        <item quantity="one">%1$s مناسبت امروز</item>
+        <item quantity="other">%1$s مناسبت امروز</item>
+    </plurals>
+    <plurals name="calendar_notification_more">
+        <item quantity="one">و %1$s مورد دیگر</item>
+        <item quantity="other">و %1$s مورد دیگر</item>
+    </plurals>
+</resources>
