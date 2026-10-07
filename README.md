@@ -2,18 +2,18 @@
 
 **Small steps. Meaningful moments.**
 
-MarbleDo is an offline-first Android task and countdown app. The interface defaults to Persian/RTL and can be switched to English/LTR. Tasks, reminders, calendar dates, countdown themes, and preferences remain on-device unless the user explicitly exports a backup.
+MarbleDo is an offline-first Android task and calendar app. The interface defaults to Persian/RTL and can be switched to English/LTR. Tasks, reminders, calendar dates, countdown themes, and preferences remain on-device unless the user explicitly exports a backup; only the occasion catalog uses the optional network access.
 
 [فارسی](#ماربلدو--marbledo)
 
 ## What is implemented
 
 - **Tasks:** Compose UI, smart Persian/English quick-add parsing, guided multi-step voice task creation (category, title, Persian date, time, and priority), search, filters, pinning, sorting, user-created categories, priorities, checklists, tags, archive/completion, recurring tasks, undo, and task reminders.
-- **Calendar:** Persian/Gregorian/Islamic date display, month/agenda/year views, Saturday-first preference, local holiday data, a user-adjustable lunar offset, and localized daily occasion notifications with a date header and expanded event list.
-- **Countdowns:** create countdowns directly with one-tap hour/day/week/month/year presets or a validated date/time, select Persian/Gregorian/Islamic-civil date entry and display, choose the default look from the 12-theme gallery in Settings, use a focused full-screen view, pin a localized Glance widget to the home screen, and quick-add from a Quick Settings tile.
-- **Preferences:** app language, RTL/LTR, Persian/Latin/Arabic-Indic numerals, Vazirmatn variable font with role-appropriate weights in Persian UI, light/dark/AMOLED/dynamic themes, font scaling, reduced motion, calendar-category visibility/alerts, and notification setup guidance.
+- **Calendar:** Persian/Gregorian/Islamic date display, redesigned month/agenda/year views, searchable whole-year occasion browsing, Saturday-first preference, local holiday data, and a user-adjustable lunar offset. Catalog downloads fail over across four GitHub/CDN delivery paths; the bundled and cached catalogs remain available offline. Daily occasion alerts are separate from an optional quiet, ongoing notification showing all three dates, today's occasions, and the next dated task.
+- **Countdowns and widget:** create countdowns directly with one-tap hour/day/week/month/year presets or a validated date/time, choose a theme from the 12-theme gallery, use a focused full-screen view, and pin a redesigned daily-planner Glance widget with triple-calendar dates, occasions, the next task, and a live countdown. Quick-add is also available from a Quick Settings tile.
+- **Preferences:** app language, RTL/LTR, Persian/Latin/Arabic-Indic numerals, Vazirmatn variable font with role-appropriate weights in Persian UI, light/dark/AMOLED/dynamic themes, font scaling, reduced motion, calendar-category visibility, occasion auto-update, and notification controls.
 - **Storage:** Room database with explicit v1→v2→v3 migrations, pinned/category task fields, and exported schema configuration; Proto DataStore preferences; WorkManager snapshots; local SAF export/import with optional AES-GCM passphrase encryption.
-- **Privacy:** no Firebase, analytics, advertising, or network permission in the app. Android system speech recognition may use an external recognition provider according to the device's configuration.
+- **Privacy:** no Firebase, analytics, or advertising. Internet access is used only to refresh the occasion catalog; Android system speech recognition may use an external recognition provider according to the device's configuration.
 - **Engineering:** Kotlin/Compose, modular feature/core structure, Koin DI, Navigation 3, R8 for release, StrictMode in debug, unit tests, a baseline-profile/Macrobenchmark test module, dependency-update automation, and signed GitHub Release automation.
 - **Font license:** the bundled Vazirmatn variable TTF is from [rastikerdar/vazirmatn](https://github.com/rastikerdar/vazirmatn) and is distributed under SIL OFL 1.1; the license is included in `core/designsystem/licenses/`.
 
@@ -92,15 +92,15 @@ Backups can be exported through Android's Storage Access Framework to a user-sel
 1. **Android 13 and later:** allow notifications in Android's permission prompt and in system app settings. If the permission was denied, open Android Settings → Apps → MarbleDo → Notifications.
 2. **Exact alarm access:** for more precise reminders, use MarbleDo's “Enable precise reminders” action or Android Settings → Apps → Special app access → Alarms & reminders. If access is unavailable, MarbleDo falls back to an inexact system alarm; delivery may be delayed.
 3. **Battery restrictions:** set MarbleDo to unrestricted/allow background activity if your device aggressively stops apps. Vendor names vary; Xiaomi often uses Autostart, Samsung uses Background usage limits, and Huawei/Oppo use App launch or Battery management.
-4. **Notification channels:** check that the “Task reminders” channel is enabled and has a suitable importance level. Android lets users override channel settings.
+4. **Notification channels:** check that the “Task reminders” channel is enabled. The optional ongoing calendar uses a separate low-importance, silent channel; Android lets users override either channel.
 5. **Do Not Disturb:** DND, Focus modes, and manufacturer sound policies may silence reminders even when the app is functioning.
 6. **After changing time, time zone, or rebooting:** the boot/time-change receiver recalculates task alarms. Open the app once if the manufacturer has prevented background startup.
 7. **Speech input:** the microphone action uses an installed Android speech-recognition service. Availability, language support, and any network use are controlled by that provider; typed quick-add remains fully local.
 
 ## Known scope limits
 
-- The included Persian holiday asset covers a fixed set of national/official dates; it is not a live official calendar feed. Religious/lunar dates are calculated with Android ICU and can differ by a day from local authority announcements; the ±2-day adjustment is provided for that reason.
-- Calendar-category preferences control both the local event categories shown and which bundled holiday categories may trigger the daily occasion notification. The fixed holiday asset is not a live feed; remote updates and a Drive connector are not included.
+- The bundled Persian catalog is the offline baseline. Network refresh downloads the repository-maintained catalog through four failover delivery paths; those mirrors contain the same data and are not independent government feeds. Religious/lunar dates are calculated with Android ICU and can differ by a day from local authority announcements; the ±2-day adjustment is provided for that reason.
+- Calendar-category preferences control which catalog categories are shown and which may appear in alerts. The catalog is curated, not a real-time official government feed; Drive sync is not included.
 - Exact delivery depends on Android permissions and vendor battery policy. Without exact-alarm access, Android may defer reminders.
 - The repository was assembled in an environment without Java, Gradle, `adb`, or Android SDK. **A local Android build/test was not run here**, so compile/runtime verification must be completed by the included CI workflow or on a machine with the requirements above.
 
@@ -115,11 +115,11 @@ Backups can be exported through Android's Storage Access Framework to a user-sel
 ## امکانات پیاده‌سازی‌شده
 
 - **کارها:** افزودن هوشمند فارسی/انگلیسی، راهنمای صوتی مرحله‌به‌مرحله برای دسته، عنوان، تاریخ شمسی، ساعت و اولویت، جست‌وجو، فیلتر، سنجاق، مرتب‌سازی، ساخت دسته‌بندی، اولویت، چک‌لیست، برچسب، بایگانی، تکرار و یادآوری.
-- **تقویم:** نمایش تاریخ شمسی، میلادی و قمری، نمای ماه/برنامه/سال، شروع هفته از شنبه، اصلاح قمری قابل‌تنظیم و اعلان‌های روزانهٔ دوزبانه و راست‌چین با سربرگ تاریخ و فهرست بازشوندهٔ مناسبت‌ها.
-- **شمارش معکوس:** ساخت سریع با زمان‌های آمادهٔ یک‌ساعته/روزانه/هفتگی/ماهانه/سالانه یا تاریخ‌وساعت دقیق، ورود و نمایش تاریخ شمسی/میلادی/قمری، انتخاب تم پیش‌فرض از گالری ۱۲تایی در تنظیمات، نمای تمرکز تمام‌صفحه و ویجت زنده و راست‌چین Glance که از تنظیمات به صفحهٔ اصلی سنجاق می‌شود.
-- **تنظیمات:** فارسی/انگلیسی و RTL/LTR، رقم فارسی/لاتین/عربی، فونت متغیر وزیرمتن با وزن متناسب برای عنوان/متن/برچسب، تم روشن/تیره/AMOLED/پویا، اندازهٔ نوشته، کاهش حرکت و ترجیحات تقویم.
+- **تقویم:** نمایش تاریخ شمسی/میلادی/قمری، بازطراحی نمای ماه/برنامه/سال، مرور و جست‌وجوی همهٔ مناسبت‌های سال، اصلاح قمری قابل‌تنظیم و اعلان روزانه. دریافت فهرست مناسبت‌ها از چهار مسیر جایگزین GitHub/CDN انجام می‌شود؛ نسخهٔ همراه برنامه و نسخهٔ ذخیره‌شده حتی بدون اینترنت در دسترس می‌ماند. اعلان دائمی و بی‌صدا با تاریخ هر سه تقویم، خلاصهٔ مناسبت‌ها و کار بعدی نیز از تنظیمات فعال می‌شود.
+- **شمارش معکوس و ویجت:** ساخت سریع با زمان‌های آماده یا تاریخ دقیق، گالری ۱۲ تم و نمای تمرکز؛ ویجت روزانهٔ بازطراحی‌شده تاریخ‌های سه‌گانه، مناسبت‌ها، کار بعدی و شمارش معکوس را نمایش می‌دهد.
+- **تنظیمات:** فارسی/انگلیسی و RTL/LTR، رقم فارسی/لاتین/عربی، فونت متغیر وزیرمتن، تم روشن/تیره/AMOLED/پویا، اندازهٔ نوشته، کاهش حرکت، به‌روزرسانی خودکار مناسبت‌ها و تنظیمات اعلان.
 - **ذخیره‌سازی:** Room با Migration نسخهٔ ۱ به ۲ و ۳، نگهداری سنجاق و دستهٔ کار، Proto DataStore، پشتیبان خودکار با WorkManager و وارد/خارج‌کردن پشتیبان محلی از SAF با رمزگذاری اختیاری AES-GCM.
-- **حریم خصوصی:** بدون Firebase، تحلیل‌گر، تبلیغ یا مجوز اینترنت در برنامه. سرویس تشخیص گفتار اندروید ممکن است بر اساس تنظیمات دستگاه از ارائه‌دهندهٔ بیرونی استفاده کند.
+- **حریم خصوصی:** بدون Firebase، تحلیل‌گر یا تبلیغ؛ اینترنت فقط برای به‌روزرسانی اختیاری فهرست مناسبت‌هاست. سرویس تشخیص گفتار اندروید ممکن است بر اساس تنظیمات دستگاه از ارائه‌دهندهٔ بیرونی استفاده کند.
 - **معماری و کیفیت:** Kotlin/Compose، ماژول‌های feature/core، Koin، Navigation 3، R8 نسخهٔ انتشار، StrictMode در debug، تست واحد، ماژول Baseline Profile/Macrobenchmark و گردش‌کارهای CI، به‌روزرسانی وابستگی و انتشار امضاشده.
 
 ## ساخت و آزمون

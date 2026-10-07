@@ -4,6 +4,7 @@ import android.app.Application
 import android.os.StrictMode
 import com.marble098.marbledo.notifications.AndroidTaskReminderScheduler
 import com.marble098.marbledo.notifications.CalendarNotificationWorkInitializer
+import com.marble098.marbledo.notifications.PersistentCalendarNotificationWorker
 import com.marble098.marbledo.app.sync.OccasionSyncWorker
 import com.marble098.marbledo.notifications.NotificationChannels
 import com.marbledo.core.data.backup.BackupWorkInitializer
@@ -32,6 +33,7 @@ class MarbleDoApplication : Application() {
         }
         BackupWorkInitializer.ensureDailyBackup(this)
         CalendarNotificationWorkInitializer.ensureDaily(this)
+        PersistentCalendarNotificationWorker.ensurePeriodic(this)
         OccasionSyncWorker.ensureDaily(this)
     }
 

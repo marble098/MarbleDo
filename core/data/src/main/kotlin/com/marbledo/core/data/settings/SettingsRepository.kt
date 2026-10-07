@@ -45,6 +45,7 @@ class SettingsRepository(private val context: Context) {
             reduceMotion = proto.reduceMotion,
             lunarOffsetDays = proto.lunarOffsetDays.coerceIn(-2, 2),
             occasionAutoUpdateEnabled = if (configured) proto.occasionAutoUpdateEnabled else true,
+            persistentDateNotificationEnabled = proto.persistentDateNotificationEnabled,
         )
     }
 
@@ -68,6 +69,7 @@ class SettingsRepository(private val context: Context) {
         .setReduceMotion(settings.reduceMotion)
         .setLunarOffsetDays(settings.lunarOffsetDays)
         .setOccasionAutoUpdateEnabled(settings.occasionAutoUpdateEnabled)
+        .setPersistentDateNotificationEnabled(settings.persistentDateNotificationEnabled)
         .build()
 
     private inline fun <reified T : Enum<T>> enumOrDefault(value: String, default: T): T =

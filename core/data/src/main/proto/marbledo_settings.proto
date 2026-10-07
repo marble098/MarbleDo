@@ -23,4 +23,5 @@ message MarbleDoSettingsProto {
   string countdown_calendar = 17;
   repeated string task_categories = 18;
   bool occasion_auto_update_enabled = 19;
+  bool persistent_date_notification_enabled = 20;
 }

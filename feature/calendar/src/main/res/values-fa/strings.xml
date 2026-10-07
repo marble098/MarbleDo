@@ -35,4 +35,10 @@
     <string name="calendar_month_7">مهر</string><string name="calendar_month_8">آبان</string>
     <string name="calendar_month_9">آذر</string><string name="calendar_month_10">دی</string>
     <string name="calendar_month_11">بهمن</string><string name="calendar_month_12">اسفند</string>
+    <string name="calendar_sync_offline">اینترنت وصل نیست؛ نسخهٔ ذخیره‌شدهٔ مناسبت‌ها همچنان نمایش داده می‌شود.</string>
+    <string name="calendar_all_year_occasions">همهٔ مناسبت‌های سال %1$d</string>
+    <string name="calendar_search_occasions">جست‌وجوی مناسبت</string>
+    <string name="calendar_no_matching_occasions">مناسبتی با این عبارت پیدا نشد.</string>
+    <string name="calendar_year_occasions_count">%1$d مناسبت در این سال</string>
+    <string name="calendar_no_year_occasions">برای این سال مناسبتی در فهرست نیست.</string>
 </resources>

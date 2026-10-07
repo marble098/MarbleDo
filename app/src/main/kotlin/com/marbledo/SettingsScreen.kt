@@ -1,10 +1,5 @@
 package com.marble098.marbledo
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,7 +81,6 @@ fun SettingsScreen(
     var countdownCalendarMenu by remember { mutableStateOf(false) }
     var showCountdownThemeGallery by rememberSaveable { mutableStateOf(false) }
     var showBatteryHelp by remember { mutableStateOf(false) }
-    val permissionsSatisfied = notificationsGranted && exactAlarmGranted
 
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 10.dp)) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -231,19 +225,25 @@ fun SettingsScreen(
             SettingsActionRow(stringResource(R.string.settings_occasions_update_now), onRefreshOccasions, enabled = !occasionState.isRefreshing)
         }
 
-        // Once every permission is in place this whole block fades away instead of nagging the user.
-        AnimatedVisibility(
-            visible = !permissionsSatisfied,
-            enter = fadeIn(tween(220)),
-            exit = fadeOut(tween(260)) + shrinkVertically(tween(260)),
-        ) {
-            SettingsSection(title = stringResource(R.string.settings_notifications), icon = Icons.Outlined.NotificationsActive) {
-                if (!notificationsGranted) {
-                    SettingsActionRow(stringResource(R.string.settings_request_notifications), onRequestNotifications)
-                }
-                if (!exactAlarmGranted) {
-                    SettingsActionRow(stringResource(R.string.settings_request_exact_alarm), onRequestExactAlarm)
-                }
+        SettingsSection(title = stringResource(R.string.settings_notifications), icon = Icons.Outlined.NotificationsActive) {
+            SettingSwitchRow(
+                text = stringResource(R.string.settings_persistent_date_notification),
+                checked = settings.persistentDateNotificationEnabled,
+                onCheckedChange = { enabled ->
+                    onUpdate(settings.copy(persistentDateNotificationEnabled = enabled))
+                    if (enabled && !notificationsGranted) onRequestNotifications()
+                },
+            )
+            Text(
+                stringResource(R.string.settings_persistent_date_notification_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (!notificationsGranted) {
+                SettingsActionRow(stringResource(R.string.settings_request_notifications), onRequestNotifications)
+            }
+            if (!exactAlarmGranted) {
+                SettingsActionRow(stringResource(R.string.settings_request_exact_alarm), onRequestExactAlarm)
             }
         }
 
@@ -297,6 +297,7 @@ private fun occasionStatusText(state: OccasionState, numeralMode: NumeralMode): 
     val stamp = state.lastUpdatedEpochMillis
     return when {
         state.isRefreshing -> stringResource(R.string.settings_occasions_updating)
+        state.lastRefreshWasOffline -> stringResource(R.string.settings_occasions_offline)
         state.lastError -> stringResource(R.string.settings_occasions_failed)
         stamp != null -> stringResource(R.string.settings_occasions_updated_at, PersianDateUtils.gregorianDate(stamp, locale))
         else -> stringResource(R.string.settings_occasions_updated_never)

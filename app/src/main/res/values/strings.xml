@@ -24,8 +24,8 @@
     <string name="numerals_latin">English (123)</string>
     <string name="numerals_arabic">Arabic (١٢٣)</string>
     <string name="settings_home_widget">Home-screen widget</string>
-    <string name="settings_home_widget_hint">Pin a live countdown card to your launcher for a quick glance at your next moment.</string>
-    <string name="settings_add_widget">Add countdown widget</string>
+    <string name="settings_home_widget_hint">The redesigned daily planner shows Persian, Gregorian and lunar dates, today’s occasions, your next task and its live countdown.</string>
+    <string name="settings_add_widget">Add daily planner widget</string>
     <string name="settings_widget_pin_requested">Your launcher will ask you to confirm adding the widget.</string>
     <string name="settings_widget_pin_unsupported">This launcher does not support pinning. Add MarbleDo from the widget picker instead.</string>
     <string name="settings_widget_pin_failed">Could not start widget pinning. Add MarbleDo from the widget picker instead.</string>
@@ -159,4 +159,18 @@
     <string name="dash_sort_title">Title</string>
     <string name="dash_sort_recent">Recently changed</string>
     <string name="dash_archived">Archived</string>
+    <string name="settings_persistent_date_notification">Keep calendar details in notifications</string>
+    <string name="settings_persistent_date_notification_hint">A quiet, ongoing notification shows today’s Persian, Gregorian and lunar dates, a few occasions and your next dated task. Notification permission is required.</string>
+    <string name="settings_occasions_offline">No internet connection; your saved occasion catalog is still available.</string>
+    <string name="persistent_date_notification_title">Today’s calendar</string>
+    <string name="persistent_date_notification_subtext">Dates, occasions and your next task</string>
+    <string name="persistent_date_notification_occasion_label">Occasions: %1$s</string>
+    <string name="persistent_date_notification_no_occasion">No occasion is recorded for today</string>
+    <string name="persistent_date_notification_more_events">%1$s · and %2$s more</string>
+    <string name="persistent_date_notification_next_task_label">Next task: %1$s</string>
+    <string name="persistent_date_notification_no_task">No dated task is scheduled</string>
+    <string name="channel_persistent_calendar">Persistent calendar</string>
+    <string name="channel_persistent_calendar_description">A silent display of today’s dates and next task until disabled in settings</string>
+    <string name="dash_clear_search">Clear search</string>
+    <string name="dash_more_occasions">and %1$d more occasions</string>
 </resources>

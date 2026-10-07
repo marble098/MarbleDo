@@ -17,6 +17,8 @@ class ReminderBootReceiver : BroadcastReceiver() {
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
                 CalendarNotificationWorkInitializer.ensureDaily(context)
+                PersistentCalendarNotificationWorker.ensurePeriodic(context)
+                PersistentCalendarNotificationWorker.refreshNow(context)
                 val koin = GlobalContext.getOrNull() ?: return@launch
                 val repository = koin.get<TaskRepository>()
                 val scheduler = koin.get<AndroidTaskReminderScheduler>()

@@ -48,8 +48,8 @@
     <string name="countdown_gallery_hint">هر تم چیدمان، رنگ و حرکت خودش را دارد. انتخابت ظاهر پیش‌فرض شمارش‌های تازه می‌شود و کارهای قبلی ظاهر خودشان را نگه می‌دارند.</string>
     <string name="countdown_theme_active">فعال</string>
 
-    <string name="countdown_widget_name">شمارش ماربل‌دو</string>
-    <string name="countdown_widget_description">ویجت زنده و تغییرپذیر برای شمارش معکوس تا لحظهٔ مهم بعدی</string>
+    <string name="countdown_widget_name">برنامه‌ریز روز ماربل‌دو</string>
+    <string name="countdown_widget_description">نمای روزانهٔ تاریخ‌ها، مناسبت‌ها، کار بعدی و شمارش معکوس</string>
     <string name="countdown_add">شمارش جدید</string>
     <string name="countdown_add_first">ساخت اولین شمارش معکوس</string>
     <string name="countdown_calendar_display">تقویم نمایش و ورود تاریخ</string>

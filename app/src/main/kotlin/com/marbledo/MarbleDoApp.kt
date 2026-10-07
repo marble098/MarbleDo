@@ -79,6 +79,7 @@ import com.marbledo.feature.countdown.requestCountdownWidgetPin
 import com.marbledo.feature.countdown.updateMarbleCountdownWidgets
 import com.marbledo.feature.tasks.TasksViewModel
 import com.marble098.marbledo.notifications.NotificationChannels
+import com.marble098.marbledo.notifications.PersistentCalendarNotification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -117,6 +118,7 @@ fun MarbleDoApp(
     val context = LocalContext.current
     val noAutomaticBackupMessage = stringResource(R.string.settings_no_automatic_backup)
     val refreshFailedMessage = stringResource(R.string.settings_occasions_failed)
+    val refreshOfflineMessage = stringResource(R.string.settings_occasions_offline)
     val taskViewModel: TasksViewModel = koinViewModel()
     val taskState by taskViewModel.state.collectAsStateWithLifecycle()
     val settingsRepository: SettingsRepository = koinInject()
@@ -247,12 +249,31 @@ fun MarbleDoApp(
     }
 
     LaunchedEffect(
+        persistedSettings,
+        settings,
+        taskState.allTasks,
+        occasionState.catalog,
+        occasionState.isLoaded,
+        notificationsGranted,
+    ) {
+        if (persistedSettings != null && occasionState.isLoaded) {
+            PersistentCalendarNotification.update(
+                context = context.applicationContext,
+                settings = settings,
+                tasks = taskState.allTasks,
+                catalog = occasionState.catalog,
+            )
+        }
+    }
+
+    LaunchedEffect(
         taskState.allTasks,
         settings.languageTag,
         settings.themeMode,
         settings.numeralMode,
         settings.countdownCalendar,
         settings.countdownTheme,
+        occasionState.catalog,
     ) {
         updateMarbleCountdownWidgets(context)
     }
@@ -325,8 +346,10 @@ fun MarbleDoApp(
                                     lunarOffsetDays = settings.lunarOffsetDays,
                                     onRefreshOccasions = {
                                         coroutineScope.launch {
-                                            if (occasionRepository.refresh() == OccasionRefreshResult.FAILED) {
-                                                Toast.makeText(context, refreshFailedMessage, Toast.LENGTH_LONG).show()
+                                            when (occasionRepository.refresh()) {
+                                                OccasionRefreshResult.FAILED -> Toast.makeText(context, refreshFailedMessage, Toast.LENGTH_LONG).show()
+                                                OccasionRefreshResult.OFFLINE -> Toast.makeText(context, refreshOfflineMessage, Toast.LENGTH_LONG).show()
+                                                else -> Unit
                                             }
                                         }
                                     },
@@ -375,8 +398,10 @@ fun MarbleDoApp(
                                     onRequestExactAlarm = { requestExactAlarmSettings(context) },
                                     onRefreshOccasions = {
                                         coroutineScope.launch {
-                                            if (occasionRepository.refresh() == OccasionRefreshResult.FAILED) {
-                                                Toast.makeText(context, refreshFailedMessage, Toast.LENGTH_LONG).show()
+                                            when (occasionRepository.refresh()) {
+                                                OccasionRefreshResult.FAILED -> Toast.makeText(context, refreshFailedMessage, Toast.LENGTH_LONG).show()
+                                                OccasionRefreshResult.OFFLINE -> Toast.makeText(context, refreshOfflineMessage, Toast.LENGTH_LONG).show()
+                                                else -> Unit
                                             }
                                         }
                                     },

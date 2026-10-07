@@ -9,4 +9,11 @@
     <string name="widget_unit_minutes">MIN</string>
     <string name="widget_due">The moment is here</string>
     <string name="widget_open_app">Open MarbleDo</string>
+    <string name="widget_today_label">YOUR DAY AT A GLANCE</string>
+    <string name="widget_occasions_label">TODAY’S OCCASIONS</string>
+    <string name="widget_no_occasions">No occasion is recorded today</string>
+    <string name="widget_more_occasions">and %1$s more</string>
+    <string name="widget_next_task_label">NEXT TASK</string>
+    <string name="widget_no_next_task">No dated task is coming up</string>
+    <string name="widget_no_countdown">Turn on a countdown for a dated task to see the time remaining.</string>
 </resources>

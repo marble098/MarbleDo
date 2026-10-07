@@ -24,8 +24,8 @@
     <string name="numerals_latin">انگلیسی (123)</string>
     <string name="numerals_arabic">عربی (١٢٣)</string>
     <string name="settings_home_widget">ویجت صفحهٔ اصلی</string>
-    <string name="settings_home_widget_hint">کارت زندهٔ شمارش معکوس را به صفحهٔ اصلی اضافه کن تا لحظهٔ بعدی را یک‌نگاه ببینی.</string>
-    <string name="settings_add_widget">افزودن ویجت شمارش</string>
+    <string name="settings_home_widget_hint">ویجت تازه، تاریخ شمسی و میلادی و قمری، مناسبت‌های امروز، کار بعدی و شمارش معکوس را یک‌جا نشان می‌دهد.</string>
+    <string name="settings_add_widget">افزودن ویجت برنامه‌ریز روزانه</string>
     <string name="settings_widget_pin_requested">راه‌انداز گوشی برای افزودن ویجت از تو تأیید می‌خواهد.</string>
     <string name="settings_widget_pin_unsupported">این راه‌انداز افزودن مستقیم ویجت را پشتیبانی نمی‌کند؛ ماربل‌دو را از فهرست ویجت‌ها اضافه کن.</string>
     <string name="settings_widget_pin_failed">شروع افزودن ویجت ممکن نشد؛ ماربل‌دو را از فهرست ویجت‌ها اضافه کن.</string>
@@ -159,4 +159,18 @@
     <string name="dash_sort_title">عنوان</string>
     <string name="dash_sort_recent">تازه‌ترین تغییر</string>
     <string name="dash_archived">بایگانی</string>
+    <string name="settings_persistent_date_notification">نمایش همیشگی تقویم در اعلان‌ها</string>
+    <string name="settings_persistent_date_notification_hint">یک اعلان آرام و ماندگار، تاریخ شمسی و میلادی و قمری امروز، چند مناسبت و کار بعدی را نشان می‌دهد. برای نمایش آن، اجازهٔ اعلان‌ها لازم است.</string>
+    <string name="settings_occasions_offline">اینترنت در دسترس نیست؛ فهرست ذخیره‌شده همچنان در تقویم نمایش داده می‌شود.</string>
+    <string name="persistent_date_notification_title">تقویم امروز</string>
+    <string name="persistent_date_notification_subtext">تاریخ‌ها، مناسبت‌ها و کار بعدی</string>
+    <string name="persistent_date_notification_occasion_label">مناسبت‌ها: %1$s</string>
+    <string name="persistent_date_notification_no_occasion">مناسبتی برای امروز ثبت نشده</string>
+    <string name="persistent_date_notification_more_events">%1$s · و %2$s مناسبت دیگر</string>
+    <string name="persistent_date_notification_next_task_label">کار بعدی: %1$s</string>
+    <string name="persistent_date_notification_no_task">کار زمان‌داری ثبت نشده</string>
+    <string name="channel_persistent_calendar">تقویم دائمی</string>
+    <string name="channel_persistent_calendar_description">نمایش بی‌صدای تاریخ امروز و برنامهٔ بعدی تا زمان خاموش‌کردن از تنظیمات</string>
+    <string name="dash_clear_search">پاک‌کردن جست‌وجو</string>
+    <string name="dash_more_occasions">و %1$d مناسبت دیگر</string>
 </resources>
