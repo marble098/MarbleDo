@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.marbledo.domain.model.NumeralMode
 import com.marble098.marbledo.core.designsystem.R
 
@@ -113,7 +115,7 @@ fun MarbleTheme(
     ) {
         MaterialTheme(
             colorScheme = scheme,
-            typography = if (languageTag == "fa") PersianTypography else Typography(),
+            typography = marbleTypography(languageTag),
             shapes = Shapes(
                 extraSmall = RoundedCornerShape(12.dp),
                 small = RoundedCornerShape(16.dp),
@@ -143,21 +145,111 @@ val MarbleFontFamily: FontFamily = FontFamily(
     Font(R.font.vazirmatn_variable, weight = FontWeight.Black, variationSettings = FontVariation.Settings(FontVariation.weight(900))),
 )
 
+/**
+ * The nine registered Vazirmatn weights, each reserved for a specific role in the app:
+ * Thin/ExtraLight/Light carry oversized display numerals where the large size keeps them
+ * legible, Normal carries prose, Medium/SemiBold carry UI chrome, and Bold/ExtraBold/Black
+ * carry titles from card level up to screen heroes.
+ */
+object MarbleTextStyles {
+    /** Giant live-countdown digits — Vazirmatn Thin (wght 100). */
+    val heroDigits: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.Thin,
+        fontSize = 56.sp,
+        lineHeight = 64.sp,
+    )
+
+    /** Calendar year numerals and month navigators — Vazirmatn ExtraLight (wght 200). */
+    val yearDigits: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.ExtraLight,
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
+    )
+
+    /** Large day-of-month numerals and date subtitles — Vazirmatn Light (wght 300). */
+    val dateDigits: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.Light,
+        fontSize = 20.sp,
+        lineHeight = 26.sp,
+    )
+
+    /** Long-form body copy — Vazirmatn Normal (wght 400). */
+    val bodyPrimary: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 15.sp,
+        lineHeight = 24.sp,
+    )
+
+    /** Chips, metadata and captions — Vazirmatn Medium (wght 500). */
+    val metaLabel: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 18.sp,
+    )
+
+    /** List and row titles — Vazirmatn SemiBold (wght 600). */
+    val itemTitle: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 15.sp,
+        lineHeight = 22.sp,
+    )
+
+    /** Card titles and emphasized counters — Vazirmatn Bold (wght 700). */
+    val cardTitle: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        lineHeight = 26.sp,
+    )
+
+    /** Section headers across the app — Vazirmatn ExtraBold (wght 800). */
+    val sectionTitle: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+    )
+
+    /** Screen-level hero titles and greetings — Vazirmatn Black (wght 900). */
+    val screenTitle: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.Black,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+    )
+}
+
 private val defaultTypography = Typography()
-private val PersianTypography = defaultTypography.copy(
-    displayLarge = defaultTypography.displayLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Light),
-    displayMedium = defaultTypography.displayMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
-    displaySmall = defaultTypography.displaySmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
-    headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
-    headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
-    headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
-    titleLarge = defaultTypography.titleLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
-    titleMedium = defaultTypography.titleMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
+
+/** Full M3 scale in which every one of the nine Vazirmatn weights has a dedicated slot. */
+val PersianTypography: Typography = defaultTypography.copy(
+    // Oversized display numerals run lightest so big digits stay elegant instead of heavy.
+    displayLarge = defaultTypography.displayLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Thin),
+    displayMedium = defaultTypography.displayMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.ExtraLight),
+    displaySmall = defaultTypography.displaySmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Light),
+    // Titles climb the weight ladder toward the screen hero role.
+    headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Black),
+    headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.ExtraBold),
+    headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Bold),
+    titleLarge = defaultTypography.titleLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Bold),
+    titleMedium = defaultTypography.titleMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
     titleSmall = defaultTypography.titleSmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
+    // Prose stays calm at Normal.
     bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
     bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
     bodySmall = defaultTypography.bodySmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Normal),
-    labelLarge = defaultTypography.labelLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
+    // Chrome and labels carry Medium-to-SemiBold for small-size legibility.
+    labelLarge = defaultTypography.labelLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
     labelMedium = defaultTypography.labelMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
     labelSmall = defaultTypography.labelSmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
 )
+
+/** Vazirmatn backs the whole Persian scale; English keeps the platform family at the same weights. */
+fun marbleTypography(languageTag: String): Typography =
+    if (languageTag == "fa") PersianTypography else defaultTypography

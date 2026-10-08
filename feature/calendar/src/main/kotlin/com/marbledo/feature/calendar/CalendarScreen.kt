@@ -45,12 +45,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
@@ -154,10 +155,13 @@ fun CalendarScreen(
                     )
                 }
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(stringResource(R.string.calendar_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.calendar_title),
+                        style = MarbleTextStyles.cardTitle.copy(fontSize = 21.sp, lineHeight = 28.sp),
+                    )
                     Text(
                         PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MarbleTextStyles.metaLabel,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -192,8 +196,7 @@ fun CalendarScreen(
                         stringResource(R.string.calendar_month_year, PersianDateUtils.monthName(monthData.monthIndex, languageTag), monthData.year),
                         numeralMode,
                     ),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MarbleTextStyles.yearDigits.copy(fontSize = 19.sp, lineHeight = 26.sp),
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                 )
@@ -212,7 +215,7 @@ fun CalendarScreen(
                         stringResource(R.string.calendar_today),
                         modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MarbleTextStyles.metaLabel,
                     )
                 }
             }
@@ -315,8 +318,7 @@ fun CalendarScreen(
                         Text(
                             TextNormalizer.formatDigits(stringResource(R.string.calendar_all_year_occasions, monthData.year), numeralMode),
                             modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MarbleTextStyles.itemTitle,
                         )
                         Text(
                             TextNormalizer.formatDigits(stringResource(R.string.calendar_year_occasions_count, yearOccasions.size), numeralMode),
@@ -378,11 +380,11 @@ fun CalendarScreen(
                             },
                         ) {
                             Column(Modifier.fillMaxWidth().padding(vertical = 15.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(PersianDateUtils.monthName(month, languageTag), style = MaterialTheme.typography.titleSmall)
+                                Text(PersianDateUtils.monthName(month, languageTag), style = MarbleTextStyles.itemTitle)
                                 if (count > 0) {
                                     Text(
                                         TextNormalizer.formatDigits(stringResource(R.string.calendar_occasions_short, count), numeralMode),
-                                        style = MaterialTheme.typography.labelSmall,
+                                        style = MarbleTextStyles.metaLabel,
                                         color = MaterialTheme.colorScheme.primary,
                                     )
                                 }
@@ -484,8 +486,11 @@ private fun DayCellView(
         Text(
             TextNormalizer.formatDigits(cell.day.toString(), LocalNumeralMode.current),
             color = foreground,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (cell.isToday || isHoliday || selected) FontWeight.SemiBold else FontWeight.Normal,
+            style = if (cell.isToday || isHoliday || selected) {
+                MarbleTextStyles.itemTitle.copy(fontSize = 15.sp, lineHeight = 18.sp)
+            } else {
+                MarbleTextStyles.dateDigits.copy(fontSize = 15.sp, lineHeight = 18.sp)
+            },
         )
         Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             if (cell.taskCount > 0) {
@@ -528,12 +533,11 @@ private fun SelectedDayCard(
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 PersianDateUtils.fullDateWithWeekday(epoch, languageTag, numeralMode),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+                style = MarbleTextStyles.itemTitle,
             )
             Text(
                 PersianDateUtils.tripleDate(epoch, languageTag, numeralMode, lunarOffsetDays),
-                style = MaterialTheme.typography.labelSmall,
+                style = MarbleTextStyles.metaLabel,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (occasions.isEmpty()) {
@@ -582,8 +586,11 @@ private fun AgendaRow(
         Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(TextNormalizer.formatDigits(cell.day.toString(), numeralMode), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Text(PersianDateUtils.weekdayShort(cell.weekdayIndex, languageTag), style = MaterialTheme.typography.labelSmall)
+                    Text(
+                        TextNormalizer.formatDigits(cell.day.toString(), numeralMode),
+                        style = MarbleTextStyles.cardTitle.copy(fontSize = 15.sp, lineHeight = 20.sp),
+                    )
+                    Text(PersianDateUtils.weekdayShort(cell.weekdayIndex, languageTag), style = MarbleTextStyles.metaLabel)
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -637,13 +644,16 @@ private fun OccasionRow(
                     Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(TextNormalizer.formatDigits(day.toString(), numeralMode), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Text(PersianDateUtils.monthName(month, languageTag), style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                    Text(PersianDateUtils.weekdayShort(weekdayIndex, languageTag), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        TextNormalizer.formatDigits(day.toString(), numeralMode),
+                        style = MarbleTextStyles.cardTitle.copy(fontSize = 16.sp, lineHeight = 22.sp),
+                    )
+                    Text(PersianDateUtils.monthName(month, languageTag), style = MarbleTextStyles.metaLabel, maxLines = 1)
+                    Text(PersianDateUtils.weekdayShort(weekdayIndex, languageTag), style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(occasion.title(languageTag), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                Text(occasion.title(languageTag), style = MarbleTextStyles.itemTitle)
                 Text(
                     stringResource(categoryLabelRes(occasion.category)),
                     style = MaterialTheme.typography.labelSmall,

@@ -61,11 +61,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.NumeralMode
@@ -105,6 +106,12 @@ private enum class TaskGroup(val labelRes: Int) {
 }
 
 private data class GroupedTasks(val group: TaskGroup, val tasks: List<Task>)
+
+private data class DashboardOccasion(
+    val title: String,
+    val category: OccasionCategory,
+    val isHoliday: Boolean,
+)
 
 private const val MAX_DASHBOARD_OCCASIONS = 3
 
@@ -187,7 +194,9 @@ fun DashboardScreen(
 
             item {
                 OccasionsCard(
-                    occasions = todayOccasions.map { it.title(settings.languageTag) to it.category },
+                    occasions = todayOccasions.map {
+                        DashboardOccasion(it.title(settings.languageTag), it.category, it.isHoliday)
+                    },
                     onClick = onOpenCalendar,
                 )
             }
@@ -201,10 +210,10 @@ fun DashboardScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     ) {
                         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(stringResource(R.string.dash_countdown_none_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.dash_countdown_none_title), style = MarbleTextStyles.itemTitle)
                             Text(
                                 stringResource(R.string.dash_countdown_none_body),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MarbleTextStyles.bodyPrimary,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Button(onClick = { showCreateCountdown = true }) {
@@ -320,8 +329,8 @@ fun DashboardScreen(
                     ) {
                         Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Text(stringResource(R.string.dash_empty_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                            Text(stringResource(R.string.dash_empty_body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.dash_empty_title), style = MarbleTextStyles.itemTitle)
+                            Text(stringResource(R.string.dash_empty_body), style = MarbleTextStyles.bodyPrimary, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -452,8 +461,12 @@ private fun DashboardHeader(
         currentHour < 18 -> stringResource(R.string.dash_greeting_afternoon)
         else -> stringResource(R.string.dash_greeting_evening)
     }
-    val gradient = Brush.linearGradient(
-        listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.tertiaryContainer),
+    val gradient = Brush.verticalGradient(
+        listOf(
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.tertiaryContainer,
+        ),
     )
     Surface(shape = MaterialTheme.shapes.extraLarge, color = Color.Transparent) {
         Column(
@@ -464,11 +477,12 @@ private fun DashboardHeader(
             verticalArrangement = Arrangement.spacedBy(11.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(greeting, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    // Screen hero greeting in Vazirmatn Black, contrasted against a Light date line.
+                    Text(greeting, style = MarbleTextStyles.screenTitle)
                     Text(
                         PersianDateUtils.fullDate(todayEpoch, settings.languageTag, numeralMode),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MarbleTextStyles.dateDigits.copy(fontSize = 15.sp, lineHeight = 21.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -478,6 +492,18 @@ private fun DashboardHeader(
                     }
                 }
             }
+            val weekdayLabel = PersianDateUtils.weekdayName(
+                PersianDateUtils.of(todayEpoch).weekdayIndex,
+                settings.languageTag,
+            )
+            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.62f)) {
+                Text(
+                    weekdayLabel,
+                    style = MarbleTextStyles.metaLabel,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 StatPill(stringResource(R.string.dash_stat_today), todayOpen, Modifier.weight(1f))
                 StatPill(stringResource(R.string.dash_stat_done), completedCount, Modifier.weight(1f))
@@ -486,7 +512,7 @@ private fun DashboardHeader(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     TextNormalizer.formatDigits(stringResource(R.string.dash_progress, (progress * 100).toInt()), numeralMode),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MarbleTextStyles.metaLabel,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 LinearProgressIndicator(
@@ -504,10 +530,9 @@ private fun StatPill(label: String, value: Int, modifier: Modifier = Modifier) {
         Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 TextNormalizer.formatDigits(value.toString(), LocalNumeralMode.current),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                style = MarbleTextStyles.cardTitle.copy(fontSize = 22.sp, lineHeight = 28.sp),
             )
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            Text(label, style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         }
     }
 }
@@ -526,8 +551,8 @@ private fun CountdownHero(
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(9.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.dash_next_moment), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                Text(task.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.dash_next_moment), style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.primary)
+                Text(task.title, style = MarbleTextStyles.itemTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
                 Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(9.dp).size(20.dp))
@@ -553,7 +578,7 @@ private fun CountdownHero(
 }
 
 @Composable
-private fun OccasionsCard(occasions: List<Pair<String, OccasionCategory>>, onClick: () -> Unit) {
+private fun OccasionsCard(occasions: List<DashboardOccasion>, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -567,19 +592,50 @@ private fun OccasionsCard(occasions: List<Pair<String, OccasionCategory>>, onCli
                 TextButton(onClick = onClick) { Text(stringResource(R.string.nav_calendar)) }
             }
             if (occasions.isEmpty()) {
-                Text(stringResource(R.string.dash_no_occasion), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    stringResource(R.string.dash_no_occasion),
+                    style = MarbleTextStyles.bodyPrimary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             } else {
-                occasions.take(MAX_DASHBOARD_OCCASIONS).forEach { (title, category) ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                        Box(Modifier.size(7.dp).clip(CircleShape).background(categoryColor(category)))
-                        Text(title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                occasions.take(MAX_DASHBOARD_OCCASIONS).forEach { occasion ->
+                    val accent = categoryColor(occasion.category)
+                    Surface(
+                        shape = MaterialTheme.shapes.medium,
+                        color = accent.copy(alpha = 0.12f),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(9.dp),
+                        ) {
+                            Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
+                            Text(
+                                occasion.title,
+                                style = MarbleTextStyles.itemTitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (occasion.isHoliday) {
+                                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
+                                    Text(
+                                        stringResource(R.string.dash_holiday_badge),
+                                        style = MarbleTextStyles.metaLabel,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 val remaining = occasions.size - MAX_DASHBOARD_OCCASIONS
                 if (remaining > 0) {
                     Text(
                         TextNormalizer.formatDigits(stringResource(R.string.dash_more_occasions, remaining), LocalNumeralMode.current),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MarbleTextStyles.metaLabel,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -599,12 +655,12 @@ private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onC
             modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(stringResource(group.labelRes), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(group.labelRes), modifier = Modifier.weight(1f), style = MarbleTextStyles.itemTitle)
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
                 Text(
                     TextNormalizer.formatDigits(count.toString(), LocalNumeralMode.current),
                     modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MarbleTextStyles.metaLabel,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -612,8 +668,7 @@ private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onC
                 if (expanded) "−" else "+",
                 modifier = Modifier.padding(start = 12.dp),
                 color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = MarbleTextStyles.cardTitle,
             )
         }
     }
