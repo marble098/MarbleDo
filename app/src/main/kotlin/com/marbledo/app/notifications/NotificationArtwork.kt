@@ -11,9 +11,9 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.os.Build
-import androidx.core.app.IconCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.ColorUtils
+import androidx.core.graphics.drawable.IconCompat
 import com.marble098.marbledo.R
 import com.marble098.marbledo.core.designsystem.R as DesignR
 
