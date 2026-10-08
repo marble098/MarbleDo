@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.Task
@@ -87,7 +88,11 @@ fun CountdownFocusDialog(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Text(task.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Text(
+                        task.title,
+                        style = MarbleTextStyles.screenTitle.copy(fontSize = MaterialTheme.typography.headlineSmall.fontSize),
+                        textAlign = TextAlign.Center,
+                    )
                     task.dueAtEpochMillis?.let { due ->
                         CountdownFace(task.title, due, theme, Modifier.fillMaxWidth(), compact = false)
                         Text(

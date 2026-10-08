@@ -18,14 +18,22 @@ import com.marble098.marbledo.R
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.calendar.Occasion
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionCatalog
 import com.marbledo.feature.calendar.OccasionIndex
 import com.marbledo.feature.calendar.PersianDateUtils
+import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
 
-/** Builds the quiet, user-enabled daily date and next-task notification. */
+/**
+ * Builds the quiet, user-enabled daily date and next-task notification.
+ *
+ * The artwork is state-aware: the status-bar icon shows today's day number together with a glyph
+ * for the day's mood (holiday, religious occasion, occasion or tasks due), the large icon is a
+ * generated date badge, and the accent color and title follow the same mood.
+ */
 object PersistentCalendarNotification {
     const val NOTIFICATION_ID = 8_412
 
@@ -49,6 +57,7 @@ object PersistentCalendarNotification {
         NotificationChannels.create(notificationContext)
         val zone = ZoneId.systemDefault()
         val today = PersianDateUtils.today(zone, nowMillis)
+        val todayLocalDate = Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate()
         val enabledCategories = buildSet {
             if (settings.officialEventsEnabled) add(OccasionCategory.OFFICIAL)
             if (settings.nationalEventsEnabled) add(OccasionCategory.NATIONAL)
@@ -63,6 +72,18 @@ object PersistentCalendarNotification {
             zone = zone,
         )
         val events = index.on(today.year, today.month, today.day)
+        val tasksDueToday = tasks.count { task ->
+            !task.isCompleted && !task.isArchived &&
+                task.dueAtEpochMillis?.let {
+                    Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == todayLocalDate
+                } == true
+        }
+        val mood = NotificationArtwork.mood(
+            hasHoliday = events.any(Occasion::isHoliday),
+            hasReligiousOccasion = events.any { it.category == OccasionCategory.RELIGIOUS },
+            hasOccasion = events.isNotEmpty(),
+            tasksDueToday = tasksDueToday,
+        )
         val locale = notificationContext.resources.configuration.locales[0]
         val dateText = PersianDateUtils.tripleDate(
             epochMillis = nowMillis,
@@ -91,12 +112,18 @@ object PersistentCalendarNotification {
             }
             listOfNotNull(bidi.unicodeWrap(task.title), dueText).joinToString(" · ")
         } ?: notificationContext.getString(R.string.persistent_date_notification_no_task)
-        val title = notificationContext.getString(R.string.persistent_date_notification_title)
+        val title = when (mood) {
+            NotificationMood.HOLIDAY -> notificationContext.getString(R.string.persistent_date_notification_title_holiday)
+            NotificationMood.RELIGIOUS -> notificationContext.getString(R.string.persistent_date_notification_title_religious)
+            NotificationMood.OCCASION -> notificationContext.getString(R.string.persistent_date_notification_title_occasion)
+            NotificationMood.TASKS_DUE -> notificationContext.getString(R.string.persistent_date_notification_title_tasks)
+            NotificationMood.QUIET -> notificationContext.getString(R.string.persistent_date_notification_title)
+        }
         val occasionLine = notificationContext.getString(R.string.persistent_date_notification_occasion_label, occasionSummary)
         val taskLine = notificationContext.getString(R.string.persistent_date_notification_next_task_label, nextTaskSummary)
         val expandedText = listOf(dateText, occasionLine, taskLine).joinToString("\n")
 
-        val contentIntent = PendingIntent.getActivity(
+        val calendarIntent = PendingIntent.getActivity(
             notificationContext,
             NOTIFICATION_ID,
             Intent(notificationContext, MainActivity::class.java).apply {
@@ -107,20 +134,40 @@ object PersistentCalendarNotification {
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_CALENDAR)
-            .setSmallIcon(R.drawable.ic_stat_calendar)
-            .setLargeIcon(ContextCompat.getDrawable(notificationContext, R.drawable.ic_notification_calendar_large)?.toBitmap())
-            .setColor(ContextCompat.getColor(notificationContext, R.color.marble_accent))
+        val tasksIntent = PendingIntent.getActivity(
+            notificationContext,
+            NOTIFICATION_ID + 1,
+            Intent(notificationContext, MainActivity::class.java).apply {
+                action = Intent.ACTION_VIEW
+                data = Uri.parse("marbledo://home/tasks")
+                putExtra(MainActivity.EXTRA_DESTINATION, "home")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val dayDigits = TextNormalizer.formatDigits(today.day.toString(), settings.numeralMode)
+        val monthLabel = PersianDateUtils.monthName(today.month, settings.languageTag)
+        val weekdayLabel = PersianDateUtils.weekdayName(today.weekdayIndex, settings.languageTag)
+        val accent = NotificationArtwork.accentColor(notificationContext, mood)
+        val largeIcon = NotificationArtwork.dateBadge(notificationContext, dayDigits, monthLabel, mood)
+            ?: ContextCompat.getDrawable(notificationContext, R.drawable.ic_notification_calendar_large)?.toBitmap()
+
+        val badgeCount = if (tasksDueToday > 0) tasksDueToday else events.size
+        val builder = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_CALENDAR)
+            .setSmallIcon(NotificationArtwork.smallIcon(notificationContext, dayDigits, mood))
+            .setLargeIcon(largeIcon)
+            .setColor(accent)
             .setContentTitle(title)
             .setContentText(dateText)
-            .setSubText(notificationContext.getString(R.string.persistent_date_notification_subtext))
+            .setSubText(weekdayLabel)
             .setStyle(
                 NotificationCompat.BigTextStyle()
                     .bigText(expandedText)
                     .setBigContentTitle(title)
                     .setSummaryText(taskLine),
             )
-            .setContentIntent(contentIntent)
+            .setContentIntent(calendarIntent)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
@@ -133,9 +180,17 @@ object PersistentCalendarNotification {
             .addAction(
                 R.drawable.ic_stat_calendar,
                 notificationContext.getString(R.string.calendar_notification_open),
-                contentIntent,
+                calendarIntent,
             )
-            .build()
+            .addAction(
+                R.drawable.ic_stat_marble,
+                notificationContext.getString(R.string.persistent_date_notification_open_tasks),
+                tasksIntent,
+            )
+        if (badgeCount > 0) {
+            builder.setNumber(badgeCount)
+        }
+        val notification = builder.build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(notificationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED

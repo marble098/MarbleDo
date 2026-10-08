@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.TaskPriority
 import com.marbledo.domain.util.TextNormalizer
@@ -94,14 +95,14 @@ fun localizedTaskDate(epochMillis: Long): String {
 @Composable
 fun SectionHeader(title: String, count: Int? = null, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        Text(title, style = MarbleTextStyles.sectionTitle)
         if (count != null) {
             Spacer(Modifier.width(8.dp))
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
                 Text(
                     TextNormalizer.formatDigits(count.toString(), LocalNumeralMode.current),
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 1.dp),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MarbleTextStyles.metaLabel,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }

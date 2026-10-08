@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.core.designsystem.LocalReduceMotion
 import com.marbledo.domain.util.TextNormalizer
@@ -272,8 +273,9 @@ private fun MarbleOrbFace(title: String, units: CountdownUnits, labels: List<Str
             Column {
                 Text(
                     auroraDigits(units),
-                    style = MaterialTheme.typography.displaySmall.copy(
-                        fontWeight = FontWeight.SemiBold,
+                    style = MarbleTextStyles.heroDigits.copy(
+                        fontSize = MaterialTheme.typography.displaySmall.fontSize,
+                        lineHeight = MaterialTheme.typography.displaySmall.lineHeight,
                         letterSpacing = 1.sp,
                         shadow = Shadow(Color(0xFF8E7BFF), blurRadius = 26f, offset = Offset.Zero),
                     ),

@@ -4,4 +4,10 @@
     <color name="marble_launcher_bg">#ECE9FF</color>
     <color name="marble_splash_bg">#F7F5FB</color>
     <color name="marble_splash_bg_night">#141319</color>
+    <!-- Mood accents for the persistent calendar notification artwork. -->
+    <color name="notification_holiday">#D93A4B</color>
+    <color name="notification_religious">#2E9E7C</color>
+    <color name="notification_occasion">#6258C8</color>
+    <color name="notification_tasks">#3E6DD8</color>
+    <color name="notification_quiet">#5B6478</color>
 </resources>

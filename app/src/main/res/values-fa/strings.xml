@@ -163,6 +163,11 @@
     <string name="settings_persistent_date_notification_hint">یک اعلان آرام و ماندگار، تاریخ شمسی و میلادی و قمری امروز، چند مناسبت و کار بعدی را نشان می‌دهد. برای نمایش آن، اجازهٔ اعلان‌ها لازم است.</string>
     <string name="settings_occasions_offline">اینترنت در دسترس نیست؛ فهرست ذخیره‌شده همچنان در تقویم نمایش داده می‌شود.</string>
     <string name="persistent_date_notification_title">تقویم امروز</string>
+    <string name="persistent_date_notification_title_holiday">امروز تعطیل رسمی است</string>
+    <string name="persistent_date_notification_title_religious">امروز مناسبت مذهبی دارد</string>
+    <string name="persistent_date_notification_title_occasion">امروز مناسبت دارد</string>
+    <string name="persistent_date_notification_title_tasks">امروز کارهایی در برنامه دارید</string>
+    <string name="persistent_date_notification_open_tasks">کارها</string>
     <string name="persistent_date_notification_subtext">تاریخ‌ها، مناسبت‌ها و کار بعدی</string>
     <string name="persistent_date_notification_occasion_label">مناسبت‌ها: %1$s</string>
     <string name="persistent_date_notification_no_occasion">مناسبتی برای امروز ثبت نشده</string>
@@ -173,4 +178,5 @@
     <string name="channel_persistent_calendar_description">نمایش بی‌صدای تاریخ امروز و برنامهٔ بعدی تا زمان خاموش‌کردن از تنظیمات</string>
     <string name="dash_clear_search">پاک‌کردن جست‌وجو</string>
     <string name="dash_more_occasions">و %1$d مناسبت دیگر</string>
+    <string name="dash_holiday_badge">تعطیل رسمی</string>
 </resources>
