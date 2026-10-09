@@ -627,11 +627,12 @@ private fun SelectedDayCard(
             val sortedTasks = remember(tasks) { tasks.sortedBy { it.dueAtEpochMillis ?: Long.MAX_VALUE } }
             val allDayLabel = stringResource(R.string.calendar_all_day)
             sortedTasks.take(MAX_DAY_CARD_TASKS).forEach { task ->
+                val due = task.dueAtEpochMillis
                 val timeLabel = when {
-                    task.dueAtEpochMillis == null -> null
+                    due == null -> null
                     task.isAllDay -> allDayLabel
                     else -> TextNormalizer.formatDigits(
-                        formatClock(Instant.ofEpochMilli(task.dueAtEpochMillis).atZone(zone).toLocalTime()),
+                        formatClock(Instant.ofEpochMilli(due).atZone(zone).toLocalTime()),
                         numeralMode,
                     )
                 }

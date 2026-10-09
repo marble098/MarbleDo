@@ -48,4 +48,17 @@
     <string name="calendar_all_day">All day</string>
     <string name="calendar_more_tasks">+%1$d more</string>
     <string name="calendar_cell_tasks">%1$d tasks</string>
+    <string name="picker_today">Today</string>
+    <string name="picker_time">Time</string>
+    <string name="picker_all_day">All day</string>
+    <string name="picker_dial">Dial</string>
+    <string name="picker_keyboard">Keyboard</string>
+    <string name="picker_no_time">No time</string>
+    <string name="picker_selected">Selected: %1$s</string>
+    <string name="picker_clear">Clear</string>
+    <string name="picker_cancel">Cancel</string>
+    <string name="picker_confirm">OK</string>
+    <string name="picker_calendar_persian">Persian</string>
+    <string name="picker_calendar_gregorian">Gregorian</string>
+    <string name="picker_calendar_islamic">Islamic</string>
 </resources>
