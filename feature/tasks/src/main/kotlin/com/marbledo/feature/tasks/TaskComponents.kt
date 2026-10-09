@@ -65,11 +65,11 @@ import com.marbledo.feature.calendar.formatClock
 import java.time.Instant
 import java.time.ZoneId
 
-/** Colour used for a priority across rows, chips and rails. */
-@Composable
 /** Colour a task starts with. Tasks that keep it use the theme's primary colour instead of this fixed violet. */
 internal const val DEFAULT_TASK_COLOR_ARGB = 0xFF6E61D8L
 
+/** Colour used for a priority across rows, chips and rails. */
+@Composable
 fun priorityColor(priority: TaskPriority): Color = when (priority) {
     TaskPriority.LOW -> MaterialTheme.colorScheme.tertiary
     TaskPriority.NORMAL -> MaterialTheme.colorScheme.primary

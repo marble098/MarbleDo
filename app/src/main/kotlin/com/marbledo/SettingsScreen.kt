@@ -524,6 +524,7 @@ private fun statusStateTextRes(state: PersistentCalendarNotification.StatusIconS
     PersistentCalendarNotification.StatusIconState.BLOCKED -> R.string.settings_status_icon_state_blocked
 }
 
+@Composable
 private fun countdownCalendarLabel(mode: CalendarDisplayMode): String = when (mode) {
     CalendarDisplayMode.PERSIAN -> stringResource(R.string.calendar_display_persian)
     CalendarDisplayMode.GREGORIAN -> stringResource(R.string.calendar_display_gregorian)
