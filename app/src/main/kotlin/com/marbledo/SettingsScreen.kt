@@ -496,7 +496,6 @@ private fun numeralLabel(mode: NumeralMode): String = when (mode) {
     NumeralMode.ARABIC -> stringResource(R.string.numerals_arabic)
 }
 
-@Composable
 private enum class QuietEdge { START, END }
 
 /** Loaded backup status. Null millis means no automatic backup exists yet. */
