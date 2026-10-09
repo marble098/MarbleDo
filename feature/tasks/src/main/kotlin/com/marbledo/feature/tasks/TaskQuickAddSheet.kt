@@ -113,6 +113,14 @@ fun TaskQuickAddSheet(
     countdownThemeLabel: @Composable (themeId: String) -> String = { it },
 ) {
     val context = LocalContext.current
+    val noCategoryLabel = stringResource(R.string.tasks_category_none)
+    val voicePrompts = mapOf(
+        VoiceStep.CATEGORY to stringResource(R.string.tasks_voice_prompt_category),
+        VoiceStep.TITLE to stringResource(R.string.tasks_voice_prompt_title),
+        VoiceStep.DATE to stringResource(R.string.tasks_voice_prompt_date),
+        VoiceStep.TIME to stringResource(R.string.tasks_voice_prompt_time),
+        VoiceStep.PRIORITY to stringResource(R.string.tasks_voice_prompt_priority),
+    )
     val zone = remember { ZoneId.systemDefault() }
     val numeralMode = LocalNumeralMode.current
     var input by rememberSaveable { mutableStateOf(initialText) }
@@ -212,15 +220,7 @@ fun TaskQuickAddSheet(
         voiceStep = null
     }
 
-    fun promptFor(step: VoiceStep): String = context.getString(
-        when (step) {
-            VoiceStep.CATEGORY -> R.string.tasks_voice_prompt_category
-            VoiceStep.TITLE -> R.string.tasks_voice_prompt_title
-            VoiceStep.DATE -> R.string.tasks_voice_prompt_date
-            VoiceStep.TIME -> R.string.tasks_voice_prompt_time
-            VoiceStep.PRIORITY -> R.string.tasks_voice_prompt_priority
-        },
-    )
+    fun promptFor(step: VoiceStep): String = voicePrompts.getValue(step)
 
     fun startVoiceRecognition(step: VoiceStep) {
         voiceStep = step
@@ -540,7 +540,7 @@ fun TaskQuickAddSheet(
                     Text(stringResource(R.string.tasks_voice_step_count, stepNumber, VoiceStep.entries.size))
                     Text(promptFor(step), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        stringResource(R.string.tasks_voice_current_category, voiceCategory.ifBlank { context.getString(R.string.tasks_category_none) }),
+                        stringResource(R.string.tasks_voice_current_category, voiceCategory.ifBlank { noCategoryLabel }),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     if (voiceTitle.isNotBlank()) Text(stringResource(R.string.tasks_voice_current_title, voiceTitle), style = MaterialTheme.typography.bodySmall)

@@ -62,6 +62,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -186,11 +187,12 @@ fun DashboardScreen(
     }
 
     // Every change is confirmed with a short snackbar. Its Undo action reverts the most recent change.
+    val undoActionLabel by rememberUpdatedState(stringResource(R.string.dash_undo_action))
     LaunchedEffect(viewModel) {
         viewModel.changes.collect { change ->
             val result = snackbarHost.showSnackbar(
                 message = taskChangeMessage(context, change),
-                actionLabel = context.getString(R.string.dash_undo_action),
+                actionLabel = undoActionLabel,
                 withDismissAction = false,
                 duration = SnackbarDuration.Short,
             )
