@@ -41,4 +41,24 @@
     <string name="calendar_no_matching_occasions">مناسبتی با این عبارت پیدا نشد.</string>
     <string name="calendar_year_occasions_count">%1$d مناسبت در این سال</string>
     <string name="calendar_no_year_occasions">برای این سال مناسبتی در فهرست نیست.</string>
+    <string name="calendar_go_to_date">رفتن به تاریخ</string>
+    <string name="calendar_previous_year">سال قبل</string>
+    <string name="calendar_next_year">سال بعد</string>
+    <string name="calendar_add_task">افزودن کار برای این روز</string>
+    <string name="calendar_all_day">تمام روز</string>
+    <string name="calendar_more_tasks">+%1$d بیشتر</string>
+    <string name="calendar_cell_tasks">%1$d کار</string>
+    <string name="picker_today">امروز</string>
+    <string name="picker_time">ساعت</string>
+    <string name="picker_all_day">تمام روز</string>
+    <string name="picker_dial">صفحهٔ ساعت</string>
+    <string name="picker_keyboard">صفحهٔ کلید</string>
+    <string name="picker_no_time">بدون ساعت</string>
+    <string name="picker_selected">انتخاب‌شده: %1$s</string>
+    <string name="picker_clear">پاک‌کردن</string>
+    <string name="picker_cancel">لغو</string>
+    <string name="picker_confirm">تأیید</string>
+    <string name="picker_calendar_persian">شمسی</string>
+    <string name="picker_calendar_gregorian">میلادی</string>
+    <string name="picker_calendar_islamic">قمری</string>
 </resources>

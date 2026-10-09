@@ -105,7 +105,8 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         )
         val nextTask = nextWidgetTask(tasks, nowMillis)
         val countdownTask = tasks.asSequence()
-            .filter { it.countdownEnabled && it.dueAtEpochMillis != null }
+            .filter { it.countdownEnabled && !it.isCompleted && !it.isArchived }
+            .filter { (it.dueAtEpochMillis ?: Long.MIN_VALUE) >= nowMillis }
             .minByOrNull { it.dueAtEpochMillis ?: Long.MAX_VALUE }
         val dueAt = countdownTask?.dueAtEpochMillis
         val targetDate = dueAt?.let {
@@ -308,13 +309,12 @@ class MarbleCountdownWidget : GlanceAppWidget() {
     }
 }
 
-private fun nextWidgetTask(tasks: List<Task>, nowMillis: Long): Task? {
-    val dated = tasks.filter { it.dueAtEpochMillis != null }
-    return dated.asSequence()
+/** Next open task that is still ahead of [nowMillis]. Past or finished tasks are never shown here. */
+private fun nextWidgetTask(tasks: List<Task>, nowMillis: Long): Task? =
+    tasks.asSequence()
+        .filter { !it.isCompleted && !it.isArchived }
         .filter { (it.dueAtEpochMillis ?: Long.MIN_VALUE) >= nowMillis }
         .minByOrNull { it.dueAtEpochMillis ?: Long.MAX_VALUE }
-        ?: dated.maxByOrNull { it.dueAtEpochMillis ?: Long.MIN_VALUE }
-}
 
 class MarbleCountdownWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = MarbleCountdownWidget()

@@ -23,10 +23,13 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -57,6 +60,13 @@ import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.TaskPriority
 import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.calendar.PersianDateUtils
+import com.marbledo.feature.calendar.formatClock
+import java.time.Instant
+import java.time.ZoneId
+
+/** Colour a task starts with. Tasks that keep it use the theme's primary colour instead of this fixed violet. */
+internal const val DEFAULT_TASK_COLOR_ARGB = 0xFF6E61D8L
 
 /** Colour used for a priority across rows, chips and rails. */
 @Composable
@@ -82,7 +92,25 @@ fun repeatLabel(frequency: com.marbledo.domain.model.RepeatFrequency): String = 
     com.marbledo.domain.model.RepeatFrequency.WEEKLY -> stringResource(R.string.tasks_repeat_weekly)
     com.marbledo.domain.model.RepeatFrequency.MONTHLY -> stringResource(R.string.tasks_repeat_monthly)
     com.marbledo.domain.model.RepeatFrequency.YEARLY -> stringResource(R.string.tasks_repeat_yearly)
-    com.marbledo.domain.model.RepeatFrequency.CUSTOM -> stringResource(R.string.tasks_repeat_weekly)
+    com.marbledo.domain.model.RepeatFrequency.CUSTOM -> stringResource(R.string.tasks_repeat)
+}
+
+/** Compact due label for rows: the Persian date, plus the time unless the task is all-day. */
+@Composable
+fun localizedTaskDateTime(epochMillis: Long, allDay: Boolean): String {
+    val locale = LocalConfiguration.current.locales[0]
+    val languageTag = if (locale.language == "fa") "fa" else "en"
+    val numeralMode = LocalNumeralMode.current
+    return remember(epochMillis, allDay, languageTag, numeralMode) {
+        val zone = ZoneId.systemDefault()
+        val date = PersianDateUtils.fullDate(epochMillis, languageTag, numeralMode, zone)
+        if (allDay) {
+            date
+        } else {
+            val time = Instant.ofEpochMilli(epochMillis).atZone(zone).toLocalTime()
+            "$date · ${TextNormalizer.formatDigits(formatClock(time), numeralMode)}"
+        }
+    }
 }
 
 @Composable
@@ -131,7 +159,17 @@ fun TaskRowCard(
 ) {
     var menuExpanded by rememberSaveable(task.id) { mutableStateOf(false) }
     val railColor = priorityColor(task.priority)
+    val accentColor = if (task.colorArgb == DEFAULT_TASK_COLOR_ARGB) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        Color(task.colorArgb.toInt())
+    }
     val hasCountdown = task.dueAtEpochMillis != null && task.countdownEnabled
+    val numeralMode = LocalNumeralMode.current
+    val zone = remember { ZoneId.systemDefault() }
+    val nowMillis = System.currentTimeMillis()
+    val overdue = taskIsOverdue(task.isCompleted, task.isArchived, task.dueAtEpochMillis, task.isAllDay, nowMillis, zone)
+    val dueLabel = task.dueAtEpochMillis?.let { localizedTaskDateTime(it, task.isAllDay) }
     Card(
         modifier = modifier.fillMaxWidth().combinedClickable(onClick = onEdit, onLongClick = onLongPress),
         shape = MaterialTheme.shapes.large,
@@ -152,6 +190,7 @@ fun TaskRowCard(
             Checkbox(
                 checked = task.isCompleted,
                 onCheckedChange = { onToggle() },
+                colors = CheckboxDefaults.colors(checkedColor = accentColor),
                 modifier = Modifier.align(Alignment.CenterVertically).semantics { contentDescription = task.title },
             )
             Column(
@@ -177,26 +216,36 @@ fun TaskRowCard(
                     }
                     if (task.recurrence != null) {
                         Icon(
-                            Icons.Outlined.Timer,
-                            contentDescription = stringResource(R.string.tasks_repeat_daily),
+                            Icons.Outlined.Repeat,
+                            contentDescription = stringResource(R.string.tasks_repeat),
                             tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.padding(start = 5.dp).size(14.dp),
                         )
                     }
                 }
                 Text(
-                    text = task.dueAtEpochMillis?.let { stringResource(R.string.tasks_due_at, localizedTaskDate(it)) }
+                    text = dueLabel?.let { stringResource(R.string.tasks_due_at, it) }
                         ?: stringResource(R.string.tasks_no_due_date),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 3.dp),
                 )
-                if (task.category.isNotBlank() || task.tags.isNotEmpty()) {
+                val checklistTotal = task.checklist.count { it.text.isNotBlank() }
+                val checklistDone = task.checklist.count { it.isDone && it.text.isNotBlank() }
+                if (task.category.isNotBlank() || task.tags.isNotEmpty() || checklistTotal > 0 || task.focusMinutes > 0) {
                     val labels = listOfNotNull(
                         task.category.takeIf { it.isNotBlank() },
                         task.tags.joinToString(" · ").takeIf { task.tags.isNotEmpty() },
+                        TextNormalizer.formatDigits(
+                            stringResource(R.string.tasks_checklist_progress, checklistDone, checklistTotal),
+                            numeralMode,
+                        ).takeIf { checklistTotal > 0 },
+                        TextNormalizer.formatDigits(
+                            stringResource(R.string.tasks_focus_badge, task.focusMinutes),
+                            numeralMode,
+                        ).takeIf { task.focusMinutes > 0 },
                     )
                     Text(
                         labels.joinToString(" · "),
@@ -245,8 +294,13 @@ fun TaskRowCard(
                         onClick = { menuExpanded = false; onPin() },
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.tasks_archive)) },
-                        leadingIcon = { Icon(Icons.Outlined.Archive, contentDescription = null) },
+                        text = { Text(stringResource(if (task.isArchived) R.string.tasks_unarchive else R.string.tasks_archive)) },
+                        leadingIcon = {
+                            Icon(
+                                if (task.isArchived) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
+                                contentDescription = null,
+                            )
+                        },
                         onClick = { menuExpanded = false; onArchive() },
                     )
                     DropdownMenuItem(

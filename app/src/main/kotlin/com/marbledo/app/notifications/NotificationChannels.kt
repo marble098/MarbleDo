@@ -12,7 +12,11 @@ object NotificationChannels {
     const val CALENDAR = "marbledo_calendar"
     const val BACKUP = "marbledo_backup"
     const val DAILY = "marbledo_daily_summary"
-    const val PERSISTENT_CALENDAR = "marbledo_persistent_calendar"
+    /** Status-bar date icon. Default importance keeps it visible on launchers that hide silent or low channels. */
+    const val PERSISTENT_DATE = "marbledo_status_date"
+
+    /** Channel used by earlier builds. It is deleted so the user does not see two date channels. */
+    const val LEGACY_PERSISTENT_CALENDAR = "marbledo_persistent_calendar"
 
     fun create(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -35,11 +39,14 @@ object NotificationChannels {
             NotificationChannel(DAILY, context.getString(R.string.channel_daily), NotificationManager.IMPORTANCE_DEFAULT).apply {
                 description = context.getString(R.string.channel_daily_description)
             },
-            NotificationChannel(PERSISTENT_CALENDAR, context.getString(R.string.channel_persistent_calendar), NotificationManager.IMPORTANCE_LOW).apply {
+            NotificationChannel(PERSISTENT_DATE, context.getString(R.string.channel_persistent_calendar), NotificationManager.IMPORTANCE_DEFAULT).apply {
                 description = context.getString(R.string.channel_persistent_calendar_description)
                 setShowBadge(false)
+                setSound(null, null)
+                enableVibration(false)
             },
         )
         manager.createNotificationChannels(channels)
+        manager.deleteNotificationChannel(LEGACY_PERSISTENT_CALENDAR)
     }
 }

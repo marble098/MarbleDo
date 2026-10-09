@@ -1,5 +1,6 @@
 package com.marble098.marbledo
 
+import com.marble098.marbledo.notifications.PersistentCalendarNotificationWorker
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -35,6 +36,12 @@ class MainActivity : AppCompatActivity() {
                 },
             )
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Coming back to the app is a good moment to correct a stale day number or a changed setting.
+        PersistentCalendarNotificationWorker.refreshNow(applicationContext)
     }
 
     override fun onNewIntent(intent: Intent) {

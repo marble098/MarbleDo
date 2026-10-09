@@ -1,5 +1,13 @@
 package com.marbledo.feature.calendar
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.outlined.Add
+import com.marbledo.domain.model.CalendarDisplayMode
+import androidx.compose.material.icons.outlined.EditCalendar
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -85,6 +93,10 @@ fun CalendarScreen(
     weekStartsSaturday: Boolean,
     lunarOffsetDays: Int,
     onRefreshOccasions: () -> Unit,
+    pickerCalendar: CalendarDisplayMode,
+    onPickerCalendarChange: (CalendarDisplayMode) -> Unit,
+    onAddTask: (LocalDate) -> Unit,
+    onOpenTask: (Task) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val zone = remember { ZoneId.systemDefault() }
@@ -94,6 +106,7 @@ fun CalendarScreen(
     var selectedIsoDate by rememberSaveable { mutableStateOf(LocalDate.now(zone).toString()) }
     var viewMode by rememberSaveable { mutableStateOf(CalendarViewMode.MONTH) }
     var occasionQuery by rememberSaveable { mutableStateOf("") }
+    var showGoToDate by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(zone) {
         while (true) {
@@ -136,6 +149,27 @@ fun CalendarScreen(
         }
     }
 
+    if (showGoToDate) {
+        SchedulePickerDialog(
+            title = stringResource(R.string.calendar_go_to_date),
+            mode = SchedulePickerMode.DATE_ONLY,
+            initialDate = selectedDate,
+            initialTime = null,
+            languageTag = languageTag,
+            numeralMode = numeralMode,
+            weekStartsSaturday = weekStartsSaturday,
+            calendarMode = pickerCalendar,
+            onCalendarModeChange = onPickerCalendarChange,
+            onConfirm = { date, _ ->
+                selectedIsoDate = date.toString()
+                monthOffset = monthOffsetFor(date, zone, todayEpoch)
+                showGoToDate = false
+            },
+            onDismiss = { showGoToDate = false },
+            allowAnyTime = false,
+        )
+    }
+
     Column(modifier.fillMaxSize()) {
         Surface(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
@@ -167,6 +201,9 @@ fun CalendarScreen(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                IconButton(onClick = { showGoToDate = true }) {
+                    Icon(Icons.Outlined.EditCalendar, contentDescription = stringResource(R.string.calendar_go_to_date))
+                }
                 OccasionSyncButton(occasionState.isRefreshing, onRefreshOccasions)
             }
         }
@@ -188,20 +225,32 @@ fun CalendarScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-                IconButton(onClick = { monthOffset -= 1 }) {
-                    Icon(if (rtl) Icons.Outlined.ChevronRight else Icons.Outlined.ChevronLeft, contentDescription = stringResource(R.string.calendar_previous_month))
+                val isYearView = viewMode == CalendarViewMode.YEAR
+                val step = if (isYearView) 12 else 1
+                IconButton(onClick = { monthOffset -= step }) {
+                    Icon(
+                        if (rtl) Icons.Outlined.ChevronRight else Icons.Outlined.ChevronLeft,
+                        contentDescription = stringResource(if (isYearView) R.string.calendar_previous_year else R.string.calendar_previous_month),
+                    )
                 }
                 Text(
-                    TextNormalizer.formatDigits(
-                        stringResource(R.string.calendar_month_year, PersianDateUtils.monthName(monthData.monthIndex, languageTag), monthData.year),
-                        numeralMode,
-                    ),
+                    if (isYearView) {
+                        TextNormalizer.formatDigits(monthData.year.toString(), numeralMode)
+                    } else {
+                        TextNormalizer.formatDigits(
+                            stringResource(R.string.calendar_month_year, PersianDateUtils.monthName(monthData.monthIndex, languageTag), monthData.year),
+                            numeralMode,
+                        )
+                    },
                     style = MarbleTextStyles.yearDigits.copy(fontSize = 19.sp, lineHeight = 26.sp),
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                 )
-                IconButton(onClick = { monthOffset += 1 }) {
-                    Icon(if (rtl) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight, contentDescription = stringResource(R.string.calendar_next_month))
+                IconButton(onClick = { monthOffset += step }) {
+                    Icon(
+                        if (rtl) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,
+                        contentDescription = stringResource(if (isYearView) R.string.calendar_next_year else R.string.calendar_next_month),
+                    )
                 }
                 Surface(
                     shape = CircleShape,
@@ -280,6 +329,8 @@ fun CalendarScreen(
                     languageTag = languageTag,
                     numeralMode = numeralMode,
                     lunarOffsetDays = lunarOffsetDays,
+                    onAddTask = { onAddTask(selectedDate) },
+                    onOpenTask = onOpenTask,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                 )
             }
@@ -472,12 +523,20 @@ private fun DayCellView(
         isHoliday -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurface
     }
+    val holidayLabel = stringResource(R.string.calendar_holiday_badge)
+    val tasksLabel = stringResource(R.string.calendar_cell_tasks, cell.taskCount)
+    val cellDescription = listOfNotNull(
+        TextNormalizer.formatDigits(cell.day.toString(), LocalNumeralMode.current),
+        holidayLabel.takeIf { isHoliday },
+        tasksLabel.takeIf { cell.taskCount > 0 },
+    ).joinToString(", ")
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(background)
+            .semantics(mergeDescendants = true) { contentDescription = cellDescription }
             .clickable(onClick = onClick)
             .padding(horizontal = 2.dp, vertical = 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -520,8 +579,11 @@ private fun SelectedDayCard(
     languageTag: String,
     numeralMode: NumeralMode,
     lunarOffsetDays: Int,
+    onAddTask: () -> Unit,
+    onOpenTask: (Task) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val zone = remember { ZoneId.systemDefault() }
     val epoch = remember(date, persian.year, persian.month, persian.day) {
         PersianDateUtils.startOfJalaliDay(persian.year, persian.month, persian.day) ?: System.currentTimeMillis()
     }
@@ -562,8 +624,55 @@ private fun SelectedDayCard(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            tasks.take(4).forEach { task ->
-                Text("• ${task.title}", style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val sortedTasks = remember(tasks) { tasks.sortedBy { it.dueAtEpochMillis ?: Long.MAX_VALUE } }
+            val allDayLabel = stringResource(R.string.calendar_all_day)
+            sortedTasks.take(MAX_DAY_CARD_TASKS).forEach { task ->
+                val due = task.dueAtEpochMillis
+                val timeLabel = when {
+                    due == null -> null
+                    task.isAllDay -> allDayLabel
+                    else -> TextNormalizer.formatDigits(
+                        formatClock(Instant.ofEpochMilli(due).atZone(zone).toLocalTime()),
+                        numeralMode,
+                    )
+                }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable { onOpenTask(task) }
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    if (timeLabel != null) {
+                        Text(
+                            timeLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                        )
+                    }
+                    Text(
+                        task.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            if (sortedTasks.size > MAX_DAY_CARD_TASKS) {
+                Text(
+                    TextNormalizer.formatDigits(stringResource(R.string.calendar_more_tasks, sortedTasks.size - MAX_DAY_CARD_TASKS), numeralMode),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = onAddTask) {
+                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.calendar_add_task))
             }
         }
     }
@@ -699,6 +808,16 @@ internal fun categoryLabelRes(category: OccasionCategory): Int = when (category)
 private fun weekdayIndexFor(year: Int, month: Int, day: Int, zone: ZoneId): Int {
     val epoch = PersianDateUtils.startOfJalaliDay(year, month, day, zone) ?: return 0
     return PersianDateUtils.of(epoch, zone).weekdayIndex
+}
+
+/** Number of tasks listed in the day card before the "+N more" line. */
+private const val MAX_DAY_CARD_TASKS = 6
+
+/** Persian months between today and [date], used to bring the month grid to the chosen day. */
+private fun monthOffsetFor(date: LocalDate, zone: ZoneId, todayEpoch: Long): Int {
+    val target = PersianDateUtils.of(date.atStartOfDay(zone).toInstant().toEpochMilli(), zone)
+    val today = PersianDateUtils.of(todayEpoch, zone)
+    return (target.year * 12 + target.month) - (today.year * 12 + today.month)
 }
 
 private fun buildMonth(monthOffset: Int, tasks: List<Task>, zone: ZoneId, weekStartsSaturday: Boolean, nowMillis: Long = System.currentTimeMillis()): MonthData {

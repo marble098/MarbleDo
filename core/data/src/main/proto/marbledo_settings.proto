@@ -24,4 +24,8 @@ message MarbleDoSettingsProto {
   repeated string task_categories = 18;
   bool occasion_auto_update_enabled = 19;
   bool persistent_date_notification_enabled = 20;
+  // Optional presence lets an upgraded install that never saved this field adopt the new default (on).
+  optional bool status_icon_enabled = 21;
+  string status_bar_calendar = 22;
+  optional int32 reminder_lead_minutes = 23;
 }

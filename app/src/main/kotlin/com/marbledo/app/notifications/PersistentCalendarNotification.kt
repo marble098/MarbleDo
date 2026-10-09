@@ -1,5 +1,7 @@
 package com.marble098.marbledo.notifications
 
+import com.marbledo.feature.calendar.dayOfMonthIn
+import android.app.NotificationManager
 import android.Manifest
 import android.app.PendingIntent
 import android.content.Context
@@ -36,6 +38,8 @@ import java.util.Locale
  */
 object PersistentCalendarNotification {
     const val NOTIFICATION_ID = 8_412
+
+    enum class StatusIconState { ACTIVE, OFF, PERMISSION_MISSING, BLOCKED }
 
     fun update(
         context: Context,
@@ -146,7 +150,9 @@ object PersistentCalendarNotification {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val dayDigits = TextNormalizer.formatDigits(today.day.toString(), settings.numeralMode)
+        // The icon shows the day number in the calendar the user chose for the status bar, not always the Persian one.
+        val statusDay = dayOfMonthIn(nowMillis, settings.statusBarCalendar, zone)
+        val dayDigits = TextNormalizer.formatDigits(statusDay.toString(), settings.numeralMode)
         val monthLabel = PersianDateUtils.monthName(today.month, settings.languageTag)
         val weekdayLabel = PersianDateUtils.weekdayName(today.weekdayIndex, settings.languageTag)
         val accent = NotificationArtwork.accentColor(notificationContext, mood)
@@ -154,7 +160,7 @@ object PersistentCalendarNotification {
             ?: ContextCompat.getDrawable(notificationContext, R.drawable.ic_notification_calendar_large)?.toBitmap()
 
         val badgeCount = if (tasksDueToday > 0) tasksDueToday else events.size
-        val builder = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_CALENDAR)
+        val builder = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
             .setSmallIcon(NotificationArtwork.smallIcon(notificationContext, dayDigits, mood))
             .setLargeIcon(largeIcon)
             .setColor(accent)
@@ -169,11 +175,10 @@ object PersistentCalendarNotification {
             )
             .setContentIntent(calendarIntent)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setShowWhen(false)
             .setLocalOnly(true)
-            .setSilent(true)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
             .setAutoCancel(false)
@@ -203,6 +208,23 @@ object PersistentCalendarNotification {
 
     fun cancel(context: Context) {
         runCatching { NotificationManagerCompat.from(context.applicationContext).cancel(NOTIFICATION_ID) }
+    }
+
+    /** What the status-bar icon currently needs, shown as a diagnostics line in Settings. */
+    fun statusIconState(context: Context, enabled: Boolean): StatusIconState = when {
+        !enabled -> StatusIconState.OFF
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED ->
+            StatusIconState.PERMISSION_MISSING
+        !canPostNotifications(context) || !channelAllowed(context) -> StatusIconState.BLOCKED
+        else -> StatusIconState.ACTIVE
+    }
+
+    private fun channelAllowed(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
+        val channel = context.getSystemService(NotificationManager::class.java)
+            ?.getNotificationChannel(NotificationChannels.PERSISTENT_DATE)
+        return channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE
     }
 
     private fun canPostNotifications(context: Context): Boolean {

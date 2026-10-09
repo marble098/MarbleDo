@@ -19,6 +19,8 @@ object PersianDateUtils {
     private val persianMonthsEn = listOf("Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar", "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand")
     private val islamicMonthsFa = listOf("محرم", "صفر", "ربیع‌الاول", "ربیع‌الثانی", "جمادی‌الاول", "جمادی‌الثانی", "رجب", "شعبان", "رمضان", "شوال", "ذی‌القعده", "ذی‌الحجه")
     private val islamicMonthsEn = listOf("Muharram", "Safar", "Rabi I", "Rabi II", "Jumada I", "Jumada II", "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qadah", "Dhu al-Hijjah")
+    private val gregorianMonthsFa = listOf("ژانویه", "فوریه", "مارس", "آوریل", "مه", "ژوئن", "ژوئیه", "اوت", "سپتامبر", "اکتبر", "نوامبر", "دسامبر")
+    private val gregorianMonthsEn = listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
     private val weekdaysFa = listOf("شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه")
     private val weekdaysEn = listOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
@@ -42,6 +44,10 @@ object PersianDateUtils {
     fun monthName(month: Int, languageTag: String): String = monthNames(languageTag).getOrElse(month - 1) { "" }
 
     fun monthNames(languageTag: String): List<String> = if (languageTag == "fa") persianMonthsFa else persianMonthsEn
+
+    fun islamicMonthNames(languageTag: String): List<String> = if (languageTag == "fa") islamicMonthsFa else islamicMonthsEn
+
+    fun gregorianMonthNames(languageTag: String): List<String> = if (languageTag == "fa") gregorianMonthsFa else gregorianMonthsEn
 
     fun weekdayName(weekdayIndex: Int, languageTag: String): String =
         (if (languageTag == "fa") weekdaysFa else weekdaysEn).getOrElse(weekdayIndex) { "" }

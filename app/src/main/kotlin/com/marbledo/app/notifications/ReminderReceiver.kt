@@ -66,10 +66,17 @@ class ReminderReceiver : BroadcastReceiver() {
                         NotificationManagerCompat.from(context).cancel(notificationId(id))
                     }
                     ACTION_SNOOZE -> {
-                        AndroidTaskReminderScheduler(context).snooze(id, System.currentTimeMillis() + SNOOZE_MILLIS)
+                        AndroidTaskReminderScheduler(context).remindAgainAt(id, System.currentTimeMillis() + SNOOZE_MILLIS)
                         NotificationManagerCompat.from(context).cancel(notificationId(id))
                     }
-                    else -> showNotification(context, task.title, id, task.dueAtEpochMillis ?: System.currentTimeMillis())
+                    else -> {
+                        val deferUntil = ReminderPreferences.deferUntilQuietEnds(context, System.currentTimeMillis())
+                        if (deferUntil != null) {
+                            AndroidTaskReminderScheduler(context).remindAgainAt(id, deferUntil)
+                        } else {
+                            showNotification(context, task.title, id, task.dueAtEpochMillis ?: System.currentTimeMillis())
+                        }
+                    }
                 }
             } finally {
                 pending.finish()

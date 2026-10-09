@@ -45,7 +45,9 @@ class SettingsRepository(private val context: Context) {
             reduceMotion = proto.reduceMotion,
             lunarOffsetDays = proto.lunarOffsetDays.coerceIn(-2, 2),
             occasionAutoUpdateEnabled = if (configured) proto.occasionAutoUpdateEnabled else true,
-            persistentDateNotificationEnabled = proto.persistentDateNotificationEnabled,
+            persistentDateNotificationEnabled = if (proto.hasStatusIconEnabled()) proto.statusIconEnabled else true,
+            statusBarCalendar = enumOrDefault(proto.statusBarCalendar, CalendarDisplayMode.PERSIAN),
+            reminderLeadMinutes = if (proto.hasReminderLeadMinutes()) proto.reminderLeadMinutes.coerceIn(0, 1440) else 10,
         )
     }
 
@@ -70,6 +72,9 @@ class SettingsRepository(private val context: Context) {
         .setLunarOffsetDays(settings.lunarOffsetDays)
         .setOccasionAutoUpdateEnabled(settings.occasionAutoUpdateEnabled)
         .setPersistentDateNotificationEnabled(settings.persistentDateNotificationEnabled)
+        .setStatusIconEnabled(settings.persistentDateNotificationEnabled)
+        .setStatusBarCalendar(settings.statusBarCalendar.name)
+        .setReminderLeadMinutes(settings.reminderLeadMinutes)
         .build()
 
     private inline fun <reified T : Enum<T>> enumOrDefault(value: String, default: T): T =

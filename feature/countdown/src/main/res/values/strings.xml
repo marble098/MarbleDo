@@ -73,4 +73,6 @@
     <string name="countdown_create_action">Save countdown</string>
     <string name="countdown_cancel">Cancel</string>
     <string name="countdown_target_date">Target: %1$s</string>
+    <string name="countdown_past_error">Pick a moment in the future.</string>
+    <string name="countdown_picker_title">Choose date and time</string>
 </resources>
