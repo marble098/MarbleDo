@@ -1,5 +1,10 @@
 package com.marble098.marbledo
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import com.marble098.marbledo.notifications.ReminderPreferences
 import android.app.Application
 import android.os.StrictMode
 import com.marble098.marbledo.notifications.AndroidTaskReminderScheduler
@@ -35,6 +40,11 @@ class MarbleDoApplication : Application() {
         CalendarNotificationWorkInitializer.ensureDaily(this)
         PersistentCalendarNotificationWorker.ensurePeriodic(this)
         OccasionSyncWorker.ensureDaily(this)
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            SettingsRepository(this@MarbleDoApplication).settings.collect { settings ->
+                ReminderPreferences.write(this@MarbleDoApplication, settings)
+            }
+        }
     }
 
     private fun enableDebugStrictMode() {

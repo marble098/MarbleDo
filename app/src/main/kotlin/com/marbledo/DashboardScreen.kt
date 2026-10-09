@@ -1,5 +1,14 @@
 package com.marble098.marbledo
 
+import com.marbledo.domain.model.CalendarDisplayMode
+import com.marbledo.feature.tasks.TaskChange
+import com.marbledo.feature.tasks.TaskChangeKind
+import android.content.Context
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -130,6 +139,11 @@ fun DashboardScreen(
     initialShareText: String? = null,
     initialOpenAdd: Boolean = false,
     onInitialIntentConsumed: () -> Unit = {},
+    initialAddDateIso: String? = null,
+    onInitialAddDateConsumed: () -> Unit = {},
+    pendingEditTaskId: Long? = null,
+    onPendingEditTaskConsumed: () -> Unit = {},
+    onCalendarDisplaySelected: (CalendarDisplayMode) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -140,7 +154,9 @@ fun DashboardScreen(
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var showCreateCountdown by rememberSaveable { mutableStateOf(false) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
-    var showUndo by remember { mutableStateOf(false) }
+    var addDateIso by rememberSaveable { mutableStateOf<String?>(null) }
+    val snackbarHost = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var collapsedTaskGroups by rememberSaveable { mutableStateOf("LATER,NO_DATE") }
 
     LaunchedEffect(initialShareText, initialOpenAdd) {
@@ -148,6 +164,37 @@ fun DashboardScreen(
             sharedText = initialShareText.orEmpty()
             showQuickAdd = true
             onInitialIntentConsumed()
+        }
+    }
+
+    LaunchedEffect(initialAddDateIso) {
+        if (initialAddDateIso != null) {
+            sharedText = ""
+            addDateIso = initialAddDateIso
+            showQuickAdd = true
+            onInitialAddDateConsumed()
+        }
+    }
+    LaunchedEffect(pendingEditTaskId, state.allTasks) {
+        if (pendingEditTaskId != null) {
+            val target = state.allTasks.firstOrNull { it.id == pendingEditTaskId }
+            if (target != null) {
+                editingTask = target
+                onPendingEditTaskConsumed()
+            }
+        }
+    }
+
+    // Every change is confirmed with a short snackbar. Its Undo action reverts the most recent change.
+    LaunchedEffect(viewModel) {
+        viewModel.changes.collect { change ->
+            val result = snackbarHost.showSnackbar(
+                message = taskChangeMessage(context, change),
+                actionLabel = context.getString(R.string.dash_undo_action),
+                withDismissAction = false,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.undoLastChange()
         }
     }
 
@@ -171,9 +218,10 @@ fun DashboardScreen(
     }
     val todayOccasions = occasionIndex.on(todayPersian.year, todayPersian.month, todayPersian.day)
     val activeTasks = remember(state.allTasks) { state.allTasks.filter { !it.isCompleted && !it.isArchived } }
-    val countdowns = remember(state.allTasks) {
+    val nowEpoch = remember(now) { now.toInstant().toEpochMilli() }
+    val countdowns = remember(state.allTasks, nowEpoch) {
         state.allTasks
-            .filter { !it.isCompleted && !it.isArchived && it.countdownEnabled && it.dueAtEpochMillis != null }
+            .filter { !it.isCompleted && !it.isArchived && it.countdownEnabled && (it.dueAtEpochMillis ?: Long.MIN_VALUE) >= nowEpoch }
             .sortedBy { it.dueAtEpochMillis }
     }
     val heroCountdown = countdowns.firstOrNull()
@@ -201,7 +249,14 @@ fun DashboardScreen(
                 )
             }
 
-            item { SectionHeader(stringResource(R.string.dash_countdown_hero)) }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionHeader(stringResource(R.string.dash_countdown_hero), modifier = Modifier.weight(1f))
+                    IconButton(onClick = { showCreateCountdown = true }) {
+                        Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.dash_create_countdown))
+                    }
+                }
+            }
 
             if (heroCountdown == null) {
                 item {
@@ -237,7 +292,6 @@ fun DashboardScreen(
                             onOpenFocus = { onOpenFocus(heroCountdown) },
                             onDisableRequested = {
                                 viewModel.editTask(heroCountdown.copy(countdownEnabled = false))
-                                showUndo = true
                             },
                             modifier = Modifier.padding(14.dp),
                         )
@@ -280,6 +334,27 @@ fun DashboardScreen(
                                         onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
                                     )
                                 }
+                            }
+                        }
+                    }
+                    val categoryChoices = remember(settings.taskCategories) {
+                        settings.taskCategories.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+                    }
+                    if (categoryChoices.isNotEmpty()) {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            item {
+                                FilterChip(
+                                    selected = state.selectedCategory == null,
+                                    onClick = { viewModel.setCategory(null) },
+                                    label = { Text(stringResource(R.string.dash_category_all)) },
+                                )
+                            }
+                            items(categoryChoices) { name ->
+                                FilterChip(
+                                    selected = state.selectedCategory == name,
+                                    onClick = { viewModel.setCategory(name) },
+                                    label = { Text(name, maxLines = 1) },
+                                )
                             }
                         }
                     }
@@ -357,12 +432,11 @@ fun DashboardScreen(
                                 onToggle = { viewModel.toggleCompleted(task) },
                                 onOpenCountdown = { onOpenFocus(task) },
                                 onEdit = { editingTask = task },
-                                onArchive = { viewModel.archive(task) },
-                                onDelete = { viewModel.delete(task); showUndo = true },
+                                onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
+                                onDelete = { viewModel.delete(task) },
                                 onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
                                 onToggleCountdown = {
                                     viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
-                                    showUndo = true
                                 },
                                 onLongPress = { viewModel.toggleSelection(task.id) },
                             )
@@ -379,22 +453,10 @@ fun DashboardScreen(
             modifier = Modifier.align(Alignment.BottomEnd).padding(18.dp),
         )
 
-        AnimatedVisibility(
-            visible = showUndo,
-            enter = fadeIn(tween(200)) + expandVertically(tween(200)),
-            exit = fadeOut(tween(150)) + shrinkVertically(tween(150)),
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
-        ) {
-            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.inverseSurface, shadowElevation = 4.dp) {
-                Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.dash_undo), color = MaterialTheme.colorScheme.inverseOnSurface, style = MaterialTheme.typography.labelLarge)
-                    Spacer(Modifier.width(6.dp))
-                    IconButton(onClick = { viewModel.undoLastChange(); showUndo = false }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Outlined.Close, contentDescription = null, tint = MaterialTheme.colorScheme.inverseOnSurface, modifier = Modifier.size(16.dp))
-                    }
-                }
-            }
-        }
+        SnackbarHost(
+            hostState = snackbarHost,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp),
+        )
     }
 
     if (showQuickAdd) {
@@ -403,13 +465,18 @@ fun DashboardScreen(
             languageTag = settings.languageTag,
             countdownThemeId = settings.countdownTheme,
             initialText = sharedText,
+            initialDateIso = addDateIso,
+            weekStartsSaturday = settings.weekStartsSaturday,
+            pickerCalendar = settings.countdownCalendar,
+            onPickerCalendarChange = onCalendarDisplaySelected,
             onAddCategory = onAddCategory,
             onSubmit = { task ->
                 viewModel.addTask(task)
                 showQuickAdd = false
                 sharedText = ""
+                addDateIso = null
             },
-            onDismiss = { showQuickAdd = false; sharedText = "" },
+            onDismiss = { showQuickAdd = false; sharedText = ""; addDateIso = null },
             countdownThemePicker = { selected, onSelect ->
                 ThemeSwatchRow(selected = CountdownTheme.from(selected), onSelect = { theme -> onSelect(theme.id) })
             },
@@ -421,10 +488,15 @@ fun DashboardScreen(
         TaskEditorSheet(
             task = task,
             categories = settings.taskCategories,
+            languageTag = settings.languageTag,
+            weekStartsSaturday = settings.weekStartsSaturday,
+            pickerCalendar = settings.countdownCalendar,
+            onPickerCalendarChange = onCalendarDisplaySelected,
             onAddCategory = onAddCategory,
             onSave = { updated -> viewModel.editTask(updated); editingTask = null },
-            onDelete = { viewModel.delete(task); editingTask = null; showUndo = true },
+            onDelete = { viewModel.delete(task); editingTask = null },
             onArchive = { viewModel.archive(task); editingTask = null },
+            onUnarchive = { viewModel.unarchive(task); editingTask = null },
             onDismiss = { editingTask = null },
             countdownThemePicker = { selected, onSelect ->
                 ThemeSwatchRow(selected = CountdownTheme.from(selected), onSelect = { theme -> onSelect(theme.id) })
@@ -437,9 +509,10 @@ fun DashboardScreen(
         CountdownCreateSheet(
             calendarDisplay = settings.countdownCalendar,
             defaultThemeId = settings.countdownTheme,
-            onCalendarDisplaySelected = { },
+            weekStartsSaturday = settings.weekStartsSaturday,
+            onCalendarDisplaySelected = onCalendarDisplaySelected,
             onDismiss = { showCreateCountdown = false },
-            onCreate = { task -> viewModel.addTask(task); showCreateCountdown = false; showUndo = true },
+            onCreate = { task -> viewModel.addTask(task); showCreateCountdown = false },
         )
     }
 }
@@ -690,6 +763,17 @@ private fun sortLabel(sort: TaskSort): String = when (sort) {
     TaskSort.PRIORITY -> stringResource(R.string.dash_sort_priority)
     TaskSort.TITLE -> stringResource(R.string.dash_sort_title)
     TaskSort.RECENT -> stringResource(R.string.dash_sort_recent)
+}
+
+private fun taskChangeMessage(context: Context, change: TaskChange): String = when (change.kind) {
+    TaskChangeKind.ADDED -> context.getString(R.string.dash_change_added)
+    TaskChangeKind.EDITED -> context.getString(R.string.dash_change_saved)
+    TaskChangeKind.COMPLETED -> context.getString(R.string.dash_change_completed)
+    TaskChangeKind.REOPENED -> context.getString(R.string.dash_change_reopened)
+    TaskChangeKind.BULK_COMPLETED -> context.getString(R.string.dash_change_bulk, change.count)
+    TaskChangeKind.ARCHIVED -> context.getString(R.string.dash_change_archived)
+    TaskChangeKind.UNARCHIVED -> context.getString(R.string.dash_change_unarchived)
+    TaskChangeKind.DELETED -> context.getString(R.string.dash_change_deleted)
 }
 
 private fun groupTasks(tasks: List<Task>, zone: ZoneId): List<GroupedTasks> {

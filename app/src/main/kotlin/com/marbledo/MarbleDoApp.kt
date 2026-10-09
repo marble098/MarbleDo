@@ -1,5 +1,10 @@
 package com.marble098.marbledo
 
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.marbledo.domain.model.CalendarDisplayMode
 import android.Manifest
 import android.app.AlarmManager
 import android.content.Intent
@@ -88,6 +93,9 @@ import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
+private const val UI_PREFS = "marbledo_ui"
+private const val KEY_NOTIFICATION_PROMPT_SHOWN = "notification_prompt_shown"
+
 @Serializable private data object HomeDestination : NavKey
 @Serializable private data object CalendarDestination : NavKey
 @Serializable private data object SettingsDestination : NavKey
@@ -138,7 +146,13 @@ fun MarbleDoApp(
     val settings = persistedSettings ?: AppSettings(languageTag = activeAppLanguage ?: "fa")
     val occasionState by occasionRepository.state.collectAsStateWithLifecycle()
     val backStack = rememberNavBackStack(HomeDestination)
+    // Hand-offs from the calendar to the dashboard: a day to add a task on, or a task to open.
+    var pendingAddDateIso by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingEditTaskId by rememberSaveable { mutableStateOf<Long?>(null) }
     val coroutineScope = rememberCoroutineScope()
+    val updateCountdownCalendar: (CalendarDisplayMode) -> Unit = { mode ->
+        coroutineScope.launch { settingsRepository.update { current -> current.copy(countdownCalendar = mode) } }
+    }
     var focusTask by remember { mutableStateOf<Task?>(null) }
     var restoreEnvelope by remember { mutableStateOf<BackupEnvelope?>(null) }
     var showRestoreChoice by remember { mutableStateOf(false) }
@@ -220,6 +234,19 @@ fun MarbleDoApp(
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) Toast.makeText(context, R.string.settings_notifications_denied, Toast.LENGTH_LONG).show()
+    }
+
+    // Ask once, on first launch, so the status-bar date icon and reminders can work without a trip to Settings.
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            val prefs = context.getSharedPreferences(UI_PREFS, Context.MODE_PRIVATE)
+            val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+            if (!granted && !prefs.getBoolean(KEY_NOTIFICATION_PROMPT_SHOWN, false)) {
+                prefs.edit().putBoolean(KEY_NOTIFICATION_PROMPT_SHOWN, true).apply()
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     }
 
     fun navigateTo(key: NavKey) {
@@ -333,6 +360,11 @@ fun MarbleDoApp(
                                     initialShareText = initialShareText,
                                     initialOpenAdd = initialOpenAdd,
                                     onInitialIntentConsumed = onIntentConsumed,
+                                    initialAddDateIso = pendingAddDateIso,
+                                    onInitialAddDateConsumed = { pendingAddDateIso = null },
+                                    pendingEditTaskId = pendingEditTaskId,
+                                    onPendingEditTaskConsumed = { pendingEditTaskId = null },
+                                    onCalendarDisplaySelected = updateCountdownCalendar,
                                 )
                             }
                             entry<CalendarDestination> {
@@ -344,6 +376,16 @@ fun MarbleDoApp(
                                     languageTag = settings.languageTag,
                                     weekStartsSaturday = settings.weekStartsSaturday,
                                     lunarOffsetDays = settings.lunarOffsetDays,
+                                    pickerCalendar = settings.countdownCalendar,
+                                    onPickerCalendarChange = updateCountdownCalendar,
+                                    onAddTask = { date ->
+                                        pendingAddDateIso = date.toString()
+                                        navigateTo(HomeDestination)
+                                    },
+                                    onOpenTask = { task ->
+                                        pendingEditTaskId = task.id
+                                        navigateTo(HomeDestination)
+                                    },
                                     onRefreshOccasions = {
                                         coroutineScope.launch {
                                             when (occasionRepository.refresh()) {

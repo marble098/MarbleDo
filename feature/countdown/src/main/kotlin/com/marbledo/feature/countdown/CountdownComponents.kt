@@ -61,7 +61,14 @@ import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.TaskPriority
 import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.calendar.SchedulePickerDialog
+import com.marbledo.feature.calendar.SchedulePickerField
+import com.marbledo.feature.calendar.SchedulePickerMode
+import com.marbledo.feature.calendar.formatScheduleSummary
 import java.time.Duration
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /** Immersive, read-only countdown view. Theme selection lives in Settings. */
@@ -224,7 +231,10 @@ fun CountdownMiniCard(
     }
 }
 
-/** Improved countdown creation sheet: presets first, validated date/time second. */
+/**
+ * Countdown creation: a title, one-tap presets, and a full date and time picker. The target has to be in the
+ * future, and the chosen calendar is reported back so it can be saved for next time.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CountdownCreateSheet(
@@ -233,21 +243,29 @@ fun CountdownCreateSheet(
     onDismiss: () -> Unit,
     onCreate: (Task) -> Unit,
     defaultThemeId: String = CountdownTheme.DEFAULT.id,
+    weekStartsSaturday: Boolean = true,
 ) {
-    val initialTarget = remember { ZonedDateTime.now().plusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0).toInstant().toEpochMilli() }
+    val zone = remember { ZoneId.systemDefault() }
+    val numeralMode = LocalNumeralMode.current
+    val languageTag = if (LocalConfiguration.current.locales[0].language == "fa") "fa" else "en"
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var title by rememberSaveable { mutableStateOf("") }
     var selectedCalendar by rememberSaveable { mutableStateOf(calendarDisplay) }
-    var dateText by rememberSaveable { mutableStateOf(CountdownDateUtils.dateInput(initialTarget, calendarDisplay)) }
-    var timeText by rememberSaveable { mutableStateOf(CountdownDateUtils.timeInput(initialTarget)) }
-    val parsedDate = remember(dateText, selectedCalendar) { CountdownDateUtils.parseDateInput(dateText, selectedCalendar) }
-    val parsedTime = remember(timeText) { CountdownDateUtils.parseTimeInput(timeText) }
-    val targetMillis = remember(dateText, timeText, selectedCalendar) { CountdownDateUtils.parseDateTime(dateText, timeText, selectedCalendar) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var targetMillis by rememberSaveable { mutableStateOf(defaultCountdownTarget(zone)) }
+    var showPicker by rememberSaveable { mutableStateOf(false) }
+    val target = remember(targetMillis, zone) { Instant.ofEpochMilli(targetMillis).atZone(zone) }
+    val isFuture = targetMillis > System.currentTimeMillis()
+    val summary = formatScheduleSummary(
+        date = target.toLocalDate(),
+        time = target.toLocalTime(),
+        calendarMode = selectedCalendar,
+        languageTag = languageTag,
+        numeralMode = numeralMode,
+        zone = zone,
+    )
 
-    fun applyPreset(target: ZonedDateTime) {
-        val epoch = target.withSecond(0).withNano(0).toInstant().toEpochMilli()
-        dateText = CountdownDateUtils.dateInput(epoch, selectedCalendar)
-        timeText = CountdownDateUtils.timeInput(epoch)
+    fun presetAt(moment: ZonedDateTime) {
+        targetMillis = moment.withSecond(0).withNano(0).toInstant().toEpochMilli()
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
@@ -264,12 +282,24 @@ fun CountdownCreateSheet(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            SchedulePickerField(
+                label = stringResource(R.string.countdown_date_field),
+                value = summary,
+                onClick = { showPicker = true },
+            )
+            if (!isFuture) {
+                Text(
+                    stringResource(R.string.countdown_past_error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusHours(1)) }, label = { Text(stringResource(R.string.countdown_preset_hour)) }) }
-                item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusDays(1)) }, label = { Text(stringResource(R.string.countdown_preset_tomorrow)) }) }
-                item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusWeeks(1)) }, label = { Text(stringResource(R.string.countdown_preset_week)) }) }
-                item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusMonths(1)) }, label = { Text(stringResource(R.string.countdown_preset_month)) }) }
-                item { FilterChip(selected = false, onClick = { applyPreset(ZonedDateTime.now().plusYears(1)) }, label = { Text(stringResource(R.string.countdown_preset_year)) }) }
+                item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusHours(1)) }, label = { Text(stringResource(R.string.countdown_preset_hour)) }) }
+                item { FilterChip(selected = false, onClick = { presetAt(defaultCountdownPreset(zone)) }, label = { Text(stringResource(R.string.countdown_preset_tomorrow)) }) }
+                item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusWeeks(1)) }, label = { Text(stringResource(R.string.countdown_preset_week)) }) }
+                item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusMonths(1)) }, label = { Text(stringResource(R.string.countdown_preset_month)) }) }
+                item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusYears(1)) }, label = { Text(stringResource(R.string.countdown_preset_year)) }) }
             }
             Text(stringResource(R.string.countdown_calendar_display), style = MaterialTheme.typography.labelLarge)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -277,61 +307,65 @@ fun CountdownCreateSheet(
                     FilterChip(
                         selected = selectedCalendar == mode,
                         onClick = {
-                            val previousTarget = targetMillis
                             selectedCalendar = mode
-                            if (previousTarget != null) dateText = CountdownDateUtils.dateInput(previousTarget, mode)
                             onCalendarDisplaySelected(mode)
                         },
                         label = { Text(countdownCalendarLabel(mode), maxLines = 1) },
                     )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = dateText,
-                    onValueChange = { dateText = it },
-                    label = { Text(stringResource(R.string.countdown_date_field)) },
-                    supportingText = {
-                        when {
-                            parsedDate == null -> Text(stringResource(R.string.countdown_date_hint))
-                            targetMillis != null -> Text(stringResource(R.string.countdown_date_preview, countdownDateLabel(targetMillis, selectedCalendar)))
-                        }
-                    },
-                    isError = dateText.isNotBlank() && parsedDate == null,
-                    singleLine = true,
-                    modifier = Modifier.weight(1.3f),
-                )
-                OutlinedTextField(
-                    value = timeText,
-                    onValueChange = { timeText = it },
-                    label = { Text(stringResource(R.string.countdown_time_field)) },
-                    supportingText = { if (parsedTime == null) Text(stringResource(R.string.countdown_time_hint)) },
-                    isError = timeText.isNotBlank() && parsedTime == null,
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-            }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
                     onClick = {
-                        val dueAt = targetMillis ?: return@Button
                         onCreate(
                             Task(
                                 title = title.trim(),
-                                dueAtEpochMillis = dueAt,
+                                dueAtEpochMillis = targetMillis,
+                                isAllDay = false,
                                 priority = TaskPriority.NORMAL,
+                                countdownEnabled = true,
                                 countdownTheme = defaultThemeId,
                             ),
                         )
                     },
-                    enabled = title.isNotBlank() && targetMillis != null,
+                    enabled = title.isNotBlank() && isFuture,
                     modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.countdown_create_action)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.countdown_cancel)) }
             }
         }
     }
+
+    if (showPicker) {
+        SchedulePickerDialog(
+            title = stringResource(R.string.countdown_picker_title),
+            mode = SchedulePickerMode.DATE_AND_TIME,
+            initialDate = target.toLocalDate(),
+            initialTime = target.toLocalTime(),
+            languageTag = languageTag,
+            numeralMode = numeralMode,
+            weekStartsSaturday = weekStartsSaturday,
+            calendarMode = selectedCalendar,
+            onCalendarModeChange = { mode ->
+                selectedCalendar = mode
+                onCalendarDisplaySelected(mode)
+            },
+            onConfirm = { date, time ->
+                targetMillis = date.atTime(time ?: LocalTime.of(9, 0)).atZone(zone).toInstant().toEpochMilli()
+                showPicker = false
+            },
+            onDismiss = { showPicker = false },
+            allowAnyTime = false,
+        )
+    }
 }
+
+private fun defaultCountdownTarget(zone: ZoneId): Long =
+    defaultCountdownPreset(zone).toInstant().toEpochMilli()
+
+/** Tomorrow at 09:00, the default target for a new countdown. */
+private fun defaultCountdownPreset(zone: ZoneId): ZonedDateTime =
+    ZonedDateTime.now(zone).plusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0)
 
 /** Delete affordance kept next to the countdown list in the dashboard. */
 @Composable

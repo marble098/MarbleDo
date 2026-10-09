@@ -73,4 +73,6 @@
     <string name="countdown_create_action">ذخیرهٔ شمارش</string>
     <string name="countdown_cancel">لغو</string>
     <string name="countdown_target_date">موعد: %1$s</string>
+    <string name="countdown_past_error">یک زمان در آینده انتخاب کن.</string>
+    <string name="countdown_picker_title">انتخاب تاریخ و ساعت</string>
 </resources>

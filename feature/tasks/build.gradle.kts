@@ -33,6 +33,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(project(":core:domain"))
     implementation(project(":core:designsystem"))
+    implementation(project(":feature:calendar"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

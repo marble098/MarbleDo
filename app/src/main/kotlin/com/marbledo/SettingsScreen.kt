@@ -1,5 +1,19 @@
 package com.marble098.marbledo
 
+import com.marbledo.core.data.backup.AutomaticBackupStatus
+import com.marbledo.feature.tasks.localizedTaskDateTime
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import android.os.Build
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Alarm
+import androidx.compose.ui.platform.LocalContext
+import com.marble098.marbledo.notifications.PersistentCalendarNotification
+import com.marbledo.feature.calendar.SchedulePickerDialog
+import com.marbledo.feature.calendar.SchedulePickerMode
+import com.marbledo.feature.calendar.formatClock
+import java.time.LocalTime
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +34,7 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PrivacyTip
+import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.AlertDialog
@@ -79,6 +94,13 @@ fun SettingsScreen(
     var languageMenu by remember { mutableStateOf(false) }
     var numeralMenu by remember { mutableStateOf(false) }
     var countdownCalendarMenu by remember { mutableStateOf(false) }
+    var statusCalendarMenu by remember { mutableStateOf(false) }
+    var leadMenu by remember { mutableStateOf(false) }
+    var quietEdge by remember { mutableStateOf<QuietEdge?>(null) }
+    val context = LocalContext.current
+    val lastBackup by produceState<LastBackup?>(initialValue = null) {
+        value = LastBackup(withContext(Dispatchers.IO) { AutomaticBackupStatus.latestBackupMillis(context) })
+    }
     var showCountdownThemeGallery by rememberSaveable { mutableStateOf(false) }
     var showBatteryHelp by remember { mutableStateOf(false) }
 
@@ -94,7 +116,7 @@ fun SettingsScreen(
                 expanded = themeMenu,
                 onExpandedChange = { themeMenu = it },
             ) {
-                AppThemeMode.entries.forEach { item ->
+                AppThemeMode.entries.filter { it != AppThemeMode.DYNAMIC || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S }.forEach { item ->
                     DropdownMenuItem(
                         text = { Text(themeLabel(item)) },
                         onClick = { onUpdate(settings.copy(themeMode = item)); themeMenu = false },
@@ -146,8 +168,12 @@ fun SettingsScreen(
                     TextNormalizer.formatDigits(stringResource(R.string.settings_font_scale, (settings.fontScale * 100).toInt()), settings.numeralMode),
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { onUpdate(settings.copy(fontScale = (settings.fontScale - 0.1f).coerceAtLeast(0.8f))) }) { Text("−") }
-                IconButton(onClick = { onUpdate(settings.copy(fontScale = (settings.fontScale + 0.1f).coerceAtMost(1.5f))) }) { Text("+") }
+                IconButton(onClick = { onUpdate(settings.copy(fontScale = (settings.fontScale - 0.1f).coerceAtLeast(0.8f))) }) {
+                    Icon(Icons.Outlined.Remove, contentDescription = stringResource(R.string.settings_font_smaller))
+                }
+                IconButton(onClick = { onUpdate(settings.copy(fontScale = (settings.fontScale + 0.1f).coerceAtMost(1.5f))) }) {
+                    Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.settings_font_larger))
+                }
             }
             SettingSwitchRow(
                 text = stringResource(R.string.settings_reduce_motion),
@@ -239,6 +265,93 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            val statusState = remember(settings.persistentDateNotificationEnabled, notificationsGranted) {
+                PersistentCalendarNotification.statusIconState(context, settings.persistentDateNotificationEnabled)
+            }
+            Text(
+                stringResource(statusStateTextRes(statusState)),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (statusState == PersistentCalendarNotification.StatusIconState.PERMISSION_MISSING ||
+                    statusState == PersistentCalendarNotification.StatusIconState.BLOCKED
+                ) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+            SettingMenuRow(
+                label = stringResource(R.string.settings_status_calendar),
+                value = countdownCalendarLabel(settings.statusBarCalendar),
+                icon = Icons.Outlined.CalendarMonth,
+                expanded = statusCalendarMenu,
+                onExpandedChange = { statusCalendarMenu = it },
+            ) {
+                CalendarDisplayMode.entries.forEach { mode ->
+                    DropdownMenuItem(
+                        text = { Text(countdownCalendarLabel(mode)) },
+                        onClick = { onUpdate(settings.copy(statusBarCalendar = mode)); statusCalendarMenu = false },
+                    )
+                }
+            }
+            SettingMenuRow(
+                label = stringResource(R.string.settings_reminder_lead),
+                value = leadLabel(settings.reminderLeadMinutes, settings.numeralMode),
+                icon = Icons.Outlined.Alarm,
+                expanded = leadMenu,
+                onExpandedChange = { leadMenu = it },
+            ) {
+                REMINDER_LEAD_OPTIONS.forEach { minutes ->
+                    DropdownMenuItem(
+                        text = { Text(leadLabel(minutes, settings.numeralMode)) },
+                        onClick = { onUpdate(settings.copy(reminderLeadMinutes = minutes)); leadMenu = false },
+                    )
+                }
+            }
+            SettingSwitchRow(
+                text = stringResource(R.string.settings_quiet_hours),
+                checked = settings.quietHoursEnabled,
+                onCheckedChange = { onUpdate(settings.copy(quietHoursEnabled = it)) },
+            )
+            if (settings.quietHoursEnabled) {
+                SettingsActionRow(
+                    text = stringResource(R.string.settings_quiet_start, formatMinute(settings.quietStartMinute, settings.numeralMode)),
+                    onClick = { quietEdge = QuietEdge.START },
+                )
+                SettingsActionRow(
+                    text = stringResource(R.string.settings_quiet_end, formatMinute(settings.quietEndMinute, settings.numeralMode)),
+                    onClick = { quietEdge = QuietEdge.END },
+                )
+            }
+            Text(
+                stringResource(R.string.settings_quiet_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            quietEdge?.let { edge ->
+                val currentMinute = if (edge == QuietEdge.START) settings.quietStartMinute else settings.quietEndMinute
+                SchedulePickerDialog(
+                    title = stringResource(
+                        if (edge == QuietEdge.START) R.string.settings_quiet_start_title else R.string.settings_quiet_end_title,
+                    ),
+                    mode = SchedulePickerMode.TIME_ONLY,
+                    initialDate = null,
+                    initialTime = LocalTime.of(currentMinute.coerceIn(0, 1439) / 60, currentMinute.coerceIn(0, 1439) % 60),
+                    languageTag = settings.languageTag,
+                    numeralMode = settings.numeralMode,
+                    weekStartsSaturday = settings.weekStartsSaturday,
+                    calendarMode = settings.countdownCalendar,
+                    onCalendarModeChange = {},
+                    onConfirm = { _, time ->
+                        val picked = time?.let { it.hour * 60 + it.minute } ?: currentMinute
+                        onUpdate(
+                            if (edge == QuietEdge.START) settings.copy(quietStartMinute = picked) else settings.copy(quietEndMinute = picked),
+                        )
+                        quietEdge = null
+                    },
+                    onDismiss = { quietEdge = null },
+                    allowAnyTime = false,
+                )
+            }
             if (!notificationsGranted) {
                 SettingsActionRow(stringResource(R.string.settings_request_notifications), onRequestNotifications)
             }
@@ -249,6 +362,14 @@ fun SettingsScreen(
 
         SettingsSection(title = stringResource(R.string.settings_backup), icon = Icons.Outlined.Backup) {
             Text(stringResource(R.string.settings_local_only), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            lastBackup?.let { loaded ->
+                Text(
+                    loaded.millis?.let { stringResource(R.string.settings_last_backup, localizedTaskDateTime(it, allDay = false)) }
+                        ?: stringResource(R.string.settings_last_backup_none),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Spacer(Modifier.height(6.dp))
             Button(onClick = onExport, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.settings_export)) }
             OutlinedButton(onClick = onImport, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.settings_import)) }
@@ -376,6 +497,33 @@ private fun numeralLabel(mode: NumeralMode): String = when (mode) {
 }
 
 @Composable
+private enum class QuietEdge { START, END }
+
+/** Loaded backup status. Null millis means no automatic backup exists yet. */
+private class LastBackup(val millis: Long?)
+
+private val REMINDER_LEAD_OPTIONS = listOf(0, 5, 10, 15, 30, 60)
+
+@Composable
+private fun leadLabel(minutes: Int, numeralMode: NumeralMode): String =
+    if (minutes == 0) {
+        stringResource(R.string.settings_reminder_lead_off)
+    } else {
+        TextNormalizer.formatDigits(stringResource(R.string.settings_reminder_lead_value, minutes), numeralMode)
+    }
+
+private fun formatMinute(minuteOfDay: Int, numeralMode: NumeralMode): String {
+    val clamped = minuteOfDay.coerceIn(0, 1439)
+    return TextNormalizer.formatDigits(formatClock(LocalTime.of(clamped / 60, clamped % 60)), numeralMode)
+}
+
+private fun statusStateTextRes(state: PersistentCalendarNotification.StatusIconState): Int = when (state) {
+    PersistentCalendarNotification.StatusIconState.ACTIVE -> R.string.settings_status_icon_state_active
+    PersistentCalendarNotification.StatusIconState.OFF -> R.string.settings_status_icon_state_off
+    PersistentCalendarNotification.StatusIconState.PERMISSION_MISSING -> R.string.settings_status_icon_state_permission
+    PersistentCalendarNotification.StatusIconState.BLOCKED -> R.string.settings_status_icon_state_blocked
+}
+
 private fun countdownCalendarLabel(mode: CalendarDisplayMode): String = when (mode) {
     CalendarDisplayMode.PERSIAN -> stringResource(R.string.calendar_display_persian)
     CalendarDisplayMode.GREGORIAN -> stringResource(R.string.calendar_display_gregorian)

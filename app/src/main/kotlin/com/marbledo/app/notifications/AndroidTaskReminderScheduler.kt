@@ -21,18 +21,23 @@ class AndroidTaskReminderScheduler(context: Context) : TaskReminderScheduler {
         }
         cancel(task.id)
         scheduleAt(task.id, dueAt)
-        val earlyAt = dueAt - PRE_REMINDER_MILLIS
-        if (earlyAt > System.currentTimeMillis()) scheduleAt(task.id, earlyAt, requestCode(task.id, early = true))
+        val lead = ReminderPreferences.leadMillis(appContext)
+        val earlyAt = dueAt - lead
+        if (lead > 0 && earlyAt > System.currentTimeMillis()) scheduleAt(task.id, earlyAt, requestCode(task.id, early = true))
     }
 
     override fun cancel(taskId: Long) {
         alarmManager.cancel(pendingIntent(taskId, requestCode(taskId, early = false)))
         alarmManager.cancel(pendingIntent(taskId, requestCode(taskId, early = true)))
+        alarmManager.cancel(pendingIntent(taskId, deferredRequestCode(taskId)))
     }
 
-    fun snooze(taskId: Long, atMillis: Long) {
-        cancel(taskId)
-        scheduleAt(taskId, atMillis)
+    /**
+     * Fires the reminder again at [atMillis], for snooze and for reminders that fall inside quiet hours.
+     * It uses its own request code, so the due-time and early alarms stay scheduled.
+     */
+    fun remindAgainAt(taskId: Long, atMillis: Long) {
+        scheduleAt(taskId, atMillis, requestCode = deferredRequestCode(taskId))
     }
 
     private fun scheduleAt(
@@ -70,7 +75,9 @@ class AndroidTaskReminderScheduler(context: Context) : TaskReminderScheduler {
     private fun requestCode(id: Long, early: Boolean): Int =
         (id xor (id ushr 32)).toInt() * 2 + if (early) 1 else 0
 
-    companion object {
-        private const val PRE_REMINDER_MILLIS = 10 * 60 * 1000L
+    private fun deferredRequestCode(id: Long): Int = requestCode(id, early = false) xor DEFERRED_REQUEST_FLAG
+
+    private companion object {
+        const val DEFERRED_REQUEST_FLAG = 0x4000_0000
     }
 }

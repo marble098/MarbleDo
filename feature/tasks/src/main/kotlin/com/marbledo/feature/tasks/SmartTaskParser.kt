@@ -45,7 +45,54 @@ object SmartTaskParser {
 
     data class Parsed(val task: Task, val recognizedDate: Boolean, val recognizedTime: Boolean)
 
+    /**
+     * Date and time found in free text. [title] may be blank when the text only names a schedule, such as
+     * "فردا" or "18:30", which the schedule picker and quick add use directly.
+     */
+    data class ScheduleParse(
+        val title: String,
+        val dueAtEpochMillis: Long?,
+        val isAllDay: Boolean,
+        val recognizedDate: Boolean,
+        val recognizedTime: Boolean,
+    )
+
+    private data class Analysis(
+        val title: String,
+        val dueAtEpochMillis: Long?,
+        val isAllDay: Boolean,
+        val recognizedDate: Boolean,
+        val recognizedTime: Boolean,
+    )
+
+    /** Builds a task from free text. Returns null when the text is blank or contains only a schedule. */
     fun parse(raw: String, nowMillis: Long = System.currentTimeMillis()): Parsed? {
+        val analysis = analyze(raw, nowMillis) ?: return null
+        if (analysis.title.isBlank()) return null
+        return Parsed(
+            task = Task(
+                title = analysis.title,
+                dueAtEpochMillis = analysis.dueAtEpochMillis,
+                isAllDay = analysis.isAllDay,
+            ),
+            recognizedDate = analysis.recognizedDate,
+            recognizedTime = analysis.recognizedTime,
+        )
+    }
+
+    /** Schedule and title from free text, accepting text that has no title. Returns null only for blank input. */
+    fun parseSchedule(raw: String, nowMillis: Long = System.currentTimeMillis()): ScheduleParse? =
+        analyze(raw, nowMillis)?.let { analysis ->
+            ScheduleParse(
+                title = analysis.title,
+                dueAtEpochMillis = analysis.dueAtEpochMillis,
+                isAllDay = analysis.isAllDay,
+                recognizedDate = analysis.recognizedDate,
+                recognizedTime = analysis.recognizedTime,
+            )
+        }
+
+    private fun analyze(raw: String, nowMillis: Long): Analysis? {
         val input = TextNormalizer.digitsToLatin(raw)
             .replace('ي', 'ی')
             .replace('ك', 'ک')
@@ -174,8 +221,6 @@ object SmartTaskParser {
             .replace(Regex("[،,:;|]+"), " ")
             .replace(Regex("\\s+"), " ")
             .trim(' ', '-', '،', '.', ':')
-        if (title.isBlank()) return null
-
         val localTime = time?.time ?: LocalTime.of(9, 0)
         if (!recognizedDate && time != null && date == now.toLocalDate() && localTime <= now.toLocalTime()) {
             date = date.plusDays(1)
@@ -185,8 +230,10 @@ object SmartTaskParser {
         } else {
             null
         }
-        return Parsed(
-            task = Task(title = title, dueAtEpochMillis = dueMillis, isAllDay = recognizedDate && time == null),
+        return Analysis(
+            title = title,
+            dueAtEpochMillis = dueMillis,
+            isAllDay = recognizedDate && time == null,
             recognizedDate = recognizedDate,
             recognizedTime = time != null,
         )

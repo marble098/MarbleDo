@@ -65,9 +65,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.TaskPriority
 import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.calendar.SchedulePickerDialog
+import com.marbledo.feature.calendar.SchedulePickerField
+import com.marbledo.feature.calendar.SchedulePickerMode
+import com.marbledo.feature.calendar.formatScheduleSummary
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -78,9 +83,14 @@ private enum class VoiceStep { CATEGORY, TITLE, DATE, TIME, PRIORITY }
 
 private class SpeechLauncherHolder(var launch: (Intent) -> Unit = {})
 
+/** How the due date is chosen: follow the typed text, clear it, or use the picked values. */
+private const val SCHEDULE_AUTO = "auto"
+private const val SCHEDULE_NONE = "none"
+private const val SCHEDULE_SET = "set"
+
 /**
- * The improved creation flow: one free-text box with live offline parsing, one-tap date/time
- * presets, priority and category chips, a voice assistant and an explicit countdown switch.
+ * The creation flow: one free-text box with live offline parsing, a full date and time picker, one-tap date
+ * and time presets, priority and category chips, a voice assistant and an explicit countdown switch.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,6 +103,11 @@ fun TaskQuickAddSheet(
     onDismiss: () -> Unit,
     initialText: String = "",
     modifier: Modifier = Modifier,
+    /** ISO date (yyyy-MM-dd) to preselect, for example when the user taps a day in the calendar. */
+    initialDateIso: String? = null,
+    weekStartsSaturday: Boolean,
+    pickerCalendar: CalendarDisplayMode,
+    onPickerCalendarChange: (CalendarDisplayMode) -> Unit,
     /** Slots supplied by the app module so this feature does not depend on the countdown feature. */
     countdownThemePicker: @Composable (selectedThemeId: String, onSelect: (String) -> Unit) -> Unit = { _, _ -> },
     countdownThemeLabel: @Composable (themeId: String) -> String = { it },
@@ -101,10 +116,10 @@ fun TaskQuickAddSheet(
     val zone = remember { ZoneId.systemDefault() }
     val numeralMode = LocalNumeralMode.current
     var input by rememberSaveable { mutableStateOf(initialText) }
-    var presetDayIso by rememberSaveable { mutableStateOf<String?>(null) }
-    var presetTimeIso by rememberSaveable { mutableStateOf<String?>(null) }
-    var dateText by rememberSaveable { mutableStateOf("") }
-    var timeText by rememberSaveable { mutableStateOf("") }
+    var scheduleMode by rememberSaveable { mutableStateOf(if (initialDateIso != null) SCHEDULE_SET else SCHEDULE_AUTO) }
+    var pickedDateIso by rememberSaveable { mutableStateOf(initialDateIso) }
+    var pickedTimeIso by rememberSaveable { mutableStateOf<String?>(null) }
+    var showPicker by rememberSaveable { mutableStateOf(false) }
     var priority by rememberSaveable { mutableStateOf(TaskPriority.NORMAL) }
     var category by rememberSaveable { mutableStateOf("") }
     var countdownEnabled by rememberSaveable { mutableStateOf(true) }
@@ -120,39 +135,51 @@ fun TaskQuickAddSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val focusRequester = remember { FocusRequester() }
 
-    val parsed = remember(input) { SmartTaskParser.parse(input) }
-    val manualParse = remember(dateText, timeText) {
-        if (dateText.isBlank() && timeText.isBlank()) null
-        else SmartTaskParser.parse(listOf(dateText, timeText).filter { it.isNotBlank() }.joinToString(" "))
+    // Date and time recognized in the typed text. The title is whatever text remains once the schedule is removed.
+    val titleDraft = remember(input) { SmartTaskParser.parseSchedule(input)?.title.orEmpty() }
+    val textSchedule = remember(input) {
+        val parsed = SmartTaskParser.parseSchedule(input)
+        val millis = parsed?.dueAtEpochMillis
+        if (parsed == null || millis == null) {
+            TaskSchedule(null, null)
+        } else {
+            val zoned = Instant.ofEpochMilli(millis).atZone(zone)
+            TaskSchedule(
+                date = if (parsed.recognizedDate || parsed.recognizedTime) zoned.toLocalDate() else null,
+                time = if (parsed.recognizedTime) zoned.toLocalTime() else null,
+            )
+        }
     }
-    val presetDay = remember(presetDayIso) { presetDayIso?.let { runCatching { LocalDate.parse(it) }.getOrNull() } }
-    val presetTime = remember(presetTimeIso) { presetTimeIso?.let { runCatching { LocalTime.parse(it) }.getOrNull() } }
-    val resolvedDue = remember(parsed, manualParse, presetDay, presetTime, zone) {
-        val parsedDate = parsed?.takeIf { it.recognizedDate }?.task?.dueAtEpochMillis
-        val parsedTime = parsed?.takeIf { it.recognizedTime }?.task?.dueAtEpochMillis
-        val manualDate = manualParse?.takeIf { it.recognizedDate }?.task?.dueAtEpochMillis
-        val manualTime = manualParse?.takeIf { it.recognizedTime }?.task?.dueAtEpochMillis
-        val day = presetDay
-            ?: manualDate?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
-            ?: parsedDate?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
-        val time = manualTime?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalTime() }
-            ?: parsedTime?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalTime() }
-            ?: presetTime
-        if (day == null && time == null) null
-        else ZonedDateTime.of(day ?: LocalDate.now(zone), time ?: LocalTime.of(9, 0), zone).toInstant().toEpochMilli()
+    val pickedDate = remember(pickedDateIso) { pickedDateIso?.let { runCatching { LocalDate.parse(it) }.getOrNull() } }
+    val pickedTime = remember(pickedTimeIso) { pickedTimeIso?.let { runCatching { LocalTime.parse(it) }.getOrNull() } }
+    val schedule: TaskSchedule = when (scheduleMode) {
+        SCHEDULE_NONE -> TaskSchedule(null, null)
+        SCHEDULE_SET -> TaskSchedule(pickedDate, pickedTime)
+        else -> textSchedule
     }
-    val hasExplicitTime = manualParse?.recognizedTime == true || parsed?.recognizedTime == true || presetTime != null
+    val resolvedDue = remember(schedule, zone) { schedule.toDueMillis(zone, LocalDate.now(zone)) }
+    val resolvedAllDay = resolvedDue != null && schedule.time == null
     val availableCategories = remember(categories) { categories.map { it.trim() }.filter { it.isNotBlank() }.distinct() }
 
-    fun clearSchedule() {
-        presetDayIso = null
-        presetTimeIso = null
-        dateText = ""
-        timeText = ""
+    fun applySchedule(date: LocalDate, time: LocalTime?) {
+        scheduleMode = SCHEDULE_SET
+        pickedDateIso = date.toString()
+        pickedTimeIso = time?.toString()
     }
 
-    fun submit(titleOverride: String? = null, priorityOverride: TaskPriority? = null, categoryOverride: String? = null) {
-        val title = (titleOverride ?: parsed?.task?.title ?: input).trim()
+    fun pickDate(date: LocalDate) = applySchedule(date, schedule.time)
+
+    fun pickTime(time: LocalTime?) =
+        applySchedule(schedule.date ?: defaultDateFor(time, ZonedDateTime.now(zone)), time)
+
+    fun clearSchedule() {
+        scheduleMode = SCHEDULE_NONE
+        pickedDateIso = null
+        pickedTimeIso = null
+    }
+
+    fun submit(categoryOverride: String? = null) {
+        val title = titleDraft.trim()
         if (title.isBlank()) {
             Toast.makeText(context, R.string.tasks_task_title_hint, Toast.LENGTH_SHORT).show()
             return
@@ -165,8 +192,8 @@ fun TaskQuickAddSheet(
             Task(
                 title = title,
                 dueAtEpochMillis = resolvedDue,
-                isAllDay = resolvedDue != null && !hasExplicitTime,
-                priority = priorityOverride ?: priority,
+                isAllDay = resolvedAllDay,
+                priority = priority,
                 category = chosenCategory,
                 countdownEnabled = countdownEnabled,
                 countdownTheme = themeId,
@@ -288,6 +315,13 @@ fun TaskQuickAddSheet(
 
     LaunchedEffect(Unit) { runCatching { focusRequester.requestFocus() } }
 
+    val scheduleText = if (resolvedDue == null) {
+        stringResource(R.string.tasks_date_none)
+    } else {
+        formatScheduleSummary(schedule.date ?: LocalDate.now(zone), schedule.time, pickerCalendar, languageTag, numeralMode, zone)
+    }
+    val hasTextSchedule = textSchedule.date != null || textSchedule.time != null
+
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier.imePadding()) {
         Column(
             Modifier
@@ -329,7 +363,7 @@ fun TaskQuickAddSheet(
                 shape = MaterialTheme.shapes.large,
             )
 
-            if (parsed != null && (parsed.recognizedDate || parsed.recognizedTime)) {
+            if (hasTextSchedule && scheduleMode == SCHEDULE_AUTO) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     Text(
@@ -340,78 +374,20 @@ fun TaskQuickAddSheet(
                 }
             }
 
-            if (resolvedDue != null) {
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primaryContainer) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(17.dp))
-                        Text(
-                            localizedTaskDate(resolvedDue),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.weight(1f).padding(start = 8.dp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        IconButton(onClick = { clearSchedule() }) {
-                            Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.tasks_clear_due), tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(18.dp))
-                        }
-                    }
-                }
-            }
-
             Text(stringResource(R.string.tasks_when), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
-                item {
-                    FilterChip(
-                        selected = presetDayIso == null && dateText.isBlank(),
-                        onClick = { clearSchedule() },
-                        label = { Text(stringResource(R.string.tasks_date_none)) },
-                    )
-                }
-                items(datePresets) { (labelRes, dayOffset) ->
-                    val target = LocalDate.now(zone).plusDays(dayOffset.toLong())
-                    FilterChip(
-                        selected = presetDayIso == target.toString(),
-                        onClick = { presetDayIso = target.toString() },
-                        label = { Text(stringResource(labelRes)) },
-                    )
-                }
-            }
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
-                items(timePresets) { preset ->
-                    FilterChip(
-                        selected = presetTimeIso == preset.toString(),
-                        onClick = {
-                            presetTimeIso = if (presetTimeIso == preset.toString()) null else preset.toString()
-                            timeText = ""
-                        },
-                        label = { Text(TextNormalizer.formatDigits(preset.hour.toString().padStart(2, '0') + ":00", numeralMode)) },
-                    )
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = dateText,
-                    onValueChange = { dateText = it; presetDayIso = null },
-                    label = { Text(stringResource(R.string.tasks_date_field)) },
-                    placeholder = { Text(stringResource(R.string.tasks_date_hint)) },
-                    isError = dateText.isNotBlank() && manualParse?.recognizedDate != true,
-                    singleLine = true,
-                    modifier = Modifier.weight(1.4f),
-                )
-                OutlinedTextField(
-                    value = timeText,
-                    onValueChange = { timeText = it; presetTimeIso = null },
-                    label = { Text(stringResource(R.string.tasks_time_field)) },
-                    placeholder = { Text(stringResource(R.string.tasks_time_hint)) },
-                    isError = timeText.isNotBlank() && manualParse?.recognizedTime != true,
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            SchedulePickerField(
+                label = stringResource(R.string.tasks_schedule_field),
+                value = scheduleText,
+                onClick = { showPicker = true },
+            )
+            ScheduleQuickChips(
+                schedule = schedule,
+                zone = zone,
+                numeralMode = numeralMode,
+                onPickDate = { pickDate(it) },
+                onPickTime = { pickTime(it) },
+                onClear = { clearSchedule() },
+            )
 
             Text(stringResource(R.string.tasks_priority), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -475,12 +451,35 @@ fun TaskQuickAddSheet(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                Button(onClick = { submit() }, modifier = Modifier.weight(1f), enabled = (parsed?.task?.title ?: input).isNotBlank()) {
+                Button(onClick = { submit() }, modifier = Modifier.weight(1f), enabled = titleDraft.isNotBlank()) {
                     Text(stringResource(R.string.tasks_add))
                 }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.tasks_cancel)) }
             }
         }
+    }
+
+    if (showPicker) {
+        SchedulePickerDialog(
+            title = stringResource(R.string.tasks_schedule_title),
+            mode = SchedulePickerMode.DATE_AND_TIME,
+            initialDate = schedule.date ?: LocalDate.now(zone),
+            initialTime = schedule.time,
+            languageTag = languageTag,
+            numeralMode = numeralMode,
+            weekStartsSaturday = weekStartsSaturday,
+            calendarMode = pickerCalendar,
+            onCalendarModeChange = onPickerCalendarChange,
+            onConfirm = { date, time ->
+                applySchedule(date, time)
+                showPicker = false
+            },
+            onDismiss = { showPicker = false },
+            onClear = {
+                clearSchedule()
+                showPicker = false
+            },
+        )
     }
 
     if (showCategoryDialog) {
@@ -570,16 +569,6 @@ fun TaskQuickAddSheet(
         )
     }
 }
-
-private val timePresets = listOf(LocalTime.of(8, 0), LocalTime.of(12, 0), LocalTime.of(18, 0), LocalTime.of(21, 0))
-
-/** Day offsets stay relative so the chips never go stale while the sheet is open. */
-private val datePresets = listOf(
-    R.string.tasks_today to 0L,
-    R.string.tasks_tomorrow to 1L,
-    R.string.tasks_date_next_week to 7L,
-    R.string.tasks_date_next_month to 30L,
-)
 
 private fun isVoiceSkipPhrase(value: String): Boolean {
     val compact = TextNormalizer.searchKey(value).replace(" ", "")
