@@ -38,6 +38,7 @@ class SettingsRepository(private val context: Context) {
             religiousEventsEnabled = if (configured) proto.religiousEventsEnabled else true,
             nationalEventsEnabled = if (configured) proto.nationalEventsEnabled else true,
             personalEventsEnabled = if (configured) proto.personalEventsEnabled else true,
+            internationalEventsEnabled = if (proto.hasInternationalEventsEnabled()) proto.internationalEventsEnabled else true,
             quietHoursEnabled = proto.quietHoursEnabled,
             quietStartMinute = proto.quietStartMinute.takeIf { it in 0..1439 } ?: 1320,
             quietEndMinute = proto.quietEndMinute.takeIf { it in 0..1439 } ?: 420,
@@ -64,6 +65,7 @@ class SettingsRepository(private val context: Context) {
         .setReligiousEventsEnabled(settings.religiousEventsEnabled)
         .setNationalEventsEnabled(settings.nationalEventsEnabled)
         .setPersonalEventsEnabled(settings.personalEventsEnabled)
+        .setInternationalEventsEnabled(settings.internationalEventsEnabled)
         .setQuietHoursEnabled(settings.quietHoursEnabled)
         .setQuietStartMinute(settings.quietStartMinute)
         .setQuietEndMinute(settings.quietEndMinute)

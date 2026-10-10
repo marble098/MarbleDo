@@ -19,7 +19,8 @@
     <string name="calendar_category_official">Official</string>
     <string name="calendar_category_national">National</string>
     <string name="calendar_category_religious">Religious</string>
-    <string name="calendar_category_personal">Personal</string>
+    <string name="calendar_category_personal">Informal &amp; personal</string>
+    <string name="calendar_category_international">World days</string>
     <string name="calendar_sync_now">Update occasions</string>
     <string name="calendar_sync_refreshing">Updating occasions…</string>
     <string name="calendar_sync_error">Update failed; the saved copy is still shown.</string>

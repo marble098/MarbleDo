@@ -96,7 +96,7 @@ class OccasionRepository(private val context: Context) {
                 // replace the much richer offline catalog.
                 if (parsed.occasions.size !in MIN_REMOTE_OCCASIONS..MAX_REMOTE_OCCASIONS) continue
 
-                val changed = parsed.occasions != _state.value.catalog.occasions
+                val changed = parsed != _state.value.catalog
                 val downloadedAt = System.currentTimeMillis()
                 val cachedAt = writeCache(body) ?: downloadedAt
                 _state.value = _state.value.copy(
@@ -232,9 +232,9 @@ class OccasionRepository(private val context: Context) {
         private const val CATALOG_ASSET = "calendar/holidays-fa.json"
         private const val CONNECT_TIMEOUT_MILLIS = 3_000
         private const val READ_TIMEOUT_MILLIS = 4_000
-        private const val MAX_CATALOG_CHARS = 1_500_000
+        private const val MAX_CATALOG_CHARS = 3_000_000
         private const val MIN_REMOTE_OCCASIONS = 20
-        private const val MAX_REMOTE_OCCASIONS = 2_000
+        private const val MAX_REMOTE_OCCASIONS = 5_000
         private const val DEFAULT_MAX_AGE_MILLIS = 20L * 60L * 60L * 1000L
         private const val USER_AGENT = "MarbleDo-Android"
 

@@ -28,4 +28,6 @@ message MarbleDoSettingsProto {
   optional bool status_icon_enabled = 21;
   string status_bar_calendar = 22;
   optional int32 reminder_lead_minutes = 23;
+  // Optional presence keeps the default (on) for installs saved before world days existed.
+  optional bool international_events_enabled = 24;
 }
