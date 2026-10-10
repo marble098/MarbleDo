@@ -230,6 +230,7 @@ fun SettingsScreen(
             SettingSwitchRow(stringResource(R.string.settings_national_events), settings.nationalEventsEnabled) { onUpdate(settings.copy(nationalEventsEnabled = it)) }
             SettingSwitchRow(stringResource(R.string.settings_religious_events), settings.religiousEventsEnabled) { onUpdate(settings.copy(religiousEventsEnabled = it)) }
             SettingSwitchRow(stringResource(R.string.settings_personal_events), settings.personalEventsEnabled) { onUpdate(settings.copy(personalEventsEnabled = it)) }
+            SettingSwitchRow(stringResource(R.string.settings_international_events), settings.internationalEventsEnabled) { onUpdate(settings.copy(internationalEventsEnabled = it)) }
         }
 
         SettingsSection(title = stringResource(R.string.settings_occasions), icon = Icons.Outlined.Refresh) {

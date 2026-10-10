@@ -39,8 +39,9 @@
     <string name="settings_calendar_notifications">Calendar occasion notifications</string>
     <string name="settings_official_events">Official days</string>
     <string name="settings_national_events">National days</string>
-    <string name="settings_religious_events">Religious days</string>
-    <string name="settings_personal_events">Personal occasions</string>
+    <string name="settings_religious_events">Religious &amp; Islamic days</string>
+    <string name="settings_personal_events">Informal &amp; personal occasions</string>
+    <string name="settings_international_events">World days</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_request_notifications">Allow notifications</string>
     <string name="settings_request_exact_alarm">Enable precise reminders</string>

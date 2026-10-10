@@ -796,6 +796,7 @@ fun categoryColor(category: OccasionCategory): Color = when (category) {
     OccasionCategory.NATIONAL -> MaterialTheme.colorScheme.tertiary
     OccasionCategory.RELIGIOUS -> Color(0xFF2E9E7C)
     OccasionCategory.PERSONAL -> MaterialTheme.colorScheme.secondary
+    OccasionCategory.INTERNATIONAL -> Color(0xFF3B7DD8)
 }
 
 internal fun categoryLabelRes(category: OccasionCategory): Int = when (category) {
@@ -803,6 +804,7 @@ internal fun categoryLabelRes(category: OccasionCategory): Int = when (category)
     OccasionCategory.NATIONAL -> R.string.calendar_category_national
     OccasionCategory.RELIGIOUS -> R.string.calendar_category_religious
     OccasionCategory.PERSONAL -> R.string.calendar_category_personal
+    OccasionCategory.INTERNATIONAL -> R.string.calendar_category_international
 }
 
 private fun weekdayIndexFor(year: Int, month: Int, day: Int, zone: ZoneId): Int {

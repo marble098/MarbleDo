@@ -39,8 +39,9 @@
     <string name="settings_calendar_notifications">اعلان مناسبت‌های تقویم</string>
     <string name="settings_official_events">روزهای رسمی</string>
     <string name="settings_national_events">روزهای ملی</string>
-    <string name="settings_religious_events">مناسبت‌های مذهبی</string>
-    <string name="settings_personal_events">مناسبت‌های شخصی</string>
+    <string name="settings_religious_events">مناسبت‌های مذهبی و اسلامی</string>
+    <string name="settings_personal_events">مناسبت‌های غیررسمی و شخصی</string>
+    <string name="settings_international_events">روزهای جهانی</string>
     <string name="settings_notifications">اعلان‌ها</string>
     <string name="settings_request_notifications">اجازهٔ اعلان‌ها</string>
     <string name="settings_request_exact_alarm">فعال‌سازی یادآوری دقیق</string>

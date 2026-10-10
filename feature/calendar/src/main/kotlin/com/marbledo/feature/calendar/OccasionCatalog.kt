@@ -13,6 +13,7 @@ enum class OccasionCategory(val key: String) {
     NATIONAL("national"),
     RELIGIOUS("religious"),
     PERSONAL("personal"),
+    INTERNATIONAL("international"),
     ;
 
     companion object {
@@ -45,16 +46,26 @@ data class Occasion(
     fun title(languageTag: String): String = if (languageTag == "fa") titleFa else titleEn
 }
 
+/**
+ * Changes applied on top of the base catalog for one Jalali year: extra occasions that only exist
+ * that year, and English titles of base occasions that should not appear that year.
+ */
+data class YearlyOverride(
+    val occasions: List<Occasion> = emptyList(),
+    val removedTitlesEn: Set<String> = emptySet(),
+)
+
 data class OccasionCatalog(
     val occasions: List<Occasion>,
     val dataVersion: String? = null,
+    val yearly: Map<Int, YearlyOverride> = emptyMap(),
 ) {
     companion object {
         val EMPTY = OccasionCatalog(emptyList(), null)
 
         /**
-         * Parses both the current schema (`jalali`/`lunar`/`gregorian` arrays) and the original
-         * `holidays` array, so older cached copies keep working.
+         * Parses both the current schema (`jalali`/`lunar`/`gregorian` arrays, optional `yearly`
+         * overrides) and the original `holidays` array, so older cached copies keep working.
          */
         fun parse(json: String): OccasionCatalog? = runCatching {
             val root = JSONObject(json)
@@ -66,8 +77,32 @@ data class OccasionCatalog(
             }.distinctBy { it.id }
             val version = root.optString("dataVersion").takeIf { it.isNotBlank() }
                 ?: root.optString("updatedAt").takeIf { it.isNotBlank() }
-            if (occasions.isEmpty()) null else OccasionCatalog(occasions, version)
+            val yearly = readYearly(root.optJSONObject("yearly"))
+            if (occasions.isEmpty()) null else OccasionCatalog(occasions, version, yearly)
         }.getOrNull()
+
+        private fun readYearly(json: JSONObject?): Map<Int, YearlyOverride> {
+            if (json == null) return emptyMap()
+            return buildMap {
+                json.keys().forEach { yearKey ->
+                    val year = yearKey.toIntOrNull() ?: return@forEach
+                    val body = json.optJSONObject(yearKey) ?: return@forEach
+                    val occasions = buildList {
+                        addAll(readEntries(body.optJSONArray("jalali"), OccasionCalendar.JALALI))
+                        addAll(readEntries(body.optJSONArray("lunar"), OccasionCalendar.LUNAR))
+                        addAll(readEntries(body.optJSONArray("gregorian"), OccasionCalendar.GREGORIAN))
+                    }
+                    val removed = body.optJSONArray("removeTitlesEn")?.let { array ->
+                        (0 until array.length())
+                            .mapNotNull { array.optString(it).trim().takeIf(String::isNotEmpty) }
+                            .toSet()
+                    }.orEmpty()
+                    if (occasions.isNotEmpty() || removed.isNotEmpty()) {
+                        put(year, YearlyOverride(occasions, removed))
+                    }
+                }
+            }
+        }
 
         private fun readEntries(array: JSONArray?, calendar: OccasionCalendar): List<Occasion> {
             if (array == null) return emptyList()
@@ -129,36 +164,45 @@ class OccasionIndex private constructor(
             enabledCategories: Set<OccasionCategory> = OccasionCategory.entries.toSet(),
             zone: ZoneId = ZoneId.systemDefault(),
         ): OccasionIndex {
-            if (catalog.occasions.isEmpty()) return EMPTY
-            val eligible = catalog.occasions.filter { it.category in enabledCategories }
-            if (eligible.isEmpty()) return EMPTY
+            val hasEligible = catalog.occasions.any { it.category in enabledCategories } ||
+                catalog.yearly.values.any { yearOverride -> yearOverride.occasions.any { it.category in enabledCategories } }
+            if (!hasEligible) return EMPTY
             val offsetMillis = lunarOffsetDays.toLong() * DAY_MILLIS
+            // One ICU calendar per system for the whole build: creating calendars per lookup is slow
+            // with a catalog of several hundred occasions.
+            val persian = JalaliCalendarMath.persianCalendar(zone)
+            val gregorian = JalaliCalendarMath.gregorianCalendar(zone)
+            val islamic = JalaliCalendarMath.islamicCalendar(zone)
             val byYear = HashMap<Int, Map<Int, List<Occasion>>>()
             jalaliYears.distinct().forEach { year ->
-                val start = JalaliCalendarMath.jalaliEpoch(year, 1, 1, zone) ?: return@forEach
-                val end = JalaliCalendarMath.jalaliEpoch(year + 1, 1, 1, zone) ?: return@forEach
+                val start = JalaliCalendarMath.strictEpoch(persian, year, 1, 1) ?: return@forEach
+                val end = JalaliCalendarMath.strictEpoch(persian, year + 1, 1, 1) ?: return@forEach
                 if (end <= start) return@forEach
                 val gregorianYears = setOf(
-                    JalaliCalendarMath.gregorianYear(start, zone),
-                    JalaliCalendarMath.gregorianYear(end - 1, zone),
+                    JalaliCalendarMath.yearOf(gregorian, start),
+                    JalaliCalendarMath.yearOf(gregorian, end - 1),
                 )
                 val lunarYears = setOf(
-                    JalaliCalendarMath.lunarYear(start, zone),
-                    JalaliCalendarMath.lunarYear(end - 1, zone),
+                    JalaliCalendarMath.yearOf(islamic, start),
+                    JalaliCalendarMath.yearOf(islamic, end - 1),
                 )
+                val yearOverride = catalog.yearly[year]
+                val removed = yearOverride?.removedTitlesEn.orEmpty()
+                val eligible = (catalog.occasions.filter { it.titleEn !in removed } + yearOverride?.occasions.orEmpty())
+                    .filter { it.category in enabledCategories }
                 val days = HashMap<Int, MutableList<Occasion>>()
                 eligible.forEach { occasion ->
                     val epochs = when (occasion.calendar) {
                         OccasionCalendar.JALALI ->
-                            listOfNotNull(JalaliCalendarMath.jalaliEpoch(year, occasion.month, occasion.day, zone))
+                            listOfNotNull(JalaliCalendarMath.strictEpoch(persian, year, occasion.month, occasion.day))
                         OccasionCalendar.GREGORIAN ->
-                            gregorianYears.mapNotNull { JalaliCalendarMath.gregorianEpoch(it, occasion.month, occasion.day, zone) }
+                            gregorianYears.mapNotNull { JalaliCalendarMath.strictEpoch(gregorian, it, occasion.month, occasion.day) }
                         OccasionCalendar.LUNAR ->
-                            lunarYears.mapNotNull { JalaliCalendarMath.lunarEpoch(it, occasion.month, occasion.day, zone) }
+                            lunarYears.mapNotNull { JalaliCalendarMath.strictEpoch(islamic, it, occasion.month, occasion.day) }
                                 .map { it - offsetMillis }
                     }
                     epochs.filter { it in start until end }.forEach { epoch ->
-                        val fields = JalaliCalendarMath.jalaliFields(epoch, zone)
+                        val fields = JalaliCalendarMath.jalaliFieldsIn(persian, epoch)
                         days.getOrPut(fields.month * 100 + fields.day) { mutableListOf() }.add(occasion)
                     }
                 }
@@ -182,10 +226,17 @@ internal object JalaliCalendarMath {
 
     fun persianCalendar(zone: ZoneId): Calendar = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), persianLocale)
     fun islamicCalendar(zone: ZoneId): Calendar = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), islamicLocale)
-    private fun gregorianCalendar(zone: ZoneId): Calendar = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), gregorianLocale)
+    fun gregorianCalendar(zone: ZoneId): Calendar = Calendar.getInstance(IcuTimeZone.getTimeZone(zone.id), gregorianLocale)
 
-    fun jalaliFields(epochMillis: Long, zone: ZoneId): Fields {
-        val calendar = persianCalendar(zone).apply { timeInMillis = epochMillis }
+    fun jalaliFields(epochMillis: Long, zone: ZoneId): Fields = fieldsIn(persianCalendar(zone), epochMillis)
+
+    /** Same as [jalaliFields] but reuses a calendar owned by the caller. */
+    fun jalaliFieldsIn(calendar: Calendar, epochMillis: Long): Fields = fieldsIn(calendar, epochMillis)
+
+    fun islamicFields(epochMillis: Long, zone: ZoneId): Fields = fieldsIn(islamicCalendar(zone), epochMillis)
+
+    private fun fieldsIn(calendar: Calendar, epochMillis: Long): Fields {
+        calendar.timeInMillis = epochMillis
         return Fields(
             year = calendar.get(Calendar.YEAR),
             month = calendar.get(Calendar.MONTH) + 1,
@@ -194,21 +245,15 @@ internal object JalaliCalendarMath {
         )
     }
 
-    fun islamicFields(epochMillis: Long, zone: ZoneId): Fields {
-        val calendar = islamicCalendar(zone).apply { timeInMillis = epochMillis }
-        return Fields(
-            year = calendar.get(Calendar.YEAR),
-            month = calendar.get(Calendar.MONTH) + 1,
-            day = calendar.get(Calendar.DAY_OF_MONTH),
-            dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK),
-        )
+    fun gregorianYear(epochMillis: Long, zone: ZoneId): Int = yearOf(gregorianCalendar(zone), epochMillis)
+
+    fun lunarYear(epochMillis: Long, zone: ZoneId): Int = yearOf(islamicCalendar(zone), epochMillis)
+
+    /** Year of [epochMillis] in the calendar's own system; the calendar is reused by the caller. */
+    fun yearOf(calendar: Calendar, epochMillis: Long): Int {
+        calendar.timeInMillis = epochMillis
+        return calendar.get(Calendar.YEAR)
     }
-
-    fun gregorianYear(epochMillis: Long, zone: ZoneId): Int =
-        gregorianCalendar(zone).apply { timeInMillis = epochMillis }.get(Calendar.YEAR)
-
-    fun lunarYear(epochMillis: Long, zone: ZoneId): Int =
-        islamicCalendar(zone).apply { timeInMillis = epochMillis }.get(Calendar.YEAR)
 
     /** 0 = Saturday through 6 = Friday, matching the Persian week. */
     fun saturdayBasedWeekday(icuDayOfWeek: Int): Int = icuDayOfWeek % 7
@@ -219,7 +264,8 @@ internal object JalaliCalendarMath {
 
     internal fun gregorianEpoch(year: Int, month: Int, day: Int, zone: ZoneId): Long? = strictEpoch(gregorianCalendar(zone), year, month, day)
 
-    private fun strictEpoch(calendar: Calendar, year: Int, month: Int, day: Int): Long? = runCatching {
+    /** Strict conversion of a calendar date to epoch millis; null when the date does not exist. */
+    internal fun strictEpoch(calendar: Calendar, year: Int, month: Int, day: Int): Long? = runCatching {
         calendar.apply {
             isLenient = false
             clear()

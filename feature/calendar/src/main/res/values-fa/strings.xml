@@ -19,7 +19,8 @@
     <string name="calendar_category_official">رسمی</string>
     <string name="calendar_category_national">ملی</string>
     <string name="calendar_category_religious">مذهبی</string>
-    <string name="calendar_category_personal">شخصی</string>
+    <string name="calendar_category_personal">غیررسمی و شخصی</string>
+    <string name="calendar_category_international">روزهای جهانی</string>
     <string name="calendar_sync_now">به‌روزرسانی مناسبت‌ها</string>
     <string name="calendar_sync_refreshing">در حال به‌روزرسانی مناسبت‌ها…</string>
     <string name="calendar_sync_error">به‌روزرسانی ناموفق بود؛ نسخهٔ ذخیره‌شده نمایش داده می‌شود.</string>

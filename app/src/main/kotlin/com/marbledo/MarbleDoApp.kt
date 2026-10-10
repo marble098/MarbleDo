@@ -321,6 +321,7 @@ fun MarbleDoApp(
                     if (settings.nationalEventsEnabled) add(OccasionCategory.NATIONAL)
                     if (settings.religiousEventsEnabled) add(OccasionCategory.RELIGIOUS)
                     if (settings.personalEventsEnabled) add(OccasionCategory.PERSONAL)
+                    if (settings.internationalEventsEnabled) add(OccasionCategory.INTERNATIONAL)
                 }
                 val content: @Composable (Modifier) -> Unit = { contentModifier ->
                     NavDisplay(

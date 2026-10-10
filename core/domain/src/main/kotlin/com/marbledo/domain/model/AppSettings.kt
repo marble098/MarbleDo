@@ -22,6 +22,7 @@ data class AppSettings(
     val religiousEventsEnabled: Boolean = true,
     val nationalEventsEnabled: Boolean = true,
     val personalEventsEnabled: Boolean = true,
+    val internationalEventsEnabled: Boolean = true,
     val quietHoursEnabled: Boolean = false,
     val quietStartMinute: Int = 22 * 60,
     val quietEndMinute: Int = 7 * 60,
