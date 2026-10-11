@@ -75,7 +75,10 @@ fun HabitDetailSheet(
     onDismiss: () -> Unit,
 ) {
     val numeralMode = LocalNumeralMode.current
-    val palette = remember(habit.themeId) { habitPaletteFor(habit) }
+    val darkMode = habitDarkMode()
+    val palette = remember(habit.themeId, darkMode) {
+        habitPalette(HabitTheme.from(habit.themeId), darkMode)
+    }
     val heat = remember(habit.id, entries, today) {
         HabitAnalytics.heatmap(habit, entries, today, weeks = 12, weekStartsSaturday = weekStartsSaturday)
     }
