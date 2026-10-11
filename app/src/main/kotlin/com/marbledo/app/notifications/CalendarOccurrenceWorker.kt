@@ -21,12 +21,16 @@ import androidx.work.WorkerParameters
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
 import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.Occasion
+import com.marbledo.feature.calendar.OccasionCatalog
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionIndex
+import com.marbledo.feature.calendar.OccasionPlanner
 import com.marbledo.feature.calendar.OccasionRepository
+import com.marbledo.feature.calendar.PersianDate
 import com.marbledo.feature.calendar.PersianDateUtils
 import java.util.Calendar
 import java.util.Locale
@@ -74,10 +78,109 @@ class CalendarOccurrenceWorker(
                     numeralMode = settings.numeralMode,
                 )
             }
+            notifyUpcomingFavorites(
+                settings = settings,
+                catalog = repository.state.value.catalog,
+                today = today,
+                enabledCategories = enabledCategories,
+            )
             Result.success()
         } catch (_: Exception) {
             Result.retry()
         }
+    }
+
+    /** Reminds the user a few days before an occasion they starred, so there is time to prepare. */
+    private fun notifyUpcomingFavorites(
+        settings: AppSettings,
+        catalog: OccasionCatalog,
+        today: PersianDate,
+        enabledCategories: Set<OccasionCategory>,
+    ) {
+        val leadDays = settings.occasionReminderLeadDays
+        val favoriteIds = settings.favoriteOccasionIds.toSet()
+        if (leadDays <= 0 || favoriteIds.isEmpty() || catalog.occasions.isEmpty()) return
+        val index = OccasionIndex.build(
+            catalog = catalog,
+            jalaliYears = listOf(today.year, today.year + 1),
+            lunarOffsetDays = settings.lunarOffsetDays,
+            enabledCategories = enabledCategories,
+        )
+        val upcoming = OccasionPlanner.upcoming(
+            index = index,
+            jalaliYears = listOf(today.year, today.year + 1),
+            nowEpochMillis = System.currentTimeMillis(),
+            favoriteIds = favoriteIds,
+            favoritesOnly = true,
+            limit = MAX_UPCOMING_REMINDERS,
+        ).filter { it.daysUntil == leadDays.toLong() }
+        if (upcoming.isEmpty()) return
+        val notificationContext = applicationContext.forLanguage(settings.languageTag)
+        NotificationChannels.create(notificationContext)
+        notifyUpcomingOccasions(
+            context = notificationContext,
+            occasions = upcoming.map { it.occasion },
+            leadDays = leadDays,
+            languageTag = settings.languageTag,
+            numeralMode = settings.numeralMode,
+        )
+    }
+
+    private fun notifyUpcomingOccasions(
+        context: Context,
+        occasions: List<Occasion>,
+        leadDays: Int,
+        languageTag: String,
+        numeralMode: NumeralMode,
+    ) {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+
+        val bidi = BidiFormatter.getInstance(languageTag == "fa")
+        val title = context.getString(R.string.calendar_notification_upcoming_title)
+        val days = context.getString(
+            R.string.calendar_notification_upcoming_days,
+            TextNormalizer.formatDigits(leadDays.toString(), numeralMode),
+        )
+        val titles = occasions.map { bidi.unicodeWrap(it.title(languageTag)) }
+        val inbox = NotificationCompat.InboxStyle()
+            .setBigContentTitle(title)
+            .setSummaryText(days)
+        titles.take(MAX_VISIBLE_EVENTS).forEach { inbox.addLine(it) }
+
+        val contentIntent = Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            data = Uri.parse("marbledo://calendar")
+            putExtra(MainActivity.EXTRA_DESTINATION, "calendar")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pending = PendingIntent.getActivity(
+            context,
+            UPCOMING_REQUEST_CODE,
+            contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
+            .setSmallIcon(R.drawable.ic_stat_calendar)
+            .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
+            .setColor(ContextCompat.getColor(context, R.color.marble_accent))
+            .setContentTitle(title)
+            .setContentText(days)
+            .setSubText(titles.first())
+            .setNumber(occasions.size)
+            .setStyle(inbox)
+            .setContentIntent(pending)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setShowWhen(false)
+            .setAutoCancel(true)
+            .addAction(
+                R.drawable.ic_stat_calendar,
+                context.getString(R.string.calendar_notification_open),
+                pending,
+            )
+            .build()
+        NotificationManagerCompat.from(context).notify(UPCOMING_NOTIFICATION_ID, notification)
     }
 
     private fun notifyOccurrence(
@@ -168,6 +271,9 @@ class CalendarOccurrenceWorker(
         const val WORK_NAME = "marbledo-calendar-occasions"
         const val WORK_TAG = "marbledo-calendar"
         private const val MAX_VISIBLE_EVENTS = 5
+        private const val MAX_UPCOMING_REMINDERS = 5
+        private const val UPCOMING_REQUEST_CODE = 6_400
+        private const val UPCOMING_NOTIFICATION_ID = 6_400
     }
 }
 

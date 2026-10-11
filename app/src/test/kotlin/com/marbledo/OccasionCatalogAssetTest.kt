@@ -56,13 +56,15 @@ class OccasionCatalogAssetTest {
     @Test
     fun `bundled catalog is a large full-year database`() {
         val total = listOf("jalali", "lunar", "gregorian").sumOf { entries(it).size }
-        assertTrue(total >= 500, "Expected a large catalog covering every observance type, found $total occasions")
+        assertTrue(total >= 700, "Expected a large catalog covering every observance type, found $total occasions")
     }
 
     @Test
-    fun `every jalali month has occasions so the whole year is covered`() {
-        val months = entries("jalali").map { it.getValue("month").jsonPrimitive.int }.toSet()
-        assertEquals((1..12).toSet(), months, "Some Jalali months have no occasion at all")
+    fun `every month of every calendar has occasions so the whole year is covered`() {
+        listOf("jalali", "lunar", "gregorian").forEach { calendar ->
+            val months = entries(calendar).map { it.getValue("month").jsonPrimitive.int }.toSet()
+            assertEquals((1..12).toSet(), months, "Some $calendar months have no occasion at all")
+        }
     }
 
     @Test
@@ -102,6 +104,69 @@ class OccasionCatalogAssetTest {
             "Human Rights Day",
             "International Migrants Day",
         ).forEach { assertTrue(it in titles, "Missing world day: $it") }
+    }
+
+    @Test
+    fun `Iranian national occasions added from the official calendar are present`() {
+        val jalali = entries("jalali")
+        fun has(month: Int, day: Int, titleEn: String) = jalali.any {
+            it.getValue("month").jsonPrimitive.int == month &&
+                it.getValue("day").jsonPrimitive.int == day &&
+                it.getValue("titleEn").jsonPrimitive.content == titleEn
+        }
+        assertTrue(has(2, 3, "Ardibeheshtgan Festival"), "Ardibeheshtgan is missing")
+        assertTrue(has(2, 20, "Damask Rose and Rosewater Day"), "Rosewater Day is missing")
+        assertTrue(has(2, 25, "Persian Language Day"), "Persian Language Day is missing")
+        assertTrue(has(2, 30, "National Population Day"), "Population Day is missing")
+        assertTrue(has(7, 1, "Flag Day"), "Flag Day is missing")
+        assertTrue(has(7, 10, "National Elites Day"), "Elites Day is missing")
+        assertTrue(has(11, 29, "Sepandarmazgan Festival (Iranian Love Day)"), "Sepandarmazgan is missing")
+        assertTrue(has(12, 18, "Bushehr Day"), "Bushehr Day is missing")
+    }
+
+    @Test
+    fun `Iranian-Islamic and Islamic occasions are present in the lunar calendar`() {
+        val lunar = entries("lunar")
+        fun has(month: Int, day: Int, titleEn: String) = lunar.any {
+            it.getValue("month").jsonPrimitive.int == month &&
+                it.getValue("day").jsonPrimitive.int == day &&
+                it.getValue("titleEn").jsonPrimitive.content == titleEn
+        }
+        assertTrue(has(1, 5, "Martyrdom of Lady Ruqayya"), "Lady Ruqayya is missing")
+        assertTrue(has(4, 8, "Birth of Imam Hassan al-Askari"), "Imam Askari's birth is missing")
+        assertTrue(has(4, 10, "Death of Lady Masouma"), "Lady Masouma is missing")
+        assertTrue(has(5, 5, "Nurses Day"), "Nurses Day is missing")
+        assertTrue(has(7, 3, "Martyrdom of Imam Ali al-Hadi"), "Imam Hadi is missing")
+        assertTrue(has(8, 3, "Islamic Revolutionary Guard Corps Day"), "Guards Day is missing")
+        assertTrue(has(8, 15, "World Day of the Oppressed"), "World Day of the Oppressed is missing")
+        assertTrue(has(9, 10, "Death of Lady Khadija"), "Lady Khadija is missing")
+        assertTrue(has(11, 1, "Birth of Lady Masouma and Girls' Day"), "Girls' Day is missing")
+        assertTrue(has(12, 1, "Anniversary of Ali and Fatima's Wedding"), "The wedding anniversary is missing")
+    }
+
+    @Test
+    fun `world days added from the UN list are present`() {
+        val titles = entries("gregorian").map { it.getValue("titleEn").jsonPrimitive.content }.toSet()
+        listOf(
+            "World Kindness Day",
+            "World Alzheimer's Day",
+            "International Human Solidarity Day",
+            "World Turkic Language Family Day",
+            "World Mosque Day",
+            "World Parkinson's Day",
+            "Sustainable Gastronomy Day",
+        ).forEach { assertTrue(it in titles, "Missing world day: $it") }
+    }
+
+    @Test
+    fun `variable weekly occasions are pinned per year`() {
+        val yearly = catalog["yearly"]?.jsonObject ?: error("The yearly section is required")
+        listOf("1405", "1406", "1407", "1408", "1409", "1410").forEach { year ->
+            val titles = yearly.getValue(year).jsonObject.getValue("jalali").jsonArray
+                .map { it.jsonObject.getValue("titleEn").jsonPrimitive.content }
+            assertTrue("Chaharshanbe Suri" in titles, "Chaharshanbe Suri is missing for $year")
+            assertTrue("International Quds Day" in titles, "Quds Day is missing for $year")
+        }
     }
 
     @Test

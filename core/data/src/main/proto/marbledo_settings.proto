@@ -30,4 +30,8 @@ message MarbleDoSettingsProto {
   optional int32 reminder_lead_minutes = 23;
   // Optional presence keeps the default (on) for installs saved before world days existed.
   optional bool international_events_enabled = 24;
+  // Occasions the user starred. Ids come from the catalog (calendar-month-day-titleEn).
+  repeated string favorite_occasion_ids = 25;
+  // Days before a favourite occasion to remind the user; 0 keeps occasion reminders off.
+  int32 occasion_reminder_lead_days = 26;
 }

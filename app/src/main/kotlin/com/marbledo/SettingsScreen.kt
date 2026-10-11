@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -70,6 +72,7 @@ import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.countdown.CountdownThemeGallerySheet
 import com.marbledo.feature.countdown.countdownThemeLabel
+import com.marbledo.feature.calendar.OccasionPlanner
 import com.marbledo.feature.calendar.OccasionState
 import com.marbledo.feature.calendar.PersianDateUtils
 
@@ -250,6 +253,73 @@ fun SettingsScreen(
                 color = if (occasionState.lastError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             SettingsActionRow(stringResource(R.string.settings_occasions_update_now), onRefreshOccasions, enabled = !occasionState.isRefreshing)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                TextNormalizer.formatDigits(
+                    stringResource(R.string.settings_occasion_favorites, settings.favoriteOccasionIds.size),
+                    settings.numeralMode,
+                ),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                stringResource(R.string.settings_occasion_reminder),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OCCASION_REMINDER_OPTIONS.forEach { days ->
+                    FilterChip(
+                        selected = settings.occasionReminderLeadDays == days,
+                        onClick = { onUpdate(settings.copy(occasionReminderLeadDays = days)) },
+                        label = {
+                            Text(
+                                if (days == 0) stringResource(R.string.settings_reminder_lead_off)
+                                else TextNormalizer.formatDigits(
+                                    stringResource(R.string.settings_occasion_reminder_value, days),
+                                    settings.numeralMode,
+                                ),
+                            )
+                        },
+                    )
+                }
+            }
+            Text(
+                stringResource(R.string.settings_occasion_reminder_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            val coverage = remember(occasionState.catalog) { OccasionPlanner.coverage(occasionState.catalog) }
+            if (coverage.total > 0) {
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.settings_coverage_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    TextNormalizer.formatDigits(
+                        stringResource(R.string.settings_coverage_summary, coverage.total, coverage.coveredMonths),
+                        settings.numeralMode,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    TextNormalizer.formatDigits(
+                        if (coverage.isFullYear) stringResource(R.string.settings_coverage_complete)
+                        else stringResource(R.string.settings_coverage_missing, coverage.missingMonths.size),
+                        settings.numeralMode,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (coverage.isFullYear) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                )
+                Text(
+                    TextNormalizer.formatDigits(
+                        stringResource(R.string.settings_coverage_categories, coverage.categoryCount),
+                        settings.numeralMode,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         SettingsSection(title = stringResource(R.string.settings_notifications), icon = Icons.Outlined.NotificationsActive) {
@@ -412,6 +482,9 @@ fun SettingsScreen(
         )
     }
 }
+
+/** Reminder lead times offered for starred occasions; 0 keeps the reminder off. */
+private val OCCASION_REMINDER_OPTIONS = listOf(0, 1, 2, 3, 7)
 
 @Composable
 private fun occasionStatusText(state: OccasionState, numeralMode: NumeralMode): String {
