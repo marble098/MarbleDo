@@ -56,6 +56,7 @@ jobs:
             :feature:tasks:testDebugUnitTest \
             :feature:calendar:testDebugUnitTest \
             :feature:countdown:testDebugUnitTest \
+            :feature:habits:testDebugUnitTest \
             :app:testDebugUnitTest \
             :app:lintDebug \
             :app:assembleDebug 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"

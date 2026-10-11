@@ -15,9 +15,9 @@
     <string name="tasks_delete">حذف</string>
     <string name="tasks_edit_title">ویرایش کار</string>
     <string name="tasks_task_title_hint">عنوان کار</string>
-    <string name="tasks_notes_hint">یادداشت (اختیاری)</string>
+    <string name="tasks_notes_hint">یادداشت (دلخواه)</string>
     <string name="tasks_save">ذخیره</string>
-    <string name="tasks_cancel">لغو</string>
+    <string name="tasks_cancel">انصراف</string>
     <string name="tasks_speech_unavailable">ورودی صوتی روی این دستگاه در دسترس نیست.</string>
     <string name="tasks_voice_input">ورودی صوتی</string>
     <string name="tasks_tag_hint">برچسب‌ها، با ویرگول جدا شوند</string>
@@ -35,9 +35,9 @@
     <string name="tasks_pin">سنجاق‌کردن</string>
     <string name="tasks_unpin">برداشتن سنجاق</string>
     <string name="tasks_voice_guide_title">ساخت هوشمند کار با صدا</string>
-    <string name="tasks_voice_guide_body">پس از شروع، هر مرحله را جداگانه بگویید: ۱) دسته یا «بدون دسته»، ۲) عنوان کار، ۳) تاریخ شمسی یا «رد کن»، ۴) ساعت و دقیقه یا «رد کن»، ۵) اولویت کم، معمولی، زیاد یا فوری. در هر مرحله می‌توانید دوباره بگویید، آن مرحله را رد کنید یا کل فرایند را لغو کنید.</string>
+    <string name="tasks_voice_guide_body">پس از شروع، هر مرحله را جدا بگو: ۱) دسته یا «بدون دسته»، ۲) عنوان کار، ۳) تاریخ شمسی یا «رد کن»، ۴) ساعت و دقیقه یا «رد کن»، ۵) اولویت کم، معمولی، زیاد یا فوری. در هر مرحله می‌توانی دوباره بگویی، آن مرحله را رد کنی یا همهٔ روند را کنار بگذاری.</string>
     <string name="tasks_voice_guide_example">نمونه: «کارهای خانه» ← «خرید هدیه» ← «۲۵ آبان ۱۴۰۵» ← «ساعت ۱۴ و ۳۰ دقیقه» ← «زیاد»</string>
-    <string name="tasks_voice_guide_privacy">گفتار روی دستگاه شما توسط سرویس تشخیص گفتار اندروید پردازش می‌شود؛ دسترس‌پذیری و احتمال استفاده از شبکه به همان سرویس بستگی دارد. MarbleDo صدای شما را ذخیره نمی‌کند.</string>
+    <string name="tasks_voice_guide_privacy">گفتار روی دستگاه خودت با سرویس گفتار اندروید بررسی می‌شود؛ دسترسی و اینکه از شبکه استفاده بشود یا نه، به همان سرویس بستگی دارد. ماربل‌دو صدایت را ذخیره نمی‌کند.</string>
     <string name="tasks_voice_start">شروع راهنمای صوتی</string>
     <string name="tasks_voice_prompt_category">اول نام دسته را بگویید؛ اگر دسته‌ای ندارید بگویید بدون دسته.</string>
     <string name="tasks_voice_prompt_title">حالا عنوان کار را کامل و واضح بگویید.</string>
@@ -45,9 +45,9 @@
     <string name="tasks_voice_prompt_time">ساعت و دقیقه را بگویید، مثلا ساعت ۱۴ و ۳۰ دقیقه. برای بدون ساعت بگویید رد کن.</string>
     <string name="tasks_voice_prompt_priority">اولویت را بگویید: کم، معمولی، زیاد یا فوری.</string>
     <string name="tasks_voice_title_required">برای ساخت کار، گفتن عنوان لازم است.</string>
-    <string name="tasks_voice_task_created">کار صوتی با موفقیت ساخته شد.</string>
-    <string name="tasks_voice_date_retry">تاریخ شمسی تشخیص داده نشد؛ دوباره بگو یا مرحله را رد کن.</string>
-    <string name="tasks_voice_time_retry">ساعت و دقیقه تشخیص داده نشد؛ دوباره بگو یا مرحله را رد کن.</string>
+    <string name="tasks_voice_task_created">کار با صدا ساخته شد.</string>
+    <string name="tasks_voice_date_retry">تاریخ شمسی را نفهمیدم؛ دوباره بگو یا این مرحله را رد کن.</string>
+    <string name="tasks_voice_time_retry">ساعت و دقیقه را نفهمیدم؛ دوباره بگو یا این مرحله را رد کن.</string>
     <string name="tasks_voice_try_again">گفتار دریافت نشد؛ دوباره تلاش کن یا مرحله را رد کن.</string>
     <string name="tasks_voice_progress_title">راهنمای صوتی کار</string>
     <string name="tasks_voice_step_count">مرحلهٔ %1$d از %2$d</string>
@@ -59,9 +59,9 @@
     <string name="tasks_voice_skip">ردکردن</string>
 
     <string name="tasks_quick_add_title">کار تازه</string>
-    <string name="tasks_quick_add_subtitle">طبیعی بنویس، یک زمان آماده بزن یا از صدا استفاده کن.</string>
+    <string name="tasks_quick_add_subtitle">طبیعی بنویس، یک زمان آماده بزن یا با صدایت بگو.</string>
     <string name="tasks_clear_input">پاک کردن متن</string>
-    <string name="tasks_parsed_hint">تاریخ یا ساعت از متن تو تشخیص داده شد</string>
+    <string name="tasks_parsed_hint">تاریخ یا ساعت را از نوشتهٔ تو فهمیدم</string>
     <string name="tasks_when">چه زمانی؟</string>
     <string name="tasks_date_none">بدون تاریخ</string>
     <string name="tasks_date_next_week">هفتهٔ بعد</string>
@@ -85,7 +85,7 @@
     <string name="tasks_checklist_add">افزودن مورد</string>
     <string name="tasks_checklist_item_hint">مورد</string>
     <string name="tasks_checklist_remove">حذف مورد</string>
-    <string name="tasks_link_hint">پیوند (اختیاری)</string>
+    <string name="tasks_link_hint">پیوند (دلخواه)</string>
     <string name="tasks_link_help">در مرورگر باز می‌شود.</string>
     <string name="tasks_link_invalid">نشانی کامل را با https:// وارد کن.</string>
     <string name="tasks_link_open">باز کردن پیوند</string>

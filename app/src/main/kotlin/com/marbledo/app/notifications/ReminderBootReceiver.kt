@@ -23,6 +23,8 @@ class ReminderBootReceiver : BroadcastReceiver() {
                 val repository = koin.get<TaskRepository>()
                 val scheduler = koin.get<AndroidTaskReminderScheduler>()
                 repository.observeTasks().first().forEach(scheduler::schedule)
+                val habits = koin.get<com.marbledo.domain.repository.HabitRepository>().snapshot()
+                com.marbledo.feature.habits.HabitReminderScheduler.reschedule(context, habits.habits)
             } finally {
                 pending.finish()
             }

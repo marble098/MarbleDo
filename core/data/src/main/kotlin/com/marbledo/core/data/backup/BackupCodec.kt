@@ -1,6 +1,8 @@
 package com.marbledo.core.data.backup
 
 import com.marbledo.domain.model.AppSettings
+import com.marbledo.domain.model.Habit
+import com.marbledo.domain.model.HabitEntry
 import com.marbledo.domain.model.Task
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -26,8 +28,11 @@ data class BackupEnvelope(
     val createdAtEpochMillis: Long = System.currentTimeMillis(),
     val settings: AppSettings = AppSettings(),
     val tasks: List<Task> = emptyList(),
+    /** Habits are stored from schema 2 onwards; older backups simply have none. */
+    val habits: List<Habit> = emptyList(),
+    val habitEntries: List<HabitEntry> = emptyList(),
 ) {
-    companion object { const val CURRENT_SCHEMA = 1 }
+    companion object { const val CURRENT_SCHEMA = 2 }
 }
 
 object BackupCodec {
@@ -42,9 +47,16 @@ object BackupCodec {
         tasks: List<Task>,
         settings: AppSettings,
         passphrase: CharArray? = null,
+        habits: List<Habit> = emptyList(),
+        habitEntries: List<HabitEntry> = emptyList(),
     ): ByteArray {
         require(passphrase == null || passphrase.size >= 8) { "Use a passphrase of at least eight characters" }
-        val envelope = BackupEnvelope(tasks = tasks, settings = settings)
+        val envelope = BackupEnvelope(
+            tasks = tasks,
+            settings = settings,
+            habits = habits,
+            habitEntries = habitEntries,
+        )
         val jsonBytes = json.encodeToString(BackupEnvelope.serializer(), envelope).toByteArray(Charsets.UTF_8)
         require(jsonBytes.size <= MAX_JSON_BYTES) { "Backup is too large" }
         val compressed = ByteArrayOutputStream().use { output ->
@@ -111,6 +123,7 @@ object BackupCodec {
         val envelope = json.decodeFromString(BackupEnvelope.serializer(), jsonBytes.toString(Charsets.UTF_8))
         require(envelope.schemaVersion == headerSchema && envelope.schemaVersion in 1..BackupEnvelope.CURRENT_SCHEMA) { "Unsupported or inconsistent backup schema" }
         require(envelope.tasks.all { it.title.isNotBlank() }) { "Backup contains a task without a title" }
+        require(envelope.habits.all { it.name.isNotBlank() }) { "Backup contains a habit without a name" }
         return envelope
     }
 

@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
@@ -16,6 +17,7 @@ import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.IconCompat
 import com.marble098.marbledo.R
 import com.marble098.marbledo.core.designsystem.R as DesignR
+import com.marbledo.domain.model.StatusBarIconStyle
 
 /** The state the persistent notification reflects in its artwork and accent color. */
 enum class NotificationMood {
@@ -39,8 +41,19 @@ enum class NotificationMood {
  * Draws the "smart" notification artwork: a status-bar icon that shows today's day number with a
  * mood glyph, and a colored date badge used as the large icon. Everything is generated on-device
  * so the icon is different every single day without shipping thirty-one static assets.
+ *
+ * The status bar gives an icon only a narrow strip of pixels, so the day number is drawn to fill
+ * as much of the canvas as possible: the size is solved from both the measured width *and* the
+ * measured height, strokes are thickened with a fill-and-stroke pass, and the mood becomes a small
+ * corner mark instead of a glyph sitting on top of the digits.
  */
 object NotificationArtwork {
+
+    /** Bitmap edge of a generated status-bar icon. The platform scales it down to the strip height. */
+    private const val STATUS_ICON_SIZE = 96
+
+    /** Unit square every mood glyph is authored in, before it is mapped onto its box. */
+    private val UNIT_RECT = RectF(0f, 0f, 1f, 1f)
 
     fun mood(
         hasHoliday: Boolean,
@@ -73,17 +86,34 @@ object NotificationArtwork {
     }
 
     /**
-     * Status-bar icon: an alpha-only calendar page holding today's [dayDigits] plus a small glyph
-     * that encodes the mood (star, crescent, flag or check). Falls back to the mood vector when a
-     * device cannot render the generated bitmap.
+     * Status-bar icon for today. [style] decides how much of the icon the day number may use;
+     * every style falls back to the mood vector when a device cannot render the generated bitmap.
      */
-    fun smallIcon(context: Context, dayDigits: String, mood: NotificationMood): IconCompat {
-        val bitmap = statusBitmap(context, dayDigits, mood)
+    fun smallIcon(
+        context: Context,
+        dayDigits: String,
+        mood: NotificationMood,
+        style: StatusBarIconStyle = StatusBarIconStyle.DEFAULT,
+    ): IconCompat {
+        if (style == StatusBarIconStyle.ICON_ONLY) return IconCompat.createWithResource(context, vectorIconRes(mood))
+        val bitmap = statusBitmap(context, dayDigits, mood, style)
         return if (bitmap != null) {
             IconCompat.createWithBitmap(bitmap)
         } else {
             IconCompat.createWithResource(context, vectorIconRes(mood))
         }
+    }
+
+    /** The generated status-bar icon, also used to preview the styles inside Settings. */
+    fun statusBitmap(
+        context: Context,
+        dayDigits: String,
+        mood: NotificationMood,
+        style: StatusBarIconStyle = StatusBarIconStyle.DEFAULT,
+    ): Bitmap? = when (style) {
+        StatusBarIconStyle.ICON_ONLY -> null
+        StatusBarIconStyle.BOLD_DIGITS -> boldDigitsBitmap(context, dayDigits, mood)
+        StatusBarIconStyle.CALENDAR_PAGE -> calendarPageBitmap(context, dayDigits, mood)
     }
 
     /** Colored large icon: gradient date badge with the day number and month name. */
@@ -135,101 +165,198 @@ object NotificationArtwork {
             bitmap
         }.getOrNull()
 
-    private fun statusBitmap(context: Context, dayDigits: String, mood: NotificationMood): Bitmap? =
+    /**
+     * Roomy style: the digits are the icon. They are solved against both the width and the height
+     * of the canvas, painted with a fill-and-stroke pass so thin Vazirmatn strokes survive being
+     * scaled down into the status bar, and the mood sits as a small mark in the top corner.
+     */
+    private fun boldDigitsBitmap(context: Context, dayDigits: String, mood: NotificationMood): Bitmap? =
         runCatching {
-            val size = 108
+            val size = STATUS_ICON_SIZE
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             val white = Color.WHITE
+            val typeface = vazirTypeface(context, 900)
+
+            // Digits may use almost the whole square; a little room is left for the corner mark.
+            val boxWidth = size * 0.95f
+            val boxHeight = size * (if (mood == NotificationMood.QUIET) 0.97f else 0.90f)
+            val textSize = fitTextSize(dayDigits, typeface, boxWidth, boxHeight)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = white
+                textAlign = Paint.Align.CENTER
+                this.typeface = typeface
+                this.textSize = textSize
+                // Thickening the outline keeps hairline Persian strokes visible at 18dp.
+                style = Paint.Style.FILL_AND_STROKE
+                strokeWidth = textSize * 0.06f
+                strokeJoin = Paint.Join.ROUND
+                strokeCap = Paint.Cap.ROUND
+            }
+            val centerY = size * if (mood == NotificationMood.QUIET) 0.5f else 0.55f
+            val baseline = centerY - (paint.descent() + paint.ascent()) / 2f
+            canvas.drawText(dayDigits, size / 2f, baseline, paint)
+
+            if (mood != NotificationMood.QUIET) {
+                val mark = size * 0.30f
+                drawMoodMark(
+                    canvas = canvas,
+                    tint = white,
+                    mood = mood,
+                    box = RectF(size - mark - size * 0.02f, size * 0.01f, size - size * 0.02f, mark + size * 0.01f),
+                )
+            }
+            bitmap
+        }.getOrNull()
+
+    /** Classic calendar page: frame, rings and the mood glyph above the day number. */
+    private fun calendarPageBitmap(context: Context, dayDigits: String, mood: NotificationMood): Bitmap? =
+        runCatching {
+            val size = STATUS_ICON_SIZE
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            val white = Color.WHITE
+            val unit = size / 108f
 
             val frame = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = white
                 style = Paint.Style.STROKE
-                strokeWidth = 7f
+                strokeWidth = 7f * unit
             }
-            canvas.drawRoundRect(RectF(10f, 18f, 98f, 98f), 16f, 16f, frame)
+            canvas.drawRoundRect(
+                RectF(10f * unit, 18f * unit, 98f * unit, 98f * unit),
+                16f * unit,
+                16f * unit,
+                frame,
+            )
 
             val rings = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = white
-                strokeWidth = 8f
+                strokeWidth = 8f * unit
                 strokeCap = Paint.Cap.ROUND
             }
-            canvas.drawLine(32f, 8f, 32f, 24f, rings)
-            canvas.drawLine(76f, 8f, 76f, 24f, rings)
+            canvas.drawLine(32f * unit, 8f * unit, 32f * unit, 24f * unit, rings)
+            canvas.drawLine(76f * unit, 8f * unit, 76f * unit, 24f * unit, rings)
 
-            drawMoodGlyph(canvas, white, mood)
+            if (mood != NotificationMood.QUIET && mood != NotificationMood.TASKS_DUE) {
+                val mark = 32f * unit
+                drawMoodMark(
+                    canvas = canvas,
+                    tint = white,
+                    mood = mood,
+                    box = RectF(size / 2f - mark / 2f, 26f * unit, size / 2f + mark / 2f, 26f * unit + mark),
+                )
+            }
 
+            val boxWidth = 76f * unit
+            val boxHeight = (if (mood == NotificationMood.QUIET || mood == NotificationMood.TASKS_DUE) 66f else 54f) * unit
+            val textSize = fitTextSize(dayDigits, vazirTypeface(context, 800), boxWidth, boxHeight)
             val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = white
                 textAlign = Paint.Align.CENTER
-                typeface = vazirTypeface(context, 600)
-                textSize = if (mood == NotificationMood.QUIET) 52f else 44f
+                typeface = vazirTypeface(context, 800)
+                this.textSize = textSize
+                style = Paint.Style.FILL_AND_STROKE
+                strokeWidth = textSize * 0.05f
+                strokeJoin = Paint.Join.ROUND
             }
-            val maxWidth = 70f
-            val measured = textPaint.measureText(dayDigits)
-            if (measured > maxWidth) {
-                textPaint.textSize *= maxWidth / measured
-            }
-            val centerY = if (mood == NotificationMood.QUIET) 62f else 68f
+            val centerY = (if (mood == NotificationMood.QUIET || mood == NotificationMood.TASKS_DUE) 64f else 74f) * unit
             val baseline = centerY - (textPaint.descent() + textPaint.ascent()) / 2f
-            canvas.drawText(dayDigits, 54f, baseline, textPaint)
+            canvas.drawText(dayDigits, size / 2f, baseline, textPaint)
+
+            if (mood == NotificationMood.TASKS_DUE) {
+                val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = white }
+                canvas.drawCircle(size / 2f, 30f * unit, 5f * unit, dot)
+            }
             bitmap
         }.getOrNull()
 
+    /**
+     * Largest text size at which [text] still fits [boxWidth] by [boxHeight]. Measuring the height
+     * as well as the width is what keeps "8" and "28" equally tall inside the status bar.
+     */
+    private fun fitTextSize(text: String, typeface: Typeface, boxWidth: Float, boxHeight: Float): Float {
+        val probeSize = 100f
+        val probe = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.typeface = typeface
+            this.textSize = probeSize
+            textAlign = Paint.Align.CENTER
+        }
+        val width = probe.measureText(text).coerceAtLeast(1f)
+        val height = (probe.descent() - probe.ascent()).coerceAtLeast(1f)
+        return probeSize * minOf(boxWidth / width, boxHeight / height)
+    }
+
     /** Compact monochrome marks that keep the status icon recognizable for each mood. */
-    private fun drawMoodGlyph(canvas: Canvas, tint: Int, mood: NotificationMood) {
+    private fun drawMoodMark(canvas: Canvas, tint: Int, mood: NotificationMood, box: RectF) {
         when (mood) {
-            NotificationMood.QUIET, NotificationMood.TASKS_DUE -> Unit
-            NotificationMood.OCCASION -> {
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = tint }
-                val path = Path().apply {
-                    moveTo(54f, 26f)
-                    lineTo(58.2f, 34.2f)
-                    lineTo(66.8f, 35.2f)
-                    lineTo(60.9f, 41f)
-                    lineTo(62.3f, 49.6f)
-                    lineTo(54f, 45.2f)
-                    lineTo(45.7f, 49.6f)
-                    lineTo(47.1f, 41f)
-                    lineTo(41.2f, 35.2f)
-                    lineTo(49.8f, 34.2f)
-                    close()
-                }
-                canvas.drawPath(path, paint)
+            NotificationMood.QUIET -> Unit
+            NotificationMood.TASKS_DUE -> {
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tint }
+                val radius = box.width() * 0.17f
+                val centerY = box.centerY()
+                val step = box.width() * 0.30f
+                canvas.drawCircle(box.centerX() - step, centerY, radius, paint)
+                canvas.drawCircle(box.centerX(), centerY, radius, paint)
+                canvas.drawCircle(box.centerX() + step, centerY, radius, paint)
             }
-            NotificationMood.RELIGIOUS -> {
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    this.color = tint
-                    style = Paint.Style.FILL
-                }
-                // Crescent: the left side of a large disc with a smaller disc carved out of it.
-                val path = Path().apply {
-                    moveTo(61f, 25.9f)
-                    arcTo(RectF(40f, 24f, 68f, 52f), 300f, -240f)
-                    arcTo(RectF(51f, 27f, 73f, 49f), 95f, 170f)
-                    close()
-                }
-                canvas.drawPath(path, paint)
-            }
+            NotificationMood.OCCASION -> canvas.drawUnitPath(starPath(), box, fillPaint(tint))
+            NotificationMood.RELIGIOUS -> canvas.drawUnitPath(crescentPath(), box, fillPaint(tint))
             NotificationMood.HOLIDAY -> {
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = tint }
                 val pole = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    this.color = tint
+                    color = tint
                     strokeCap = Paint.Cap.ROUND
-                    strokeWidth = 5f
+                    strokeWidth = box.width() * 0.12f
                 }
-                canvas.drawLine(43f, 24f, 43f, 52f, pole)
-                val path = Path().apply {
-                    moveTo(46f, 25f)
-                    lineTo(68f, 25f)
-                    lineTo(61.5f, 33f)
-                    lineTo(68f, 41f)
-                    lineTo(46f, 41f)
-                    close()
-                }
-                canvas.drawPath(path, paint)
+                canvas.drawLine(
+                    box.left + box.width() * 0.26f,
+                    box.top + box.height() * 0.10f,
+                    box.left + box.width() * 0.26f,
+                    box.bottom - box.height() * 0.06f,
+                    pole,
+                )
+                canvas.drawUnitPath(flagPath(), box, fillPaint(tint))
             }
         }
+    }
+
+    private fun fillPaint(tint: Int): Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tint }
+
+    /** Maps a path authored in the unit square into [box], preserving its aspect ratio. */
+    private fun Canvas.drawUnitPath(path: Path, box: RectF, paint: Paint) {
+        val matrix = Matrix().apply { setRectToRect(UNIT_RECT, box, Matrix.ScaleToFit.CENTER) }
+        drawPath(Path(path).apply { transform(matrix) }, paint)
+    }
+
+    /** Five-pointed star centered in the unit square. */
+    private fun starPath(): Path {
+        val path = Path()
+        for (index in 0 until 10) {
+            val radius = if (index % 2 == 0) 0.5f else 0.2f
+            val angle = Math.toRadians(-90.0 + index * 36.0)
+            val x = 0.5f + (radius * Math.cos(angle)).toFloat()
+            val y = 0.5f + (radius * Math.sin(angle)).toFloat()
+            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        path.close()
+        return path
+    }
+
+    /** Crescent: a disc with a smaller, offset disc subtracted from it. */
+    private fun crescentPath(): Path {
+        val outer = Path().apply { addCircle(0.5f, 0.5f, 0.5f, Path.Direction.CW) }
+        val inner = Path().apply { addCircle(0.72f, 0.38f, 0.44f, Path.Direction.CW) }
+        return Path().apply { op(outer, inner, Path.Op.DIFFERENCE) }
+    }
+
+    /** Flag body; the pole is drawn separately so it can be a round-capped line. */
+    private fun flagPath(): Path = Path().apply {
+        moveTo(0.32f, 0.10f)
+        lineTo(0.92f, 0.10f)
+        lineTo(0.74f, 0.34f)
+        lineTo(0.92f, 0.58f)
+        lineTo(0.32f, 0.58f)
+        close()
     }
 
     private fun color(context: Context, resId: Int): Int =
