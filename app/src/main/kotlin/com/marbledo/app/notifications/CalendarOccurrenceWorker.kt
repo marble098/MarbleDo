@@ -2,6 +2,8 @@ package com.marble098.marbledo.notifications
 
 import android.Manifest
 import android.app.PendingIntent
+import android.app.NotificationManager
+import android.os.Bundle
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -26,6 +28,7 @@ import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.Occasion
 import com.marbledo.feature.calendar.OccasionCatalog
+import com.marbledo.feature.calendar.enabledOccasionCategories
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionIndex
 import com.marbledo.feature.calendar.OccasionPlanner
@@ -46,17 +49,12 @@ class CalendarOccurrenceWorker(
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             val settings = SettingsRepository(applicationContext).settings.first()
+            if (!settings.educationModeEnabled) clearEducationalNotifications(applicationContext)
             if (!settings.calendarNotificationsEnabled) return@withContext Result.success()
             val repository = OccasionRepository(applicationContext)
             repository.load()
             val today = PersianDateUtils.today()
-            val enabledCategories = buildSet {
-                if (settings.officialEventsEnabled) add(OccasionCategory.OFFICIAL)
-                if (settings.nationalEventsEnabled) add(OccasionCategory.NATIONAL)
-                if (settings.religiousEventsEnabled) add(OccasionCategory.RELIGIOUS)
-                if (settings.personalEventsEnabled) add(OccasionCategory.PERSONAL)
-                if (settings.internationalEventsEnabled) add(OccasionCategory.INTERNATIONAL)
-            }
+            val enabledCategories = settings.enabledOccasionCategories()
             val index = OccasionIndex.build(
                 catalog = repository.state.value.catalog,
                 jalaliYears = listOf(today.year),
@@ -98,7 +96,7 @@ class CalendarOccurrenceWorker(
         enabledCategories: Set<OccasionCategory>,
     ) {
         val leadDays = settings.occasionReminderLeadDays
-        val favoriteIds = settings.favoriteOccasionIds.toSet()
+        val favoriteIds = catalog.canonicalFavoriteIds(settings.favoriteOccasionIds)
         if (leadDays <= 0 || favoriteIds.isEmpty() || catalog.occasions.isEmpty()) return
         val index = OccasionIndex.build(
             catalog = catalog,
@@ -160,6 +158,9 @@ class CalendarOccurrenceWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
+            .addExtras(Bundle().apply {
+                putBoolean(EXTRA_EDUCATIONAL_CONTENT, occasions.any { it.category == OccasionCategory.EDUCATIONAL })
+            })
             .setSmallIcon(R.drawable.ic_stat_calendar)
             .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
             .setColor(ContextCompat.getColor(context, R.color.marble_accent))
@@ -243,6 +244,9 @@ class CalendarOccurrenceWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
+            .addExtras(Bundle().apply {
+                putBoolean(EXTRA_EDUCATIONAL_CONTENT, events.any { it.category == OccasionCategory.EDUCATIONAL })
+            })
             .setSmallIcon(R.drawable.ic_stat_calendar)
             .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
             .setColor(ContextCompat.getColor(context, R.color.marble_accent))
@@ -268,6 +272,15 @@ class CalendarOccurrenceWorker(
     }
 
     companion object {
+        private const val EXTRA_EDUCATIONAL_CONTENT = "com.marble098.marbledo.EDUCATIONAL_CONTENT"
+
+        /** Remove already-posted mixed summaries too, not just future school reminders. */
+        fun clearEducationalNotifications(context: Context) {
+            val manager = context.getSystemService(NotificationManager::class.java) ?: return
+            manager.activeNotifications.filter { it.notification.extras.getBoolean(EXTRA_EDUCATIONAL_CONTENT, false) }
+                .forEach { manager.cancel(it.tag, it.id) }
+        }
+
         const val WORK_NAME = "marbledo-calendar-occasions"
         const val WORK_TAG = "marbledo-calendar"
         private const val MAX_VISIBLE_EVENTS = 5

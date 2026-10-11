@@ -12,8 +12,10 @@ import java.time.temporal.ChronoUnit
  */
 data class OccasionPlanRequest(
     val title: String,
-    val dateIso: String,
+    val dateIso: String?,
     val asCountdown: Boolean,
+    val checklist: List<String> = emptyList(),
+    val description: String = "",
 )
 
 /** An enabled occasion resolved to the next day it occurs on, used by "upcoming occasions" lists. */

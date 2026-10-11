@@ -3,31 +3,24 @@ package com.marbledo.feature.calendar
 import android.icu.util.Calendar
 import android.icu.util.TimeZone as IcuTimeZone
 import android.icu.util.ULocale
+import java.time.Instant
 import java.time.ZoneId
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Category keys stay stable because they are persisted in the settings profile. */
+/** Persisted category keys. The school layer must be explicitly enabled on every surface. */
 enum class OccasionCategory(val key: String) {
-    OFFICIAL("official"),
-    NATIONAL("national"),
-    RELIGIOUS("religious"),
-    PERSONAL("personal"),
-    INTERNATIONAL("international"),
-    ;
+    OFFICIAL("official"), NATIONAL("national"), RELIGIOUS("religious"), PERSONAL("personal"),
+    INTERNATIONAL("international"), EDUCATIONAL("educational");
 
     companion object {
+        val publicCategories: Set<OccasionCategory> = entries.filterNot { it == EDUCATIONAL }.toSet()
         fun fromKey(value: String): OccasionCategory? = entries.firstOrNull { it.key == value }
     }
 }
 
-/** Which calendar the fixed month/day of an occasion refers to. */
 enum class OccasionCalendar(val key: String) {
-    JALALI("jalali"),
-    LUNAR("lunar"),
-    GREGORIAN("gregorian"),
-    ;
-
+    JALALI("jalali"), LUNAR("lunar"), GREGORIAN("gregorian");
     companion object {
         fun fromKey(value: String): OccasionCalendar? = entries.firstOrNull { it.key == value }
     }
@@ -42,14 +35,22 @@ data class Occasion(
     val month: Int,
     val day: Int,
     val isHoliday: Boolean,
+    val sourceIds: List<String> = emptyList(),
+    val evidence: OccasionEvidence = OccasionEvidence.LEGACY,
+    val noteFa: String = "",
+    val noteEn: String = "",
+    val tags: Set<String> = emptySet(),
+    val dateRule: OccasionDateRule = OccasionDateRule.FIXED,
+    val weekday: Int? = null,
+    val ordinal: Int? = null,
+    val dayOffset: Int = 0,
+    val durationDays: Int = 1,
 ) {
     fun title(languageTag: String): String = if (languageTag == "fa") titleFa else titleEn
+    fun note(languageTag: String): String = if (languageTag == "fa") noteFa else noteEn
+    val isEducational: Boolean get() = category == OccasionCategory.EDUCATIONAL || "education" in tags
 }
 
-/**
- * Changes applied on top of the base catalog for one Jalali year: extra occasions that only exist
- * that year, and English titles of base occasions that should not appear that year.
- */
 data class YearlyOverride(
     val occasions: List<Occasion> = emptyList(),
     val removedTitlesEn: Set<String> = emptySet(),
@@ -59,150 +60,191 @@ data class OccasionCatalog(
     val occasions: List<Occasion>,
     val dataVersion: String? = null,
     val yearly: Map<Int, YearlyOverride> = emptyMap(),
+    val schemaVersion: Int = 1,
+    val updatedAt: String? = null,
+    val sources: List<CatalogReference> = emptyList(),
+    val schoolPrograms: List<SchoolProgram> = emptyList(),
+    val idAliases: Map<String, String> = emptyMap(),
 ) {
-    companion object {
-        val EMPTY = OccasionCatalog(emptyList(), null)
+    fun canonicalFavoriteIds(ids: Collection<String>): Set<String> = ids.map { id -> idAliases[id] ?: id }.toSet()
 
-        /**
-         * Parses both the current schema (`jalali`/`lunar`/`gregorian` arrays, optional `yearly`
-         * overrides) and the original `holidays` array, so older cached copies keep working.
-         */
+    companion object {
+        const val SUPPORTED_SCHEMA = 4
+        val EMPTY = OccasionCatalog(emptyList())
+
+        /** Reject a partial/malformed update as a whole; never silently drop its bad rows. */
         fun parse(json: String): OccasionCatalog? = runCatching {
             val root = JSONObject(json)
-            val occasions = buildList {
-                addAll(readEntries(root.optJSONArray("jalali"), OccasionCalendar.JALALI))
-                addAll(readEntries(root.optJSONArray("holidays"), OccasionCalendar.JALALI))
-                addAll(readEntries(root.optJSONArray("lunar"), OccasionCalendar.LUNAR))
-                addAll(readEntries(root.optJSONArray("gregorian"), OccasionCalendar.GREGORIAN))
-            }.distinctBy { it.id }
-            val version = root.optString("dataVersion").takeIf { it.isNotBlank() }
-                ?: root.optString("updatedAt").takeIf { it.isNotBlank() }
-            val yearly = readYearly(root.optJSONObject("yearly"))
-            if (occasions.isEmpty()) null else OccasionCatalog(occasions, version, yearly)
-        }.getOrNull()
-
-        private fun readYearly(json: JSONObject?): Map<Int, YearlyOverride> {
-            if (json == null) return emptyMap()
-            return buildMap {
-                json.keys().forEach { yearKey ->
-                    val year = yearKey.toIntOrNull() ?: return@forEach
-                    val body = json.optJSONObject(yearKey) ?: return@forEach
-                    val occasions = buildList {
-                        addAll(readEntries(body.optJSONArray("jalali"), OccasionCalendar.JALALI))
-                        addAll(readEntries(body.optJSONArray("lunar"), OccasionCalendar.LUNAR))
-                        addAll(readEntries(body.optJSONArray("gregorian"), OccasionCalendar.GREGORIAN))
-                    }
-                    val removed = body.optJSONArray("removeTitlesEn")?.let { array ->
-                        (0 until array.length())
-                            .mapNotNull { array.optString(it).trim().takeIf(String::isNotEmpty) }
-                            .toSet()
-                    }.orEmpty()
-                    if (occasions.isNotEmpty() || removed.isNotEmpty()) {
-                        put(year, YearlyOverride(occasions, removed))
-                    }
+            val schema = root.optInt("schemaVersion", 1)
+            require(schema in 1..SUPPORTED_SCHEMA)
+            if (schema >= 4) {
+                OccasionCalendar.entries.forEach { require(root.opt(it.key) is JSONArray) }
+                require(root.opt("sources") is JSONArray && root.opt("schoolPrograms") is JSONArray)
+                java.time.LocalDate.parse(root.getString("updatedAt"))
+            }
+            val sources = objects(root.optJSONArray("sources")).map {
+                CatalogReference(it.getString("id"), it.getString("titleFa"), it.getString("titleEn"),
+                    it.getString("url"), it.getString("kind"), it.getString("checkedAt")).also { ref ->
+                    require(ref.id.isNotBlank())
+                    val uri = java.net.URI(ref.url)
+                    require(uri.scheme == "https" && !uri.host.isNullOrBlank() && uri.userInfo == null)
+                    require(ref.titleFa.isNotBlank() && ref.titleEn.isNotBlank())
+                    java.time.LocalDate.parse(ref.checkedAt)
                 }
             }
+            require(sources.map { it.id }.distinct().size == sources.size)
+            val occasions = readCalendars(root)
+            require(occasions.isNotEmpty() && occasions.map { it.id }.distinct().size == occasions.size)
+            val yearly = buildMap {
+                val years = root.optJSONObject("yearly")
+                years?.keys()?.forEach { key ->
+                    val year = key.toInt()
+                    require(year in 1200..1700)
+                    val body = years.getJSONObject(key)
+                    val entries = readCalendars(body)
+                    require(entries.map { it.id }.distinct().size == entries.size)
+                    put(year, YearlyOverride(entries, strings(body.optJSONArray("removeTitlesEn")).toSet()))
+                }
+            }
+            val programs = objects(root.optJSONArray("schoolPrograms")).map {
+                require(listOf("month", "day", "date", "calendar").none(it::has))
+                SchoolProgram(it.getString("id"), it.getString("titleFa"), it.getString("titleEn"),
+                    it.getString("noteFa"), it.getString("noteEn"), strings(it.getJSONArray("sourceIds")))
+            }
+            require(programs.map { it.id }.distinct().size == programs.size)
+            val sourceIds = sources.map { it.id }.toSet()
+            if (schema >= 4) {
+                (occasions + yearly.values.flatMap { it.occasions }).forEach {
+                    require(it.sourceIds.isNotEmpty() && it.sourceIds.all { id -> id in sourceIds })
+                    if (it.category == OccasionCategory.EDUCATIONAL || it.evidence == OccasionEvidence.GUIDANCE) require(!it.isHoliday)
+                }
+                require(programs.all { it.id.isNotBlank() && it.titleFa.isNotBlank() && it.titleEn.isNotBlank() &&
+                    it.noteFa.isNotBlank() && it.noteEn.isNotBlank() &&
+                    it.sourceIds.isNotEmpty() && it.sourceIds.all { id -> id in sourceIds } })
+            }
+            val aliases = buildMap {
+                val body = root.optJSONObject("idAliases")
+                body?.keys()?.forEach { key -> put(key, body.getString(key)) }
+            }
+            val ids = occasions.map { it.id }.toSet()
+            require(aliases.all { (old, target) -> old.isNotBlank() && old !in ids && old != target && target in ids })
+            OccasionCatalog(
+                occasions = occasions,
+                dataVersion = root.optString("dataVersion").takeIf { it.isNotBlank() },
+                yearly = yearly,
+                schemaVersion = schema,
+                updatedAt = root.optString("updatedAt").takeIf { it.isNotBlank() },
+                sources = sources,
+                schoolPrograms = programs,
+                idAliases = aliases,
+            )
+        }.getOrNull()
+
+        private fun objects(array: JSONArray?): List<JSONObject> =
+            if (array == null) emptyList() else (0 until array.length()).map { array.getJSONObject(it) }
+
+        private fun strings(array: JSONArray?): List<String> =
+            if (array == null) emptyList() else (0 until array.length()).map { array.getString(it).trim().also { s -> require(s.isNotEmpty()) } }
+
+        private fun readCalendars(root: JSONObject): List<Occasion> = buildList {
+            OccasionCalendar.entries.forEach { addAll(readEntries(root.optJSONArray(it.key), it)) }
+            addAll(readEntries(root.optJSONArray("holidays"), OccasionCalendar.JALALI))
         }
 
-        private fun readEntries(array: JSONArray?, calendar: OccasionCalendar): List<Occasion> {
-            if (array == null) return emptyList()
-            return (0 until array.length()).mapNotNull { index ->
-                val item = array.optJSONObject(index) ?: return@mapNotNull null
-                val month = item.optInt("month", 0)
-                val day = item.optInt("day", 0)
-                val category = OccasionCategory.fromKey(item.optString("category"))
-                val titleFa = item.optString("titleFa").trim()
-                val titleEn = item.optString("titleEn").trim()
-                if (month !in 1..12 || day !in 1..31 || category == null) return@mapNotNull null
-                if (titleFa.isBlank() && titleEn.isBlank()) return@mapNotNull null
-                Occasion(
-                    id = "${calendar.key}-$month-$day-${titleEn.ifBlank { titleFa }}",
-                    titleFa = titleFa.ifBlank { titleEn },
-                    titleEn = titleEn.ifBlank { titleFa },
-                    category = category,
-                    calendar = calendar,
-                    month = month,
-                    day = day,
-                    isHoliday = item.optBoolean("holiday", false),
-                )
+        private fun readEntries(array: JSONArray?, calendar: OccasionCalendar): List<Occasion> = objects(array).map { item ->
+            val month = item.getInt("month")
+            val day = item.getInt("day")
+            require(month in 1..12)
+            val maxDay = when (calendar) {
+                OccasionCalendar.JALALI -> if (month <= 6) 31 else 30
+                OccasionCalendar.LUNAR -> 30
+                OccasionCalendar.GREGORIAN -> java.time.Month.of(month).maxLength()
             }
+            require(day in 1..maxDay)
+            val category = requireNotNull(OccasionCategory.fromKey(item.getString("category")))
+            val fa = item.optString("titleFa").trim()
+            val en = item.optString("titleEn").trim()
+            require(fa.isNotBlank() || en.isNotBlank())
+            val rule = requireNotNull(OccasionDateRule.entries.firstOrNull { it.key == item.optString("dateRule", "fixed") })
+            val weekday = if (item.has("weekday")) item.getInt("weekday") else null
+            val ordinal = if (item.has("ordinal")) item.getInt("ordinal") else null
+            val offset = item.optInt("dayOffset", 0)
+            val duration = item.optInt("durationDays", 1)
+            require(offset in -7..7 && duration in 1..31)
+            if (rule == OccasionDateRule.NTH_WEEKDAY || rule == OccasionDateRule.LAST_WEEKDAY) require(weekday != null && weekday in 1..7)
+            if (rule == OccasionDateRule.NTH_WEEKDAY) require(ordinal != null && ordinal in 1..5)
+            Occasion(
+                id = item.optString("id").trim().ifBlank { "${calendar.key}-$month-$day-${en.ifBlank { fa }}" },
+                titleFa = fa.ifBlank { en }, titleEn = en.ifBlank { fa }, category = category,
+                calendar = calendar, month = month, day = day, isHoliday = item.optBoolean("holiday", false),
+                sourceIds = strings(item.optJSONArray("sourceIds")),
+                evidence = requireNotNull(OccasionEvidence.entries.firstOrNull { it.key == item.optString("evidence", "legacy") }),
+                noteFa = item.optString("noteFa"), noteEn = item.optString("noteEn"),
+                tags = strings(item.optJSONArray("tags")).toSet(), dateRule = rule, weekday = weekday,
+                ordinal = ordinal, dayOffset = offset, durationDays = duration,
+            )
         }
     }
 }
 
-/**
- * Occasions resolved to concrete Jalali days for a set of Jalali years. Lunar occasions are
- * converted with Android's ICU Islamic calendar, so no per-year data download is required.
- */
-data class DatedOccasion(val month: Int, val day: Int, val occasion: Occasion)
+/** Includes the year so academic-year lists and export keys remain unambiguous across Nowruz. */
+data class DatedOccasion(val month: Int, val day: Int, val occasion: Occasion, val year: Int = 0)
 
-class OccasionIndex private constructor(
-    private val byYear: Map<Int, Map<Int, List<Occasion>>>,
-) {
+class OccasionIndex private constructor(private val byYear: Map<Int, Map<Int, List<Occasion>>>) {
     val isEmpty: Boolean get() = byYear.isEmpty()
-
     fun on(jalaliYear: Int, month: Int, day: Int): List<Occasion> = byYear[jalaliYear]?.get(month * 100 + day).orEmpty()
-
     fun isHoliday(jalaliYear: Int, month: Int, day: Int): Boolean = on(jalaliYear, month, day).any(Occasion::isHoliday)
-
-    /** Every enabled occasion resolved to its actual Jalali day for easy whole-year browsing. */
     fun forYear(jalaliYear: Int): List<DatedOccasion> = byYear[jalaliYear].orEmpty()
-        .flatMap { (key, occasions) -> occasions.map { DatedOccasion(key / 100, key % 100, it) } }
+        .flatMap { (key, rows) -> rows.map { DatedOccasion(key / 100, key % 100, it, jalaliYear) } }
         .sortedWith(compareBy({ it.month }, { it.day }, { it.occasion.titleFa }))
-
     fun forMonth(jalaliYear: Int, month: Int): List<Pair<Int, Occasion>> = forYear(jalaliYear)
-        .filter { it.month == month }
-        .map { it.day to it.occasion }
+        .filter { it.month == month }.map { it.day to it.occasion }
 
     companion object {
         val EMPTY = OccasionIndex(emptyMap())
-
         fun build(
             catalog: OccasionCatalog,
             jalaliYears: Collection<Int>,
             lunarOffsetDays: Int,
-            enabledCategories: Set<OccasionCategory> = OccasionCategory.entries.toSet(),
+            enabledCategories: Set<OccasionCategory> = OccasionCategory.publicCategories,
             zone: ZoneId = ZoneId.systemDefault(),
         ): OccasionIndex {
-            val hasEligible = catalog.occasions.any { it.category in enabledCategories } ||
-                catalog.yearly.values.any { yearOverride -> yearOverride.occasions.any { it.category in enabledCategories } }
-            if (!hasEligible) return EMPTY
-            val offsetMillis = lunarOffsetDays.toLong() * DAY_MILLIS
-            // One ICU calendar per system for the whole build: creating calendars per lookup is slow
-            // with a catalog of several hundred occasions.
             val persian = JalaliCalendarMath.persianCalendar(zone)
             val gregorian = JalaliCalendarMath.gregorianCalendar(zone)
             val islamic = JalaliCalendarMath.islamicCalendar(zone)
-            val byYear = HashMap<Int, Map<Int, List<Occasion>>>()
+            fun local(epoch: Long) = Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate()
+            val byYear = mutableMapOf<Int, Map<Int, List<Occasion>>>()
             jalaliYears.distinct().forEach { year ->
-                val start = JalaliCalendarMath.strictEpoch(persian, year, 1, 1) ?: return@forEach
-                val end = JalaliCalendarMath.strictEpoch(persian, year + 1, 1, 1) ?: return@forEach
-                if (end <= start) return@forEach
-                val gregorianYears = setOf(
-                    JalaliCalendarMath.yearOf(gregorian, start),
-                    JalaliCalendarMath.yearOf(gregorian, end - 1),
-                )
-                val lunarYears = setOf(
-                    JalaliCalendarMath.yearOf(islamic, start),
-                    JalaliCalendarMath.yearOf(islamic, end - 1),
-                )
-                val yearOverride = catalog.yearly[year]
-                val removed = yearOverride?.removedTitlesEn.orEmpty()
-                val eligible = (catalog.occasions.filter { it.titleEn !in removed } + yearOverride?.occasions.orEmpty())
-                    .filter { it.category in enabledCategories }
-                val days = HashMap<Int, MutableList<Occasion>>()
-                eligible.forEach { occasion ->
-                    val epochs = when (occasion.calendar) {
-                        OccasionCalendar.JALALI ->
-                            listOfNotNull(JalaliCalendarMath.strictEpoch(persian, year, occasion.month, occasion.day))
-                        OccasionCalendar.GREGORIAN ->
-                            gregorianYears.mapNotNull { JalaliCalendarMath.strictEpoch(gregorian, it, occasion.month, occasion.day) }
-                        OccasionCalendar.LUNAR ->
-                            lunarYears.mapNotNull { JalaliCalendarMath.strictEpoch(islamic, it, occasion.month, occasion.day) }
-                                .map { it - offsetMillis }
+                val startEpoch = JalaliCalendarMath.strictEpoch(persian, year, 1, 1) ?: return@forEach
+                val endEpoch = JalaliCalendarMath.strictEpoch(persian, year + 1, 1, 1) ?: return@forEach
+                val start = local(startEpoch)
+                val end = local(endEpoch)
+                val override = catalog.yearly[year]
+                val eligible = (catalog.occasions.filter { it.titleEn !in override?.removedTitlesEn.orEmpty() } + override?.occasions.orEmpty())
+                    .filter { it.category in enabledCategories }.distinctBy { it.id }
+                val days = mutableMapOf<Int, MutableList<Occasion>>()
+                eligible.forEach occasionLoop@ { occasion ->
+                    val calendar = when (occasion.calendar) {
+                        OccasionCalendar.JALALI -> persian
+                        OccasionCalendar.LUNAR -> islamic
+                        OccasionCalendar.GREGORIAN -> gregorian
                     }
-                    epochs.filter { it in start until end }.forEach { epoch ->
-                        val fields = JalaliCalendarMath.jalaliFieldsIn(persian, epoch)
+                    val offset = if (occasion.calendar == OccasionCalendar.LUNAR) lunarOffsetDays.coerceIn(-2, 2) else 0
+                    // Include every intervening lunar year (a solar year can touch THREE lunar years),
+                    // and both edges after adjustment. No fixed 24-hour shifts across DST boundaries.
+                    val firstEpoch = start.plusDays(offset - 7L).atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+                    val lastEpoch = end.plusDays(offset + 7L).atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+                    val years = if (occasion.calendar == OccasionCalendar.JALALI) year..year else
+                        JalaliCalendarMath.yearOf(calendar, firstEpoch)..JalaliCalendarMath.yearOf(calendar, lastEpoch)
+                    years.forEach yearLoop@ { sourceYear ->
+                        val first = JalaliCalendarMath.strictEpoch(calendar, sourceYear, occasion.month, 1) ?: return@yearLoop
+                        val length = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                        val resolved = OccasionDateRules.resolve(
+                            firstDay = local(first).minusDays(offset.toLong()), monthLength = length, day = occasion.day,
+                            rule = occasion.dateRule, weekday = occasion.weekday, ordinal = occasion.ordinal, dayOffset = occasion.dayOffset,
+                        ) ?: return@yearLoop
+                        if (resolved < start || resolved >= end) return@yearLoop
+                        val fields = JalaliCalendarMath.jalaliFieldsIn(persian, resolved.atTime(12, 0).atZone(zone).toInstant().toEpochMilli())
                         days.getOrPut(fields.month * 100 + fields.day) { mutableListOf() }.add(occasion)
                     }
                 }
@@ -210,7 +252,6 @@ class OccasionIndex private constructor(
             }
             return OccasionIndex(byYear)
         }
-
         internal const val DAY_MILLIS = 24L * 60L * 60L * 1000L
     }
 }

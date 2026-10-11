@@ -40,6 +40,7 @@ import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.calendar.enabledOccasionCategories
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionIndex
 import com.marbledo.feature.calendar.OccasionRepository
@@ -71,13 +72,7 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         val catalog = withContext(Dispatchers.IO) {
             OccasionRepository(context).also { it.load() }.state.value.catalog
         }
-        val enabledCategories = buildSet {
-            if (settings.officialEventsEnabled) add(OccasionCategory.OFFICIAL)
-            if (settings.nationalEventsEnabled) add(OccasionCategory.NATIONAL)
-            if (settings.religiousEventsEnabled) add(OccasionCategory.RELIGIOUS)
-            if (settings.personalEventsEnabled) add(OccasionCategory.PERSONAL)
-            if (settings.internationalEventsEnabled) add(OccasionCategory.INTERNATIONAL)
-        }
+        val enabledCategories = settings.enabledOccasionCategories()
         val occasionIndex = OccasionIndex.build(
             catalog = catalog,
             jalaliYears = listOf(today.year),

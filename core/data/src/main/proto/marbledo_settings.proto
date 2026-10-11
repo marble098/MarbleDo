@@ -34,4 +34,6 @@ message MarbleDoSettingsProto {
   repeated string favorite_occasion_ids = 25;
   // Days before a favourite occasion to remind the user; 0 keeps occasion reminders off.
   int32 occasion_reminder_lead_days = 26;
+  bool education_mode_enabled = 27;
+  bool thursday_weekend_enabled = 28;
 }

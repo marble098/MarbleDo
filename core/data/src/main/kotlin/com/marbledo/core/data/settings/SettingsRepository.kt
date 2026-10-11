@@ -39,6 +39,8 @@ class SettingsRepository(private val context: Context) {
             nationalEventsEnabled = if (configured) proto.nationalEventsEnabled else true,
             personalEventsEnabled = if (configured) proto.personalEventsEnabled else true,
             internationalEventsEnabled = if (proto.hasInternationalEventsEnabled()) proto.internationalEventsEnabled else true,
+            educationModeEnabled = proto.educationModeEnabled,
+            thursdayWeekendEnabled = proto.thursdayWeekendEnabled,
             quietHoursEnabled = proto.quietHoursEnabled,
             quietStartMinute = proto.quietStartMinute.takeIf { it in 0..1439 } ?: 1320,
             quietEndMinute = proto.quietEndMinute.takeIf { it in 0..1439 } ?: 420,
@@ -68,6 +70,8 @@ class SettingsRepository(private val context: Context) {
         .setNationalEventsEnabled(settings.nationalEventsEnabled)
         .setPersonalEventsEnabled(settings.personalEventsEnabled)
         .setInternationalEventsEnabled(settings.internationalEventsEnabled)
+        .setEducationModeEnabled(settings.educationModeEnabled)
+        .setThursdayWeekendEnabled(settings.thursdayWeekendEnabled)
         .setQuietHoursEnabled(settings.quietHoursEnabled)
         .setQuietStartMinute(settings.quietStartMinute)
         .setQuietEndMinute(settings.quietEndMinute)

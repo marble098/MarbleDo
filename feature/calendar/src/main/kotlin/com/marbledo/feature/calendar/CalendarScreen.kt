@@ -33,6 +33,9 @@ import androidx.compose.material.icons.outlined.AddTask
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.FilterAlt
+import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -108,9 +112,13 @@ fun CalendarScreen(
     onToggleFavorite: (String) -> Unit = {},
     onPlanOccasion: (OccasionPlanRequest) -> Unit = {},
     modifier: Modifier = Modifier,
+    thursdayWeekendEnabled: Boolean = false,
+    onExport: (CalendarExportRequest) -> Unit = {},
+    exportInProgress: Boolean = false,
 ) {
     val zone = remember { ZoneId.systemDefault() }
     val numeralMode = LocalNumeralMode.current
+    val context = LocalContext.current
     var monthOffset by rememberSaveable { mutableIntStateOf(0) }
     var todayIsoDate by remember(zone) { mutableStateOf(LocalDate.now(zone).toString()) }
     var selectedIsoDate by rememberSaveable { mutableStateOf(LocalDate.now(zone).toString()) }
@@ -119,6 +127,25 @@ fun CalendarScreen(
     var showGoToDate by rememberSaveable { mutableStateOf(false) }
     var favoritesOnly by rememberSaveable { mutableStateOf(false) }
     var plannedOccasion by remember { mutableStateOf<PlannedOccasion?>(null) }
+    var filterCategory by rememberSaveable { mutableStateOf<OccasionCategory?>(null) }
+    var filterCalendar by rememberSaveable { mutableStateOf<OccasionCalendar?>(null) }
+    var holidaysOnly by rememberSaveable { mutableStateOf(false) }
+    var culturalOnly by rememberSaveable { mutableStateOf(false) }
+    var educationOnly by rememberSaveable { mutableStateOf(false) }
+    var academicYear by rememberSaveable { mutableStateOf(false) }
+    var showFilters by rememberSaveable { mutableStateOf(false) }
+    var showPrograms by rememberSaveable { mutableStateOf(false) }
+    var showWorkday by rememberSaveable { mutableStateOf(false) }
+    val educationEnabled = OccasionCategory.EDUCATIONAL in enabledCategories
+    LaunchedEffect(enabledCategories) {
+        if (filterCategory !in enabledCategories) filterCategory = null
+        if (!educationEnabled) {
+            educationOnly = false
+            academicYear = false
+            showPrograms = false
+            if (plannedOccasion?.occasion?.category == OccasionCategory.EDUCATIONAL) plannedOccasion = null
+        }
+    }
 
     LaunchedEffect(zone) {
         while (true) {
@@ -140,6 +167,7 @@ fun CalendarScreen(
             catalog = catalog,
             jalaliYears = buildSet {
                 add(monthData.year)
+                add(monthData.year + 1)
                 monthData.cells.forEach { add(it.year) }
             },
             lunarOffsetDays = lunarOffsetDays,
@@ -154,25 +182,39 @@ fun CalendarScreen(
             task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == selectedDate } == true
         }
     }
-    val yearOccasions = remember(index, monthData.year, occasionQuery, languageTag, favoritesOnly, favoriteOccasionIds) {
-        val query = TextNormalizer.searchKey(occasionQuery.trim())
-        index.forYear(monthData.year)
-            .filter { dated ->
-                val matchesQuery = query.isBlank() ||
-                    TextNormalizer.searchKey(dated.occasion.title(languageTag)).contains(query)
-                val matchesFavorite = !favoritesOnly || dated.occasion.id in favoriteOccasionIds
-                matchesQuery && matchesFavorite
-            }
-            .sortedWith(
-                compareBy(
-                    { if (it.occasion.id in favoriteOccasionIds) 0 else 1 },
-                    { it.month },
-                    { it.day },
-                ),
-            )
+    val yearRows = remember(index, monthData.year, educationEnabled, academicYear) {
+        if (educationEnabled && academicYear) OccasionSearch.academicYear(index, monthData.year)
+        else index.forYear(monthData.year)
     }
-    val favoriteOccasionsCount = remember(index, monthData.year, favoriteOccasionIds) {
-        index.forYear(monthData.year).count { it.occasion.id in favoriteOccasionIds }
+    val filter = OccasionFilter(
+        query = occasionQuery, category = filterCategory, calendar = filterCalendar,
+        holidaysOnly = holidaysOnly, favoritesOnly = favoritesOnly,
+        educationOnly = educationEnabled && educationOnly, culturalOnly = culturalOnly,
+    )
+    val yearOccasions = remember(yearRows, filter, favoriteOccasionIds) {
+        OccasionSearch.filter(yearRows, filter, favoriteOccasionIds)
+            .sortedBy { if (it.occasion.id in favoriteOccasionIds) 0 else 1 }
+    }
+    val favoriteOccasionsCount = remember(yearRows, favoriteOccasionIds) {
+        yearRows.count { it.occasion.id in favoriteOccasionIds }
+    }
+    if (showFilters) {
+        OccasionFilterSheet(filterCategory, filterCalendar, enabledCategories,
+            onCategory = { filterCategory = it }, onCalendar = { filterCalendar = it }, onDismiss = { showFilters = false })
+    }
+    if (showPrograms && educationEnabled) {
+        SchoolProgramsSheet(catalog, languageTag, onPlan = { showPrograms = false; onPlanOccasion(it) }, onDismiss = { showPrograms = false })
+    }
+    if (showWorkday) {
+        WorkdaySuggestionDialog(selectedDate, catalog, lunarOffsetDays, thursdayWeekendEnabled, tasks, languageTag, zone,
+            onAdd = { showWorkday = false; onAddTask(it) },
+            onShow = { date ->
+                selectedIsoDate = date.toString()
+                monthOffset = monthOffsetFor(date, zone, todayEpoch)
+                viewMode = CalendarViewMode.MONTH
+                showWorkday = false
+            },
+            onDismiss = { showWorkday = false })
     }
 
     if (showGoToDate) {
@@ -212,6 +254,8 @@ fun CalendarScreen(
                 onToggleFavorite(planned.occasion.id)
             },
             onDismiss = { plannedOccasion = null },
+            references = catalog.sources.filter { it.id in planned.occasion.sourceIds },
+            educationModeEnabled = educationEnabled,
         )
     }
 
@@ -260,6 +304,11 @@ fun CalendarScreen(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 1.dp),
         )
 
+        TextButton(onClick = { showWorkday = true }, modifier = Modifier.padding(horizontal = 14.dp)) {
+            Icon(Icons.Outlined.WorkOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.calendar_workday_title))
+        }
         Surface(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
             shape = MaterialTheme.shapes.large,
@@ -270,7 +319,7 @@ fun CalendarScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-                val isYearView = viewMode == CalendarViewMode.YEAR
+                val isYearView = viewMode == CalendarViewMode.YEAR || viewMode == CalendarViewMode.OCCASIONS
                 val step = if (isYearView) 12 else 1
                 IconButton(onClick = { monthOffset -= step }) {
                     Icon(
@@ -415,10 +464,35 @@ fun CalendarScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            TextNormalizer.formatDigits(stringResource(R.string.calendar_all_year_occasions, monthData.year), numeralMode),
+                            TextNormalizer.formatDigits(
+                                if (educationEnabled && academicYear) stringResource(R.string.calendar_academic_year, monthData.year, monthData.year + 1)
+                                else stringResource(R.string.calendar_all_year_occasions, monthData.year), numeralMode),
                             modifier = Modifier.weight(1f),
                             style = MarbleTextStyles.itemTitle,
                         )
+                        IconButton(onClick = { showFilters = true }) {
+                            Icon(Icons.Outlined.FilterAlt, contentDescription = stringResource(R.string.calendar_filters_title),
+                                tint = if (filterCategory != null || filterCalendar != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                        }
+                        IconButton(enabled = yearOccasions.isNotEmpty() && !exportInProgress, onClick = {
+                            val entries = yearOccasions.mapNotNull { dated ->
+                                val epoch = PersianDateUtils.startOfJalaliDay(dated.year, dated.month, dated.day, zone) ?: return@mapNotNull null
+                                val occasion = dated.occasion
+                                val notes = buildList {
+                                    add(context.getString(evidenceLabelRes(occasion.evidence)))
+                                    add(occasion.note(languageTag))
+                                    add(catalog.sources.filter { it.id in occasion.sourceIds }.joinToString("\n") { it.url })
+                                    if (occasion.calendar == OccasionCalendar.LUNAR) add(
+                                        if (languageTag == "fa") "تاریخ قمری محاسباتی است؛ با تقویم رسمی تطبیق دهید." else "Calculated lunar date; check the official announcement.")
+                                }.filter { it.isNotBlank() }.joinToString("\n")
+                                CalendarExportEntry(occasion.id, occasion.title(languageTag),
+                                    Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate(), notes, occasion.durationDays)
+                            }
+                            val scopeLabel = if (educationEnabled && academicYear) "${monthData.year}-${monthData.year + 1}" else monthData.year.toString()
+                            onExport(CalendarExportRequest("MarbleDo-$scopeLabel.ics", entries))
+                        }) {
+                            Icon(Icons.Outlined.Download, contentDescription = stringResource(R.string.calendar_export_ics))
+                        }
                         Text(
                             TextNormalizer.formatDigits(stringResource(R.string.calendar_year_occasions_count, yearOccasions.size), numeralMode),
                             style = MaterialTheme.typography.labelSmall,
@@ -453,6 +527,40 @@ fun CalendarScreen(
                             )
                         }
                     }
+                    androidx.compose.foundation.lazy.LazyRow(
+                        contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        item {
+                            FilterChip(selected = holidaysOnly, onClick = { holidaysOnly = !holidaysOnly },
+                                label = { Text(stringResource(R.string.calendar_filter_holidays)) })
+                        }
+                        item {
+                            FilterChip(selected = culturalOnly, onClick = { culturalOnly = !culturalOnly },
+                                label = { Text(stringResource(R.string.calendar_filter_culture)) })
+                        }
+                        if (educationEnabled) {
+                            item {
+                                FilterChip(selected = educationOnly, onClick = { educationOnly = !educationOnly },
+                                    label = { Text(stringResource(R.string.calendar_filter_school)) })
+                            }
+                            item {
+                                FilterChip(selected = academicYear, onClick = { academicYear = !academicYear },
+                                    label = { Text(stringResource(R.string.calendar_academic_scope)) })
+                            }
+                            item { TextButton(onClick = { showPrograms = true }) { Text(stringResource(R.string.school_programs_title)) } }
+                        }
+                        item {
+                            TextButton(onClick = {
+                                occasionQuery = ""; filterCategory = null; filterCalendar = null
+                                favoritesOnly = false; holidaysOnly = false; culturalOnly = false; educationOnly = false
+                            }) { Text(stringResource(R.string.calendar_filters_reset)) }
+                        }
+                    }
+                    if (filterCategory != null || filterCalendar != null) {
+                        Text(listOfNotNull(filterCategory?.let { stringResource(categoryLabelRes(it)) },
+                            filterCalendar?.let { stringResource(calendarLabelRes(it)) }).joinToString(" · "),
+                            modifier = Modifier.padding(horizontal = 18.dp), style = MaterialTheme.typography.labelSmall)
+                    }
                     androidx.compose.material3.OutlinedTextField(
                         value = occasionQuery,
                         onValueChange = { occasionQuery = it },
@@ -473,17 +581,18 @@ fun CalendarScreen(
                             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 12.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            items(yearOccasions, key = { "${it.month}-${it.day}-${it.occasion.id}" }) { dated ->
-                                val rowEpoch = remember(monthData.year, dated.month, dated.day, zone) {
-                                    PersianDateUtils.startOfJalaliDay(monthData.year, dated.month, dated.day, zone)
+                            items(yearOccasions, key = { "${it.year}-${it.month}-${it.day}-${it.occasion.id}" }) { dated ->
+                                val rowEpoch = remember(dated.year, dated.month, dated.day, zone) {
+                                    PersianDateUtils.startOfJalaliDay(dated.year, dated.month, dated.day, zone)
                                 }
                                 OccasionRow(
                                     month = dated.month,
                                     day = dated.day,
+                                    year = dated.year,
                                     occasion = dated.occasion,
                                     languageTag = languageTag,
                                     numeralMode = numeralMode,
-                                    weekdayIndex = weekdayIndexFor(monthData.year, dated.month, dated.day, zone),
+                                    weekdayIndex = weekdayIndexFor(dated.year, dated.month, dated.day, zone),
                                     isFavorite = dated.occasion.id in favoriteOccasionIds,
                                     daysUntil = rowEpoch?.let { epoch ->
                                         java.time.temporal.ChronoUnit.DAYS.between(
@@ -849,6 +958,7 @@ private fun AgendaRow(
 private fun OccasionRow(
     month: Int,
     day: Int,
+    year: Int,
     occasion: Occasion,
     languageTag: String,
     numeralMode: NumeralMode,
@@ -878,11 +988,16 @@ private fun OccasionRow(
                         style = MarbleTextStyles.cardTitle.copy(fontSize = 16.sp, lineHeight = 22.sp),
                     )
                     Text(PersianDateUtils.monthName(month, languageTag), style = MarbleTextStyles.metaLabel, maxLines = 1)
+                    Text(TextNormalizer.formatDigits(year.toString(), numeralMode), style = MarbleTextStyles.metaLabel)
                     Text(PersianDateUtils.weekdayShort(weekdayIndex, languageTag), style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(occasion.title(languageTag), style = MarbleTextStyles.itemTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (occasion.evidence == OccasionEvidence.GUIDANCE) {
+                    Text(stringResource(R.string.catalog_evidence_guidance), style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.tertiary)
+                }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         stringResource(categoryLabelRes(occasion.category)),
@@ -953,6 +1068,7 @@ fun categoryColor(category: OccasionCategory): Color = when (category) {
     OccasionCategory.RELIGIOUS -> Color(0xFF2E9E7C)
     OccasionCategory.PERSONAL -> MaterialTheme.colorScheme.secondary
     OccasionCategory.INTERNATIONAL -> Color(0xFF3B7DD8)
+    OccasionCategory.EDUCATIONAL -> Color(0xFFAF7A22)
 }
 
 internal fun categoryLabelRes(category: OccasionCategory): Int = when (category) {
@@ -961,6 +1077,7 @@ internal fun categoryLabelRes(category: OccasionCategory): Int = when (category)
     OccasionCategory.RELIGIOUS -> R.string.calendar_category_religious
     OccasionCategory.PERSONAL -> R.string.calendar_category_personal
     OccasionCategory.INTERNATIONAL -> R.string.calendar_category_international
+    OccasionCategory.EDUCATIONAL -> R.string.calendar_category_educational
 }
 
 private fun weekdayIndexFor(year: Int, month: Int, day: Int, zone: ZoneId): Int {

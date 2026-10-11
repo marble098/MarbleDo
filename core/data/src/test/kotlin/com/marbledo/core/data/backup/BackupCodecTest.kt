@@ -37,6 +37,8 @@ class BackupCodecTest {
             countdownCalendar = CalendarDisplayMode.ISLAMIC_CIVIL,
             taskCategories = listOf("Home", "Work"),
             persistentDateNotificationEnabled = true,
+            educationModeEnabled = true,
+            thursdayWeekendEnabled = true,
         )
         val encoded = BackupCodec.encode(listOf(task), settings)
 

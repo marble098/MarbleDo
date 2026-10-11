@@ -45,6 +45,7 @@ ARTIFACTS: dict[str, tuple[str, str, str]] = {
     "datetime": ("org.jetbrains.kotlinx", "kotlinx-datetime", "central"),
     "protobufPlugin": ("com.google.protobuf", "protobuf-gradle-plugin", "central"),
     "protobuf": ("com.google.protobuf", "protobuf-java", "central"),
+    "jsonTest": ("org.json", "json", "central"),
     "junit": ("org.junit.jupiter", "junit-jupiter", "central"),
     "turbine": ("app.cash.turbine", "turbine", "central"),
     "androidxTestJunit": ("androidx.test.ext", "junit", "google"),

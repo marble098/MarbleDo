@@ -30,6 +30,7 @@ data class OccasionState(
     val lastUpdatedEpochMillis: Long? = null,
     val lastError: Boolean = false,
     val lastRefreshWasOffline: Boolean = false,
+    val lastDeliveryUrl: String? = null,
 ) {
     val occasionCount: Int get() = catalog.occasions.size
     val isFromInternet: Boolean get() = source == OccasionSource.NETWORK
@@ -52,7 +53,7 @@ class OccasionRepository(private val context: Context) {
         try {
             if (loaded) return
             val bundled = readAsset()
-            val cached = readCache()
+            val cached = readCache()?.takeIf { CatalogUpdatePolicy.accepts(it.first, bundled ?: OccasionCatalog.EMPTY) }
             val catalog = cached?.first ?: bundled ?: OccasionCatalog.EMPTY
             _state.value = _state.value.copy(
                 catalog = catalog,
@@ -91,10 +92,10 @@ class OccasionRepository(private val context: Context) {
             )
             for (source in CATALOG_SOURCES) {
                 val body = download(source) ?: continue
-                val parsed = OccasionCatalog.parse(body) ?: continue
+                val parsed = withContext(Dispatchers.Default) { OccasionCatalog.parse(body) } ?: continue
                 // Reject short, partial, or accidentally returned error documents before they can
                 // replace the much richer offline catalog.
-                if (parsed.occasions.size !in MIN_REMOTE_OCCASIONS..MAX_REMOTE_OCCASIONS) continue
+                if (!CatalogUpdatePolicy.accepts(parsed, _state.value.catalog)) continue
 
                 val changed = parsed != _state.value.catalog
                 val downloadedAt = System.currentTimeMillis()
@@ -104,6 +105,7 @@ class OccasionRepository(private val context: Context) {
                     isLoaded = true,
                     isRefreshing = false,
                     source = OccasionSource.NETWORK,
+                    lastDeliveryUrl = source.url,
                     lastUpdatedEpochMillis = cachedAt,
                     lastError = false,
                     lastRefreshWasOffline = false,
@@ -160,7 +162,7 @@ class OccasionRepository(private val context: Context) {
     private suspend fun readCache(): Pair<OccasionCatalog, Long>? = withContext(Dispatchers.IO) {
         val file = cacheFile()
         if (!file.exists()) return@withContext null
-        val text = runCatching { file.readText() }.getOrNull() ?: return@withContext null
+        val text = runCatching { file.bufferedReader().use(::readBounded) }.getOrNull() ?: return@withContext null
         OccasionCatalog.parse(text)?.let { it to file.lastModified() }
     }
 
@@ -229,12 +231,10 @@ class OccasionRepository(private val context: Context) {
     companion object {
         const val CACHE_DIRECTORY = "occasions"
         const val CATALOG_FILE_NAME = "occasions-catalog.json"
-        private const val CATALOG_ASSET = "calendar/holidays-fa.json"
+        private const val CATALOG_ASSET = "calendar/occasions-v4-fa.json"
         private const val CONNECT_TIMEOUT_MILLIS = 3_000
         private const val READ_TIMEOUT_MILLIS = 4_000
         private const val MAX_CATALOG_CHARS = 3_000_000
-        private const val MIN_REMOTE_OCCASIONS = 20
-        private const val MAX_REMOTE_OCCASIONS = 5_000
         private const val DEFAULT_MAX_AGE_MILLIS = 20L * 60L * 60L * 1000L
         private const val USER_AGENT = "MarbleDo-Android"
 
@@ -243,11 +243,11 @@ class OccasionRepository(private val context: Context) {
          * edges and the GitHub Contents API raw media type. A mirror outage does not block the rest.
          */
         private val CATALOG_SOURCES = listOf(
-            CatalogSource("https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/holidays-fa.json"),
-            CatalogSource("https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/holidays-fa.json"),
-            CatalogSource("https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/holidays-fa.json"),
+            CatalogSource("https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"),
+            CatalogSource("https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"),
+            CatalogSource("https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"),
             CatalogSource(
-                url = "https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/holidays-fa.json?ref=main",
+                url = "https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json?ref=main",
                 accept = "application/vnd.github.raw+json",
             ),
         )

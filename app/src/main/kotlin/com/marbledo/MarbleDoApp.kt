@@ -75,6 +75,7 @@ import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.CalendarScreen
+import com.marbledo.feature.calendar.enabledOccasionCategories
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionPlanRequest
 import com.marbledo.feature.calendar.OccasionRefreshResult
@@ -85,6 +86,7 @@ import com.marbledo.feature.countdown.requestCountdownWidgetPin
 import com.marbledo.feature.countdown.updateMarbleCountdownWidgets
 import com.marbledo.feature.tasks.TasksViewModel
 import com.marble098.marbledo.notifications.NotificationChannels
+import com.marble098.marbledo.notifications.CalendarOccurrenceWorker
 import com.marble098.marbledo.notifications.PersistentCalendarNotification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
@@ -208,6 +210,7 @@ fun MarbleDoApp(
             pendingExportPassphrase = null
         }
     }
+    val calendarExporter = rememberCalendarExporter()
     val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             coroutineScope.launch {
@@ -278,6 +281,12 @@ fun MarbleDoApp(
         if (persistedSettings != null) NotificationChannels.create(context)
     }
 
+    LaunchedEffect(persistedSettings?.educationModeEnabled) {
+        if (persistedSettings?.educationModeEnabled == false) {
+            CalendarOccurrenceWorker.clearEducationalNotifications(context.applicationContext)
+        }
+    }
+
     LaunchedEffect(
         persistedSettings,
         settings,
@@ -303,6 +312,8 @@ fun MarbleDoApp(
         settings.numeralMode,
         settings.countdownCalendar,
         settings.countdownTheme,
+        settings.enabledOccasionCategories(),
+        settings.lunarOffsetDays,
         occasionState.catalog,
     ) {
         updateMarbleCountdownWidgets(context)
@@ -319,13 +330,7 @@ fun MarbleDoApp(
             languageTag = settings.languageTag,
         ) {
             Surface(Modifier.fillMaxSize()) {
-                val enabledOccasionCategories = buildSet {
-                    if (settings.officialEventsEnabled) add(OccasionCategory.OFFICIAL)
-                    if (settings.nationalEventsEnabled) add(OccasionCategory.NATIONAL)
-                    if (settings.religiousEventsEnabled) add(OccasionCategory.RELIGIOUS)
-                    if (settings.personalEventsEnabled) add(OccasionCategory.PERSONAL)
-                    if (settings.internationalEventsEnabled) add(OccasionCategory.INTERNATIONAL)
-                }
+                val enabledOccasionCategories = settings.enabledOccasionCategories()
                 val content: @Composable (Modifier) -> Unit = { contentModifier ->
                     NavDisplay(
                         backStack = backStack,
@@ -369,7 +374,7 @@ fun MarbleDoApp(
                                     pendingEditTaskId = pendingEditTaskId,
                                     onPendingEditTaskConsumed = { pendingEditTaskId = null },
                                     onCalendarDisplaySelected = updateCountdownCalendar,
-                                    favoriteOccasionIds = settings.favoriteOccasionIds.toSet(),
+                                    favoriteOccasionIds = occasionState.catalog.canonicalFavoriteIds(settings.favoriteOccasionIds),
                                     initialPlanRequest = pendingOccasionPlan,
                                     onInitialPlanConsumed = { pendingOccasionPlan = null },
                                 )
@@ -385,6 +390,9 @@ fun MarbleDoApp(
                                     lunarOffsetDays = settings.lunarOffsetDays,
                                     pickerCalendar = settings.countdownCalendar,
                                     onPickerCalendarChange = updateCountdownCalendar,
+                                    thursdayWeekendEnabled = settings.thursdayWeekendEnabled,
+                                    exportInProgress = calendarExporter.busy,
+                                    onExport = calendarExporter.export,
                                     onAddTask = { date ->
                                         pendingAddDateIso = date.toString()
                                         navigateTo(HomeDestination)
@@ -393,16 +401,14 @@ fun MarbleDoApp(
                                         pendingEditTaskId = task.id
                                         navigateTo(HomeDestination)
                                     },
-                                    favoriteOccasionIds = settings.favoriteOccasionIds.toSet(),
+                                    favoriteOccasionIds = occasionState.catalog.canonicalFavoriteIds(settings.favoriteOccasionIds),
                                     occasionReminderLeadDays = settings.occasionReminderLeadDays,
                                     onToggleFavorite = { occasionId ->
                                         coroutineScope.launch {
                                             settingsRepository.update { current ->
-                                                if (occasionId in current.favoriteOccasionIds) {
-                                                    current.copy(favoriteOccasionIds = current.favoriteOccasionIds - occasionId)
-                                                } else {
-                                                    current.copy(favoriteOccasionIds = current.favoriteOccasionIds + occasionId)
-                                                }
+                                                val ids = occasionState.catalog.canonicalFavoriteIds(current.favoriteOccasionIds)
+                                                current.copy(favoriteOccasionIds =
+                                                    (if (occasionId in ids) ids - occasionId else ids + occasionId).toList())
                                             }
                                         }
                                     },
