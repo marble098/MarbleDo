@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Sort
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -85,6 +86,9 @@ import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.OccasionCatalog
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionIndex
+import com.marbledo.feature.calendar.OccasionPlanRequest
+import com.marbledo.feature.calendar.OccasionPlanner
+import com.marbledo.feature.calendar.UpcomingOccasion
 import com.marbledo.feature.calendar.PersianDateUtils
 import com.marbledo.feature.calendar.categoryColor
 import com.marbledo.feature.countdown.CountdownCreateSheet
@@ -125,6 +129,9 @@ private data class DashboardOccasion(
 
 private const val MAX_DASHBOARD_OCCASIONS = 3
 
+/** Upcoming occasions listed on the dashboard when the user has starred or has occasions ahead. */
+private const val MAX_DASHBOARD_UPCOMING = 4
+
 /**
  * A glanceable daily planner: date and workload first, then occasions, a countdown, and collapsible task groups.
  */
@@ -145,6 +152,9 @@ fun DashboardScreen(
     pendingEditTaskId: Long? = null,
     onPendingEditTaskConsumed: () -> Unit = {},
     onCalendarDisplaySelected: (CalendarDisplayMode) -> Unit = {},
+    favoriteOccasionIds: Set<String> = emptySet(),
+    initialPlanRequest: OccasionPlanRequest? = null,
+    onInitialPlanConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -156,6 +166,7 @@ fun DashboardScreen(
     var showCreateCountdown by rememberSaveable { mutableStateOf(false) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var addDateIso by rememberSaveable { mutableStateOf<String?>(null) }
+    var plannedCountdown by rememberSaveable { mutableStateOf(true) }
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     var collapsedTaskGroups by rememberSaveable { mutableStateOf("LATER,NO_DATE") }
@@ -176,6 +187,16 @@ fun DashboardScreen(
             onInitialAddDateConsumed()
         }
     }
+    LaunchedEffect(initialPlanRequest) {
+        if (initialPlanRequest != null) {
+            sharedText = initialPlanRequest.title
+            addDateIso = initialPlanRequest.dateIso
+            plannedCountdown = initialPlanRequest.asCountdown
+            showQuickAdd = true
+            onInitialPlanConsumed()
+        }
+    }
+
     LaunchedEffect(pendingEditTaskId, state.allTasks) {
         if (pendingEditTaskId != null) {
             val target = state.allTasks.firstOrNull { it.id == pendingEditTaskId }
@@ -227,6 +248,19 @@ fun DashboardScreen(
             .sortedBy { it.dueAtEpochMillis }
     }
     val heroCountdown = countdowns.firstOrNull()
+    val todayDateForOccasions = remember(now) { now.toLocalDate() }
+    val favoriteIds = remember(settings.favoriteOccasionIds) { settings.favoriteOccasionIds.toSet() }
+    val upcomingOccasions = remember(occasionIndex, todayDateForOccasions, favoriteIds, settings.languageTag) {
+        OccasionPlanner.upcoming(
+            index = occasionIndex,
+            jalaliYears = listOf(todayPersian.year, todayPersian.year + 1),
+            nowEpochMillis = todayDateForOccasions.atStartOfDay(zone).toInstant().toEpochMilli(),
+            favoriteIds = favoriteIds,
+            favoritesOnly = favoriteIds.isNotEmpty(),
+            limit = MAX_DASHBOARD_UPCOMING,
+            zone = zone,
+        )
+    }
     val groups = remember(state.visibleTasks, zone, now) { groupTasks(state.visibleTasks, zone) }
     val todayOpen = remember(activeTasks, zone, now) {
         activeTasks.count { task ->
@@ -249,6 +283,17 @@ fun DashboardScreen(
                     },
                     onClick = onOpenCalendar,
                 )
+            }
+
+            if (upcomingOccasions.isNotEmpty()) {
+                item {
+                    UpcomingOccasionsCard(
+                        upcoming = upcomingOccasions,
+                        favoritesOnly = favoriteIds.isNotEmpty(),
+                        languageTag = settings.languageTag,
+                        onClick = onOpenCalendar,
+                    )
+                }
             }
 
             item {
@@ -468,6 +513,7 @@ fun DashboardScreen(
             countdownThemeId = settings.countdownTheme,
             initialText = sharedText,
             initialDateIso = addDateIso,
+            initialCountdownEnabled = plannedCountdown,
             weekStartsSaturday = settings.weekStartsSaturday,
             pickerCalendar = settings.countdownCalendar,
             onPickerCalendarChange = onCalendarDisplaySelected,
@@ -477,8 +523,9 @@ fun DashboardScreen(
                 showQuickAdd = false
                 sharedText = ""
                 addDateIso = null
+                plannedCountdown = true
             },
-            onDismiss = { showQuickAdd = false; sharedText = ""; addDateIso = null },
+            onDismiss = { showQuickAdd = false; sharedText = ""; addDateIso = null; plannedCountdown = true },
             countdownThemePicker = { selected, onSelect ->
                 ThemeSwatchRow(selected = CountdownTheme.from(selected), onSelect = { theme -> onSelect(theme.id) })
             },
@@ -717,6 +764,74 @@ private fun OccasionsCard(occasions: List<DashboardOccasion>, onClick: () -> Uni
             }
         }
     }
+}
+
+@Composable
+private fun UpcomingOccasionsCard(
+    upcoming: List<UpcomingOccasion>,
+    favoritesOnly: Boolean,
+    languageTag: String,
+    onClick: () -> Unit,
+) {
+    val numeralMode = LocalNumeralMode.current
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Icon(
+                        Icons.Outlined.StarBorder,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(8.dp).size(18.dp),
+                    )
+                }
+                SectionHeader(
+                    stringResource(if (favoritesOnly) R.string.dash_my_occasions else R.string.dash_upcoming_occasions),
+                    upcoming.size,
+                    Modifier.weight(1f).padding(start = 8.dp),
+                )
+                TextButton(onClick = onClick) { Text(stringResource(R.string.nav_calendar)) }
+            }
+            upcoming.forEach { item ->
+                val accent = categoryColor(item.occasion.category)
+                Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    color = accent.copy(alpha = 0.10f),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(9.dp),
+                    ) {
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
+                        Text(
+                            item.occasion.title(languageTag),
+                            style = MarbleTextStyles.itemTitle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            TextNormalizer.formatDigits(daysLeftLabel(item.daysUntil), numeralMode),
+                            style = MarbleTextStyles.metaLabel,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun daysLeftLabel(days: Long): String = when (days) {
+    0L -> stringResource(R.string.dash_days_today)
+    1L -> stringResource(R.string.dash_days_tomorrow)
+    else -> stringResource(R.string.dash_days_left, days.toInt())
 }
 
 @Composable

@@ -62,4 +62,19 @@
     <string name="picker_calendar_persian">Persian</string>
     <string name="picker_calendar_gregorian">Gregorian</string>
     <string name="picker_calendar_islamic">Islamic</string>
+    <string name="calendar_filter_all">All occasions</string>
+    <string name="calendar_filter_favorites">My occasions · %1$d</string>
+    <string name="calendar_favorite_add">Add to my occasions</string>
+    <string name="calendar_favorite_remove">Remove from my occasions</string>
+    <string name="calendar_favorite_hint">Starred occasions are pinned first and can trigger the reminder.</string>
+    <string name="calendar_plan_action">Plan this occasion</string>
+    <string name="calendar_plan_hint">Turn this occasion into a task, a preparation step or a live countdown.</string>
+    <string name="calendar_plan_task_on_day">Task on the occasion day</string>
+    <string name="calendar_plan_prepare">Prepare %1$d day(s) earlier</string>
+    <string name="calendar_plan_prepare_hint">A shopping or planning task before the occasion.</string>
+    <string name="calendar_plan_countdown">Create a countdown</string>
+    <string name="calendar_plan_countdown_hint">Watch the remaining time on the dashboard and widget.</string>
+    <string name="calendar_days_today">Today</string>
+    <string name="calendar_days_tomorrow">Tomorrow</string>
+    <string name="calendar_days_left">in %1$d days</string>
 </resources>

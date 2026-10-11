@@ -208,4 +208,20 @@
     <string name="settings_font_larger">Increase text size</string>
     <string name="settings_last_backup">Last automatic backup: %1$s</string>
     <string name="settings_last_backup_none">No automatic backup has run yet.</string>
+    <string name="dash_my_occasions">My occasions</string>
+    <string name="dash_upcoming_occasions">Upcoming occasions</string>
+    <string name="dash_days_today">today</string>
+    <string name="dash_days_tomorrow">tomorrow</string>
+    <string name="dash_days_left">in %1$d days</string>
+    <string name="settings_occasion_reminder">Reminder for starred occasions</string>
+    <string name="settings_occasion_reminder_hint">A day, or a few days, before a starred occasion MarbleDo posts a short preparation reminder.</string>
+    <string name="settings_occasion_reminder_value">%1$d days before</string>
+    <string name="settings_occasion_favorites">%1$d starred occasions</string>
+    <string name="settings_coverage_title">Catalog coverage</string>
+    <string name="settings_coverage_summary">%1$d occasions · %2$d of 12 months</string>
+    <string name="settings_coverage_complete">All 12 months are covered in every calendar.</string>
+    <string name="settings_coverage_missing">%1$d months without entries</string>
+    <string name="settings_coverage_categories">%1$d of 5 occasion types used</string>
+    <string name="calendar_notification_upcoming_title">Starred occasions are coming up</string>
+    <string name="calendar_notification_upcoming_days">In %1$s days</string>
 </resources>

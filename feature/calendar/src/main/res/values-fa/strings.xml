@@ -62,4 +62,19 @@
     <string name="picker_calendar_persian">شمسی</string>
     <string name="picker_calendar_gregorian">میلادی</string>
     <string name="picker_calendar_islamic">قمری</string>
+    <string name="calendar_filter_all">همهٔ مناسبت‌ها</string>
+    <string name="calendar_filter_favorites">مناسبت‌های من · %1$d</string>
+    <string name="calendar_favorite_add">افزودن به مناسبت‌های من</string>
+    <string name="calendar_favorite_remove">حذف از مناسبت‌های من</string>
+    <string name="calendar_favorite_hint">مناسبت‌های برگزیده بالای فهرست می‌آیند و می‌توانند یادآوری بگیرند.</string>
+    <string name="calendar_plan_action">برنامه‌ریزی این مناسبت</string>
+    <string name="calendar_plan_hint">این مناسبت را به کار، کار آماده‌سازی یا شمارش معکوس زنده تبدیل کن.</string>
+    <string name="calendar_plan_task_on_day">کار در روز مناسبت</string>
+    <string name="calendar_plan_prepare">آماده‌سازی %1$d روز قبل</string>
+    <string name="calendar_plan_prepare_hint">کاری برای خرید یا هماهنگی پیش از مناسبت.</string>
+    <string name="calendar_plan_countdown">ساخت شمارش معکوس</string>
+    <string name="calendar_plan_countdown_hint">زمان باقی‌مانده را در خانه و ویجت ببین.</string>
+    <string name="calendar_days_today">امروز</string>
+    <string name="calendar_days_tomorrow">فردا</string>
+    <string name="calendar_days_left">%1$d روز دیگر</string>
 </resources>

@@ -103,6 +103,8 @@ fun TaskQuickAddSheet(
     onDismiss: () -> Unit,
     initialText: String = "",
     modifier: Modifier = Modifier,
+    /** Starts the countdown switch on or off, so an occasion can be planned as a countdown. */
+    initialCountdownEnabled: Boolean = true,
     /** ISO date (yyyy-MM-dd) to preselect, for example when the user taps a day in the calendar. */
     initialDateIso: String? = null,
     weekStartsSaturday: Boolean,
@@ -130,7 +132,7 @@ fun TaskQuickAddSheet(
     var showPicker by rememberSaveable { mutableStateOf(false) }
     var priority by rememberSaveable { mutableStateOf(TaskPriority.NORMAL) }
     var category by rememberSaveable { mutableStateOf("") }
-    var countdownEnabled by rememberSaveable { mutableStateOf(true) }
+    var countdownEnabled by rememberSaveable { mutableStateOf(initialCountdownEnabled) }
     var themeId by rememberSaveable { mutableStateOf(countdownThemeId) }
     var showCategoryDialog by rememberSaveable { mutableStateOf(false) }
     var categoryDraft by rememberSaveable { mutableStateOf("") }

@@ -40,6 +40,10 @@ data class AppSettings(
     val statusBarCalendar: CalendarDisplayMode = CalendarDisplayMode.PERSIAN,
     /** Minutes before a task's due time that a heads-up reminder is shown; 0 disables it. */
     val reminderLeadMinutes: Int = 10,
+    /** Occasion ids the user marked as important, so they are pinned and can be reminded. */
+    val favoriteOccasionIds: List<String> = emptyList(),
+    /** Days before a favourite occasion that a preparation reminder is posted; 0 disables it. */
+    val occasionReminderLeadDays: Int = 0,
 ) {
     init {
         require(languageTag in setOf("fa", "en"))
@@ -47,5 +51,6 @@ data class AppSettings(
         require(lunarOffsetDays in -2..2)
         require(quietStartMinute in 0..1439 && quietEndMinute in 0..1439)
         require(reminderLeadMinutes in 0..1440)
+        require(occasionReminderLeadDays in 0..30)
     }
 }

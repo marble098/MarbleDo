@@ -28,10 +28,13 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.AddTask
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -83,6 +86,9 @@ private data class DayCell(
 
 private data class MonthData(val monthIndex: Int, val year: Int, val cells: List<DayCell>)
 
+/** An occasion the user wants to turn into a task, a preparation task or a countdown. */
+private data class PlannedOccasion(val occasion: Occasion, val epochMillis: Long)
+
 @Composable
 fun CalendarScreen(
     tasks: List<Task>,
@@ -97,6 +103,10 @@ fun CalendarScreen(
     onPickerCalendarChange: (CalendarDisplayMode) -> Unit,
     onAddTask: (LocalDate) -> Unit,
     onOpenTask: (Task) -> Unit,
+    favoriteOccasionIds: Set<String> = emptySet(),
+    occasionReminderLeadDays: Int = 0,
+    onToggleFavorite: (String) -> Unit = {},
+    onPlanOccasion: (OccasionPlanRequest) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val zone = remember { ZoneId.systemDefault() }
@@ -107,6 +117,8 @@ fun CalendarScreen(
     var viewMode by rememberSaveable { mutableStateOf(CalendarViewMode.MONTH) }
     var occasionQuery by rememberSaveable { mutableStateOf("") }
     var showGoToDate by rememberSaveable { mutableStateOf(false) }
+    var favoritesOnly by rememberSaveable { mutableStateOf(false) }
+    var plannedOccasion by remember { mutableStateOf<PlannedOccasion?>(null) }
 
     LaunchedEffect(zone) {
         while (true) {
@@ -142,11 +154,25 @@ fun CalendarScreen(
             task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == selectedDate } == true
         }
     }
-    val yearOccasions = remember(index, monthData.year, occasionQuery, languageTag) {
+    val yearOccasions = remember(index, monthData.year, occasionQuery, languageTag, favoritesOnly, favoriteOccasionIds) {
         val query = TextNormalizer.searchKey(occasionQuery.trim())
-        index.forYear(monthData.year).filter { dated ->
-            query.isBlank() || TextNormalizer.searchKey(dated.occasion.title(languageTag)).contains(query)
-        }
+        index.forYear(monthData.year)
+            .filter { dated ->
+                val matchesQuery = query.isBlank() ||
+                    TextNormalizer.searchKey(dated.occasion.title(languageTag)).contains(query)
+                val matchesFavorite = !favoritesOnly || dated.occasion.id in favoriteOccasionIds
+                matchesQuery && matchesFavorite
+            }
+            .sortedWith(
+                compareBy(
+                    { if (it.occasion.id in favoriteOccasionIds) 0 else 1 },
+                    { it.month },
+                    { it.day },
+                ),
+            )
+    }
+    val favoriteOccasionsCount = remember(index, monthData.year, favoriteOccasionIds) {
+        index.forYear(monthData.year).count { it.occasion.id in favoriteOccasionIds }
     }
 
     if (showGoToDate) {
@@ -167,6 +193,25 @@ fun CalendarScreen(
             },
             onDismiss = { showGoToDate = false },
             allowAnyTime = false,
+        )
+    }
+
+    plannedOccasion?.let { planned ->
+        OccasionPlanSheet(
+            occasion = planned.occasion,
+            epochMillis = planned.epochMillis,
+            languageTag = languageTag,
+            isFavorite = planned.occasion.id in favoriteOccasionIds,
+            prepDays = occasionReminderLeadDays.takeIf { it > 0 } ?: DEFAULT_PREP_DAYS,
+            onPlan = { request ->
+                plannedOccasion = null
+                onPlanOccasion(request)
+            },
+            onToggleFavorite = {
+                plannedOccasion = null
+                onToggleFavorite(planned.occasion.id)
+            },
+            onDismiss = { plannedOccasion = null },
         )
     }
 
@@ -329,6 +374,9 @@ fun CalendarScreen(
                     languageTag = languageTag,
                     numeralMode = numeralMode,
                     lunarOffsetDays = lunarOffsetDays,
+                    favoriteOccasionIds = favoriteOccasionIds,
+                    onToggleFavorite = onToggleFavorite,
+                    onPlanOccasion = { occasion, epoch -> plannedOccasion = PlannedOccasion(occasion, epoch) },
                     onAddTask = { onAddTask(selectedDate) },
                     onOpenTask = onOpenTask,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
@@ -377,6 +425,34 @@ fun CalendarScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    androidx.compose.foundation.lazy.LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        item(key = "all") {
+                            FilterChip(
+                                selected = !favoritesOnly,
+                                onClick = { favoritesOnly = false },
+                                label = { Text(stringResource(R.string.calendar_filter_all)) },
+                            )
+                        }
+                        item(key = "favorites") {
+                            FilterChip(
+                                selected = favoritesOnly,
+                                onClick = { favoritesOnly = true },
+                                label = {
+                                    Text(
+                                        TextNormalizer.formatDigits(
+                                            stringResource(R.string.calendar_filter_favorites, favoriteOccasionsCount),
+                                            numeralMode,
+                                        ),
+                                    )
+                                },
+                                leadingIcon = { Icon(Icons.Outlined.StarBorder, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                            )
+                        }
+                    }
                     androidx.compose.material3.OutlinedTextField(
                         value = occasionQuery,
                         onValueChange = { occasionQuery = it },
@@ -398,6 +474,9 @@ fun CalendarScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             items(yearOccasions, key = { "${it.month}-${it.day}-${it.occasion.id}" }) { dated ->
+                                val rowEpoch = remember(monthData.year, dated.month, dated.day, zone) {
+                                    PersianDateUtils.startOfJalaliDay(monthData.year, dated.month, dated.day, zone)
+                                }
                                 OccasionRow(
                                     month = dated.month,
                                     day = dated.day,
@@ -405,6 +484,17 @@ fun CalendarScreen(
                                     languageTag = languageTag,
                                     numeralMode = numeralMode,
                                     weekdayIndex = weekdayIndexFor(monthData.year, dated.month, dated.day, zone),
+                                    isFavorite = dated.occasion.id in favoriteOccasionIds,
+                                    daysUntil = rowEpoch?.let { epoch ->
+                                        java.time.temporal.ChronoUnit.DAYS.between(
+                                            todayDate,
+                                            Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate(),
+                                        )
+                                    },
+                                    onToggleFavorite = { onToggleFavorite(dated.occasion.id) },
+                                    onPlan = rowEpoch?.let { epoch ->
+                                        { plannedOccasion = PlannedOccasion(dated.occasion, epoch) }
+                                    },
                                 )
                             }
                         }
@@ -579,6 +669,9 @@ private fun SelectedDayCard(
     languageTag: String,
     numeralMode: NumeralMode,
     lunarOffsetDays: Int,
+    favoriteOccasionIds: Set<String>,
+    onToggleFavorite: (String) -> Unit,
+    onPlanOccasion: (Occasion, Long) -> Unit,
     onAddTask: () -> Unit,
     onOpenTask: (Task) -> Unit,
     modifier: Modifier = Modifier,
@@ -606,14 +699,37 @@ private fun SelectedDayCard(
                 Text(stringResource(R.string.calendar_no_occasions), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 occasions.forEach { occasion ->
+                    val isFavorite = occasion.id in favoriteOccasionIds
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Box(Modifier.size(6.dp).clip(CircleShape).background(categoryColor(occasion.category)))
-                        Text(occasion.title(languageTag), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            occasion.title(languageTag),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
                         if (occasion.isHoliday) {
                             Text(
                                 stringResource(R.string.calendar_holiday_badge),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        IconButton(onClick = { onToggleFavorite(occasion.id) }, modifier = Modifier.size(30.dp)) {
+                            Icon(
+                                if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                contentDescription = stringResource(
+                                    if (isFavorite) R.string.calendar_favorite_remove else R.string.calendar_favorite_add,
+                                ),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                        IconButton(onClick = { onPlanOccasion(occasion, epoch) }, modifier = Modifier.size(30.dp)) {
+                            Icon(
+                                Icons.Outlined.AddTask,
+                                contentDescription = stringResource(R.string.calendar_plan_action),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
                             )
                         }
                     }
@@ -737,6 +853,10 @@ private fun OccasionRow(
     languageTag: String,
     numeralMode: NumeralMode,
     weekdayIndex: Int,
+    isFavorite: Boolean,
+    daysUntil: Long?,
+    onToggleFavorite: () -> Unit,
+    onPlan: (() -> Unit)?,
 ) {
     Surface(
         shape = MaterialTheme.shapes.large,
@@ -762,12 +882,21 @@ private fun OccasionRow(
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(occasion.title(languageTag), style = MarbleTextStyles.itemTitle)
-                Text(
-                    stringResource(categoryLabelRes(occasion.category)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = categoryColor(occasion.category),
-                )
+                Text(occasion.title(languageTag), style = MarbleTextStyles.itemTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(categoryLabelRes(occasion.category)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = categoryColor(occasion.category),
+                    )
+                    if (daysUntil != null && daysUntil >= 0) {
+                        Text(
+                            TextNormalizer.formatDigits(daysLeftLabel(daysUntil), numeralMode),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
             if (occasion.isHoliday) {
                 Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
@@ -779,8 +908,35 @@ private fun OccasionRow(
                     )
                 }
             }
+            IconButton(onClick = onToggleFavorite, modifier = Modifier.size(34.dp)) {
+                Icon(
+                    if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = stringResource(
+                        if (isFavorite) R.string.calendar_favorite_remove else R.string.calendar_favorite_add,
+                    ),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            if (onPlan != null) {
+                IconButton(onClick = onPlan, modifier = Modifier.size(34.dp)) {
+                    Icon(
+                        Icons.Outlined.AddTask,
+                        contentDescription = stringResource(R.string.calendar_plan_action),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun daysLeftLabel(days: Long): String = when (days) {
+    0L -> stringResource(R.string.calendar_days_today)
+    1L -> stringResource(R.string.calendar_days_tomorrow)
+    else -> stringResource(R.string.calendar_days_left, days.toInt())
 }
 
 @Composable
@@ -814,6 +970,9 @@ private fun weekdayIndexFor(year: Int, month: Int, day: Int, zone: ZoneId): Int 
 
 /** Number of tasks listed in the day card before the "+N more" line. */
 private const val MAX_DAY_CARD_TASKS = 6
+
+/** Preparation task lead time used when the user has not picked an occasion reminder lead. */
+private const val DEFAULT_PREP_DAYS = 3
 
 /** Persian months between today and [date], used to bring the month grid to the chosen day. */
 private fun monthOffsetFor(date: LocalDate, zone: ZoneId, todayEpoch: Long): Int {

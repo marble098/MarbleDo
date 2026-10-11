@@ -76,6 +76,7 @@ import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.CalendarScreen
 import com.marbledo.feature.calendar.OccasionCategory
+import com.marbledo.feature.calendar.OccasionPlanRequest
 import com.marbledo.feature.calendar.OccasionRefreshResult
 import com.marbledo.feature.calendar.OccasionRepository
 import com.marbledo.feature.countdown.CountdownFocusDialog
@@ -149,6 +150,8 @@ fun MarbleDoApp(
     // Hand-offs from the calendar to the dashboard: a day to add a task on, or a task to open.
     var pendingAddDateIso by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingEditTaskId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // Hand-off from the calendar: an occasion the user wants as a task, prep step or countdown.
+    var pendingOccasionPlan by remember { mutableStateOf<OccasionPlanRequest?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val updateCountdownCalendar: (CalendarDisplayMode) -> Unit = { mode ->
         coroutineScope.launch { settingsRepository.update { current -> current.copy(countdownCalendar = mode) } }
@@ -366,6 +369,9 @@ fun MarbleDoApp(
                                     pendingEditTaskId = pendingEditTaskId,
                                     onPendingEditTaskConsumed = { pendingEditTaskId = null },
                                     onCalendarDisplaySelected = updateCountdownCalendar,
+                                    favoriteOccasionIds = settings.favoriteOccasionIds.toSet(),
+                                    initialPlanRequest = pendingOccasionPlan,
+                                    onInitialPlanConsumed = { pendingOccasionPlan = null },
                                 )
                             }
                             entry<CalendarDestination> {
@@ -385,6 +391,23 @@ fun MarbleDoApp(
                                     },
                                     onOpenTask = { task ->
                                         pendingEditTaskId = task.id
+                                        navigateTo(HomeDestination)
+                                    },
+                                    favoriteOccasionIds = settings.favoriteOccasionIds.toSet(),
+                                    occasionReminderLeadDays = settings.occasionReminderLeadDays,
+                                    onToggleFavorite = { occasionId ->
+                                        coroutineScope.launch {
+                                            settingsRepository.update { current ->
+                                                if (occasionId in current.favoriteOccasionIds) {
+                                                    current.copy(favoriteOccasionIds = current.favoriteOccasionIds - occasionId)
+                                                } else {
+                                                    current.copy(favoriteOccasionIds = current.favoriteOccasionIds + occasionId)
+                                                }
+                                            }
+                                        }
+                                    },
+                                    onPlanOccasion = { request ->
+                                        pendingOccasionPlan = request
                                         navigateTo(HomeDestination)
                                     },
                                     onRefreshOccasions = {

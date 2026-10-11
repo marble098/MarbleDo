@@ -208,4 +208,20 @@
     <string name="settings_font_larger">بزرگ‌تر کردن متن</string>
     <string name="settings_last_backup">آخرین پشتیبان خودکار: %1$s</string>
     <string name="settings_last_backup_none">هنوز پشتیبان خودکاری اجرا نشده است.</string>
+    <string name="dash_my_occasions">مناسبت‌های من</string>
+    <string name="dash_upcoming_occasions">مناسبت‌های پیش رو</string>
+    <string name="dash_days_today">امروز</string>
+    <string name="dash_days_tomorrow">فردا</string>
+    <string name="dash_days_left">%1$d روز دیگر</string>
+    <string name="settings_occasion_reminder">یادآوری مناسبت‌های برگزیده</string>
+    <string name="settings_occasion_reminder_hint">یک یا چند روز پیش از هر مناسبت برگزیده، ماربل‌دو یک یادآوری کوتاه برای آماده‌شدن می‌فرستد.</string>
+    <string name="settings_occasion_reminder_value">%1$d روز قبل</string>
+    <string name="settings_occasion_favorites">%1$d مناسبت برگزیده</string>
+    <string name="settings_coverage_title">پوشش تقویم</string>
+    <string name="settings_coverage_summary">%1$d مناسبت · %2$d ماه از ۱۲ ماه</string>
+    <string name="settings_coverage_complete">هر ۱۲ ماه در هر سه تقویم پوشش داده شده‌اند.</string>
+    <string name="settings_coverage_missing">%1$d ماه بی‌اطلاعات</string>
+    <string name="settings_coverage_categories">%1$d نوع مناسبت از ۵ نوع استفاده شده</string>
+    <string name="calendar_notification_upcoming_title">مناسبت‌های برگزیده در پیش است</string>
+    <string name="calendar_notification_upcoming_days">%1$s روز دیگر</string>
 </resources>

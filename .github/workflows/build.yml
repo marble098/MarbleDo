@@ -75,3 +75,24 @@ jobs:
             diagnostics="${diagnostics//$'\n'/'%0A'}"
             echo "::error title=Gradle failure diagnostics::$diagnostics"
           fi
+          # Failing unit tests: print the machine-readable result files so the cause is visible.
+          results="$(find . -path '*/build/test-results/*' -name '*.xml' -print 2>/dev/null | xargs -r grep -l '<failure' 2>/dev/null | head -n 5)"
+          if [[ -n "$results" ]]; then
+            for result in $results; do
+              echo "### Failing tests in $result"
+              echo '```text'
+              sed -n '1,120p' "$result"
+              echo '```'
+            done >> "$GITHUB_STEP_SUMMARY"
+            failures="$(printf '%s\n' "$results" | xargs -r sed -n '1,80p' | head -c 6000 || true)"
+            failures="${failures//'%'/'%25'}"
+            failures="${failures//$'\r'/'%0D'}"
+            failures="${failures//$'\n'/'%0A'}"
+            echo "::error title=Unit test failures::$failures"
+          else
+            tail_text="$(tail -n 60 "$log" 2>/dev/null || true)"
+            tail_text="${tail_text//'%'/'%25'}"
+            tail_text="${tail_text//$'\r'/'%0D'}"
+            tail_text="${tail_text//$'\n'/'%0A'}"
+            echo "::error title=Gradle log tail::$tail_text"
+          fi
