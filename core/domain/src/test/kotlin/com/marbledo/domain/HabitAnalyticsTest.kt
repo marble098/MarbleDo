@@ -75,7 +75,7 @@ class HabitAnalyticsTest {
             30,
         )
         // 1-11 October holds seven weekdays, three of them done.
-        assertEquals(3f / 7f, rate, 0.001)
+        assertEquals(3f / 7f, rate, 0.001f)
     }
 
     @Test
