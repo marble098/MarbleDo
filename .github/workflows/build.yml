@@ -75,3 +75,10 @@ jobs:
             diagnostics="${diagnostics//$'\n'/'%0A'}"
             echo "::error title=Gradle failure diagnostics::$diagnostics"
           fi
+          # Failing unit tests: print the machine-readable result files so the cause is visible.
+          while IFS= read -r result; do
+            echo "### Failing tests in $result"
+            echo '```text'
+            sed -n '1,120p' "$result"
+            echo '```'
+          done < <(grep -rl '<failure' --include='*.xml' ./*/build/test-results 2>/dev/null | head -n 5) >> "$GITHUB_STEP_SUMMARY"
