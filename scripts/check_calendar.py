@@ -14,7 +14,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "feature/calendar/src/main/assets/calendar/holidays-fa.json"
+CATALOG = ROOT / "feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"
 CALENDARS = ("jalali", "lunar", "gregorian")
 CATEGORIES = {"official", "national", "religious", "personal", "international", "educational"}
 EVIDENCE = {"sourced", "traditional", "guidance", "legacy"}

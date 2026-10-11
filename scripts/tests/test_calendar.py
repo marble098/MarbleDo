@@ -1,6 +1,7 @@
 import copy
 import importlib.util
 import json
+import hashlib
 from pathlib import Path
 import unittest
 
@@ -15,6 +16,15 @@ class CatalogIntegrityTest(unittest.TestCase):
 
     def test_bundled_catalog(self):
         self.assertGreaterEqual(validator.check(self.catalog)["annual_occasions"], 800)
+
+    def test_older_clients_keep_their_compatible_feed(self):
+        legacy = validator.CATALOG.with_name("holidays-fa.json").read_bytes()
+        self.assertEqual("eeaa96c51504e078ebf8766af26d8a5062764b7e19522bb0447226bca8183fce", hashlib.sha256(legacy).hexdigest(),
+                         "Legacy clients ignore new rules: do not overwrite their feed with v4 data")
+        self.assertLess(json.loads(legacy)["schemaVersion"], 4)
+        repository = validator.ROOT / "feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/OccasionRepository.kt"
+        self.assertNotIn("calendar/holidays-fa.json", repository.read_text())
+        self.assertIn("calendar/occasions-v4-fa.json", repository.read_text())
 
     def test_no_duplicate_stable_ids(self):
         self.catalog["jalali"].append(copy.deepcopy(self.catalog["jalali"][0]))

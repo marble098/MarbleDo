@@ -60,6 +60,9 @@ jobs:
             :app:lintDebug \
             :app:assembleDebug 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"
 
+      - name: Summarize actual unit-test and lint results
+        run: python3 scripts/summarize_verification.py
+
       - name: Add Gradle diagnostics to the job summary
         if: failure()
         run: |

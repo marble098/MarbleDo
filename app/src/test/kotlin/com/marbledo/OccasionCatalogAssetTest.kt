@@ -27,9 +27,9 @@ class OccasionCatalogAssetTest {
 
     private fun catalogFile(): File {
         val candidates = listOf(
-            File("../feature/calendar/src/main/assets/calendar/holidays-fa.json"),
-            File("feature/calendar/src/main/assets/calendar/holidays-fa.json"),
-            File("src/main/assets/calendar/holidays-fa.json"),
+            File("../feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"),
+            File("feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"),
+            File("src/main/assets/calendar/occasions-v4-fa.json"),
         )
         return candidates.firstOrNull(File::exists)
             ?: error("Bundled occasions catalog not found from working directory ${File(".").absolutePath}")

@@ -1,19 +1,25 @@
 # Occasion provenance, date rules and update delivery
 
-Review date: **2026-10-11**. Asset: `feature/calendar/src/main/assets/calendar/holidays-fa.json`.
+Review date: **2026-10-11**. Asset: `feature/calendar/src/main/assets/calendar/occasions-v4-fa.json`.
 
 ## What actually updates the app
 
 The updater **does not query a government, Ministry, lunar authority or school API**. It downloads
 this repository's manually maintained `main` asset through these fallbacks, in order:
 
-1. `https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/holidays-fa.json`
-2. `https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/holidays-fa.json`
-3. `https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/holidays-fa.json`
-4. `https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/holidays-fa.json?ref=main`
+1. `https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json`
+2. `https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json`
+3. `https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json`
+4. `https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json?ref=main`
    with `Accept: application/vnd.github.raw+json`.
 
 These are four **delivery paths for the same data**, not four independent research sources.
+**Compatibility:** older app builds ignore `dateRule` and schema versions. Serving rule anchors
+at their old `holidays-fa.json` URL would make them display e.g. Quds on 1 Ramadan. Therefore that
+legacy endpoint remains byte-for-byte at the pre-migration data version 5. The new app explicitly
+uses `occasions-v4-fa.json` for its bundle and all four download paths. The expanded/rule-aware
+catalog requires upgrading the app; an old installed build does not gain it from a data refresh.
+
 The downloaded cache is `filesDir/occasions/occasions-catalog.json`; the bundled asset remains the
 offline baseline. Startup and scheduled checks respect a 20-hour freshness interval; a manual
 refresh can run sooner. A bad or unavailable mirror never deletes the last valid catalog.

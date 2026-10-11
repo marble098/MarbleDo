@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 
 class OccasionCatalogV4Test {
     private val asset by lazy {
-        listOf(File("src/main/assets/calendar/holidays-fa.json"), File("feature/calendar/src/main/assets/calendar/holidays-fa.json"))
+        listOf(File("src/main/assets/calendar/occasions-v4-fa.json"), File("feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"))
             .first { it.exists() }.readText()
     }
     private val catalog by lazy { requireNotNull(OccasionCatalog.parse(asset)) }
@@ -23,6 +23,16 @@ class OccasionCatalogV4Test {
         assertEquals(12, education.month)
         assertEquals(8, education.day)
         assertEquals("jalali-12-24-Islamic Education Affairs Day", education.id)
+    }
+
+    @Test fun `versioned feed avoids teaching old clients incorrect rule anchors`() {
+        val file = listOf(File("src/main/assets/calendar/holidays-fa.json"), File("feature/calendar/src/main/assets/calendar/holidays-fa.json"))
+            .first { it.exists() }
+        val old = requireNotNull(OccasionCatalog.parse(file.readText()))
+        assertEquals("5", old.dataVersion)
+        assertEquals(726, old.occasions.size)
+        assertFalse(CatalogUpdatePolicy.accepts(old, catalog))
+        assertTrue(OccasionRepository.CATALOG_URLS.all { it.contains("occasions-v4-fa.json") })
     }
 
     @Test fun `old cache schema remains readable but cannot supersede this richer bundle`() {
