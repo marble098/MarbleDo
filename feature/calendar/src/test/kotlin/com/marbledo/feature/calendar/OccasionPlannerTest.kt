@@ -95,7 +95,7 @@ class OccasionPlannerTest {
         val coverage = OccasionPlanner.coverage(catalog)
         assertEquals(4, coverage.total)
         assertEquals(3, coverage.categoryCount)
-        assertEquals(2, coverage.perCalendar[OccasionCalendar.JALALI])
+        assertEquals(3, coverage.perCalendar[OccasionCalendar.JALALI])
         assertEquals(1, coverage.perCalendar[OccasionCalendar.GREGORIAN])
         assertEquals(2, coverage.coveredMonths)
         assertEquals(2, coverage.monthsPerCalendar[OccasionCalendar.JALALI]?.size)
