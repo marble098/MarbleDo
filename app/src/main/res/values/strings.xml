@@ -219,7 +219,7 @@
     <string name="settings_occasion_favorites">%1$d starred occasions</string>
     <string name="settings_coverage_title">Catalog coverage</string>
     <string name="settings_coverage_summary">%1$d occasions · %2$d of 12 months</string>
-    <string name="settings_coverage_complete">All 12 months are covered in every calendar.</string>
+    <string name="settings_coverage_complete">Each month has entries in all three calendars; this does not guarantee an exhaustive catalog.</string>
     <string name="settings_coverage_missing">%1$d months without entries</string>
     <string name="settings_coverage_categories">%1$d of 5 occasion types used</string>
     <string name="calendar_notification_upcoming_title">Starred occasions are coming up</string>

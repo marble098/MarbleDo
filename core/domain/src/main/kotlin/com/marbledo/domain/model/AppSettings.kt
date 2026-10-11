@@ -23,6 +23,10 @@ data class AppSettings(
     val nationalEventsEnabled: Boolean = true,
     val personalEventsEnabled: Boolean = true,
     val internationalEventsEnabled: Boolean = true,
+    /** Opt-in school calendar, hidden until explicitly activated on this device. */
+    val educationModeEnabled: Boolean = false,
+    /** Friday is always excluded by the workday helper; optionally exclude Thursday too. */
+    val thursdayWeekendEnabled: Boolean = false,
     val quietHoursEnabled: Boolean = false,
     val quietStartMinute: Int = 22 * 60,
     val quietEndMinute: Int = 7 * 60,

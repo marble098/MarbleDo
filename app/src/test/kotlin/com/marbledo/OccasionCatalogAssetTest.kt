@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Guards the bundled occasion catalog so the offline copy stays complete: every month covered,
+ * Guards the bundled occasion catalog so the offline copy retains month coverage,
  * well-formed entries only, no duplicate identities that the parser would silently drop, and the
  * per-year overrides stay consistent with the base catalog.
  */
@@ -23,7 +23,7 @@ class OccasionCatalogAssetTest {
         Json.parseToJsonElement(file.readText(Charsets.UTF_8)).jsonObject
     }
 
-    private val categories = setOf("official", "national", "religious", "personal", "international")
+    private val categories = setOf("official", "national", "religious", "personal", "international", "educational")
 
     private fun catalogFile(): File {
         val candidates = listOf(
@@ -56,7 +56,7 @@ class OccasionCatalogAssetTest {
     @Test
     fun `bundled catalog is a large full-year database`() {
         val total = listOf("jalali", "lunar", "gregorian").sumOf { entries(it).size }
-        assertTrue(total >= 700, "Expected a large catalog covering every observance type, found $total occasions")
+        assertTrue(total >= 700, "Expected a broad catalog (not necessarily exhaustive), found $total occasions")
     }
 
     @Test
@@ -107,7 +107,7 @@ class OccasionCatalogAssetTest {
     }
 
     @Test
-    fun `Iranian national occasions added from the official calendar are present`() {
+    fun `Iranian national and traditional cultural occasions are present`() {
         val jalali = entries("jalali")
         fun has(month: Int, day: Int, titleEn: String) = jalali.any {
             it.getValue("month").jsonPrimitive.int == month &&
@@ -132,7 +132,7 @@ class OccasionCatalogAssetTest {
                 it.getValue("day").jsonPrimitive.int == day &&
                 it.getValue("titleEn").jsonPrimitive.content == titleEn
         }
-        assertTrue(has(1, 5, "Martyrdom of Lady Ruqayya"), "Lady Ruqayya is missing")
+        assertTrue(has(2, 5, "Death of Lady Ruqayya (traditional report)"), "Lady Ruqayya is missing")
         assertTrue(has(4, 8, "Birth of Imam Hassan al-Askari"), "Imam Askari's birth is missing")
         assertTrue(has(4, 10, "Death of Lady Masouma"), "Lady Masouma is missing")
         assertTrue(has(5, 5, "Nurses Day"), "Nurses Day is missing")
@@ -145,7 +145,7 @@ class OccasionCatalogAssetTest {
     }
 
     @Test
-    fun `world days added from the UN list are present`() {
+    fun `additional international and cultural observances are retained`() {
         val titles = entries("gregorian").map { it.getValue("titleEn").jsonPrimitive.content }.toSet()
         listOf(
             "World Kindness Day",
@@ -159,14 +159,15 @@ class OccasionCatalogAssetTest {
     }
 
     @Test
-    fun `variable weekly occasions are pinned per year`() {
-        val yearly = catalog["yearly"]?.jsonObject ?: error("The yearly section is required")
-        listOf("1405", "1406", "1407", "1408", "1409", "1410").forEach { year ->
-            val titles = yearly.getValue(year).jsonObject.getValue("jalali").jsonArray
-                .map { it.jsonObject.getValue("titleEn").jsonPrimitive.content }
-            assertTrue("Chaharshanbe Suri" in titles, "Chaharshanbe Suri is missing for $year")
-            assertTrue("International Quds Day" in titles, "Quds Day is missing for $year")
-        }
+    fun `variable observances use rules rather than guessed solar dates`() {
+        val all = allEntries().map { it.second }
+        fun find(title: String) = all.single { it.getValue("titleEn").jsonPrimitive.content == title }
+        assertEquals("last_weekday", find("International Quds Day").getValue("dateRule").jsonPrimitive.content)
+        assertEquals(5, find("International Quds Day").getValue("weekday").jsonPrimitive.int)
+        assertEquals("last_weekday", find("Chaharshanbe Suri").getValue("dateRule").jsonPrimitive.content)
+        assertEquals(-1, find("Chaharshanbe Suri").getValue("dayOffset").jsonPrimitive.int)
+        assertEquals("month_end", find("Martyrdom of Imam Reza (last day of Safar)").getValue("dateRule").jsonPrimitive.content)
+        assertEquals("month_end", find("Martyrdom of Imam Jawad").getValue("dateRule").jsonPrimitive.content)
     }
 
     @Test
@@ -180,12 +181,14 @@ class OccasionCatalogAssetTest {
         assertTrue(has(2, 28, "Omar Khayyam Day"), "Khayyam Day must be 28 Ordibehesht")
         assertTrue(has(6, 13, "Cooperation Day"), "Cooperation Day must be 13 Shahrivar")
         assertTrue(has(12, 15, "Tree Planting Day"), "Tree Planting Day must be 15 Esfand")
+        assertTrue(has(12, 8, "Islamic Education Affairs Day"), "Education Affairs must be 8 Esfand")
+        assertTrue(has(6, 12, "Day against British Colonialism"), "Anti-colonial day belongs in Shahrivar, not Khordad")
     }
 
     @Test
     fun `yearly overrides use Jalali year keys and valid entries`() {
         val yearly = catalog["yearly"]?.jsonObject ?: error("The yearly section is required")
-        assertTrue(yearly.isNotEmpty(), "The yearly section should cover upcoming years")
+        assertTrue(yearly.isNotEmpty(), "The yearly section retains explicitly documented annual instructions")
         yearly.forEach { (year, body) ->
             assertTrue((year.toIntOrNull() ?: 0) in 1400..1500, "Yearly key must be a Jalali year: $year")
             val section = body.jsonObject
@@ -203,7 +206,7 @@ class OccasionCatalogAssetTest {
         val ids = mutableListOf<String>()
         listOf("jalali", "lunar", "gregorian").forEach { calendar ->
             entries(calendar).forEach { item ->
-                ids += "$calendar-${item.getValue("month").jsonPrimitive.int}-${item.getValue("day").jsonPrimitive.int}-${item.getValue("titleEn").jsonPrimitive.content}"
+                ids += item.getValue("id").jsonPrimitive.content
             }
         }
         assertEquals(ids.size, ids.toSet().size, "Duplicate occasion ids would be dropped by the parser")

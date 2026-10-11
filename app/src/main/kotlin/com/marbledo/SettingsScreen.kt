@@ -6,6 +6,11 @@ import androidx.compose.runtime.produceState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.os.Build
+import android.os.SystemClock
+import androidx.compose.foundation.clickable
+import com.marbledo.domain.util.HiddenTapSequence
+import com.marbledo.feature.calendar.CatalogSourcesSheet
+import com.marbledo.feature.calendar.OccasionCategory
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.ui.platform.LocalContext
@@ -106,6 +111,14 @@ fun SettingsScreen(
     }
     var showCountdownThemeGallery by rememberSaveable { mutableStateOf(false) }
     var showBatteryHelp by remember { mutableStateOf(false) }
+    var showCatalogSources by rememberSaveable { mutableStateOf(false) }
+    var showEducationControls by rememberSaveable { mutableStateOf(false) }
+    val educationGesture = remember { HiddenTapSequence() }
+    val listedCatalog = remember(occasionState.catalog, settings.educationModeEnabled) {
+        if (settings.educationModeEnabled) occasionState.catalog else occasionState.catalog.copy(
+            occasions = occasionState.catalog.occasions.filter { it.category != OccasionCategory.EDUCATIONAL },
+        )
+    }
 
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 10.dp)) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -234,6 +247,11 @@ fun SettingsScreen(
             SettingSwitchRow(stringResource(R.string.settings_religious_events), settings.religiousEventsEnabled) { onUpdate(settings.copy(religiousEventsEnabled = it)) }
             SettingSwitchRow(stringResource(R.string.settings_personal_events), settings.personalEventsEnabled) { onUpdate(settings.copy(personalEventsEnabled = it)) }
             SettingSwitchRow(stringResource(R.string.settings_international_events), settings.internationalEventsEnabled) { onUpdate(settings.copy(internationalEventsEnabled = it)) }
+            SettingSwitchRow(stringResource(R.string.settings_thursday_weekend), settings.thursdayWeekendEnabled) { onUpdate(settings.copy(thursdayWeekendEnabled = it)) }
+            if (settings.educationModeEnabled) {
+                SettingSwitchRow(stringResource(R.string.settings_education_mode), true) { onUpdate(settings.copy(educationModeEnabled = it)) }
+                Text(stringResource(R.string.settings_education_hint), style = MaterialTheme.typography.bodySmall)
+            }
         }
 
         SettingsSection(title = stringResource(R.string.settings_occasions), icon = Icons.Outlined.Refresh) {
@@ -243,7 +261,7 @@ fun SettingsScreen(
                 onCheckedChange = { onUpdate(settings.copy(occasionAutoUpdateEnabled = it)) },
             )
             Text(
-                TextNormalizer.formatDigits(stringResource(R.string.settings_occasions_count, occasionState.occasionCount), settings.numeralMode),
+                TextNormalizer.formatDigits(stringResource(R.string.settings_occasions_count, listedCatalog.occasions.size), settings.numeralMode),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -253,6 +271,7 @@ fun SettingsScreen(
                 color = if (occasionState.lastError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             SettingsActionRow(stringResource(R.string.settings_occasions_update_now), onRefreshOccasions, enabled = !occasionState.isRefreshing)
+            SettingsActionRow(stringResource(R.string.settings_catalog_sources), { showCatalogSources = true })
             Spacer(Modifier.height(6.dp))
             Text(
                 TextNormalizer.formatDigits(
@@ -290,7 +309,7 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            val coverage = remember(occasionState.catalog) { OccasionPlanner.coverage(occasionState.catalog) }
+            val coverage = remember(listedCatalog) { OccasionPlanner.coverage(listedCatalog) }
             if (coverage.total > 0) {
                 Spacer(Modifier.height(4.dp))
                 Text(stringResource(R.string.settings_coverage_title), style = MaterialTheme.typography.titleSmall)
@@ -457,12 +476,31 @@ fun SettingsScreen(
 
         Text(
             stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.clickable {
+                if (educationGesture.tap(SystemClock.elapsedRealtime())) showEducationControls = true
+            }.padding(14.dp),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 
+    if (showCatalogSources) {
+        CatalogSourcesSheet(occasionState, settings.languageTag, includeEducation = settings.educationModeEnabled) { showCatalogSources = false }
+    }
+    if (showEducationControls) {
+        AlertDialog(
+            onDismissRequest = { showEducationControls = false },
+            title = { Text(stringResource(R.string.settings_education_mode)) },
+            text = { Text(stringResource(R.string.settings_education_hint)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onUpdate(settings.copy(educationModeEnabled = !settings.educationModeEnabled))
+                    showEducationControls = false
+                }) { Text(stringResource(if (settings.educationModeEnabled) R.string.settings_education_disable else R.string.settings_education_enable)) }
+            },
+            dismissButton = { TextButton(onClick = { showEducationControls = false }) { Text(stringResource(android.R.string.cancel)) } },
+        )
+    }
     if (showCountdownThemeGallery) {
         CountdownThemeGallerySheet(
             selectedThemeId = settings.countdownTheme,

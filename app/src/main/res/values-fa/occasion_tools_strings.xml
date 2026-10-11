@@ -1,0 +1,19 @@
+<resources>
+    <string name="settings_thursday_weekend">پنجشنبه‌ها هم در پیشنهاد روز کاری تعطیل حساب شوند</string>
+    <string name="settings_education_mode">تقویم آموزشی و پرورشی مدرسه</string>
+    <string name="settings_education_hint">مناسبت‌های مدرسه و فیلتر مرتبط با آموزش‌وپرورش در «تقویم ← مناسبت‌ها» اضافه می‌شود؛ همراه نمای سال تحصیلی مهر تا شهریور. برنامه‌های متغیر، جدا و بدون تاریخ ساختگی می‌آیند. این حالت محلی و اختیاری است، نه بخش خصوصیِ رمزدار یا بخشنامهٔ رسمی وزارتخانه.</string>
+    <string name="settings_education_enable">فعال‌کردن روی این دستگاه</string>
+    <string name="settings_education_disable">خاموش و پنهان‌کردن</string>
+    <string name="settings_catalog_sources">منابع، اعتبار تاریخ‌ها و روش به‌روزرسانی</string>
+    <string name="calendar_export_saved">تقویم صادر شد؛ فایل ICS را در برنامهٔ تقویم وارد کنید.</string>
+    <string name="calendar_export_failed">خروجی تقویم انجام نشد؛ مقصد قابل‌نوشتن انتخاب کنید و دوباره تلاش کنید.</string>
+    <string name="weekly_title">نمای ۷ روز آینده</string>
+    <string name="weekly_summary">%1$d برنامه‌ریزی‌شده · %2$d عقب‌افتاده · %3$d بدون موعد</string>
+    <string name="weekly_day_open">%1$d ناتمام</string>
+    <string name="weekly_day_done">%1$d انجام‌شده</string>
+    <string name="weekly_hint">شمارش بر اساس موعد کارهاست، نه تاریخ انجام. هر روز را بزنید تا کارهایش را مرور یا کاری اضافه کنید.</string>
+    <string name="weekly_backlog">مرور کارهای عقب‌افتاده و بدون موعد</string>
+    <string name="weekly_empty">برای این روز کاری برنامه‌ریزی نشده است.</string>
+    <string name="weekly_task_done">انجام‌شده</string>
+    <string name="weekly_add">افزودن کار در این روز</string>
+</resources>

@@ -65,6 +65,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,6 +91,7 @@ import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionIndex
 import com.marbledo.feature.calendar.OccasionPlanRequest
 import com.marbledo.feature.calendar.OccasionPlanner
+import com.marbledo.feature.calendar.OccasionTemplates
 import com.marbledo.feature.calendar.UpcomingOccasion
 import com.marbledo.feature.calendar.PersianDateUtils
 import com.marbledo.feature.calendar.categoryColor
@@ -162,7 +166,10 @@ fun DashboardScreen(
     val zone = remember { ZoneId.systemDefault() }
     var showQuickAdd by rememberSaveable { mutableStateOf(false) }
     var sharedText by rememberSaveable { mutableStateOf("") }
-    var editingTask by remember { mutableStateOf<Task?>(null) }
+    var editingTask by rememberSaveable(stateSaver = Saver<Task?, String>(
+        save = { it?.let { task -> Json.encodeToString(task) }.orEmpty() },
+        restore = { if (it.isBlank()) null else runCatching { Json.decodeFromString<Task>(it) }.getOrNull() },
+    )) { mutableStateOf<Task?>(null) }
     var showCreateCountdown by rememberSaveable { mutableStateOf(false) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var addDateIso by rememberSaveable { mutableStateOf<String?>(null) }
@@ -189,10 +196,14 @@ fun DashboardScreen(
     }
     LaunchedEffect(initialPlanRequest) {
         if (initialPlanRequest != null) {
-            sharedText = initialPlanRequest.title
-            addDateIso = initialPlanRequest.dateIso
-            plannedCountdown = initialPlanRequest.asCountdown
-            showQuickAdd = true
+            if (initialPlanRequest.checklist.isNotEmpty()) {
+                editingTask = OccasionTemplates.draft(initialPlanRequest, zone).copy(countdownTheme = settings.countdownTheme)
+            } else {
+                sharedText = initialPlanRequest.title
+                addDateIso = initialPlanRequest.dateIso
+                plannedCountdown = initialPlanRequest.asCountdown
+                showQuickAdd = true
+            }
             onInitialPlanConsumed()
         }
     }
@@ -249,7 +260,7 @@ fun DashboardScreen(
     }
     val heroCountdown = countdowns.firstOrNull()
     val todayDateForOccasions = remember(now) { now.toLocalDate() }
-    val favoriteIds = remember(settings.favoriteOccasionIds) { settings.favoriteOccasionIds.toSet() }
+    val favoriteIds = remember(occasionCatalog, settings.favoriteOccasionIds) { occasionCatalog.canonicalFavoriteIds(settings.favoriteOccasionIds) }
     val upcomingOccasions = remember(occasionIndex, todayDateForOccasions, favoriteIds, settings.languageTag) {
         OccasionPlanner.upcoming(
             index = occasionIndex,
@@ -294,6 +305,17 @@ fun DashboardScreen(
                         onClick = onOpenCalendar,
                     )
                 }
+            }
+
+            item {
+                WeeklyWorkloadCard(state.allTasks, now.toInstant(), zone, settings.languageTag,
+                    onOpenTask = { editingTask = it },
+                    onAdd = { date ->
+                        sharedText = ""
+                        addDateIso = date.toString()
+                        plannedCountdown = false
+                        showQuickAdd = true
+                    })
             }
 
             item {
@@ -542,7 +564,10 @@ fun DashboardScreen(
             pickerCalendar = settings.countdownCalendar,
             onPickerCalendarChange = onCalendarDisplaySelected,
             onAddCategory = onAddCategory,
-            onSave = { updated -> viewModel.editTask(updated); editingTask = null },
+            onSave = { updated ->
+                if (updated.id == 0L) viewModel.addTask(updated) else viewModel.editTask(updated)
+                editingTask = null
+            },
             onDelete = { viewModel.delete(task); editingTask = null },
             onArchive = { viewModel.archive(task); editingTask = null },
             onUnarchive = { viewModel.unarchive(task); editingTask = null },

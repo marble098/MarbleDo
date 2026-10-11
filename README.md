@@ -9,7 +9,7 @@ MarbleDo is an offline-first Android task and calendar app. The interface defaul
 ## What is implemented
 
 - **Tasks:** Compose UI, smart Persian/English quick-add parsing, guided multi-step voice task creation (category, title, Persian date, time, and priority), search, filters, pinning, sorting, user-created categories, priorities, checklists, tags, archive/completion, recurring tasks, undo, and task reminders. Quick-add and the task editor share one date and time picker (any date, any time, or all-day; Persian, Gregorian, or Islamic calendar) with one-tap presets. The editor also adds a checklist, a validated link, a file attachment, focus minutes, and a colour. Overdue tasks stay on Today until they are done, and archived tasks can be restored.
-- **Calendar:** Persian/Gregorian/Islamic date display, redesigned month/agenda/year views, searchable whole-year occasion browsing, Saturday-first preference, a curated full-year catalog of 700+ national, official, Iranian, Islamic, personal and world (UN and international) occasions (every month covered), and a user-adjustable lunar offset. Catalog downloads fail over across four GitHub/CDN delivery paths; the bundled and cached catalogs remain available offline. Daily occasion alerts are separate from an optional quiet, ongoing notification (on by default) showing all three dates, today's occasions, and the next dated task, with a smart status-bar icon that renders today's day number and switches glyph/color with the day's mood (holiday, religious occasion, occasion, or tasks due).
+- **Calendar:** Persian/Gregorian/Islamic date display, redesigned month/agenda/year views, searchable whole-year occasion browsing, Saturday-first preference, a source-labelled catalog of 834 recurring national, official, Iranian, Islamic, personal and world occasions across all months (not an exhaustive official calendar), and a user-adjustable lunar offset. Catalog downloads fail over across four GitHub/CDN delivery paths; the bundled and cached catalogs remain available offline. Daily occasion alerts are separate from an optional quiet, ongoing notification (on by default) showing all three dates, today's occasions, and the next dated task, with a smart status-bar icon that renders today's day number and switches glyph/color with the day's mood (holiday, religious occasion, occasion, or tasks due).
 - **Occasion planning:** star the occasions that matter and they stay pinned in the year list, appear as “my occasions” on the dashboard with a day counter, and can send a preparation reminder 1–7 days ahead. Every occasion also opens a one-tap plan sheet: a task on the occasion day, a preparation task a few days earlier, or a live countdown.
 - **Catalog transparency:** settings reports how many occasions are bundled and which months and categories they cover, so a gap is visible instead of silent.
 - **Countdowns and widget:** create countdowns with one-tap hour/day/week/month/year presets or the same date and time picker (future dates only), choose a theme from the 12-theme gallery, use a focused full-screen view, and pin a redesigned daily-planner Glance widget with triple-calendar dates, occasions, the next task, and a live countdown. Quick-add is also available from a Quick Settings tile.
@@ -18,6 +18,16 @@ MarbleDo is an offline-first Android task and calendar app. The interface defaul
 - **Privacy:** no Firebase, analytics, or advertising. Internet access is used only to refresh the occasion catalog; Android system speech recognition may use an external recognition provider according to the device's configuration.
 - **Engineering:** Kotlin/Compose, modular feature/core structure, Koin DI, Navigation 3, R8 for release, StrictMode in debug, unit tests, a baseline-profile/Macrobenchmark test module, dependency-update automation, and signed GitHub Release automation.
 - **Font license:** the bundled Vazirmatn variable TTF is from [rastikerdar/vazirmatn](https://github.com/rastikerdar/vazirmatn) and is distributed under SIL OFL 1.1; the license is included in `core/designsystem/licenses/`.
+
+## New planning tools
+
+- Bilingual occasion search with intersecting category, calendar, holiday, favorite and cultural filters.
+- Export the filtered resolved dates to a local `.ics` file using Android's document picker.
+- Editable preparation checklists and selectable lead times, saved only after reviewing the task editor.
+- Next-working-day suggestions that respect all catalog public holidays and optional Thursday closure.
+- A seven-day due-date workload view with completed/open counts, overdue and unscheduled backlogs.
+
+References, update-delivery details, corrections and limitations: [Occasion sources](docs/OCCASION_SOURCES.md).
 
 ## Build and test
 
@@ -101,7 +111,7 @@ Backups can be exported through Android's Storage Access Framework to a user-sel
 
 ## Known scope limits
 
-- The bundled Persian catalog is the offline baseline and now covers the whole year with 700+ curated occasions across all three calendars, including the UN and international world days. Network refresh downloads the repository-maintained catalog through four failover delivery paths; those mirrors contain the same data and are not independent government feeds. Religious/lunar dates are calculated with Android ICU and can differ by a day from local authority announcements; the ±2-day adjustment is provided for that reason.
+- The bundled catalog is the offline baseline with 834 recurring occasions across all three calendars. Evidence labels distinguish referenced, traditional, guidance and individually unverified legacy records; month coverage does not establish completeness. Network refresh downloads the repository-maintained catalog through four failover delivery paths; those mirrors contain the same data and are not independent government feeds. Religious/lunar dates are calculated with Android ICU and can differ by a day from local authority announcements; the ±2-day adjustment is provided for that reason.
 - Calendar-category preferences control which catalog categories are shown and which may appear in alerts. The catalog is curated, not a real-time official government feed; Drive sync is not included.
 - Exact delivery depends on Android permissions and vendor battery policy. Without exact-alarm access, Android may defer reminders.
 - Snoozed reminders and reminders held by quiet hours are kept as alarms. If the device reboots before they fire, they are not restored.
@@ -118,7 +128,7 @@ Backups can be exported through Android's Storage Access Framework to a user-sel
 ## امکانات پیاده‌سازی‌شده
 
 - **کارها:** افزودن هوشمند فارسی/انگلیسی، راهنمای صوتی مرحله‌به‌مرحله برای دسته، عنوان، تاریخ شمسی، ساعت و اولویت، جست‌وجو، فیلتر، سنجاق، مرتب‌سازی، ساخت دسته‌بندی، اولویت، چک‌لیست، برچسب، بایگانی، تکرار و یادآوری. افزودن سریع و ویرایشگر کار از یک انتخاب‌گر مشترک برای تاریخ و ساعت استفاده می‌کنند (هر تاریخ، هر ساعت یا تمام‌روز؛ تقویم شمسی، میلادی یا قمری) همراه با میانبرهای یک‌ضرب‌ه. ویرایشگر کار، چک‌لیست، پیوند معتبر، فایل پیوست، دقایق تمرکز و رنگ را هم دارد. کارهای عقب‌افتاده تا انجام‌شدن در «امروز» می‌مانند و کار بایگانی‌شده قابل بازیابی است.
-- **تقویم:** نمایش تاریخ شمسی/میلادی/قمری، بازطراحی نمای ماه/برنامه/سال، مرور و جست‌وجوی همهٔ مناسبت‌های سال، اصلاح قمری قابل‌تنظیم و اعلان روزانه؛ فهرست همراه برنامه با بیش از ۷۰۰ مناسبت ملی، رسمی، مذهبی، شخصی و روزهای جهانی، همهٔ ماه‌های سال را پوشش می‌دهد. دریافت فهرست مناسبت‌ها از چهار مسیر جایگزین GitHub/CDN انجام می‌شود؛ نسخهٔ همراه برنامه و نسخهٔ ذخیره‌شده حتی بدون اینترنت در دسترس می‌ماند. اعلان دائمی و بی‌صدا با تاریخ هر سه تقویم، خلاصهٔ مناسبت‌ها و کار بعدی نیز از تنظیمات فعال می‌شود؛ آیکون نوار وضعیت این اعلان هوشمند است و شمارهٔ روز را نشان می‌دهد و نماد/رنگ آن با حال و هوای روز (تعطیل، مناسبت مذهبی، مناسبت یا کارهای امروز) تغییر می‌کند. اعلان دائمی به‌صورت پیش‌فرض روشن است.
+- **تقویم:** نمایش تاریخ شمسی/میلادی/قمری، بازطراحی نمای ماه/برنامه/سال، مرور و جست‌وجوی همهٔ مناسبت‌های سال، اصلاح قمری قابل‌تنظیم و اعلان روزانه؛ فهرست همراه برنامه ۸۳۴ مناسبت تکرارشونده در هر سه تقویم دارد؛ هر ماه پوشش داده شده اما این به معنای جامعیت یا تأیید رسمی همهٔ رکوردها نیست. وضعیت استناد هر مورد مشخص است. دریافت فهرست مناسبت‌ها از چهار مسیر جایگزین GitHub/CDN انجام می‌شود؛ نسخهٔ همراه برنامه و نسخهٔ ذخیره‌شده حتی بدون اینترنت در دسترس می‌ماند. اعلان دائمی و بی‌صدا با تاریخ هر سه تقویم، خلاصهٔ مناسبت‌ها و کار بعدی نیز از تنظیمات فعال می‌شود؛ آیکون نوار وضعیت این اعلان هوشمند است و شمارهٔ روز را نشان می‌دهد و نماد/رنگ آن با حال و هوای روز (تعطیل، مناسبت مذهبی، مناسبت یا کارهای امروز) تغییر می‌کند. اعلان دائمی به‌صورت پیش‌فرض روشن است.
 - **برنامه‌ریزی مناسبت‌ها:** مناسبت‌های مهم را ستاره‌دار کن؛ در فهرست سال بالا می‌مانند، در خانه به‌عنوان «مناسبت‌های من» با شمارش روز نمایش داده می‌شوند و می‌توانند ۱ تا ۷ روز قبل یادآوری آماده‌سازی بفرستند. هر مناسبت با یک ضربه به کارِ روز مناسبت، کار آماده‌سازی چند روز قبل یا شمارش معکوس زنده تبدیل می‌شود.
 - **شفافیت فهرست مناسبت‌ها:** تنظیمات نشان می‌دهد چند مناسبت همراه برنامه است و کدام ماه‌ها و دسته‌ها پوشش دارند تا کمبودی پنهان نماند.
 - **شمارش معکوس و ویجت:** ساخت سریع با زمان‌های آماده یا تاریخ دقیق، گالری ۱۲ تم و نمای تمرکز؛ ویجت روزانهٔ بازطراحی‌شده تاریخ‌های سه‌گانه، مناسبت‌ها، کار بعدی و شمارش معکوس را نمایش می‌دهد.
@@ -126,6 +136,16 @@ Backups can be exported through Android's Storage Access Framework to a user-sel
 - **ذخیره‌سازی:** Room با Migration نسخهٔ ۱ به ۲ و ۳، نگهداری سنجاق و دستهٔ کار، Proto DataStore، پشتیبان خودکار با WorkManager و وارد/خارج‌کردن پشتیبان محلی از SAF با رمزگذاری اختیاری AES-GCM.
 - **حریم خصوصی:** بدون Firebase، تحلیل‌گر یا تبلیغ؛ اینترنت فقط برای به‌روزرسانی اختیاری فهرست مناسبت‌هاست. سرویس تشخیص گفتار اندروید ممکن است بر اساس تنظیمات دستگاه از ارائه‌دهندهٔ بیرونی استفاده کند.
 - **معماری و کیفیت:** Kotlin/Compose، ماژول‌های feature/core، Koin، Navigation 3، R8 نسخهٔ انتشار، StrictMode در debug، تست واحد، ماژول Baseline Profile/Macrobenchmark و گردش‌کارهای CI، به‌روزرسانی وابستگی و انتشار امضاشده.
+
+## ابزارهای تازهٔ برنامه‌ریزی
+
+- جست‌وجوی دوزبانهٔ مناسبت‌ها با ترکیب فیلتر دسته، نوع تقویم، تعطیل، علاقه‌مندی و فرهنگ ایرانی.
+- خروجی فایل ICS از تاریخ‌های محاسبه‌شده و فیلترشده، با انتخاب محل ذخیره توسط کاربر.
+- چک‌لیست آماده‌سازیِ قابل‌ویرایش و فاصلهٔ زمانی دلخواه از گزینه‌ها؛ ذخیره فقط پس از تأیید در ویرایشگر.
+- پیشنهاد روز کاری بعدی، با لحاظ همهٔ تعطیلات ثبت‌شده و انتخاب تعطیلی پنجشنبه.
+- نمای بار کاری هفت‌روزه بر اساس موعد، با شمار کارهای باز/انجام‌شده و دسترسی به کارهای عقب‌افتاده و بدون تاریخ.
+
+شرح منابع، مسیر واقعی به‌روزرسانی و محدودیت‌ها: [مستند منابع مناسبت‌ها](docs/OCCASION_SOURCES.md).
 
 ## ساخت و آزمون
 
@@ -204,7 +224,7 @@ keystore یا رمزها را commit نکنید؛ `.gitignore` فایل‌های
 
 ## محدودیت‌های شناخته‌شده
 
-- فهرست مناسبت‌های همراه برنامه یک مرجع آفلاین curated است و اکنون با بیش از ۷۰۰ مناسبت، همهٔ ماه‌های سال را پوشش می‌دهد؛ خوراک زندهٔ رسمی دولتی نیست. ترجیحات دستهٔ تقویم مشخص می‌کنند کدام مناسبت‌های موجود نمایش داده شوند و اجازهٔ اعلان روزانه داشته باشند. تاریخ‌های مذهبی/قمری با ICU اندروید محاسبه می‌شوند و ممکن است با اعلام مرجع محلی یک روز اختلاف داشته باشند؛ به همین دلیل اصلاح ±۲ روز وجود دارد.
+- فهرست همراه برنامه مرجع آفلاین با ۸۳۴ مناسبت تکرارشونده است؛ رکوردهای مستند، روایی، راهنما و قدیمیِ نیازمند بازبینی جدا شده‌اند. فهرست، جامع یا خوراک زندهٔ رسمی دولتی نیست. ترجیحات دستهٔ تقویم مشخص می‌کنند کدام مناسبت‌های موجود نمایش داده شوند و اجازهٔ اعلان روزانه داشته باشند. تاریخ‌های مذهبی/قمری با ICU اندروید محاسبه می‌شوند و ممکن است با اعلام مرجع محلی یک روز اختلاف داشته باشند؛ به همین دلیل اصلاح ±۲ روز وجود دارد.
 - به‌روزرسانی آنلاین مناسبت‌ها از طریق چهار مسیر جایگزین انجام می‌شود؛ اتصال Google Drive پیاده‌سازی نشده است.
 - دقت اعلان به مجوز اندروید و سیاست باتری سازنده بستگی دارد؛ در نبود مجوز آلارم دقیق، اندروید ممکن است اعلان را عقب بیندازد.
 - یادآوری‌های به‌تعویق‌افتاده (اسنوز یا ساعات سکوت) در صورت راه‌اندازی مجدد دستگاه پیش از اجرا، بازیابی نمی‌شوند.

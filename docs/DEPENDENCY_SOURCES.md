@@ -29,3 +29,7 @@ The official Android SDK repository index currently lists the released `platform
 - `--check`: report whether an eligible newer version exists without editing the catalog.
 
 Compile SDK, target SDK, minimum SDK, and Build Tools are not Maven artifacts; they are selected from installed Android SDK packages and are not altered by this script. Builds require the SDK platform named in the catalog and documented in the workflows.
+
+## Calendar parser test fixture
+
+`jsonTest = "20250517"` is the JVM-only `org.json:json` fixture for exercising the production Android JSON parser in unit tests. The production app still uses Android's built-in `org.json` (no new runtime JSON dependency). The pinned tag was checked on 2026-10-11: [upstream tag](https://github.com/stleary/JSON-java/tree/20250517). It is included in the existing Maven metadata updater.

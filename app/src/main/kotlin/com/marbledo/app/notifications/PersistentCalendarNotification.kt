@@ -21,6 +21,7 @@ import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.Occasion
+import com.marbledo.feature.calendar.enabledOccasionCategories
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionCatalog
 import com.marbledo.feature.calendar.OccasionIndex
@@ -62,13 +63,7 @@ object PersistentCalendarNotification {
         val zone = ZoneId.systemDefault()
         val today = PersianDateUtils.today(zone, nowMillis)
         val todayLocalDate = Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate()
-        val enabledCategories = buildSet {
-            if (settings.officialEventsEnabled) add(OccasionCategory.OFFICIAL)
-            if (settings.nationalEventsEnabled) add(OccasionCategory.NATIONAL)
-            if (settings.religiousEventsEnabled) add(OccasionCategory.RELIGIOUS)
-            if (settings.personalEventsEnabled) add(OccasionCategory.PERSONAL)
-            if (settings.internationalEventsEnabled) add(OccasionCategory.INTERNATIONAL)
-        }
+        val enabledCategories = settings.enabledOccasionCategories()
         val index = OccasionIndex.build(
             catalog = catalog,
             jalaliYears = listOf(today.year),

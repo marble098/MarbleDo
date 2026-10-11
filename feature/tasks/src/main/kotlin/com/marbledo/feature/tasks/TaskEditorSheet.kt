@@ -451,7 +451,7 @@ fun TaskEditorSheet(
                 ) { Text(stringResource(R.string.tasks_save)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.tasks_cancel)) }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            if (task.id != 0L) Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 if (task.isArchived) {
                     TextButton(onClick = onUnarchive) {
                         Icon(Icons.Outlined.Unarchive, contentDescription = null, modifier = Modifier.size(17.dp))

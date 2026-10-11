@@ -1,0 +1,19 @@
+<resources>
+    <string name="settings_thursday_weekend">Also skip Thursdays in workday suggestions</string>
+    <string name="settings_education_mode">School &amp; pastoral calendar</string>
+    <string name="settings_education_hint">Adds school observances and a school-relevant filter in Calendar → Occasions, plus a Mehr–Shahrivar school-year view. Variable programs are listed separately without invented dates. This is a local opt-in layer, not an authenticated private area or an official Ministry circular.</string>
+    <string name="settings_education_enable">Enable on this device</string>
+    <string name="settings_education_disable">Disable and hide</string>
+    <string name="settings_catalog_sources">Sources, dates &amp; update method</string>
+    <string name="calendar_export_saved">Calendar exported. Import the ICS file in your calendar app.</string>
+    <string name="calendar_export_failed">Could not export the calendar. Choose a writable destination and try again.</string>
+    <string name="weekly_title">Your next 7 days</string>
+    <string name="weekly_summary">%1$d planned · %2$d overdue · %3$d undated</string>
+    <string name="weekly_day_open">%1$d open</string>
+    <string name="weekly_day_done">%1$d done</string>
+    <string name="weekly_hint">Counts are by due date, not completion date. Tap a day to review its tasks or add one.</string>
+    <string name="weekly_backlog">Review overdue &amp; undated tasks</string>
+    <string name="weekly_empty">No tasks scheduled for this day.</string>
+    <string name="weekly_task_done">Completed</string>
+    <string name="weekly_add">Add a task here</string>
+</resources>

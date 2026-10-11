@@ -1,5 +1,20 @@
 package com.marbledo.feature.calendar
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.marbledo.domain.util.TextNormalizer
+import java.time.LocalDate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,14 +65,18 @@ fun OccasionPlanSheet(
     onPlan: (OccasionPlanRequest) -> Unit,
     onToggleFavorite: () -> Unit,
     onDismiss: () -> Unit,
+    references: List<CatalogReference> = emptyList(),
+    educationModeEnabled: Boolean = false,
 ) {
-    val days = prepDays.coerceAtLeast(1)
+    var days by rememberSaveable(occasion.id) { mutableIntStateOf(prepDays.coerceIn(0, 30)) }
+    var template by rememberSaveable(occasion.id) { mutableStateOf(PreparationTemplate.SIMPLE) }
     val numeralMode = LocalNumeralMode.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
                 .padding(start = 18.dp, end = 18.dp, bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(9.dp),
@@ -72,9 +91,20 @@ fun OccasionPlanSheet(
                 Text(
                     occasion.title(languageTag),
                     style = MarbleTextStyles.cardTitle,
-                    maxLines = 2,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+            Text(stringResource(evidenceLabelRes(occasion.evidence)), style = MaterialTheme.typography.labelMedium)
+            Text(PersianDateUtils.fullDate(epochMillis, languageTag, numeralMode), style = MaterialTheme.typography.bodyMedium)
+            if (occasion.note(languageTag).isNotBlank()) Text(occasion.note(languageTag), style = MaterialTheme.typography.bodySmall)
+            if (occasion.calendar == OccasionCalendar.LUNAR) {
+                Text(stringResource(R.string.catalog_lunar_caveat), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (occasion.durationDays > 1) {
+                Text(TextNormalizer.formatDigits(stringResource(R.string.calendar_window_days, occasion.durationDays), numeralMode),
+                    style = MaterialTheme.typography.bodySmall)
             }
             Text(
                 stringResource(R.string.calendar_plan_hint),
@@ -87,9 +117,22 @@ fun OccasionPlanSheet(
                 subtitle = PersianDateUtils.fullDate(epochMillis, languageTag, numeralMode),
                 onClick = { onPlan(OccasionPlanner.planRequest(occasion, epochMillis, languageTag)) },
             )
+            Text(stringResource(R.string.calendar_prepare_lead), style = MaterialTheme.typography.titleSmall)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 2.dp)) {
+                items(listOf(0, 1, 3, 7, 14, 30)) { lead ->
+                    FilterChip(selected = days == lead, onClick = { days = lead }, label = {
+                        Text(TextNormalizer.formatDigits(stringResource(R.string.calendar_prepare_days, lead), numeralMode))
+                    })
+                }
+            }
+            val prepRequest = OccasionPlanner.planRequest(occasion, epochMillis, languageTag, daysBefore = days)
+            if (prepRequest.dateIso?.let { LocalDate.parse(it) < LocalDate.now() } == true) {
+                Text(stringResource(R.string.calendar_plan_past_warning), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error)
+            }
             PlanAction(
                 icon = Icons.Outlined.Alarm,
-                title = stringResource(R.string.calendar_plan_prepare, days),
+                title = TextNormalizer.formatDigits(stringResource(R.string.calendar_plan_prepare, days), numeralMode),
                 subtitle = stringResource(R.string.calendar_plan_prepare_hint),
                 onClick = {
                     onPlan(OccasionPlanner.planRequest(occasion, epochMillis, languageTag, daysBefore = days))
@@ -103,12 +146,38 @@ fun OccasionPlanSheet(
                     onPlan(OccasionPlanner.planRequest(occasion, epochMillis, languageTag, asCountdown = true))
                 },
             )
+            HorizontalDivider()
+            Text(stringResource(R.string.calendar_template_title), style = MaterialTheme.typography.titleSmall)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(PreparationTemplate.entries.filter { educationModeEnabled || it != PreparationTemplate.SCHOOL }) { option ->
+                    FilterChip(selected = template == option, onClick = { template = option },
+                        label = { Text(stringResource(templateLabelRes(option))) })
+                }
+            }
+            OccasionTemplates.checklist(template, languageTag).forEach { step ->
+                Text("• $step", style = MaterialTheme.typography.bodySmall)
+            }
+            PlanAction(
+                icon = Icons.Outlined.Checklist,
+                title = stringResource(R.string.calendar_template_use),
+                subtitle = stringResource(R.string.calendar_template_hint),
+                onClick = {
+                    onPlan(prepRequest.copy(
+                        checklist = OccasionTemplates.checklist(template, languageTag),
+                        description = occasion.note(languageTag),
+                    ))
+                },
+            )
             PlanAction(
                 icon = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
                 title = stringResource(if (isFavorite) R.string.calendar_favorite_remove else R.string.calendar_favorite_add),
                 subtitle = stringResource(R.string.calendar_favorite_hint),
                 onClick = onToggleFavorite,
             )
+            if (references.isNotEmpty()) {
+                Text(stringResource(R.string.catalog_references), style = MaterialTheme.typography.titleSmall)
+                references.forEach { ReferenceLink(it, languageTag) }
+            }
         }
     }
 }
@@ -143,4 +212,11 @@ private fun PlanAction(
             }
         }
     }
+}
+
+private fun templateLabelRes(template: PreparationTemplate): Int = when (template) {
+    PreparationTemplate.SIMPLE -> R.string.calendar_template_simple
+    PreparationTemplate.FAMILY -> R.string.calendar_template_family
+    PreparationTemplate.CULTURAL -> R.string.calendar_template_cultural
+    PreparationTemplate.SCHOOL -> R.string.calendar_template_school
 }
