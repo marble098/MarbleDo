@@ -82,6 +82,7 @@ dependencies {
     implementation(project(":feature:tasks"))
     implementation(project(":feature:calendar"))
     implementation(project(":feature:countdown"))
+    implementation(project(":feature:habits"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

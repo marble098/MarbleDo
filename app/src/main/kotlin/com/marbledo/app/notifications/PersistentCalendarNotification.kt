@@ -157,7 +157,7 @@ object PersistentCalendarNotification {
 
         val badgeCount = if (tasksDueToday > 0) tasksDueToday else events.size
         val builder = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
-            .setSmallIcon(NotificationArtwork.smallIcon(notificationContext, dayDigits, mood))
+            .setSmallIcon(NotificationArtwork.smallIcon(notificationContext, dayDigits, mood, settings.statusBarIconStyle))
             .setLargeIcon(largeIcon)
             .setColor(accent)
             .setContentTitle(title)

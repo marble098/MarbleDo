@@ -5,9 +5,11 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.CountdownTheme
+import com.marbledo.domain.model.HabitTheme
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.NumeralMode
+import com.marbledo.domain.model.StatusBarIconStyle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -50,6 +52,8 @@ class SettingsRepository(private val context: Context) {
             occasionAutoUpdateEnabled = if (configured) proto.occasionAutoUpdateEnabled else true,
             persistentDateNotificationEnabled = if (proto.hasStatusIconEnabled()) proto.statusIconEnabled else true,
             statusBarCalendar = enumOrDefault(proto.statusBarCalendar, CalendarDisplayMode.PERSIAN),
+            statusBarIconStyle = StatusBarIconStyle.from(proto.statusIconStyle),
+            habitTheme = proto.habitTheme.ifBlank { HabitTheme.DEFAULT.id },
             reminderLeadMinutes = if (proto.hasReminderLeadMinutes()) proto.reminderLeadMinutes.coerceIn(0, 1440) else 10,
             favoriteOccasionIds = proto.favoriteOccasionIdsList.map { it.trim() }.filter { it.isNotBlank() }.distinct(),
             occasionReminderLeadDays = proto.occasionReminderLeadDays.coerceIn(0, 30),
@@ -82,6 +86,8 @@ class SettingsRepository(private val context: Context) {
         .setPersistentDateNotificationEnabled(settings.persistentDateNotificationEnabled)
         .setStatusIconEnabled(settings.persistentDateNotificationEnabled)
         .setStatusBarCalendar(settings.statusBarCalendar.name)
+        .setStatusIconStyle(settings.statusBarIconStyle.name)
+        .setHabitTheme(settings.habitTheme)
         .setReminderLeadMinutes(settings.reminderLeadMinutes)
         .addAllFavoriteOccasionIds(settings.favoriteOccasionIds.map { it.trim() }.filter { it.isNotBlank() }.distinct())
         .setOccasionReminderLeadDays(settings.occasionReminderLeadDays)

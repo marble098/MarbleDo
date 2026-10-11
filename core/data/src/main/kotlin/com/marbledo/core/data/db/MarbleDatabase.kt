@@ -8,12 +8,14 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [TaskEntity::class],
-    version = 4,
+    entities = [TaskEntity::class, HabitEntity::class, HabitEntryEntity::class],
+    version = 5,
     exportSchema = true,
 )
 abstract class MarbleDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
+
+    abstract fun habitDao(): HabitDao
 
     companion object {
         const val DATABASE_NAME = "marbledo.db"
@@ -54,12 +56,51 @@ abstract class MarbleDatabase : RoomDatabase() {
             }
         }
 
+        /** v5 adds the habit tracker: one table for habits and one for their daily records. */
+        val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `habits` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`name` TEXT NOT NULL, " +
+                        "`kind` TEXT NOT NULL, " +
+                        "`tracking` TEXT NOT NULL, " +
+                        "`scheduleType` TEXT NOT NULL, " +
+                        "`weekdaysCsv` TEXT NOT NULL, " +
+                        "`timesPerWeek` INTEGER NOT NULL, " +
+                        "`dailyTarget` INTEGER NOT NULL, " +
+                        "`unitLabel` TEXT NOT NULL, " +
+                        "`icon` TEXT NOT NULL, " +
+                        "`themeId` TEXT NOT NULL, " +
+                        "`cue` TEXT NOT NULL, " +
+                        "`identity` TEXT NOT NULL, " +
+                        "`why` TEXT NOT NULL, " +
+                        "`difficulty` TEXT NOT NULL, " +
+                        "`reminderMinuteOfDay` INTEGER NOT NULL, " +
+                        "`startDate` TEXT NOT NULL, " +
+                        "`isArchived` INTEGER NOT NULL, " +
+                        "`createdAtEpochMillis` INTEGER NOT NULL, " +
+                        "`sortOrder` INTEGER NOT NULL)",
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `habit_entries` (" +
+                        "`habitId` INTEGER NOT NULL, " +
+                        "`date` TEXT NOT NULL, " +
+                        "`value` INTEGER NOT NULL, " +
+                        "`updatedAtEpochMillis` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`habitId`, `date`))",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_habits_isArchived` ON `habits` (`isArchived`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_entries_habitId` ON `habit_entries` (`habitId`)")
+            }
+        }
+
         fun create(context: Context): MarbleDatabase = Room.databaseBuilder(
             context.applicationContext,
             MarbleDatabase::class.java,
             DATABASE_NAME,
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .fallbackToDestructiveMigrationOnDowngrade()
             .build()
     }

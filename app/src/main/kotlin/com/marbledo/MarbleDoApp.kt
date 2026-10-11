@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -72,6 +73,7 @@ import com.marbledo.core.data.backup.BackupEnvelope
 import com.marbledo.core.data.backup.LocalBackupWorker
 import com.marbledo.core.data.settings.SettingsRepository
 import com.marbledo.domain.model.AppSettings
+import com.marbledo.domain.repository.HabitRepository
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.CalendarScreen
@@ -81,6 +83,11 @@ import com.marbledo.feature.calendar.OccasionPlanRequest
 import com.marbledo.feature.calendar.OccasionRefreshResult
 import com.marbledo.feature.calendar.OccasionRepository
 import com.marbledo.feature.countdown.CountdownFocusDialog
+import com.marbledo.feature.habits.HabitsScreen
+import com.marbledo.feature.habits.HabitsViewModel
+import com.marbledo.feature.habits.HabitWidgetPinResult
+import com.marbledo.feature.habits.requestHabitWidgetPin
+import com.marbledo.feature.habits.updateMarbleHabitWidgets
 import com.marbledo.feature.countdown.CountdownWidgetPinResult
 import com.marbledo.feature.countdown.requestCountdownWidgetPin
 import com.marbledo.feature.countdown.updateMarbleCountdownWidgets
@@ -100,6 +107,7 @@ private const val UI_PREFS = "marbledo_ui"
 private const val KEY_NOTIFICATION_PROMPT_SHOWN = "notification_prompt_shown"
 
 @Serializable private data object HomeDestination : NavKey
+@Serializable private data object HabitsDestination : NavKey
 @Serializable private data object CalendarDestination : NavKey
 @Serializable private data object SettingsDestination : NavKey
 
@@ -113,6 +121,7 @@ private data class Destination(
 /** Deep-link aliases kept for shortcuts, the quick-settings tile and calendar notifications. */
 private fun destinationForRoute(route: String): String = when (route) {
     "tasks", "countdown", "home" -> "home"
+    "habits" -> "habits"
     "calendar" -> "calendar"
     "settings" -> "settings"
     else -> "home"
@@ -132,6 +141,9 @@ fun MarbleDoApp(
     val refreshOfflineMessage = stringResource(R.string.settings_occasions_offline)
     val taskViewModel: TasksViewModel = koinViewModel()
     val taskState by taskViewModel.state.collectAsStateWithLifecycle()
+    val habitsViewModel: HabitsViewModel = koinViewModel()
+    val habitState by habitsViewModel.state.collectAsStateWithLifecycle()
+    val habitRepository: HabitRepository = koinInject()
     val settingsRepository: SettingsRepository = koinInject()
     val occasionRepository: OccasionRepository = koinInject()
     // Keep the not-yet-loaded state distinct from the default profile. Applying the default
@@ -174,6 +186,7 @@ fun MarbleDoApp(
 
     val destinations = listOf(
         Destination("home", HomeDestination, R.string.nav_home, Icons.Outlined.Home),
+        Destination("habits", HabitsDestination, R.string.nav_habits, Icons.Outlined.TrendingUp),
         Destination("calendar", CalendarDestination, R.string.nav_calendar, Icons.Outlined.CalendarMonth),
         Destination("settings", SettingsDestination, R.string.nav_settings, Icons.Outlined.Settings),
     )
@@ -189,9 +202,17 @@ fun MarbleDoApp(
                 runCatching {
                     val passphrase = pendingExportPassphrase
                     pendingExportPassphrase = null
+                    val habits = withContext(Dispatchers.IO) { habitRepository.snapshot() }
                     val bytes = withContext(Dispatchers.Default) {
-                        try { BackupCodec.encode(taskState.allTasks, settings, passphrase) }
-                        finally { passphrase?.fill(0.toChar()) }
+                        try {
+                            BackupCodec.encode(
+                                tasks = taskState.allTasks,
+                                settings = settings,
+                                passphrase = passphrase,
+                                habits = habits.habits,
+                                habitEntries = habits.entries,
+                            )
+                        } finally { passphrase?.fill(0.toChar()) }
                     }
                     withContext(Dispatchers.IO) {
                         context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
@@ -303,6 +324,17 @@ fun MarbleDoApp(
                 catalog = occasionState.catalog,
             )
         }
+    }
+
+    LaunchedEffect(
+        habitState.habits,
+        habitState.entries,
+        habitState.today,
+        settings.languageTag,
+        settings.numeralMode,
+        settings.habitTheme,
+    ) {
+        updateMarbleHabitWidgets(context)
     }
 
     LaunchedEffect(
@@ -424,6 +456,25 @@ fun MarbleDoApp(
                                                 else -> Unit
                                             }
                                         }
+                                    },
+                                )
+                            }
+                            entry<HabitsDestination> {
+                                HabitsScreen(
+                                    viewModel = habitsViewModel,
+                                    settings = settings,
+                                    onThemeChange = { theme ->
+                                        coroutineScope.launch {
+                                            settingsRepository.update { current -> current.copy(habitTheme = theme.id) }
+                                        }
+                                    },
+                                    onAddWidget = {
+                                        val message = when (requestHabitWidgetPin(context)) {
+                                            HabitWidgetPinResult.REQUESTED -> R.string.settings_widget_pin_requested
+                                            HabitWidgetPinResult.UNSUPPORTED -> R.string.settings_widget_pin_unsupported
+                                            HabitWidgetPinResult.FAILED -> R.string.settings_widget_pin_failed
+                                        }
+                                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                                     },
                                 )
                             }
@@ -560,7 +611,10 @@ fun MarbleDoApp(
                     val backup = restoreEnvelope
                     if (backup != null) {
                         taskViewModel.restoreTasks(backup.tasks, merge = true)
-                        coroutineScope.launch { settingsRepository.update { backup.settings } }
+                        coroutineScope.launch {
+                            settingsRepository.update { backup.settings }
+                            habitRepository.replaceAll(backup.habits, backup.habitEntries)
+                        }
                     }
                     restoreEnvelope = null
                     showRestoreChoice = false

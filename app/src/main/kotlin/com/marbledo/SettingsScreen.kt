@@ -7,7 +7,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.os.Build
 import android.os.SystemClock
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.painterResource
+import com.marble098.marbledo.notifications.NotificationArtwork
+import com.marble098.marbledo.notifications.NotificationMood
+import com.marbledo.domain.model.StatusBarIconStyle
 import com.marbledo.domain.util.HiddenTapSequence
 import com.marbledo.feature.calendar.CatalogSourcesSheet
 import com.marbledo.feature.calendar.OccasionCategory
@@ -63,8 +73,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -383,6 +395,19 @@ fun SettingsScreen(
                     )
                 }
             }
+            Spacer(Modifier.height(6.dp))
+            Text(stringResource(R.string.settings_status_icon_style), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(R.string.settings_status_icon_style_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            StatusIconStylePicker(
+                selected = settings.statusBarIconStyle,
+                numeralMode = settings.numeralMode,
+                onSelect = { onUpdate(settings.copy(statusBarIconStyle = it)) },
+            )
             SettingMenuRow(
                 label = stringResource(R.string.settings_reminder_lead),
                 value = leadLabel(settings.reminderLeadMinutes, settings.numeralMode),
@@ -606,6 +631,100 @@ private fun numeralLabel(mode: NumeralMode): String = when (mode) {
     NumeralMode.PERSIAN -> stringResource(R.string.numerals_persian)
     NumeralMode.LATIN -> stringResource(R.string.numerals_latin)
     NumeralMode.ARABIC -> stringResource(R.string.numerals_arabic)
+}
+
+/**
+ * Every status-bar icon style, drawn from the same generated bitmap the notification uses and
+ * shown twice: at the size the status bar actually renders it, and enlarged so the digits can be
+ * judged. The strip is dark because that is where the icon lives on most devices.
+ */
+@Composable
+private fun StatusIconStylePicker(
+    selected: StatusBarIconStyle,
+    numeralMode: NumeralMode,
+    onSelect: (StatusBarIconStyle) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val digits = TextNormalizer.formatDigits("28", numeralMode)
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        StatusBarIconStyle.entries.forEach { style ->
+            val bitmap = remember(context, style, digits) {
+                NotificationArtwork.statusBitmap(context, digits, NotificationMood.OCCASION, style)
+            }
+            val isSelected = style == selected
+            val shape = MaterialTheme.shapes.medium
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(shape)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                    .then(if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape) else Modifier)
+                    .clickable { onSelect(style) }
+                    .padding(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Surface(shape = RoundedCornerShape(7.dp), color = Color(0xFF101014)) {
+                    Row(
+                        Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    ) {
+                        StatusIconPreview(bitmap, style, Modifier.size(17.dp), Color.White)
+                        Box(
+                            Modifier
+                                .size(width = 26.dp, height = 7.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(Color.White.copy(alpha = 0.35f)),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                StatusIconPreview(
+                    bitmap = bitmap,
+                    style = style,
+                    modifier = Modifier.size(52.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    statusIconStyleLabel(style),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusIconPreview(
+    bitmap: android.graphics.Bitmap?,
+    style: StatusBarIconStyle,
+    modifier: Modifier,
+    tint: Color,
+) {
+    if (bitmap != null) {
+        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = modifier)
+    } else {
+        Icon(
+            painter = painterResource(NotificationArtwork.vectorIconRes(NotificationMood.OCCASION)),
+            contentDescription = null,
+            tint = tint,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun statusIconStyleLabel(style: StatusBarIconStyle): String = when (style) {
+    StatusBarIconStyle.BOLD_DIGITS -> stringResource(R.string.settings_status_icon_style_bold)
+    StatusBarIconStyle.CALENDAR_PAGE -> stringResource(R.string.settings_status_icon_style_page)
+    StatusBarIconStyle.ICON_ONLY -> stringResource(R.string.settings_status_icon_style_icon)
 }
 
 private enum class QuietEdge { START, END }

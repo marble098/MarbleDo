@@ -42,6 +42,10 @@ data class AppSettings(
     val persistentDateNotificationEnabled: Boolean = true,
     /** Calendar whose day number is drawn inside the status-bar date icon. */
     val statusBarCalendar: CalendarDisplayMode = CalendarDisplayMode.PERSIAN,
+    /** How much of the status-bar icon the day number may use; see [StatusBarIconStyle]. */
+    val statusBarIconStyle: StatusBarIconStyle = StatusBarIconStyle.DEFAULT,
+    /** Look of the habit cabinet; individual habits can carry their own look. */
+    val habitTheme: String = HabitTheme.DEFAULT.id,
     /** Minutes before a task's due time that a heads-up reminder is shown; 0 disables it. */
     val reminderLeadMinutes: Int = 10,
     /** Occasion ids the user marked as important, so they are pinned and can be reminded. */

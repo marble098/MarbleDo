@@ -18,12 +18,12 @@
     <string name="calendar_holiday_badge">تعطیل رسمی</string>
     <string name="calendar_category_official">رسمی</string>
     <string name="calendar_category_national">ملی</string>
-    <string name="calendar_category_religious">مذهبی</string>
+    <string name="calendar_category_religious">دینی</string>
     <string name="calendar_category_personal">غیررسمی و شخصی</string>
     <string name="calendar_category_international">روزهای جهانی</string>
     <string name="calendar_sync_now">به‌روزرسانی مناسبت‌ها</string>
     <string name="calendar_sync_refreshing">در حال به‌روزرسانی مناسبت‌ها…</string>
-    <string name="calendar_sync_error">به‌روزرسانی ناموفق بود؛ نسخهٔ ذخیره‌شده نمایش داده می‌شود.</string>
+    <string name="calendar_sync_error">به‌روزرسانی انجام نشد؛ همان نسخهٔ ذخیره‌شده نمایش داده می‌شود.</string>
     <string name="calendar_sync_last">به‌روزرسانی %1$s</string>
     <string name="calendar_sync_bundled">دادهٔ همراه برنامه؛ برای به‌روزرسانی به اینترنت وصل شو</string>
     <string name="calendar_sat">ش</string><string name="calendar_sun">ی</string>
@@ -57,8 +57,8 @@
     <string name="picker_no_time">بدون ساعت</string>
     <string name="picker_selected">انتخاب‌شده: %1$s</string>
     <string name="picker_clear">پاک‌کردن</string>
-    <string name="picker_cancel">لغو</string>
-    <string name="picker_confirm">تأیید</string>
+    <string name="picker_cancel">انصراف</string>
+    <string name="picker_confirm">تایید</string>
     <string name="picker_calendar_persian">شمسی</string>
     <string name="picker_calendar_gregorian">میلادی</string>
     <string name="picker_calendar_islamic">قمری</string>

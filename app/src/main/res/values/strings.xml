@@ -2,6 +2,7 @@
     <string name="app_name">MarbleDo</string>
     <string name="app_tagline">Small steps. Meaningful moments.</string>
     <string name="nav_home">Home</string>
+    <string name="nav_habits">Habits</string>
     <string name="nav_calendar">Calendar</string>
     <string name="nav_countdown">Countdown</string>
     <string name="nav_settings">Settings</string>
@@ -191,6 +192,11 @@
     <string name="dash_change_deleted">Task deleted</string>
     <string name="dash_category_all">All categories</string>
     <string name="settings_status_calendar">Status bar calendar</string>
+    <string name="settings_status_icon_style">Status-bar icon</string>
+    <string name="settings_status_icon_style_hint">The day number in the status bar is tiny. Pick the drawing that stays readable on your phone: the dark strip shows the real size, the big preview is the same icon enlarged.</string>
+    <string name="settings_status_icon_style_bold">Big number</string>
+    <string name="settings_status_icon_style_page">Calendar page</string>
+    <string name="settings_status_icon_style_icon">Icon only</string>
     <string name="settings_status_icon_state_active">The status bar icon is active and shows today.</string>
     <string name="settings_status_icon_state_off">The status bar icon is off.</string>
     <string name="settings_status_icon_state_permission">Notification permission is missing, so the icon cannot be shown. Allow notifications below.</string>
