@@ -223,5 +223,5 @@
     <string name="settings_coverage_missing">%1$d months without entries</string>
     <string name="settings_coverage_categories">%1$d of 5 occasion types used</string>
     <string name="calendar_notification_upcoming_title">Starred occasions are coming up</string>
-    <string name="calendar_notification_upcoming_days">In %1$d days</string>
+    <string name="calendar_notification_upcoming_days">In %1$s days</string>
 </resources>

@@ -223,5 +223,5 @@
     <string name="settings_coverage_missing">%1$d ماه بی‌اطلاعات</string>
     <string name="settings_coverage_categories">%1$d نوع مناسبت از ۵ نوع استفاده شده</string>
     <string name="calendar_notification_upcoming_title">مناسبت‌های برگزیده در پیش است</string>
-    <string name="calendar_notification_upcoming_days">%1$d روز دیگر</string>
+    <string name="calendar_notification_upcoming_days">%1$s روز دیگر</string>
 </resources>
