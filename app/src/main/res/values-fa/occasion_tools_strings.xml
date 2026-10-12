@@ -1,18 +1,18 @@
 <resources>
-    <string name="settings_thursday_weekend">پنجشنبه‌ها هم در پیشنهاد روز کاری تعطیل حساب شوند</string>
-    <string name="settings_education_mode">تقویم آموزشی و پرورشی مدرسه</string>
-    <string name="settings_education_hint">مناسبت‌های مدرسه و فیلتر مرتبط با آموزش‌وپرورش در «تقویم ← مناسبت‌ها» اضافه می‌شود؛ همراه نمای سال تحصیلی مهر تا شهریور. برنامه‌های متغیر، جدا و بدون تاریخ ساختگی می‌آیند. این حالت روی همین دستگاه و دلخواه است، نه بخش خصوصیِ رمزدار و نه بخشنامهٔ رسمی وزارتخانه.</string>
-    <string name="settings_education_enable">روشن کردن روی این دستگاه</string>
+    <string name="settings_thursday_weekend">پنجشنبه را هم تعطیل روز کاری حساب کن</string>
+    <string name="settings_education_mode">تقویم مدرسه</string>
+    <string name="settings_education_hint">مناسبت‌های مدرسه به بخش «مناسبت‌ها» اضافه می‌شوند (مهر تا شهریور). این حالت فقط روی همین دستگاه و دلخواه است.</string>
+    <string name="settings_education_enable">روشن‌کردن روی این دستگاه</string>
     <string name="settings_education_disable">خاموش و پنهان‌کردن</string>
-    <string name="calendar_export_saved">تقویم ساخته شد؛ فایل ICS را در برنامهٔ تقویم خودت باز کن.</string>
-    <string name="calendar_export_failed">خروجی تقویم انجام نشد؛ جایی را انتخاب کن که بشود در آن نوشت و دوباره تلاش کن.</string>
-    <string name="weekly_title">نمای ۷ روز آینده</string>
+    <string name="calendar_export_saved">تقویم ساخته شد؛ فایل ICS را در برنامهٔ تقویمت باز کن.</string>
+    <string name="calendar_export_failed">خروجی تقویم نشد؛ جایی در دسترس انتخاب کن و دوباره بزن.</string>
+    <string name="weekly_title">هفت روز پیش رو</string>
     <string name="weekly_summary">%1$d برنامه‌ریزی‌شده · %2$d عقب‌افتاده · %3$d بدون موعد</string>
     <string name="weekly_day_open">%1$d ناتمام</string>
     <string name="weekly_day_done">%1$d انجام‌شده</string>
-    <string name="weekly_hint">شمارش بر اساس موعد کارهاست، نه تاریخ انجام. هر روز را بزن تا کارهایش را ببینی یا کاری به آن اضافه کنی.</string>
-    <string name="weekly_backlog">مرور کارهای عقب‌افتاده و بدون موعد</string>
-    <string name="weekly_empty">برای این روز کاری برنامه‌ریزی نشده است.</string>
+    <string name="weekly_hint">برای دیدن یا افزودن کار، هر روز را بزن.</string>
+    <string name="weekly_backlog">مرور عقب‌افتاده‌ها و بدون موعد</string>
+    <string name="weekly_empty">برای این روز کاری نیست.</string>
     <string name="weekly_task_done">انجام‌شده</string>
-    <string name="weekly_add">افزودن کار در این روز</string>
+    <string name="weekly_add">افزودن کار به این روز</string>
 </resources>

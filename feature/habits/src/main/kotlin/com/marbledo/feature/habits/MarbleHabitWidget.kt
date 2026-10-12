@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.res.Configuration
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -34,8 +35,10 @@ import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import androidx.glance.layout.RowScope
 import com.marbledo.core.data.db.MarbleDatabase
 import com.marbledo.core.data.repository.RoomHabitRepository
 import com.marbledo.core.data.settings.SettingsRepository
@@ -95,6 +98,10 @@ class MarbleHabitWidget : GlanceAppWidget() {
         val theme = HabitTheme.from(settings.habitTheme)
         val palette = habitPalette(theme, isDark(context))
         val numeral = settings.numeralMode
+        // Glance lays out in the system direction, but the widget must follow the language the
+        // user chose inside the app: Persian is right-to-left, English is left-to-right.
+        val isRtl = settings.languageTag == "fa"
+        val bodyAlignment = if (isRtl) TextAlign.End else TextAlign.Start
         val rows = todays.take(MAX_WIDGET_ROWS)
         val hidden = (todays.size - rows.size).coerceAtLeast(0)
 
@@ -110,38 +117,46 @@ class MarbleHabitWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme {
                 Column(modifier = root) {
-                    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Vertical.CenterVertically) {
-                        Column(modifier = GlanceModifier.defaultWeight()) {
-                            Text(
-                                text = widgetContext.getString(R.string.habit_widget_name),
-                                style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 14.sp, fontWeight = FontWeight.Bold),
-                                maxLines = 1,
-                            )
-                            Text(
-                                text = progressLine(widgetContext, done, todays.size, numeral),
-                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 10.sp),
-                                maxLines = 1,
-                            )
-                        }
-                        if (bestStreak > 0) {
-                            Box(
-                                modifier = GlanceModifier
-                                    .background(ColorProvider(palette.accentSoft))
-                                    .cornerRadius(12.dp)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = widgetContext.getString(
-                                        R.string.habit_widget_streak,
-                                        TextNormalizer.formatDigits(bestStreak.toString(), numeral),
-                                    ),
-                                    style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                                    maxLines = 1,
-                                )
-                            }
-                        }
-                    }
+                    directionalRow(
+                        isRtl = isRtl,
+                        modifier = GlanceModifier.fillMaxWidth(),
+                        items = listOf(
+                            {
+                                Column(modifier = GlanceModifier.defaultWeight()) {
+                                    Text(
+                                        text = widgetContext.getString(R.string.habit_widget_name),
+                                        style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                                        maxLines = 1,
+                                    )
+                                    Text(
+                                        text = progressLine(widgetContext, done, todays.size, numeral),
+                                        style = TextStyle(color = ColorProvider(palette.muted), fontSize = 10.sp, textAlign = bodyAlignment),
+                                        maxLines = 1,
+                                    )
+                                }
+                            },
+                            {
+                                if (bestStreak > 0) {
+                                    Box(
+                                        modifier = GlanceModifier
+                                            .background(ColorProvider(palette.accentSoft))
+                                            .cornerRadius(12.dp)
+                                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = widgetContext.getString(
+                                                R.string.habit_widget_streak,
+                                                TextNormalizer.formatDigits(bestStreak.toString(), numeral),
+                                            ),
+                                            style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                            maxLines = 1,
+                                        )
+                                    }
+                                }
+                            },
+                        ),
+                    )
                     Spacer(GlanceModifier.height(10.dp))
                     if (rows.isEmpty()) {
                         Column(
@@ -153,13 +168,13 @@ class MarbleHabitWidget : GlanceAppWidget() {
                         ) {
                             Text(
                                 text = widgetContext.getString(R.string.habit_widget_empty),
-                                style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 13.sp, fontWeight = FontWeight.Bold),
+                                style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
                                 maxLines = 1,
                             )
                             Spacer(GlanceModifier.height(3.dp))
                             Text(
                                 text = widgetContext.getString(R.string.habit_widget_empty_body),
-                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 11.sp),
+                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 11.sp, textAlign = bodyAlignment),
                                 maxLines = 2,
                             )
                         }
@@ -172,6 +187,8 @@ class MarbleHabitWidget : GlanceAppWidget() {
                                 today = today,
                                 palette = palette,
                                 numeral = numeral,
+                                isRtl = isRtl,
+                                align = bodyAlignment,
                             )
                             Spacer(GlanceModifier.height(6.dp))
                         }
@@ -182,7 +199,7 @@ class MarbleHabitWidget : GlanceAppWidget() {
                                     TextNormalizer.formatDigits(todays.size.toString(), numeral),
                                     TextNormalizer.formatDigits(active.size.toString(), numeral),
                                 ),
-                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 10.sp),
+                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 10.sp, textAlign = bodyAlignment),
                                 maxLines = 1,
                             )
                         }
@@ -200,68 +217,94 @@ class MarbleHabitWidget : GlanceAppWidget() {
         today: LocalDate,
         palette: HabitPalette,
         numeral: NumeralMode,
+        isRtl: Boolean,
+        align: TextAlign,
     ) {
         val value = HabitAnalytics.valueOn(HabitAnalytics.entriesByDate(entries), today)
         val done = HabitAnalytics.isDone(habit, value)
         val isQuit = habit.kind == HabitKind.QUIT
-        Row(
+        directionalRow(
+            isRtl = isRtl,
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .background(ColorProvider(palette.card))
                 .cornerRadius(16.dp)
                 .padding(horizontal = 9.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.Vertical.CenterVertically,
-        ) {
-            Box(
-                modifier = GlanceModifier
-                    .size(28.dp)
-                    .background(ColorProvider(palette.accentSoft))
-                    .cornerRadius(11.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(habit.icon, style = TextStyle(fontSize = 14.sp))
-            }
-            Spacer(GlanceModifier.width(8.dp))
-            Column(modifier = GlanceModifier.defaultWeight()) {
-                Text(
-                    text = habit.name,
-                    style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 12.sp, fontWeight = FontWeight.Medium),
-                    maxLines = 1,
-                )
-                if (habit.tracking == com.marbledo.domain.model.HabitTracking.COUNT && !isQuit) {
-                    Text(
-                        text = TextNormalizer.formatDigits("$value/${habit.dailyTarget}", numeral),
-                        style = TextStyle(color = ColorProvider(palette.muted), fontSize = 9.sp),
-                        maxLines = 1,
-                    )
-                }
-            }
-            Spacer(GlanceModifier.width(6.dp))
-            Box(
-                modifier = GlanceModifier
-                    .size(30.dp)
-                    .background(ColorProvider(if (isQuit && !done) palette.track else if (done) palette.accent else palette.track))
-                    .cornerRadius(15.dp)
-                    .clickable(
-                        actionRunCallback<HabitToggleAction>(
-                            actionParametersOf(HABIT_ID_KEY to habit.id),
-                        ),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = when {
-                        isQuit && !done -> "!"
-                        done -> "\u2713"
-                        else -> ""
-                    },
-                    style = TextStyle(
-                        color = ColorProvider(if (done) palette.backgroundTop else palette.onCard),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                )
-            }
+            items = listOf(
+                {
+                    Box(
+                        modifier = GlanceModifier
+                            .size(28.dp)
+                            .background(ColorProvider(palette.accentSoft))
+                            .cornerRadius(11.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(habit.icon, style = TextStyle(fontSize = 14.sp))
+                    }
+                },
+                { Spacer(GlanceModifier.width(8.dp)) },
+                {
+                    Column(modifier = GlanceModifier.defaultWeight()) {
+                        Text(
+                            text = habit.name,
+                            style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 12.sp, fontWeight = FontWeight.Medium, textAlign = align),
+                            maxLines = 1,
+                        )
+                        if (habit.tracking == com.marbledo.domain.model.HabitTracking.COUNT && !isQuit) {
+                            Text(
+                                text = TextNormalizer.formatDigits("$value/${habit.dailyTarget}", numeral),
+                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 9.sp),
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                },
+                { Spacer(GlanceModifier.width(6.dp)) },
+                {
+                    Box(
+                        modifier = GlanceModifier
+                            .size(30.dp)
+                            .background(ColorProvider(if (isQuit && !done) palette.track else if (done) palette.accent else palette.track))
+                            .cornerRadius(15.dp)
+                            .clickable(
+                                actionRunCallback<HabitToggleAction>(
+                                    actionParametersOf(HABIT_ID_KEY to habit.id),
+                                ),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = when {
+                                isQuit && !done -> "!"
+                                done -> "\u2713"
+                                else -> ""
+                            },
+                            style = TextStyle(
+                                color = ColorProvider(if (done) palette.backgroundTop else palette.onCard),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                        )
+                    }
+                },
+            ),
+        )
+    }
+
+    /**
+     * Glance lays rows out in the device direction only, so when the app language is Persian the
+     * children are emitted in reverse order to mirror the in-app RTL layout; English keeps the
+     * natural left-to-right order.
+     */
+    @androidx.compose.runtime.Composable
+    private fun directionalRow(
+        isRtl: Boolean,
+        modifier: GlanceModifier = GlanceModifier,
+        verticalAlignment: Alignment.Vertical = Alignment.Vertical.CenterVertically,
+        items: List<@Composable RowScope.() -> Unit>,
+    ) {
+        Row(modifier = modifier, verticalAlignment = verticalAlignment) {
+            (if (isRtl) items.asReversed() else items).forEach { item -> item() }
         }
     }
 

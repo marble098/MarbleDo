@@ -74,5 +74,15 @@
             </intent-filter>
             <meta-data android:name="android.service.quicksettings.ACTIVE_TILE" android:value="true" />
         </service>
+        <service
+            android:name=".tiles.NextTaskTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_stat_calendar_tasks"
+            android:label="@string/tile_next_task"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

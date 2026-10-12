@@ -389,6 +389,11 @@ fun MarbleDoApp(
                                     enabledOccasionCategories = enabledOccasionCategories,
                                     onOpenFocus = { task -> focusTask = task },
                                     onOpenCalendar = { navigateTo(CalendarDestination) },
+                                    onViewModeChange = { mode ->
+                                        coroutineScope.launch {
+                                            settingsRepository.update { current -> current.copy(dashboardViewMode = mode) }
+                                        }
+                                    },
                                     onAddCategory = { name ->
                                         val key = TextNormalizer.searchKey(name)
                                         coroutineScope.launch {

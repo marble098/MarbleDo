@@ -41,4 +41,6 @@ message MarbleDoSettingsProto {
   string status_icon_style = 29;
   // Look of the habit cabinet; a habit may override it with its own theme id.
   string habit_theme = 30;
+  // How the dashboard lays out tasks and countdowns (LIST / TIMELINE / GRID).
+  string dashboard_view_mode = 31;
 }

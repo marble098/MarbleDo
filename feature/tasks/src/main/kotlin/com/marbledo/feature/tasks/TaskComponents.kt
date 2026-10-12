@@ -1,9 +1,13 @@
 package com.marbledo.feature.tasks
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -39,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,8 +53,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -66,7 +78,7 @@ import java.time.Instant
 import java.time.ZoneId
 
 /** Colour a task starts with. Tasks that keep it use the theme's primary colour instead of this fixed violet. */
-internal const val DEFAULT_TASK_COLOR_ARGB = 0xFF6E61D8L
+const val DEFAULT_TASK_COLOR_ARGB = 0xFF6E61D8L
 
 /** Colour used for a priority across rows, chips and rails. */
 @Composable
@@ -170,8 +182,64 @@ fun TaskRowCard(
     val nowMillis = System.currentTimeMillis()
     val overdue = taskIsOverdue(task.isCompleted, task.isArchived, task.dueAtEpochMillis, task.isAllDay, nowMillis, zone)
     val dueLabel = task.dueAtEpochMillis?.let { localizedTaskDateTime(it, task.isAllDay) }
-    Card(
-        modifier = modifier.fillMaxWidth().combinedClickable(onClick = onEdit, onLongClick = onLongPress),
+    // Swipe the card across to complete it (or back to reopen): the check peeks in from behind.
+    val layoutDirection = LocalLayoutDirection.current
+    val haptics = LocalHapticFeedback.current
+    val density = LocalDensity.current
+    val swipeThreshold = with(density) { 120.dp.toPx() }
+    // Toward the start of the line is "forward" in both directions: right in RTL, left in LTR.
+    val swipesPositive = layoutDirection == LayoutDirection.Rtl
+    var dragging by remember { mutableStateOf(false) }
+    var swipeTarget by remember { mutableFloatStateOf(0f) }
+    val swipeOffset by animateFloatAsState(
+        targetValue = if (dragging) swipeTarget else 0f,
+        animationSpec = spring(),
+        label = "taskSwipeOffset",
+    )
+    val swipeOffsetDp = with(density) { swipeOffset.toDp() }
+    Box(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .clip(MaterialTheme.shapes.large),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            Icon(
+                Icons.Filled.CheckCircle,
+                contentDescription = stringResource(R.string.tasks_swipe_complete),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(end = 20.dp),
+            )
+        }
+        Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .offset(x = swipeOffsetDp)
+            .pointerInput(task.id, task.isCompleted) {
+                detectHorizontalDragGestures(
+                    onDragStart = { dragging = true },
+                    onDragEnd = { dragging = false; swipeTarget = 0f },
+                    onDragCancel = { dragging = false; swipeTarget = 0f },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        val next = swipeTarget + dragAmount
+                        swipeTarget = if (swipesPositive) {
+                            next.coerceIn(-16f, swipeThreshold + 24f)
+                        } else {
+                            next.coerceIn(-swipeThreshold - 24f, 16f)
+                        }
+                        val committed = if (swipesPositive) swipeTarget >= swipeThreshold else swipeTarget <= -swipeThreshold
+                        if (committed) {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onToggle()
+                            dragging = false
+                            swipeTarget = 0f
+                        }
+                    },
+                )
+            }
+            .combinedClickable(onClick = onEdit, onLongClick = onLongPress),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
@@ -311,6 +379,7 @@ fun TaskRowCard(
                 }
             }
         }
+    }
     }
 }
 

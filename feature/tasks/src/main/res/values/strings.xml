@@ -80,6 +80,7 @@
     <string name="tasks_schedule_field">Date and time</string>
     <string name="tasks_schedule_title">Choose date and time</string>
     <string name="tasks_unarchive">Restore from archive</string>
+    <string name="tasks_swipe_complete">Swipe the card to complete it</string>
     <string name="tasks_checklist_progress">Checklist %1$d/%2$d</string>
     <string name="tasks_checklist">Checklist</string>
     <string name="tasks_checklist_add">Add item</string>
