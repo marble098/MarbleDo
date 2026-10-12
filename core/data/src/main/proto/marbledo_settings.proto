@@ -36,7 +36,8 @@ message MarbleDoSettingsProto {
   int32 occasion_reminder_lead_days = 26;
   bool education_mode_enabled = 27;
   bool thursday_weekend_enabled = 28;
-  // How the day number is drawn in the status-bar icon (BOLD_DIGITS / CALENDAR_PAGE / ICON_ONLY).
+  // Which look the status-bar icon uses (NUMERAL / FRAME / TILE / DISC / PAGE / ICON_ONLY).
+  // The retired names BOLD_DIGITS and CALENDAR_PAGE are still read as NUMERAL and PAGE.
   string status_icon_style = 29;
   // Look of the habit cabinet; a habit may override it with its own theme id.
   string habit_theme = 30;

@@ -5,6 +5,7 @@ import com.marbledo.feature.tasks.localizedTaskDateTime
 import androidx.compose.runtime.produceState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.content.Context
 import android.os.Build
 import android.os.SystemClock
 import androidx.compose.foundation.Image
@@ -79,6 +80,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
@@ -630,7 +632,8 @@ private fun numeralLabel(mode: NumeralMode): String = when (mode) {
 /**
  * Every status-bar icon style, drawn from the same generated bitmap the notification uses and
  * shown twice: at the size the status bar actually renders it, and enlarged so the digits can be
- * judged. The strip is dark because that is where the icon lives on most devices.
+ * judged. The strip is dark because that is where the icon lives on most devices. Six looks do not
+ * fit on one line, so they are laid out three per row.
  */
 @Composable
 private fun StatusIconStylePicker(
@@ -641,69 +644,92 @@ private fun StatusIconStylePicker(
 ) {
     val context = LocalContext.current
     val digits = TextNormalizer.formatDigits("28", numeralMode)
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        StatusBarIconStyle.entries.forEach { style ->
-            // Two renderings of the same style: the strip preview at the size the status bar really
-            // uses, and a high-resolution copy that shows what the digits look like up close.
-            val stripBitmap = remember(context, style, digits) {
-                NotificationArtwork.statusBitmap(context, digits, NotificationMood.OCCASION, style, NotificationArtwork.STATUS_ICON_DP)
-            }
-            val bitmap = remember(context, style, digits) {
-                NotificationArtwork.statusBitmap(context, digits, NotificationMood.OCCASION, style, NotificationArtwork.PREVIEW_ICON_DP)
-            }
-            val isSelected = style == selected
-            val shape = MaterialTheme.shapes.medium
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(shape)
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceVariant,
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        StatusBarIconStyle.entries.chunked(STYLES_PER_ROW).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { style ->
+                    StatusIconStyleCard(
+                        style = style,
+                        digits = digits,
+                        context = context,
+                        isSelected = style == selected,
+                        onSelect = onSelect,
+                        modifier = Modifier.weight(1f),
                     )
-                    .then(if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape) else Modifier)
-                    .clickable { onSelect(style) }
-                    .padding(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Surface(shape = RoundedCornerShape(7.dp), color = Color(0xFF101014)) {
-                    Row(
-                        Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(7.dp),
-                    ) {
-                        StatusIconPreview(stripBitmap, style, Modifier.size(17.dp), Color.White)
-                        Box(
-                            Modifier
-                                .size(width = 26.dp, height = 7.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(Color.White.copy(alpha = 0.35f)),
-                        )
-                    }
                 }
-                Spacer(Modifier.height(10.dp))
-                StatusIconPreview(
-                    bitmap = bitmap,
-                    style = style,
-                    modifier = Modifier.size(52.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    statusIconStyleLabel(style),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                repeat(STYLES_PER_ROW - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
 }
 
+/** One status-bar look: the icon at its real size in a fake strip, then the same bitmap enlarged. */
+@Composable
+private fun StatusIconStyleCard(
+    style: StatusBarIconStyle,
+    digits: String,
+    context: Context,
+    isSelected: Boolean,
+    onSelect: (StatusBarIconStyle) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // Two renderings of the same style: the strip preview at the size the status bar really uses,
+    // and a high-resolution copy that shows what the digits look like up close.
+    val stripBitmap = remember(context, style, digits) {
+        NotificationArtwork.statusBitmap(context, digits, NotificationMood.OCCASION, style, NotificationArtwork.STATUS_ICON_DP)
+    }
+    val bitmap = remember(context, style, digits) {
+        NotificationArtwork.statusBitmap(context, digits, NotificationMood.OCCASION, style, NotificationArtwork.PREVIEW_ICON_DP)
+    }
+    val shape = MaterialTheme.shapes.medium
+    Column(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant,
+            )
+            .then(if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape) else Modifier)
+            .clickable { onSelect(style) }
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Surface(shape = RoundedCornerShape(7.dp), color = Color(0xFF101014)) {
+            Row(
+                Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                StatusIconPreview(stripBitmap, Modifier.size(17.dp), Color.White)
+                Box(
+                    Modifier
+                        .size(width = 20.dp, height = 6.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.White.copy(alpha = 0.35f)),
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        StatusIconPreview(
+            bitmap = bitmap,
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            statusIconStyleLabel(style),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/** A generated style bitmap, or the vector fallback for the styles that have no bitmap. */
 @Composable
 private fun StatusIconPreview(
     bitmap: android.graphics.Bitmap?,
-    style: StatusBarIconStyle,
     modifier: Modifier,
     tint: Color,
 ) {
@@ -721,10 +747,16 @@ private fun StatusIconPreview(
 
 @Composable
 private fun statusIconStyleLabel(style: StatusBarIconStyle): String = when (style) {
-    StatusBarIconStyle.BOLD_DIGITS -> stringResource(R.string.settings_status_icon_style_bold)
-    StatusBarIconStyle.CALENDAR_PAGE -> stringResource(R.string.settings_status_icon_style_page)
+    StatusBarIconStyle.NUMERAL -> stringResource(R.string.settings_status_icon_style_numeral)
+    StatusBarIconStyle.FRAME -> stringResource(R.string.settings_status_icon_style_frame)
+    StatusBarIconStyle.TILE -> stringResource(R.string.settings_status_icon_style_tile)
+    StatusBarIconStyle.DISC -> stringResource(R.string.settings_status_icon_style_disc)
+    StatusBarIconStyle.PAGE -> stringResource(R.string.settings_status_icon_style_page)
     StatusBarIconStyle.ICON_ONLY -> stringResource(R.string.settings_status_icon_style_icon)
 }
+
+/** Looks shown per row of the status-bar icon picker. */
+private const val STYLES_PER_ROW = 3
 
 private enum class QuietEdge { START, END }
 

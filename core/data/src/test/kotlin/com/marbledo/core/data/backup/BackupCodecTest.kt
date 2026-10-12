@@ -6,8 +6,12 @@ import com.marbledo.domain.model.ChecklistItem
 import com.marbledo.domain.model.RecurrenceRule
 import com.marbledo.domain.model.RepeatCalendar
 import com.marbledo.domain.model.RepeatFrequency
+import com.marbledo.domain.model.StatusBarIconStyle
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.TaskPriority
+import java.io.ByteArrayOutputStream
+import java.security.MessageDigest
+import java.util.zip.GZIPOutputStream
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -71,5 +75,27 @@ class BackupCodecTest {
         assertThrows(IllegalArgumentException::class.java) {
             BackupCodec.encode(listOf(task), AppSettings(), "short".toCharArray())
         }
+    }
+
+    @Test
+    fun `a backup file written with the retired status-icon ids still restores`() {
+        // The enum constant behind "BOLD_DIGITS" was renamed; one renamed look must not make a user's
+        // whole backup unreadable.
+        val payload = """
+            {"schemaVersion":2,"createdAtEpochMillis":1,"settings":{"languageTag":"fa","statusBarIconStyle":"BOLD_DIGITS"},"tasks":[],"habits":[],"habitEntries":[]}
+        """.trimIndent()
+        val decoded = BackupCodec.decode(legacyBackupFile(payload))
+
+        assertEquals(StatusBarIconStyle.NUMERAL, decoded.settings.statusBarIconStyle)
+    }
+
+    /** Rebuilds the container the codec expects around raw envelope JSON, as an older release wrote it. */
+    private fun legacyBackupFile(json: String): ByteArray {
+        val payload = ByteArrayOutputStream().use { output ->
+            GZIPOutputStream(output).use { it.write(json.toByteArray(Charsets.UTF_8)) }
+            output.toByteArray()
+        }
+        val checksum = MessageDigest.getInstance("SHA-256").digest(payload).joinToString("") { "%02x".format(it) }
+        return "MARBLEDO|2|plain|$checksum|-|-\n".toByteArray(Charsets.US_ASCII) + payload
     }
 }

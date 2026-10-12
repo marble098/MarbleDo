@@ -193,8 +193,11 @@
     <string name="dash_category_all">All categories</string>
     <string name="settings_status_calendar">Status bar calendar</string>
     <string name="settings_status_icon_style">Status-bar icon</string>
-    <string name="settings_status_icon_style_hint">The day number is now drawn as large as the status bar allows and rendered at the exact size Android shows it, so the strokes stay sharp instead of turning grey. The dark strip shows the real size; the big preview is the same icon enlarged.</string>
-    <string name="settings_status_icon_style_bold">Big number</string>
+    <string name="settings_status_icon_style_hint">Six looks for the day number. Each one is measured against the room a status bar really has and rendered at the exact pixel size Android shows it at, so the digits stay crisp and are never stretched into a blob. The dark strip shows the icon at its real size; the larger preview below it is the same bitmap enlarged. A small mark carries the mood of the day: a sparkle for an occasion, a crescent for a religious day, a flag for a holiday, and three dots when tasks are due.</string>
+    <string name="settings_status_icon_style_numeral">Clean number</string>
+    <string name="settings_status_icon_style_frame">Frame</string>
+    <string name="settings_status_icon_style_tile">Square tile</string>
+    <string name="settings_status_icon_style_disc">Circle</string>
     <string name="settings_status_icon_style_page">Calendar page</string>
     <string name="settings_status_icon_style_icon">Icon only</string>
     <string name="settings_status_icon_state_active">The status bar icon is active and shows today.</string>
