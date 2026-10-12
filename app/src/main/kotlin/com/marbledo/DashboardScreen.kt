@@ -1425,7 +1425,7 @@ private fun RoadNode(
             style = MarbleTextStyles.metaLabel,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            widthIn(max = 72.dp),
+            modifier = Modifier.widthIn(max = 72.dp),
             textAlign = TextAlign.Center,
         )
         if (detail.isNotBlank()) {
