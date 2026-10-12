@@ -8,6 +8,7 @@
     <string name="habit_score_label">امتیاز رشد</string>
     <string name="habit_today_progress">امروز %1$s از %2$s</string>
     <string name="habit_best_streak">بهترین دوره · %1$s روز</string>
+    <string name="habit_best_streak_label">بهترین دوره</string>
     <string name="habit_all_done">کار امروز تمام است</string>
     <string name="habit_summary_empty">برای امروز عادتی برنامه‌ریزی نشده.</string>
 

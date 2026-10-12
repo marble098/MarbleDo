@@ -1,6 +1,9 @@
 package com.marbledo.feature.habits
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,7 +18,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Widgets
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -42,12 +50,16 @@ import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.Habit
 import com.marbledo.domain.model.HabitKind
 import com.marbledo.domain.model.HabitTheme
+import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.HabitStats
 
 /**
  * The habit cabinet: two drawers, one for the habits the user is building and one for the habits
- * they are leaving behind. Each drawer opens onto its folders, and every folder records today in a
- * single tap.
+ * they are leaving behind, with an archives line at the bottom for the ones they retired.
+ *
+ * The screen is three blocks — a headline card, the two drawers, and the archive — because that is
+ * all it needs. The theme look and the widget shortcut live inside the headline card, and the
+ * folders inside a drawer are flat rows separated by hairlines instead of cards inside cards.
  */
 @Composable
 fun HabitsScreen(
@@ -100,31 +112,33 @@ fun HabitsScreen(
                 bestStreak = state.summary.bestStreak,
                 palette = cabinet,
                 numeralMode = numeralMode,
-            )
-        }
-        item {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surface,
             ) {
-                Column(Modifier.fillMaxWidth().padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.fillMaxWidth().height(1.dp).background(cabinet.track.copy(alpha = 0.7f)))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                         Text(
                             stringResource(R.string.habit_field_theme),
-                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cabinet.muted,
+                        )
+                        Text(
+                            habitThemeLabel(HabitTheme.from(settings.habitTheme)),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
+                            color = cabinet.onCard,
                         )
-                        TextButton(onClick = onAddWidget) { Text(stringResource(R.string.habit_add_widget)) }
                     }
-                    Spacer(Modifier.height(6.dp))
-                    HabitThemeSwatchRow(
-                        selected = HabitTheme.from(settings.habitTheme),
-                        onSelect = onThemeChange,
-                        dark = dark,
-                    )
+                    TextButton(onClick = onAddWidget) {
+                        Icon(Icons.Outlined.Widgets, contentDescription = null, tint = cabinet.accent, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.habit_add_widget), color = cabinet.accent)
+                    }
                 }
+                HabitThemeDotRow(
+                    selected = HabitTheme.from(settings.habitTheme),
+                    onSelect = onThemeChange,
+                    dark = dark,
+                )
             }
         }
         item {
@@ -141,7 +155,10 @@ fun HabitsScreen(
                 if (buildHabits.isEmpty()) {
                     EmptyDrawerText(stringResource(R.string.habit_empty_build), cabinet)
                 } else {
-                    buildHabits.forEach { habit -> HabitFolder(habit, state, viewModel, numeralMode) { detailId = it } }
+                    buildHabits.forEachIndexed { index, habit ->
+                        if (index > 0) HabitRowDivider(cabinet)
+                        HabitFolder(habit, state, viewModel, numeralMode) { detailId = it }
+                    }
                 }
                 AddRow(text = stringResource(R.string.habit_add_in_drawer), tint = cabinet.accent) {
                     creatingKind = HabitKind.BUILD
@@ -162,13 +179,16 @@ fun HabitsScreen(
                 if (quitHabits.isEmpty()) {
                     EmptyDrawerText(stringResource(R.string.habit_empty_quit), cabinet)
                 } else {
-                    quitHabits.forEach { habit -> HabitFolder(habit, state, viewModel, numeralMode) { detailId = it } }
+                    quitHabits.forEachIndexed { index, habit ->
+                        if (index > 0) HabitRowDivider(cabinet)
+                        HabitFolder(habit, state, viewModel, numeralMode) { detailId = it }
+                    }
+                    Text(
+                        stringResource(R.string.habit_quit_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cabinet.muted,
+                    )
                 }
-                Text(
-                    stringResource(R.string.habit_quit_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = cabinet.muted,
-                )
                 AddRow(text = stringResource(R.string.habit_add_in_drawer), tint = cabinet.accent) {
                     creatingKind = HabitKind.QUIT
                 }
@@ -179,22 +199,49 @@ fun HabitsScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
                 ) {
-                    Column(Modifier.fillMaxWidth().padding(12.dp)) {
-                        TextButton(onClick = { archivedOpen = !archivedOpen }) {
-                            Text(stringResource(R.string.habit_archived_section))
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { archivedOpen = !archivedOpen }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                stringResource(R.string.habit_archived_section),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                habitNumber(archived.size, numeralMode),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Icon(
+                                if (archivedOpen) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 6.dp).size(20.dp),
+                            )
                         }
                         if (archivedOpen) {
-                            archived.forEach { habit ->
+                            archived.forEachIndexed { index, habit ->
+                                if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Text(habit.icon, modifier = Modifier.padding(end = 8.dp))
-                                    Text(habit.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                    Text(habit.icon, modifier = Modifier.padding(end = 10.dp))
+                                    Text(
+                                        habit.name,
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
                                     TextButton(onClick = { viewModel.setArchived(habit, false) }) {
                                         Text(stringResource(R.string.habit_unarchive))
                                     }
@@ -262,11 +309,11 @@ private fun HabitFolder(
     habit: Habit,
     state: HabitsUiState,
     viewModel: HabitsViewModel,
-    numeralMode: com.marbledo.domain.model.NumeralMode,
+    numeralMode: NumeralMode,
     onOpen: (Long) -> Unit,
 ) {
     val stats = state.stats[habit.id] ?: HabitStats()
-    HabitCard(
+    HabitFolderRow(
         habit = habit,
         stats = stats,
         palette = habitPaletteFor(habit),
@@ -286,7 +333,7 @@ private fun EmptyDrawerText(text: String, palette: HabitPalette) {
         text,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 4.dp),
+            .padding(horizontal = 6.dp, vertical = 8.dp),
         style = MaterialTheme.typography.bodyMedium,
         color = palette.muted,
     )
@@ -305,7 +352,7 @@ private fun AddRow(text: String, tint: androidx.compose.ui.graphics.Color, onCli
 private fun drawerBadge(
     count: Int,
     done: Int,
-    numeralMode: com.marbledo.domain.model.NumeralMode,
+    numeralMode: NumeralMode,
 ): String = if (count == 0) {
     habitNumber(0, numeralMode)
 } else {

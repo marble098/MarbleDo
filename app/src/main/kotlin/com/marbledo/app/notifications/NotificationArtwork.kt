@@ -8,6 +8,7 @@ import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
@@ -18,6 +19,8 @@ import androidx.core.graphics.drawable.IconCompat
 import com.marble098.marbledo.R
 import com.marble098.marbledo.core.designsystem.R as DesignR
 import com.marbledo.domain.model.StatusBarIconStyle
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 /** The state the persistent notification reflects in its artwork and accent color. */
 enum class NotificationMood {
@@ -39,21 +42,41 @@ enum class NotificationMood {
 
 /**
  * Draws the "smart" notification artwork: a status-bar icon that shows today's day number with a
- * mood glyph, and a colored date badge used as the large icon. Everything is generated on-device
- * so the icon is different every single day without shipping thirty-one static assets.
+ * mood mark, and a colored date badge used as the large icon. Everything is generated on-device so
+ * the icon is different every single day without shipping thirty-one static assets.
  *
- * The status bar gives an icon only a narrow strip of pixels, so the day number is drawn to fill
- * as much of the canvas as possible: the size is solved from both the measured width *and* the
- * measured height, strokes are thickened with a fill-and-stroke pass, and the mood becomes a small
- * corner mark instead of a glyph sitting on top of the digits.
+ * The status bar gives an icon a narrow strip of pixels, so the day number has to win the space
+ * fight outright:
+ *
+ *  * the bitmap is generated at the size the status bar actually draws ([STATUS_ICON_DP]) and with
+ *    a matching density, so Android renders it one-to-one instead of blurring a 96dp artwork down
+ *    to a quarter of its size;
+ *  * the digits are measured by their ink box and stretched along whichever axis is still free, so
+ *    two-digit days are as tall as one-digit days instead of leaving half the icon empty;
+ *  * strokes are thickened with a fill-and-stroke pass, because hairline Persian strokes disappear
+ *    when a system draws the icon at eighteen pixels.
+ *
+ * The mood is a small mark under the number; it never takes space from the digits.
  */
 object NotificationArtwork {
 
-    /** Bitmap edge of a generated status-bar icon. The platform scales it down to the strip height. */
-    private const val STATUS_ICON_SIZE = 96
+    /** The status bar draws its small icons at roughly this size. */
+    const val STATUS_ICON_DP = 24f
+
+    /** Extra resolution used for the in-app previews, where a crisp bitmap is worth the pixels. */
+    const val PREVIEW_ICON_DP = 48f
 
     /** Unit square every mood glyph is authored in, before it is mapped onto its box. */
     private val UNIT_RECT = RectF(0f, 0f, 1f, 1f)
+
+    /** Text size the ink boxes are measured at; ratios are size independent. */
+    private const val PROBE_TEXT_SIZE = 100f
+
+    /** How much a digit may be stretched along its free axis to fill the icon. */
+    private const val MAX_ANISOTROPY = 1.38f
+
+    /** Fraction of the icon height reserved for the mood mark when there is one to draw. */
+    private const val MOOD_BAND_FRACTION = 0.16f
 
     fun mood(
         hasHoliday: Boolean,
@@ -104,16 +127,20 @@ object NotificationArtwork {
         }
     }
 
-    /** The generated status-bar icon, also used to preview the styles inside Settings. */
+    /**
+     * The generated status-bar icon, also used to preview the styles inside Settings. [sizeDp] is
+     * the dp size the bitmap should occupy; the status bar itself asks for [STATUS_ICON_DP].
+     */
     fun statusBitmap(
         context: Context,
         dayDigits: String,
         mood: NotificationMood,
         style: StatusBarIconStyle = StatusBarIconStyle.DEFAULT,
+        sizeDp: Float = STATUS_ICON_DP,
     ): Bitmap? = when (style) {
         StatusBarIconStyle.ICON_ONLY -> null
-        StatusBarIconStyle.BOLD_DIGITS -> boldDigitsBitmap(context, dayDigits, mood)
-        StatusBarIconStyle.CALENDAR_PAGE -> calendarPageBitmap(context, dayDigits, mood)
+        StatusBarIconStyle.BOLD_DIGITS -> digitsBitmap(context, dayDigits, mood, sizeDp)
+        StatusBarIconStyle.CALENDAR_PAGE -> calendarPageBitmap(context, dayDigits, mood, sizeDp)
     }
 
     /** Colored large icon: gradient date badge with the day number and month name. */
@@ -146,17 +173,14 @@ object NotificationArtwork {
             }
             canvas.drawText(monthLabel, size / 2f, 72f, monthPaint)
 
-            val dayPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
-                textAlign = Paint.Align.CENTER
-                typeface = vazirTypeface(context, 700)
-                textSize = 118f
-            }
-            val measured = dayPaint.measureText(dayDigits)
-            if (measured > 186f) {
-                dayPaint.textSize = 118f * (186f / measured)
-            }
-            canvas.drawText(dayDigits, size / 2f, 196f, dayPaint)
+            // The same ink-filling layout the status icon uses, so the two always agree.
+            drawDayNumber(
+                canvas = canvas,
+                text = dayDigits,
+                box = RectF(size * 0.14f, size * 0.34f, size * 0.86f, size * 0.82f),
+                typeface = vazirTypeface(context, 700),
+                color = Color.WHITE,
+            )
 
             if (mood == NotificationMood.HOLIDAY || mood == NotificationMood.RELIGIOUS) {
                 val chipPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; alpha = 210 }
@@ -166,125 +190,149 @@ object NotificationArtwork {
         }.getOrNull()
 
     /**
-     * Roomy style: the digits are the icon. They are solved against both the width and the height
-     * of the canvas, painted with a fill-and-stroke pass so thin Vazirmatn strokes survive being
-     * scaled down into the status bar, and the mood sits as a small mark in the top corner.
+     * Digits-first style: the number fills the icon and the mood sits in a slim band underneath.
+     * This is the style that answers "the day number is too small to see".
      */
-    private fun boldDigitsBitmap(context: Context, dayDigits: String, mood: NotificationMood): Bitmap? =
+    private fun digitsBitmap(context: Context, dayDigits: String, mood: NotificationMood, sizeDp: Float): Bitmap? =
         runCatching {
-            val size = STATUS_ICON_SIZE
-            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            val white = Color.WHITE
-            val typeface = vazirTypeface(context, 900)
-
-            // Digits may use almost the whole square; a little room is left for the corner mark.
-            val boxWidth = size * 0.95f
-            val boxHeight = size * (if (mood == NotificationMood.QUIET) 0.97f else 0.90f)
-            val textSize = fitTextSize(dayDigits, typeface, boxWidth, boxHeight)
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = white
-                textAlign = Paint.Align.CENTER
-                this.typeface = typeface
-                this.textSize = textSize
-                // Thickening the outline keeps hairline Persian strokes visible at 18dp.
-                style = Paint.Style.FILL_AND_STROKE
-                strokeWidth = textSize * 0.06f
-                strokeJoin = Paint.Join.ROUND
-                strokeCap = Paint.Cap.ROUND
-            }
-            val centerY = size * if (mood == NotificationMood.QUIET) 0.5f else 0.55f
-            val baseline = centerY - (paint.descent() + paint.ascent()) / 2f
-            canvas.drawText(dayDigits, size / 2f, baseline, paint)
-
-            if (mood != NotificationMood.QUIET) {
-                val mark = size * 0.30f
+            val icon = squareIcon(context, sizeDp)
+            val size = icon.size
+            val moodBand = if (mood == NotificationMood.QUIET) 0f else size * MOOD_BAND_FRACTION
+            drawDayNumber(
+                canvas = icon.canvas,
+                text = dayDigits,
+                box = RectF(size * 0.025f, size * 0.015f, size * 0.975f, size - moodBand - size * 0.01f),
+                typeface = vazirTypeface(context, 900),
+                color = Color.WHITE,
+            )
+            if (moodBand > 0f) {
                 drawMoodMark(
-                    canvas = canvas,
-                    tint = white,
+                    canvas = icon.canvas,
+                    tint = Color.WHITE,
                     mood = mood,
-                    box = RectF(size - mark - size * 0.02f, size * 0.01f, size - size * 0.02f, mark + size * 0.01f),
+                    box = RectF(size * 0.32f, size - moodBand, size * 0.68f, size - size * 0.012f),
                 )
             }
-            bitmap
+            icon.bitmap
         }.getOrNull()
 
-    /** Classic calendar page: frame, rings and the mood glyph above the day number. */
-    private fun calendarPageBitmap(context: Context, dayDigits: String, mood: NotificationMood): Bitmap? =
+    /** Classic calendar page: frame, rings and the mood glyph above a day number that fills the page. */
+    private fun calendarPageBitmap(context: Context, dayDigits: String, mood: NotificationMood, sizeDp: Float): Bitmap? =
         runCatching {
-            val size = STATUS_ICON_SIZE
-            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            val white = Color.WHITE
+            val icon = squareIcon(context, sizeDp)
+            val size = icon.size
             val unit = size / 108f
+            val white = Color.WHITE
 
             val frame = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = white
                 style = Paint.Style.STROKE
-                strokeWidth = 7f * unit
+                strokeWidth = 5f * unit
             }
-            canvas.drawRoundRect(
-                RectF(10f * unit, 18f * unit, 98f * unit, 98f * unit),
-                16f * unit,
-                16f * unit,
+            icon.canvas.drawRoundRect(
+                RectF(9f * unit, 16f * unit, 99f * unit, 100f * unit),
+                14f * unit,
+                14f * unit,
                 frame,
             )
 
             val rings = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = white
-                strokeWidth = 8f * unit
+                strokeWidth = 7f * unit
                 strokeCap = Paint.Cap.ROUND
             }
-            canvas.drawLine(32f * unit, 8f * unit, 32f * unit, 24f * unit, rings)
-            canvas.drawLine(76f * unit, 8f * unit, 76f * unit, 24f * unit, rings)
+            icon.canvas.drawLine(31f * unit, 7f * unit, 31f * unit, 23f * unit, rings)
+            icon.canvas.drawLine(77f * unit, 7f * unit, 77f * unit, 23f * unit, rings)
 
-            if (mood != NotificationMood.QUIET && mood != NotificationMood.TASKS_DUE) {
-                val mark = 32f * unit
+            if (mood != NotificationMood.QUIET) {
+                val mark = 26f * unit
                 drawMoodMark(
-                    canvas = canvas,
+                    canvas = icon.canvas,
                     tint = white,
                     mood = mood,
-                    box = RectF(size / 2f - mark / 2f, 26f * unit, size / 2f + mark / 2f, 26f * unit + mark),
+                    box = RectF(size / 2f - mark / 2f, 22f * unit, size / 2f + mark / 2f, 22f * unit + mark),
                 )
             }
 
-            val boxWidth = 76f * unit
-            val boxHeight = (if (mood == NotificationMood.QUIET || mood == NotificationMood.TASKS_DUE) 66f else 54f) * unit
-            val textSize = fitTextSize(dayDigits, vazirTypeface(context, 800), boxWidth, boxHeight)
-            val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = white
-                textAlign = Paint.Align.CENTER
-                typeface = vazirTypeface(context, 800)
-                this.textSize = textSize
-                style = Paint.Style.FILL_AND_STROKE
-                strokeWidth = textSize * 0.05f
-                strokeJoin = Paint.Join.ROUND
-            }
-            val centerY = (if (mood == NotificationMood.QUIET || mood == NotificationMood.TASKS_DUE) 64f else 74f) * unit
-            val baseline = centerY - (textPaint.descent() + textPaint.ascent()) / 2f
-            canvas.drawText(dayDigits, size / 2f, baseline, textPaint)
-
-            if (mood == NotificationMood.TASKS_DUE) {
-                val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = white }
-                canvas.drawCircle(size / 2f, 30f * unit, 5f * unit, dot)
-            }
-            bitmap
+            // The page body keeps almost all of its 108-unit grid for the number itself.
+            drawDayNumber(
+                canvas = icon.canvas,
+                text = dayDigits,
+                box = RectF(15f * unit, 50f * unit, 93f * unit, 95f * unit),
+                typeface = vazirTypeface(context, 800),
+                color = white,
+            )
+            icon.bitmap
         }.getOrNull()
 
+    /** A transparent square bitmap whose density makes it exactly [sizeDp] dp wide. */
+    private class SquareIcon(val bitmap: Bitmap, val canvas: Canvas, val size: Float)
+
+    private fun squareIcon(context: Context, sizeDp: Float): SquareIcon {
+        val metrics = context.resources.displayMetrics
+        val pixels = (sizeDp * metrics.density).roundToInt().coerceIn(16, 1024)
+        val bitmap = Bitmap.createBitmap(pixels, pixels, Bitmap.Config.ARGB_8888)
+        // Matching the density is what turns the generated pixels into 1:1 status-bar pixels.
+        bitmap.density = metrics.densityDpi
+        return SquareIcon(bitmap, Canvas(bitmap), pixels.toFloat())
+    }
+
+    /** The tight ink box of the number at the text size that fits [box], plus that text size. */
+    private class DayNumber(val textSize: Float, val ink: RectF)
+
     /**
-     * Largest text size at which [text] still fits [boxWidth] by [boxHeight]. Measuring the height
-     * as well as the width is what keeps "8" and "28" equally tall inside the status bar.
+     * Draws [text] so its ink fills [box]: the tighter axis is fitted, and the axis that is still
+     * free is stretched by at most [MAX_ANISOTROPY]. Without that stretch a two-digit day would use
+     * barely half of the icon height, because two digits side by side are much wider than tall.
      */
-    private fun fitTextSize(text: String, typeface: Typeface, boxWidth: Float, boxHeight: Float): Float {
-        val probeSize = 100f
+    private fun drawDayNumber(canvas: Canvas, text: String, box: RectF, typeface: Typeface, color: Int) {
+        if (text.isBlank() || box.width() <= 0f || box.height() <= 0f) return
+        val fitted = fitDayNumber(text, typeface, box.width(), box.height())
+        val ink = fitted.ink
+        val stretchX = (box.width() / ink.width().coerceAtLeast(1f)).coerceIn(1f, MAX_ANISOTROPY)
+        val stretchY = (box.height() / ink.height().coerceAtLeast(1f)).coerceIn(1f, MAX_ANISOTROPY)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            this.typeface = typeface
+            textSize = fitted.textSize
+            textAlign = Paint.Align.LEFT
+            style = Paint.Style.FILL_AND_STROKE
+            // Thickening the outline keeps hairline Persian strokes visible at 18dp.
+            strokeWidth = fitted.textSize * 0.085f
+            strokeJoin = Paint.Join.ROUND
+            strokeCap = Paint.Cap.ROUND
+        }
+        val centerX = box.centerX()
+        val centerY = box.centerY()
+        val drawX = centerX - ink.centerX()
+        val baseline = centerY - (ink.top + ink.bottom) / 2f
+        canvas.save()
+        // Scale about the box centre so the measured ink lands exactly inside the box.
+        canvas.scale(stretchX, stretchY, centerX, centerY)
+        canvas.drawText(text, drawX, baseline, paint)
+        canvas.restore()
+    }
+
+    /**
+     * Largest text size at which the ink of [text] still fits [boxWidth] by [boxHeight]. Measuring
+     * the ink rather than the font's line box is what lets "8" and "28" fill the icon equally.
+     */
+    private fun fitDayNumber(text: String, typeface: Typeface, boxWidth: Float, boxHeight: Float): DayNumber {
         val probe = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = typeface
-            this.textSize = probeSize
-            textAlign = Paint.Align.CENTER
+            textSize = PROBE_TEXT_SIZE
         }
-        val width = probe.measureText(text).coerceAtLeast(1f)
-        val height = (probe.descent() - probe.ascent()).coerceAtLeast(1f)
-        return probeSize * minOf(boxWidth / width, boxHeight / height)
+        val probeBounds = Rect()
+        probe.getTextBounds(text, 0, text.length, probeBounds)
+        val inkWidth = probeBounds.width().coerceAtLeast(1).toFloat() / PROBE_TEXT_SIZE
+        val inkHeight = probeBounds.height().coerceAtLeast(1).toFloat() / PROBE_TEXT_SIZE
+        val textSize = min(boxWidth / inkWidth, boxHeight / inkHeight)
+        val bounds = Rect()
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.typeface = typeface
+            this.textSize = textSize
+        }.getTextBounds(text, 0, text.length, bounds)
+        return DayNumber(textSize, RectF(bounds))
     }
 
     /** Compact monochrome marks that keep the status icon recognizable for each mood. */

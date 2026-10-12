@@ -77,4 +77,9 @@
     <string name="calendar_days_today">امروز</string>
     <string name="calendar_days_tomorrow">فردا</string>
     <string name="calendar_days_left">%1$d روز دیگر</string>
+    <string name="calendar_filter_upcoming_only">از امروز</string>
+    <string name="calendar_month_all">همهٔ ماه‌ها</string>
+    <string name="calendar_show_more_occasions">%1$d مورد دیگر را نشان بده</string>
+    <string name="calendar_show_less">بستن فهرست</string>
+    <string name="calendar_search_clear">پاک‌کردن جست‌وجو</string>
 </resources>

@@ -193,7 +193,7 @@
     <string name="dash_category_all">همه دسته‌ها</string>
     <string name="settings_status_calendar">تقویم نوار وضعیت</string>
     <string name="settings_status_icon_style">آیکون نوار وضعیت</string>
-    <string name="settings_status_icon_style_hint">عدد روز توی نوار وضعیت خیلی کوچیک است. شکلی را انتخاب کن که روی گوشی تو راحت خوانده شود؛ نوار تیره همان اندازهٔ واقعی است و زیرش همان آیکون را بزرگ می‌بینی.</string>
+    <string name="settings_status_icon_style_hint">عدد روز حالا تا آخرین فضایی که نوار وضعیت می‌دهد بزرگ می‌شود و دقیقاً در همان اندازه‌ای رندر می‌شود که اندروید نشان می‌دهد؛ برای همین خطوطش تیز می‌ماند و محو نمی‌شود. نوار تیره اندازهٔ واقعی است و پیش‌نمای بزرگ، همان آیکون بزرگ‌شده.</string>
     <string name="settings_status_icon_style_bold">عدد درشت</string>
     <string name="settings_status_icon_style_page">برگهٔ تقویم</string>
     <string name="settings_status_icon_style_icon">فقط آیکون</string>
@@ -230,4 +230,7 @@
     <string name="settings_coverage_categories">%1$d نوع از ۵ نوع مناسبت به کار رفته</string>
     <string name="calendar_notification_upcoming_title">مناسبت‌های برگزیده در پیش است</string>
     <string name="calendar_notification_upcoming_days">%1$s روز دیگر</string>
+    <string name="dash_filters">فیلترها</string>
+    <string name="dash_search">جست‌وجو</string>
+    <string name="dash_no_upcoming_occasion">مناسبت برگزیده‌ای پیش رو نیست.</string>
 </resources>

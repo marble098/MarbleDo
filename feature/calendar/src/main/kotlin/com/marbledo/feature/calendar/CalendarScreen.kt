@@ -1,14 +1,8 @@
 package com.marbledo.feature.calendar
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.TextButton
-import androidx.compose.material.icons.outlined.Add
-import com.marbledo.domain.model.CalendarDisplayMode
-import androidx.compose.material.icons.outlined.EditCalendar
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +14,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -29,22 +25,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AddTask
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.outlined.FilterAlt
-import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,9 +59,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
@@ -67,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.core.designsystem.MarbleTextStyles
+import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
@@ -93,6 +98,22 @@ private data class MonthData(val monthIndex: Int, val year: Int, val cells: List
 /** An occasion the user wants to turn into a task, a preparation task or a countdown. */
 private data class PlannedOccasion(val occasion: Occasion, val epochMillis: Long)
 
+/** One month of the browsable occasion list. */
+private data class OccasionMonthGroup(val month: Int, val year: Int, val rows: List<DatedOccasion>)
+
+/** Rows a month shows before its "show more" line, so a year of occasions stays scannable. */
+private const val OCCASIONS_PER_MONTH = 10
+
+/**
+ * The calendar: one header with today's three dates and the calendar actions, one navigation bar,
+ * one view switch, and then the four views.
+ *
+ * The occasion list is built for browsing rather than for dumping a year on the screen: the year is
+ * grouped into months with their own headers, months are chips you can jump to, the default scope
+ * is "from today onwards", every filter lives in one chip row, and each month shows ten rows before
+ * it offers the rest. Nothing was taken away — every filter, the search, the export and the whole
+ * year are all still one tap away.
+ */
 @Composable
 fun CalendarScreen(
     tasks: List<Task>,
@@ -136,6 +157,12 @@ fun CalendarScreen(
     var showFilters by rememberSaveable { mutableStateOf(false) }
     var showPrograms by rememberSaveable { mutableStateOf(false) }
     var showWorkday by rememberSaveable { mutableStateOf(false) }
+    // Browsing state for the occasion list: the year opens on "from today onwards", one month at a
+    // time can be pulled to the front, and the search field stays folded until it is wanted.
+    var upcomingOnly by rememberSaveable { mutableStateOf(true) }
+    var occasionMonth by rememberSaveable { mutableStateOf<Int?>(null) }
+    var occasionSearchOpen by rememberSaveable { mutableStateOf(false) }
+    var expandedMonths by rememberSaveable { mutableStateOf("") }
     val educationEnabled = OccasionCategory.EDUCATIONAL in enabledCategories
     LaunchedEffect(enabledCategories) {
         if (filterCategory !in enabledCategories) filterCategory = null
@@ -193,11 +220,43 @@ fun CalendarScreen(
     )
     val yearOccasions = remember(yearRows, filter, favoriteOccasionIds) {
         OccasionSearch.filter(yearRows, filter, favoriteOccasionIds)
-            .sortedBy { if (it.occasion.id in favoriteOccasionIds) 0 else 1 }
     }
     val favoriteOccasionsCount = remember(yearRows, favoriteOccasionIds) {
         yearRows.count { it.occasion.id in favoriteOccasionIds }
     }
+    // "From today onwards" is what makes a thousand-row year browsable; the toggle shows the rest.
+    val upcomingOccasions = remember(yearOccasions, upcomingOnly, zone, todayEpoch) {
+        if (!upcomingOnly) yearOccasions
+        else yearOccasions.filter { row ->
+            val epoch = PersianDateUtils.startOfJalaliDay(row.year, row.month, row.day, zone)
+            epoch == null || epoch >= todayEpoch
+        }
+    }
+    val monthCounts = remember(upcomingOccasions) { upcomingOccasions.groupingBy { it.month }.eachCount() }
+    val monthGroups = remember(upcomingOccasions, occasionMonth, favoriteOccasionIds) {
+        val scoped = if (occasionMonth == null) upcomingOccasions else upcomingOccasions.filter { it.month == occasionMonth }
+        scoped.groupBy { it.month }.map { (month, rows) ->
+            OccasionMonthGroup(
+                month = month,
+                year = rows.firstOrNull()?.year ?: monthData.year,
+                // Starred occasions lead inside their own month, so the list stays chronological.
+                rows = rows.sortedWith(compareBy({ if (it.occasion.id in favoriteOccasionIds) 0 else 1 }, { it.day })),
+            )
+        }
+    }
+    val expandedMonthSet = remember(expandedMonths) {
+        expandedMonths.split(',').mapNotNull { it.trim().toIntOrNull() }.toSet()
+    }
+    val activeFilterCount = listOfNotNull(
+        filterCategory,
+        filterCalendar,
+        true.takeIf { holidaysOnly },
+        true.takeIf { culturalOnly },
+        true.takeIf { educationOnly },
+        true.takeIf { academicYear },
+        true.takeIf { favoritesOnly },
+    ).size
+
     if (showFilters) {
         OccasionFilterSheet(filterCategory, filterCalendar, enabledCategories,
             onCategory = { filterCategory = it }, onCalendar = { filterCalendar = it }, onDismiss = { showFilters = false })
@@ -260,140 +319,45 @@ fun CalendarScreen(
     }
 
     Column(modifier.fillMaxSize()) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.primaryContainer,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 6.dp, top = 13.dp, bottom = 13.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
-                    Icon(
-                        Icons.Outlined.CalendarMonth,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(9.dp).size(22.dp),
-                    )
-                }
-                Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        stringResource(R.string.calendar_title),
-                        style = MarbleTextStyles.cardTitle.copy(fontSize = 21.sp, lineHeight = 28.sp),
-                    )
-                    Text(
-                        PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
-                        style = MarbleTextStyles.metaLabel,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                IconButton(onClick = { showGoToDate = true }) {
-                    Icon(Icons.Outlined.EditCalendar, contentDescription = stringResource(R.string.calendar_go_to_date))
-                }
-                OccasionSyncButton(occasionState.isRefreshing, onRefreshOccasions)
-            }
-        }
-
-        OccasionSyncStatus(
-            state = occasionState,
+        CalendarHeader(
+            todayEpoch = todayEpoch,
             languageTag = languageTag,
             numeralMode = numeralMode,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 1.dp),
+            lunarOffsetDays = lunarOffsetDays,
+            occasionState = occasionState,
+            onOpenGoToDate = { showGoToDate = true },
+            onOpenWorkday = { showWorkday = true },
+            onRefreshOccasions = onRefreshOccasions,
         )
 
-        TextButton(onClick = { showWorkday = true }, modifier = Modifier.padding(horizontal = 14.dp)) {
-            Icon(Icons.Outlined.WorkOutline, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(stringResource(R.string.calendar_workday_title))
-        }
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 1.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-                val isYearView = viewMode == CalendarViewMode.YEAR || viewMode == CalendarViewMode.OCCASIONS
-                val step = if (isYearView) 12 else 1
-                IconButton(onClick = { monthOffset -= step }) {
-                    Icon(
-                        if (rtl) Icons.Outlined.ChevronRight else Icons.Outlined.ChevronLeft,
-                        contentDescription = stringResource(if (isYearView) R.string.calendar_previous_year else R.string.calendar_previous_month),
-                    )
-                }
-                Text(
-                    if (isYearView) {
-                        TextNormalizer.formatDigits(monthData.year.toString(), numeralMode)
-                    } else {
-                        TextNormalizer.formatDigits(
-                            stringResource(R.string.calendar_month_year, PersianDateUtils.monthName(monthData.monthIndex, languageTag), monthData.year),
-                            numeralMode,
-                        )
-                    },
-                    style = MarbleTextStyles.yearDigits.copy(fontSize = 19.sp, lineHeight = 26.sp),
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
+        CalendarNavigator(
+            rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
+            monthLabel = if (viewMode == CalendarViewMode.YEAR || viewMode == CalendarViewMode.OCCASIONS) {
+                TextNormalizer.formatDigits(monthData.year.toString(), numeralMode)
+            } else {
+                TextNormalizer.formatDigits(
+                    stringResource(R.string.calendar_month_year, PersianDateUtils.monthName(monthData.monthIndex, languageTag), monthData.year),
+                    numeralMode,
                 )
-                IconButton(onClick = { monthOffset += step }) {
-                    Icon(
-                        if (rtl) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,
-                        contentDescription = stringResource(if (isYearView) R.string.calendar_next_year else R.string.calendar_next_month),
-                    )
-                }
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable {
-                        monthOffset = 0
-                        selectedIsoDate = todayDate.toString()
-                    },
-                ) {
-                    Text(
-                        stringResource(R.string.calendar_today),
-                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = MarbleTextStyles.metaLabel,
-                    )
-                }
-            }
-        }
+            },
+            yearScope = viewMode == CalendarViewMode.YEAR || viewMode == CalendarViewMode.OCCASIONS,
+            onPrevious = { monthOffset -= if (viewMode == CalendarViewMode.YEAR || viewMode == CalendarViewMode.OCCASIONS) 12 else 1 },
+            onNext = { monthOffset += if (viewMode == CalendarViewMode.YEAR || viewMode == CalendarViewMode.OCCASIONS) 12 else 1 },
+            onToday = {
+                monthOffset = 0
+                selectedIsoDate = todayDate.toString()
+            },
+        )
 
-        androidx.compose.foundation.lazy.LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(CalendarViewMode.entries, key = { it.name }) { mode ->
-                FilterChip(
-                    selected = viewMode == mode,
-                    onClick = { viewMode = mode },
-                    label = {
-                        Text(
-                            when (mode) {
-                                CalendarViewMode.MONTH -> stringResource(R.string.calendar_view_month)
-                                CalendarViewMode.AGENDA -> stringResource(R.string.calendar_view_agenda)
-                                CalendarViewMode.OCCASIONS -> stringResource(R.string.calendar_view_occasions)
-                                CalendarViewMode.YEAR -> stringResource(R.string.calendar_view_year)
-                            },
-                        )
-                    },
-                )
-            }
-        }
+        CalendarViewSwitch(selected = viewMode, onSelect = { viewMode = it })
 
         when (viewMode) {
             CalendarViewMode.MONTH -> {
                 Column(Modifier.fillMaxWidth().weight(1f)) {
                     WeekdayHeader(weekStartsSaturday)
                     Surface(
-                        modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 10.dp, vertical = 2.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
+                        modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 12.dp, vertical = 2.dp),
+                        shape = MaterialTheme.shapes.large,
                         color = MaterialTheme.colorScheme.surface,
                     ) {
                         LazyVerticalGrid(
@@ -459,23 +423,22 @@ fun CalendarScreen(
 
             CalendarViewMode.OCCASIONS -> {
                 Column(Modifier.fillMaxWidth().weight(1f)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            TextNormalizer.formatDigits(
-                                if (educationEnabled && academicYear) stringResource(R.string.calendar_academic_year, monthData.year, monthData.year + 1)
-                                else stringResource(R.string.calendar_all_year_occasions, monthData.year), numeralMode),
-                            modifier = Modifier.weight(1f),
-                            style = MarbleTextStyles.itemTitle,
-                        )
-                        IconButton(onClick = { showFilters = true }) {
-                            Icon(Icons.Outlined.FilterAlt, contentDescription = stringResource(R.string.calendar_filters_title),
-                                tint = if (filterCategory != null || filterCalendar != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
-                        }
-                        IconButton(enabled = yearOccasions.isNotEmpty() && !exportInProgress, onClick = {
-                            val entries = yearOccasions.mapNotNull { dated ->
+                    OccasionBrowseToolbar(
+                        year = monthData.year,
+                        academicYear = educationEnabled && academicYear,
+                        visibleCount = upcomingOccasions.size,
+                        numeralMode = numeralMode,
+                        searchOpen = occasionSearchOpen,
+                        activeFilterCount = activeFilterCount,
+                        canExport = upcomingOccasions.isNotEmpty() && !exportInProgress,
+                        exportInProgress = exportInProgress,
+                        onToggleSearch = {
+                            occasionSearchOpen = !occasionSearchOpen
+                            if (!occasionSearchOpen) occasionQuery = ""
+                        },
+                        onOpenFilters = { showFilters = true },
+                        onExport = {
+                            val entries = upcomingOccasions.mapNotNull { dated ->
                                 val epoch = PersianDateUtils.startOfJalaliDay(dated.year, dated.month, dated.day, zone) ?: return@mapNotNull null
                                 val occasion = dated.occasion
                                 val notes = buildList {
@@ -490,31 +453,42 @@ fun CalendarScreen(
                             }
                             val scopeLabel = if (educationEnabled && academicYear) "${monthData.year}-${monthData.year + 1}" else monthData.year.toString()
                             onExport(CalendarExportRequest("MarbleDo-$scopeLabel.ics", entries))
-                        }) {
-                            Icon(Icons.Outlined.Download, contentDescription = stringResource(R.string.calendar_export_ics))
-                        }
-                        Text(
-                            TextNormalizer.formatDigits(stringResource(R.string.calendar_year_occasions_count, yearOccasions.size), numeralMode),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        },
+                    )
+                    AnimatedVisibility(visible = occasionSearchOpen || occasionQuery.isNotBlank()) {
+                        OutlinedTextField(
+                            value = occasionQuery,
+                            onValueChange = { occasionQuery = it },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
+                            placeholder = { Text(stringResource(R.string.calendar_search_occasions)) },
+                            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                            trailingIcon = {
+                                if (occasionQuery.isNotBlank()) {
+                                    IconButton(onClick = { occasionQuery = "" }) {
+                                        Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.calendar_search_clear))
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                            shape = MaterialTheme.shapes.large,
                         )
                     }
-                    androidx.compose.foundation.lazy.LazyRow(
+                    LazyRow(
                         modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 14.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 2.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        item(key = "all") {
+                        item(key = "scope") {
                             FilterChip(
-                                selected = !favoritesOnly,
-                                onClick = { favoritesOnly = false },
-                                label = { Text(stringResource(R.string.calendar_filter_all)) },
+                                selected = upcomingOnly,
+                                onClick = { upcomingOnly = !upcomingOnly },
+                                label = { Text(stringResource(R.string.calendar_filter_upcoming_only)) },
                             )
                         }
                         item(key = "favorites") {
                             FilterChip(
                                 selected = favoritesOnly,
-                                onClick = { favoritesOnly = true },
+                                onClick = { favoritesOnly = !favoritesOnly },
                                 label = {
                                     Text(
                                         TextNormalizer.formatDigits(
@@ -526,85 +500,156 @@ fun CalendarScreen(
                                 leadingIcon = { Icon(Icons.Outlined.StarBorder, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             )
                         }
-                    }
-                    androidx.compose.foundation.lazy.LazyRow(
-                        contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        item {
+                        item(key = "holidays") {
                             FilterChip(selected = holidaysOnly, onClick = { holidaysOnly = !holidaysOnly },
                                 label = { Text(stringResource(R.string.calendar_filter_holidays)) })
                         }
-                        item {
+                        item(key = "culture") {
                             FilterChip(selected = culturalOnly, onClick = { culturalOnly = !culturalOnly },
                                 label = { Text(stringResource(R.string.calendar_filter_culture)) })
                         }
                         if (educationEnabled) {
-                            item {
+                            item(key = "school") {
                                 FilterChip(selected = educationOnly, onClick = { educationOnly = !educationOnly },
                                     label = { Text(stringResource(R.string.calendar_filter_school)) })
                             }
-                            item {
+                            item(key = "academic") {
                                 FilterChip(selected = academicYear, onClick = { academicYear = !academicYear },
                                     label = { Text(stringResource(R.string.calendar_academic_scope)) })
                             }
-                            item { TextButton(onClick = { showPrograms = true }) { Text(stringResource(R.string.school_programs_title)) } }
+                            item(key = "programs") {
+                                TextButton(onClick = { showPrograms = true }) { Text(stringResource(R.string.school_programs_title)) }
+                            }
                         }
-                        item {
-                            TextButton(onClick = {
-                                occasionQuery = ""; filterCategory = null; filterCalendar = null
-                                favoritesOnly = false; holidaysOnly = false; culturalOnly = false; educationOnly = false
-                            }) { Text(stringResource(R.string.calendar_filters_reset)) }
+                        if (activeFilterCount > 0 || occasionQuery.isNotBlank()) {
+                            item(key = "reset") {
+                                TextButton(onClick = {
+                                    occasionQuery = ""
+                                    filterCategory = null
+                                    filterCalendar = null
+                                    favoritesOnly = false
+                                    holidaysOnly = false
+                                    culturalOnly = false
+                                    educationOnly = false
+                                    academicYear = false
+                                    occasionMonth = null
+                                    upcomingOnly = true
+                                }) { Text(stringResource(R.string.calendar_filters_reset)) }
+                            }
                         }
                     }
-                    if (filterCategory != null || filterCalendar != null) {
-                        Text(listOfNotNull(filterCategory?.let { stringResource(categoryLabelRes(it)) },
-                            filterCalendar?.let { stringResource(calendarLabelRes(it)) }).joinToString(" · "),
-                            modifier = Modifier.padding(horizontal = 18.dp), style = MaterialTheme.typography.labelSmall)
+                    if (monthCounts.size > 1) {
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            item(key = "all-months") {
+                                FilterChip(
+                                    selected = occasionMonth == null,
+                                    onClick = { occasionMonth = null },
+                                    label = { Text(stringResource(R.string.calendar_month_all)) },
+                                )
+                            }
+                            items((1..12).filter { (monthCounts[it] ?: 0) > 0 }, key = { it }) { month ->
+                                FilterChip(
+                                    selected = occasionMonth == month,
+                                    onClick = { occasionMonth = if (occasionMonth == month) null else month },
+                                    label = {
+                                        Text(
+                                            TextNormalizer.formatDigits(
+                                                "${PersianDateUtils.monthName(month, languageTag)} ${monthCounts[month] ?: 0}",
+                                                numeralMode,
+                                            ),
+                                            maxLines = 1,
+                                        )
+                                    },
+                                )
+                            }
+                        }
                     }
-                    androidx.compose.material3.OutlinedTextField(
-                        value = occasionQuery,
-                        onValueChange = { occasionQuery = it },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
-                        placeholder = { Text(stringResource(R.string.calendar_search_occasions)) },
-                        leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null) },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                    )
-                    if (yearOccasions.isEmpty()) {
+                    if (occasionListIsEmpty(monthGroups)) {
                         EmptyMessage(
-                            stringResource(if (occasionQuery.isBlank()) R.string.calendar_no_year_occasions else R.string.calendar_no_matching_occasions),
+                            stringResource(
+                                when {
+                                    occasionQuery.isNotBlank() -> R.string.calendar_no_matching_occasions
+                                    occasionMonth != null -> R.string.calendar_no_month_occasions
+                                    else -> R.string.calendar_no_year_occasions
+                                },
+                            ),
                             Modifier.weight(1f),
                         )
                     } else {
                         LazyColumn(
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            items(yearOccasions, key = { "${it.year}-${it.month}-${it.day}-${it.occasion.id}" }) { dated ->
-                                val rowEpoch = remember(dated.year, dated.month, dated.day, zone) {
-                                    PersianDateUtils.startOfJalaliDay(dated.year, dated.month, dated.day, zone)
+                            monthGroups.forEach { group ->
+                                item(key = "occasions-month-${group.month}-${group.year}") {
+                                    OccasionMonthHeader(
+                                        month = group.month,
+                                        languageTag = languageTag,
+                                        count = group.rows.size,
+                                        numeralMode = numeralMode,
+                                    )
                                 }
-                                OccasionRow(
-                                    month = dated.month,
-                                    day = dated.day,
-                                    year = dated.year,
-                                    occasion = dated.occasion,
-                                    languageTag = languageTag,
-                                    numeralMode = numeralMode,
-                                    weekdayIndex = weekdayIndexFor(dated.year, dated.month, dated.day, zone),
-                                    isFavorite = dated.occasion.id in favoriteOccasionIds,
-                                    daysUntil = rowEpoch?.let { epoch ->
-                                        java.time.temporal.ChronoUnit.DAYS.between(
-                                            todayDate,
-                                            Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate(),
-                                        )
-                                    },
-                                    onToggleFavorite = { onToggleFavorite(dated.occasion.id) },
-                                    onPlan = rowEpoch?.let { epoch ->
-                                        { plannedOccasion = PlannedOccasion(dated.occasion, epoch) }
-                                    },
-                                )
+                                val expanded = group.month in expandedMonthSet || occasionQuery.isNotBlank()
+                                val shown = if (expanded) group.rows else group.rows.take(OCCASIONS_PER_MONTH)
+                                items(shown, key = { "${it.year}-${it.month}-${it.day}-${it.occasion.id}" }) { dated ->
+                                    val rowEpoch = remember(dated.year, dated.month, dated.day, zone) {
+                                        PersianDateUtils.startOfJalaliDay(dated.year, dated.month, dated.day, zone)
+                                    }
+                                    OccasionRow(
+                                        month = dated.month,
+                                        day = dated.day,
+                                        year = dated.year,
+                                        occasion = dated.occasion,
+                                        languageTag = languageTag,
+                                        numeralMode = numeralMode,
+                                        weekdayIndex = weekdayIndexFor(dated.year, dated.month, dated.day, zone),
+                                        isFavorite = dated.occasion.id in favoriteOccasionIds,
+                                        daysUntil = rowEpoch?.let { epoch ->
+                                            java.time.temporal.ChronoUnit.DAYS.between(
+                                                todayDate,
+                                                Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate(),
+                                            )
+                                        },
+                                        onToggleFavorite = { onToggleFavorite(dated.occasion.id) },
+                                        onPlan = rowEpoch?.let { epoch ->
+                                            { plannedOccasion = PlannedOccasion(dated.occasion, epoch) }
+                                        },
+                                    )
+                                }
+                                if (!expanded && group.rows.size > OCCASIONS_PER_MONTH) {
+                                    item(key = "occasions-more-${group.month}") {
+                                        TextButton(
+                                            onClick = {
+                                                val next = expandedMonthSet + group.month
+                                                expandedMonths = next.joinToString(",")
+                                            },
+                                            modifier = Modifier.align(Alignment.Start),
+                                        ) {
+                                            Text(
+                                                TextNormalizer.formatDigits(
+                                                    stringResource(R.string.calendar_show_more_occasions, group.rows.size - OCCASIONS_PER_MONTH),
+                                                    numeralMode,
+                                                ),
+                                            )
+                                        }
+                                    }
+                                } else if (group.month in expandedMonthSet && group.rows.size > OCCASIONS_PER_MONTH) {
+                                    item(key = "occasions-less-${group.month}") {
+                                        TextButton(
+                                            onClick = {
+                                                expandedMonths = (expandedMonthSet - group.month).joinToString(",")
+                                            },
+                                            modifier = Modifier.align(Alignment.Start),
+                                        ) {
+                                            Text(stringResource(R.string.calendar_show_less))
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -647,6 +692,220 @@ fun CalendarScreen(
     }
 }
 
+/** True when the browsable list has nothing left to show. */
+private fun occasionListIsEmpty(groups: List<OccasionMonthGroup>): Boolean = groups.all { it.rows.isEmpty() }
+
+/**
+ * Title, today's three dates and one row of actions, with the catalog status folded into a single
+ * line underneath. The workday helper, "go to date" and the catalog refresh all live here instead
+ * of taking three separate rows above the calendar.
+ */
+@Composable
+private fun CalendarHeader(
+    todayEpoch: Long,
+    languageTag: String,
+    numeralMode: NumeralMode,
+    lunarOffsetDays: Int,
+    occasionState: OccasionState,
+    onOpenGoToDate: () -> Unit,
+    onOpenWorkday: () -> Unit,
+    onRefreshOccasions: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.primaryContainer,
+    ) {
+        Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        stringResource(R.string.calendar_title),
+                        style = MarbleTextStyles.cardTitle.copy(fontSize = 21.sp, lineHeight = 28.sp),
+                    )
+                    Text(
+                        PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
+                        style = MarbleTextStyles.metaLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                IconButton(onClick = onOpenGoToDate) {
+                    Icon(Icons.Outlined.EditCalendar, contentDescription = stringResource(R.string.calendar_go_to_date))
+                }
+                IconButton(onClick = onOpenWorkday) {
+                    Icon(Icons.Outlined.WorkOutline, contentDescription = stringResource(R.string.calendar_workday_title))
+                }
+                OccasionSyncButton(occasionState.isRefreshing, onRefreshOccasions)
+            }
+            OccasionSyncStatus(
+                state = occasionState,
+                languageTag = languageTag,
+                numeralMode = numeralMode,
+                modifier = Modifier.padding(end = 8.dp, top = 2.dp),
+            )
+        }
+    }
+}
+
+/** Month or year stepper with the "today" jump; the view switch sits directly below it. */
+@Composable
+private fun CalendarNavigator(
+    rtl: Boolean,
+    monthLabel: String,
+    yearScope: Boolean,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onToday: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onPrevious) {
+            Icon(
+                if (rtl) Icons.Outlined.ChevronRight else Icons.Outlined.ChevronLeft,
+                contentDescription = stringResource(if (yearScope) R.string.calendar_previous_year else R.string.calendar_previous_month),
+            )
+        }
+        Text(
+            monthLabel,
+            style = MarbleTextStyles.yearDigits.copy(fontSize = 19.sp, lineHeight = 26.sp),
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center,
+        )
+        IconButton(onClick = onNext) {
+            Icon(
+                if (rtl) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,
+                contentDescription = stringResource(if (yearScope) R.string.calendar_next_year else R.string.calendar_next_month),
+            )
+        }
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.clickable(onClick = onToday),
+        ) {
+            Text(
+                stringResource(R.string.calendar_today),
+                modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = MarbleTextStyles.metaLabel,
+            )
+        }
+    }
+}
+
+/** Four equally weighted segments instead of four chips competing with the filter chips. */
+@Composable
+private fun CalendarViewSwitch(selected: CalendarViewMode, onSelect: (CalendarViewMode) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        CalendarViewMode.entries.forEach { mode ->
+            val isSelected = mode == selected
+            Surface(
+                shape = CircleShape,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.weight(1f).clickable { onSelect(mode) },
+            ) {
+                Text(
+                    when (mode) {
+                        CalendarViewMode.MONTH -> stringResource(R.string.calendar_view_month)
+                        CalendarViewMode.AGENDA -> stringResource(R.string.calendar_view_agenda)
+                        CalendarViewMode.OCCASIONS -> stringResource(R.string.calendar_view_occasions)
+                        CalendarViewMode.YEAR -> stringResource(R.string.calendar_view_year)
+                    },
+                    style = MarbleTextStyles.metaLabel,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                )
+            }
+        }
+    }
+}
+
+/** One line above the occasion list: what is listed, how to search it, and how to narrow it. */
+@Composable
+private fun OccasionBrowseToolbar(
+    year: Int,
+    academicYear: Boolean,
+    visibleCount: Int,
+    numeralMode: NumeralMode,
+    searchOpen: Boolean,
+    activeFilterCount: Int,
+    canExport: Boolean,
+    exportInProgress: Boolean,
+    onToggleSearch: () -> Unit,
+    onOpenFilters: () -> Unit,
+    onExport: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(
+                TextNormalizer.formatDigits(
+                    if (academicYear) stringResource(R.string.calendar_academic_year, year, year + 1)
+                    else stringResource(R.string.calendar_all_year_occasions, year),
+                    numeralMode,
+                ),
+                style = MarbleTextStyles.itemTitle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                TextNormalizer.formatDigits(stringResource(R.string.calendar_year_occasions_count, visibleCount), numeralMode),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = onToggleSearch) {
+            Icon(
+                if (searchOpen) Icons.Outlined.Close else Icons.Outlined.Search,
+                contentDescription = stringResource(R.string.calendar_search_occasions),
+                tint = if (searchOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Box {
+            IconButton(onClick = onOpenFilters) {
+                Icon(
+                    Icons.Outlined.FilterAlt,
+                    contentDescription = stringResource(R.string.calendar_filters_title),
+                    tint = if (activeFilterCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (activeFilterCount > 0) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 4.dp),
+                ) {
+                    Text(
+                        TextNormalizer.formatDigits(activeFilterCount.toString(), numeralMode),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 5.dp).padding(bottom = 1.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+        IconButton(enabled = canExport && !exportInProgress, onClick = onExport) {
+            if (exportInProgress) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Outlined.Download, contentDescription = stringResource(R.string.calendar_export_ics))
+            }
+        }
+    }
+}
+
 @Composable
 private fun OccasionSyncButton(refreshing: Boolean, onRefresh: () -> Unit) {
     IconButton(onClick = onRefresh, enabled = !refreshing) {
@@ -671,16 +930,14 @@ private fun OccasionSyncStatus(state: OccasionState, languageTag: String, numera
         )
         else -> stringResource(R.string.calendar_sync_bundled)
     }
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(15.dp))
-        Text(
-            TextNormalizer.formatDigits(stringResource(R.string.calendar_occasions_available, state.occasionCount), numeralMode) + " · " + message,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+    Text(
+        TextNormalizer.formatDigits(stringResource(R.string.calendar_occasions_available, state.occasionCount), numeralMode) + " · " + message,
+        modifier = modifier,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
@@ -690,7 +947,7 @@ private fun WeekdayHeader(weekStartsSaturday: Boolean) {
         R.string.calendar_sat, R.string.calendar_sun, R.string.calendar_mon, R.string.calendar_tue,
         R.string.calendar_wed, R.string.calendar_thu, R.string.calendar_fri,
     )
-    Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp)) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp)) {
         order.forEach { weekdayIndex ->
             Text(
                 stringResource(labels[weekdayIndex]),
@@ -711,7 +968,7 @@ private fun DayCellView(
     onClick: () -> Unit,
 ) {
     val isHoliday = occasions.any(Occasion::isHoliday)
-    val background = when {
+    val backgroundColor = when {
         selected -> MaterialTheme.colorScheme.primary
         cell.isToday -> MaterialTheme.colorScheme.primaryContainer
         else -> Color.Transparent
@@ -732,9 +989,16 @@ private fun DayCellView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(background)
+            .height(46.dp)
+            .clip(RoundedCornerShape(15.dp))
+            .background(backgroundColor)
+            .then(
+                if (cell.isToday && !selected) {
+                    Modifier.border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), RoundedCornerShape(15.dp))
+                } else {
+                    Modifier
+                },
+            )
             .semantics(mergeDescendants = true) { contentDescription = cellDescription }
             .clickable(onClick = onClick)
             .padding(horizontal = 2.dp, vertical = 5.dp),
@@ -760,7 +1024,7 @@ private fun DayCellView(
                         when {
                             selected -> MaterialTheme.colorScheme.onPrimary
                             isHoliday -> MaterialTheme.colorScheme.error
-                            else -> MaterialTheme.colorScheme.tertiary
+                            else -> categoryColor(occasions.first().category)
                         },
                     ),
                 )
@@ -794,16 +1058,25 @@ private fun SelectedDayCard(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                PersianDateUtils.fullDateWithWeekday(epoch, languageTag, numeralMode),
-                style = MarbleTextStyles.itemTitle,
-            )
-            Text(
-                PersianDateUtils.tripleDate(epoch, languageTag, numeralMode, lunarOffsetDays),
-                style = MarbleTextStyles.metaLabel,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        PersianDateUtils.fullDateWithWeekday(epoch, languageTag, numeralMode),
+                        style = MarbleTextStyles.itemTitle,
+                    )
+                    Text(
+                        PersianDateUtils.tripleDate(epoch, languageTag, numeralMode, lunarOffsetDays),
+                        style = MarbleTextStyles.metaLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                IconButton(onClick = onAddTask) {
+                    Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.calendar_add_task), tint = MaterialTheme.colorScheme.primary)
+                }
+            }
             if (occasions.isEmpty()) {
                 Text(stringResource(R.string.calendar_no_occasions), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
@@ -815,6 +1088,8 @@ private fun SelectedDayCard(
                             occasion.title(languageTag),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                         )
                         if (occasion.isHoliday) {
                             Text(
@@ -844,60 +1119,58 @@ private fun SelectedDayCard(
                     }
                 }
             }
-            Text(
-                TextNormalizer.formatDigits(stringResource(R.string.calendar_tasks_count, tasks.size), numeralMode),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            val sortedTasks = remember(tasks) { tasks.sortedBy { it.dueAtEpochMillis ?: Long.MAX_VALUE } }
-            val allDayLabel = stringResource(R.string.calendar_all_day)
-            sortedTasks.take(MAX_DAY_CARD_TASKS).forEach { task ->
-                val due = task.dueAtEpochMillis
-                val timeLabel = when {
-                    due == null -> null
-                    task.isAllDay -> allDayLabel
-                    else -> TextNormalizer.formatDigits(
-                        formatClock(Instant.ofEpochMilli(due).atZone(zone).toLocalTime()),
-                        numeralMode,
-                    )
-                }
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.small)
-                        .clickable { onOpenTask(task) }
-                        .padding(vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    if (timeLabel != null) {
-                        Text(
-                            timeLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
-                        )
-                    }
-                    Text(
-                        task.title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-            if (sortedTasks.size > MAX_DAY_CARD_TASKS) {
+            if (tasks.isNotEmpty()) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                 Text(
-                    TextNormalizer.formatDigits(stringResource(R.string.calendar_more_tasks, sortedTasks.size - MAX_DAY_CARD_TASKS), numeralMode),
-                    style = MaterialTheme.typography.labelSmall,
+                    TextNormalizer.formatDigits(stringResource(R.string.calendar_tasks_count, tasks.size), numeralMode),
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-            TextButton(onClick = onAddTask) {
-                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.calendar_add_task))
+                val sortedTasks = remember(tasks) { tasks.sortedBy { it.dueAtEpochMillis ?: Long.MAX_VALUE } }
+                val allDayLabel = stringResource(R.string.calendar_all_day)
+                sortedTasks.take(MAX_DAY_CARD_TASKS).forEach { task ->
+                    val due = task.dueAtEpochMillis
+                    val timeLabel = when {
+                        due == null -> null
+                        task.isAllDay -> allDayLabel
+                        else -> TextNormalizer.formatDigits(
+                            formatClock(Instant.ofEpochMilli(due).atZone(zone).toLocalTime()),
+                            numeralMode,
+                        )
+                    }
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.small)
+                            .clickable { onOpenTask(task) }
+                            .padding(vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        if (timeLabel != null) {
+                            Text(
+                                timeLabel,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                            )
+                        }
+                        Text(
+                            task.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+                if (sortedTasks.size > MAX_DAY_CARD_TASKS) {
+                    Text(
+                        TextNormalizer.formatDigits(stringResource(R.string.calendar_more_tasks, sortedTasks.size - MAX_DAY_CARD_TASKS), numeralMode),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -954,6 +1227,38 @@ private fun AgendaRow(
     }
 }
 
+/** Month header inside the occasion list; it is what turns a thousand rows into readable chapters. */
+@Composable
+private fun OccasionMonthHeader(
+    month: Int,
+    languageTag: String,
+    count: Int,
+    numeralMode: NumeralMode,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            PersianDateUtils.monthName(month, languageTag),
+            style = MarbleTextStyles.sectionTitle,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Box(Modifier.weight(1f).height(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)))
+        Text(
+            TextNormalizer.formatDigits(stringResource(R.string.calendar_occasions_short, count), numeralMode),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * One occasion in the list. The old row stacked day, month, year and weekday in a four-line block
+ * and then a second column of text beside it; this one keeps a two-line date chip, the title, the
+ * metadata and the two actions on a single scannable line.
+ */
 @Composable
 private fun OccasionRow(
     month: Int,
@@ -968,41 +1273,42 @@ private fun OccasionRow(
     onToggleFavorite: () -> Unit,
     onPlan: (() -> Unit)?,
 ) {
+    val accent = categoryColor(occasion.category)
     Surface(
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().then(if (onPlan != null) Modifier.clickable(onClick = onPlan) else Modifier),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(12.dp),
+            Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.secondaryContainer) {
-                Column(
-                    Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        TextNormalizer.formatDigits(day.toString(), numeralMode),
-                        style = MarbleTextStyles.cardTitle.copy(fontSize = 16.sp, lineHeight = 22.sp),
-                    )
-                    Text(PersianDateUtils.monthName(month, languageTag), style = MarbleTextStyles.metaLabel, maxLines = 1)
-                    Text(TextNormalizer.formatDigits(year.toString(), numeralMode), style = MarbleTextStyles.metaLabel)
-                    Text(PersianDateUtils.weekdayShort(weekdayIndex, languageTag), style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+            Box(Modifier.width(3.dp).height(30.dp).clip(RoundedCornerShape(2.dp)).background(accent))
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(40.dp)) {
+                Text(
+                    TextNormalizer.formatDigits(day.toString(), numeralMode),
+                    style = MarbleTextStyles.cardTitle.copy(fontSize = 17.sp, lineHeight = 21.sp),
+                )
+                Text(
+                    PersianDateUtils.weekdayShort(weekdayIndex, languageTag),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(occasion.title(languageTag), style = MarbleTextStyles.itemTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (occasion.evidence == OccasionEvidence.GUIDANCE) {
-                    Text(stringResource(R.string.catalog_evidence_guidance), style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary)
-                }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    occasion.title(languageTag),
+                    style = MarbleTextStyles.itemTitle,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         stringResource(categoryLabelRes(occasion.category)),
                         style = MaterialTheme.typography.labelSmall,
-                        color = categoryColor(occasion.category),
+                        color = accent,
                     )
                     if (daysUntil != null && daysUntil >= 0) {
                         Text(
@@ -1011,35 +1317,32 @@ private fun OccasionRow(
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
+                    if (occasion.isHoliday) {
+                        Text(
+                            stringResource(R.string.calendar_holiday_badge),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
             }
-            if (occasion.isHoliday) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
-                    Text(
-                        stringResource(R.string.calendar_holiday_badge),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                    )
-                }
-            }
-            IconButton(onClick = onToggleFavorite, modifier = Modifier.size(34.dp)) {
+            IconButton(onClick = onToggleFavorite, modifier = Modifier.size(32.dp)) {
                 Icon(
                     if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
                     contentDescription = stringResource(
                         if (isFavorite) R.string.calendar_favorite_remove else R.string.calendar_favorite_add,
                     ),
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(18.dp),
                 )
             }
             if (onPlan != null) {
-                IconButton(onClick = onPlan, modifier = Modifier.size(34.dp)) {
+                IconButton(onClick = onPlan, modifier = Modifier.size(32.dp)) {
                     Icon(
                         Icons.Outlined.AddTask,
                         contentDescription = stringResource(R.string.calendar_plan_action),
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }

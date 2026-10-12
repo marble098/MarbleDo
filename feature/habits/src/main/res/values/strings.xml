@@ -8,6 +8,7 @@
     <string name="habit_score_label">Growth score</string>
     <string name="habit_today_progress">%1$s of %2$s done today</string>
     <string name="habit_best_streak">Best run · %1$s days</string>
+    <string name="habit_best_streak_label">Best run</string>
     <string name="habit_all_done">All done for today</string>
     <string name="habit_summary_empty">No habit is planned for today.</string>
 

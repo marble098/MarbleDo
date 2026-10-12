@@ -193,7 +193,7 @@
     <string name="dash_category_all">All categories</string>
     <string name="settings_status_calendar">Status bar calendar</string>
     <string name="settings_status_icon_style">Status-bar icon</string>
-    <string name="settings_status_icon_style_hint">The day number in the status bar is tiny. Pick the drawing that stays readable on your phone: the dark strip shows the real size, the big preview is the same icon enlarged.</string>
+    <string name="settings_status_icon_style_hint">The day number is now drawn as large as the status bar allows and rendered at the exact size Android shows it, so the strokes stay sharp instead of turning grey. The dark strip shows the real size; the big preview is the same icon enlarged.</string>
     <string name="settings_status_icon_style_bold">Big number</string>
     <string name="settings_status_icon_style_page">Calendar page</string>
     <string name="settings_status_icon_style_icon">Icon only</string>
@@ -230,4 +230,7 @@
     <string name="settings_coverage_categories">%1$d of 5 occasion types used</string>
     <string name="calendar_notification_upcoming_title">Starred occasions are coming up</string>
     <string name="calendar_notification_upcoming_days">In %1$s days</string>
+    <string name="dash_filters">Filters</string>
+    <string name="dash_search">Search</string>
+    <string name="dash_no_upcoming_occasion">No starred occasion is coming up.</string>
 </resources>
