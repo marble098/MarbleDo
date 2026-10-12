@@ -30,6 +30,18 @@ The official Android SDK repository index currently lists the released `platform
 
 Compile SDK, target SDK, minimum SDK, and Build Tools are not Maven artifacts; they are selected from installed Android SDK packages and are not altered by this script. Builds require the SDK platform named in the catalog and documented in the workflows.
 
+## Publishing the refresh as a pull request
+
+`.github/workflows/weekly-dependency-update.yml` opens or updates the pull request with the workflow's own `GITHUB_TOKEN` through `peter-evans/create-pull-request`. GitHub only allows that when the repository setting below is enabled:
+
+**Settings → Actions → General → Workflow permissions → Allow GitHub Actions to create and approve pull requests**
+
+With the setting disabled, GitHub answers the pull request call with `GitHub Actions is not permitted to create or approve pull requests`. The branch `automation/dependency-refresh` is still pushed, but no pull request exists, and earlier versions of the workflow failed the whole run at that point.
+
+The workflow now reports that specific state instead of failing: after the publish step it compares the blob hashes of the pushed branch with the revision it just built, linted, and tested, and only when they match does it warn — with the `compare` link in the job summary — and finish successfully. Any other publishing problem (a missing branch, or a branch that does not carry the verified revision) still fails the job, so a green run always means the refreshed catalog is available for review.
+
+The automation commits exactly two files, declared via `add-paths`: `gradle/libs.versions.toml` and `gradle/wrapper/gradle-wrapper.properties`. Generated build outputs, in particular the Room schemas that Room exports to `core/data/schemas/` during the build, are never committed by this workflow.
+
 ## Calendar parser test fixture
 
 `jsonTest = "20250517"` is the JVM-only `org.json:json` fixture for exercising the production Android JSON parser in unit tests. The production app still uses Android's built-in `org.json` (no new runtime JSON dependency). The pinned tag was checked on 2026-10-11: [upstream tag](https://github.com/stleary/JSON-java/tree/20250517). It is included in the existing Maven metadata updater.

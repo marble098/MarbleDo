@@ -69,19 +69,105 @@ jobs:
           :feature:tasks:testDebugUnitTest
           :feature:calendar:testDebugUnitTest
           :feature:countdown:testDebugUnitTest
+          :feature:habits:testDebugUnitTest
           :app:testDebugUnitTest
           :app:lintDebug
           :app:assembleDebug
 
+      - name: Record the verified catalog revision
+        id: verified
+        run: |
+          set -euo pipefail
+          files=(gradle/libs.versions.toml gradle/wrapper/gradle-wrapper.properties)
+          if git diff --quiet -- "${files[@]}"; then
+            changed=false
+            echo "The catalog already matches the newest official releases; nothing to publish." >> "$GITHUB_STEP_SUMMARY"
+          else
+            changed=true
+            {
+              echo "### Refreshed dependency versions"
+              echo ""
+              echo '```text'
+              git --no-pager diff --unified=0 -- "${files[@]}"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          # Blob hashes of the files that were just built and tested. The publishing
+          # step below compares them with the pushed branch, so a branch that does not
+          # carry this exact catalog can never be reported as ready.
+          echo "hashes=$(git hash-object "${files[@]}" | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+
       - name: Create or update dependency pull request
+        id: pull-request
+        if: steps.verified.outputs.changed == 'true'
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: automation/dependency-refresh
           delete-branch: true
+          # Only the sources the updater actually rewrites are published. Room writes
+          # its exported schemas under core/data/schemas/ during the build above and
+          # those generated files must not be committed by this workflow.
+          add-paths: |
+            gradle/libs.versions.toml
+            gradle/wrapper/gradle-wrapper.properties
           commit-message: "build: refresh verified dependency versions"
           title: "build: refresh verified Android dependencies"
           body: |
             Automated weekly dependency refresh from official Gradle and Maven metadata.
 
             The job includes published alpha, beta, RC, preview, canary, milestone, and EAP versions by default; nightly builds and snapshots are excluded. Re-run with `stable_only` enabled to limit updates to stable versions. Build, lint, and unit tests passed before this pull request was created.
+
+      - name: Report the dependency pull request result
+        if: steps.verified.outputs.changed == 'true'
+        env:
+          PR_URL: ${{ steps.pull-request.outputs.pull-request-url }}
+          PR_OPERATION: ${{ steps.pull-request.outputs.pull-request-operation }}
+          PR_NUMBER: ${{ steps.pull-request.outputs.pull-request-number }}
+          BRANCH: automation/dependency-refresh
+          EXPECTED_HASHES: ${{ steps.verified.outputs.hashes }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "$PR_URL" ]]; then
+            {
+              echo "### Dependency pull request ${PR_OPERATION:-created}"
+              echo ""
+              echo "- Pull request: ${PR_NUMBER:+#$PR_NUMBER }$PR_URL"
+              echo "- Branch: \`$BRANCH\` (contains the catalog built, linted, and tested by this run)"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # The pull request step failed. It pushes the branch before calling the API,
+          # so verify that the branch really carries the revision tested above.
+          if ! git fetch --quiet origin "$BRANCH"; then
+            echo "::error title=Dependency branch missing::Could not push '$BRANCH', so this run produced no deliverable."
+            exit 1
+          fi
+
+          published="$(git rev-parse "FETCH_HEAD:gradle/libs.versions.toml" "FETCH_HEAD:gradle/wrapper/gradle-wrapper.properties" | tr '\n' ' ')"
+          if [[ "$published" != "$EXPECTED_HASHES" ]]; then
+            echo "::error title=Dependency branch out of date::'$BRANCH' does not contain the catalog that was verified by this run."
+            exit 1
+          fi
+
+          # The branch is correct, so the only remaining reason for the failure is that
+          # the repository forbids GitHub Actions from opening pull requests. Report the
+          # one-time setting instead of failing on every scheduled run.
+          compare="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$BASE_BRANCH...$BRANCH?expand=1"
+          echo "::warning title=Dependency pull request needs one repository setting::GitHub is not permitted to create pull requests with the workflow token. The verified refresh sits on '$BRANCH'. Enable Settings > Actions > General > Workflow permissions > 'Allow GitHub Actions to create and approve pull requests', or open the pull request manually: $compare"
+          {
+            echo "### Pull request not created automatically"
+            echo ""
+            echo "The refreshed catalog built, linted, and tested cleanly and is pushed to \`$BRANCH\`, but GitHub refused to create the pull request:"
+            echo ""
+            echo '> GitHub Actions is not permitted to create or approve pull requests.'
+            echo ""
+            echo "This is a repository setting, not a build problem. Enable **Settings → Actions → General → Workflow permissions → Allow GitHub Actions to create and approve pull requests**, then re-run this workflow or open the pull request manually:"
+            echo ""
+            echo "$compare"
+          } >> "$GITHUB_STEP_SUMMARY"
