@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.res.Configuration
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,8 +32,10 @@ import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import androidx.glance.layout.RowScope
 import com.marbledo.core.data.db.MarbleDatabase
 import com.marbledo.core.data.repository.RoomTaskRepository
 import com.marbledo.core.data.settings.SettingsRepository
@@ -134,6 +137,10 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         val minuteValue = minutes?.let { TextNormalizer.formatDigits(it.toString().padStart(2, '0'), settings.numeralMode) }
         val themeId = countdownTask?.countdownTheme?.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme
         val palette = widgetPalette(widgetContext, settings.themeMode, themeId)
+        // Glance lays out in the system direction, but the widget must follow the language the
+        // user chose inside the app: Persian is right-to-left, English is left-to-right.
+        val isRtl = settings.languageTag == "fa"
+        val bodyAlignment = if (isRtl) TextAlign.End else TextAlign.Start
 
         // A tap anywhere on the glance card opens the calendar/planner in the app.
         val launchComponent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.component
@@ -151,48 +158,55 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                     modifier = rootModifier,
                     verticalAlignment = Alignment.Vertical.Top,
                 ) {
-                    Row(
+                    directionalRow(
+                        isRtl = isRtl,
                         modifier = GlanceModifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Vertical.CenterVertically,
-                    ) {
-                        Box(
-                            modifier = GlanceModifier
-                                .size(38.dp)
-                                .background(ColorProvider(palette.accentContainer))
-                                .cornerRadius(14.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = "◷",
-                                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 20.sp, fontWeight = FontWeight.Bold),
-                            )
-                        }
-                        Spacer(GlanceModifier.width(10.dp))
-                        Column(modifier = GlanceModifier.defaultWeight()) {
-                            Text(
-                                text = widgetContext.getString(R.string.widget_today_label),
-                                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 12.sp, fontWeight = FontWeight.Bold),
-                                maxLines = 1,
-                            )
-                            Text(
-                                text = dateSummary,
-                                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 10.sp),
-                                maxLines = 2,
-                            )
-                        }
-                    }
+                        items = listOf(
+                            {
+                                Box(
+                                    modifier = GlanceModifier
+                                        .size(38.dp)
+                                        .background(ColorProvider(palette.accentContainer))
+                                        .cornerRadius(14.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "◷",
+                                        style = TextStyle(color = ColorProvider(palette.accent), fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                                    )
+                                }
+                            },
+                            { Spacer(GlanceModifier.width(10.dp)) },
+                            {
+                                Column(modifier = GlanceModifier.defaultWeight()) {
+                                    Text(
+                                        text = widgetContext.getString(R.string.widget_today_label),
+                                        style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                                        maxLines = 1,
+                                    )
+                                    Text(
+                                        text = dateSummary,
+                                        style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 10.sp, textAlign = bodyAlignment),
+                                        maxLines = 2,
+                                    )
+                                }
+                            },
+                        ),
+                    )
 
                     Spacer(GlanceModifier.height(10.dp))
                     GlanceInfoCard(
                         title = widgetContext.getString(R.string.widget_occasions_label),
                         body = occasionSummary,
                         palette = palette,
+                        align = bodyAlignment,
                     )
                     Spacer(GlanceModifier.height(7.dp))
                     GlanceInfoCard(
                         title = widgetContext.getString(R.string.widget_next_task_label),
                         body = nextTask?.title ?: widgetContext.getString(R.string.widget_no_next_task),
                         palette = palette,
+                        align = bodyAlignment,
                     )
                     Spacer(GlanceModifier.height(9.dp))
 
@@ -206,13 +220,13 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                         ) {
                             Text(
                                 text = widgetContext.getString(R.string.widget_countdown_label),
-                                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
                                 maxLines = 1,
                             )
                             Spacer(GlanceModifier.height(3.dp))
                             Text(
                                 text = widgetContext.getString(R.string.widget_no_countdown),
-                                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 11.sp),
+                                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 11.sp, textAlign = bodyAlignment),
                                 maxLines = 2,
                             )
                         }
@@ -226,30 +240,31 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                         ) {
                             Text(
                                 text = widgetContext.getString(R.string.widget_countdown_label),
-                                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
                                 maxLines = 1,
                             )
                             Spacer(GlanceModifier.height(3.dp))
                             Text(
                                 text = countdownTask.title,
-                                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
                                 maxLines = 1,
                             )
                             Spacer(GlanceModifier.height(7.dp))
-                            Row(
+                            directionalRow(
+                                isRtl = isRtl,
                                 modifier = GlanceModifier
                                     .fillMaxWidth()
                                     .background(ColorProvider(palette.surface))
                                     .cornerRadius(14.dp)
                                     .padding(horizontal = 7.dp, vertical = 7.dp),
-                                verticalAlignment = Alignment.Vertical.CenterVertically,
-                            ) {
-                                WidgetTimeUnit(dayValue.orEmpty(), widgetContext.getString(R.string.widget_unit_days), palette, GlanceModifier.defaultWeight())
-                                Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp))
-                                WidgetTimeUnit(hourValue.orEmpty(), widgetContext.getString(R.string.widget_unit_hours), palette, GlanceModifier.defaultWeight())
-                                Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp))
-                                WidgetTimeUnit(minuteValue.orEmpty(), widgetContext.getString(R.string.widget_unit_minutes), palette, GlanceModifier.defaultWeight())
-                            }
+                                items = listOf(
+                                    { WidgetTimeUnit(dayValue.orEmpty(), widgetContext.getString(R.string.widget_unit_days), palette, GlanceModifier.defaultWeight()) },
+                                    { Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp)) },
+                                    { WidgetTimeUnit(hourValue.orEmpty(), widgetContext.getString(R.string.widget_unit_hours), palette, GlanceModifier.defaultWeight()) },
+                                    { Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp)) },
+                                    { WidgetTimeUnit(minuteValue.orEmpty(), widgetContext.getString(R.string.widget_unit_minutes), palette, GlanceModifier.defaultWeight()) },
+                                ),
+                            )
                             Spacer(GlanceModifier.height(5.dp))
                             val targetText = if (remainingMillis == 0L) {
                                 widgetContext.getString(R.string.widget_due)
@@ -258,7 +273,7 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                             }
                             Text(
                                 text = targetText,
-                                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 10.sp),
+                                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 10.sp, textAlign = bodyAlignment),
                                 maxLines = 1,
                             )
                         }
@@ -269,7 +284,7 @@ class MarbleCountdownWidget : GlanceAppWidget() {
     }
 
     @androidx.compose.runtime.Composable
-    private fun GlanceInfoCard(title: String, body: String, palette: WidgetPalette) {
+    private fun GlanceInfoCard(title: String, body: String, palette: WidgetPalette, align: TextAlign) {
         Column(
             modifier = GlanceModifier
                 .fillMaxWidth()
@@ -279,15 +294,32 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         ) {
             Text(
                 text = title,
-                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 9.sp, fontWeight = FontWeight.Bold, textAlign = align),
                 maxLines = 1,
             )
             Spacer(GlanceModifier.height(2.dp))
             Text(
                 text = body,
-                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 12.sp, fontWeight = FontWeight.Medium),
+                style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 12.sp, fontWeight = FontWeight.Medium, textAlign = align),
                 maxLines = 2,
             )
+        }
+    }
+
+    /**
+     * Glance lays rows out in the device direction only, so when the app language is Persian the
+     * children are emitted in reverse order to mirror the in-app RTL layout; English keeps the
+     * natural left-to-right order.
+     */
+    @androidx.compose.runtime.Composable
+    private fun directionalRow(
+        isRtl: Boolean,
+        modifier: GlanceModifier = GlanceModifier,
+        verticalAlignment: Alignment.Vertical = Alignment.Vertical.CenterVertically,
+        items: List<@Composable RowScope.() -> Unit>,
+    ) {
+        Row(modifier = modifier, verticalAlignment = verticalAlignment) {
+            (if (isRtl) items.asReversed() else items).forEach { item -> item() }
         }
     }
 

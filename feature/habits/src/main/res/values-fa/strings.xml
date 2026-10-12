@@ -9,8 +9,8 @@
     <string name="habit_today_progress">امروز %1$s از %2$s</string>
     <string name="habit_best_streak">بهترین دوره · %1$s روز</string>
     <string name="habit_best_streak_label">بهترین دوره</string>
-    <string name="habit_all_done">کار امروز تمام است</string>
-    <string name="habit_summary_empty">برای امروز عادتی برنامه‌ریزی نشده.</string>
+    <string name="habit_all_done">کار امروزت هم تموم شد!</string>
+    <string name="habit_summary_empty">برای امروز عادتی نیست.</string>
 
     <string name="habit_drawer_build">ساختن عادت‌های خوب</string>
     <string name="habit_drawer_build_hint">کارهای کوچکی که آن‌قدر تکرار می‌شوند تا بشوند بخشی از تو.</string>
@@ -32,13 +32,13 @@
     <string name="habit_not_done">هنوز نه</string>
     <string name="habit_undo">واگرد</string>
     <string name="habit_slip_today">امروز لغزش داشتم</string>
-    <string name="habit_slip_recorded">لغزش ثبت شد. فردا از نو پاک شروع می‌کنی.</string>
+    <string name="habit_slip_recorded">ثبت شد. فردا از نو پاک شروع می‌کنی.</string>
     <string name="habit_clean_today">امروز پاک ماندم</string>
     <string name="habit_mark_done">زدن تیک امروز</string>
     <string name="habit_increase">یکی بیشتر</string>
     <string name="habit_decrease">یکی کمتر</string>
     <string name="habit_target_progress">از %2$s، %1$s تا</string>
-    <string name="habit_target_reached">به هدف رسیدی</string>
+    <string name="habit_target_reached">به هدف رسیدی 🎯</string>
     <string name="habit_quit_hint">فقط روزهایی را بزن که لغزش داشتی؛ بقیهٔ روزها خودبه‌خود پاک می‌مانند.</string>
 
     <string name="habit_editor_new">عادت تازه</string>
@@ -53,7 +53,7 @@
     <string name="habit_tracking_check">تیک ساده</string>
     <string name="habit_tracking_count">شمارش مقدار</string>
     <string name="habit_field_target">هدف روزانه</string>
-    <string name="habit_field_unit">واحد (دلخواه)</string>
+    <string name="habit_field_unit">واحد (اختیاری)</string>
     <string name="habit_unit_hint">لیوان، دقیقه، صفحه…</string>
     <string name="habit_field_schedule">برنامه</string>
     <string name="habit_schedule_every_day">هر روز</string>
@@ -141,14 +141,14 @@
     <string name="habit_widget_empty">هنوز عادتی نداری</string>
     <string name="habit_widget_empty_body">در ماربل‌دو عادت بساز و از همین‌جا تیک بزن.</string>
     <string name="habit_widget_progress">امروز %1$s از %2$s</string>
-    <string name="habit_widget_all_done">امروز همه انجام شده</string>
+    <string name="habit_widget_all_done">همهٔ امروز ختم شد ✓</string>
     <string name="habit_widget_streak">%1$s روز پیاپی</string>
     <string name="habit_widget_slip">لغزش امروز</string>
     <string name="habit_widget_clean">پاک</string>
     <string name="habit_widget_open">رفتن به عادت‌ها</string>
 
     <string name="channel_habits">یادآوری عادت‌ها</string>
-    <string name="channel_habits_description">یک یادآوری آرام برای هر عادت، در ساعتی که خودت انتخاب کرده‌ای</string>
+    <string name="channel_habits_description">یک یادآوری آرام برای هر عادت</string>
     <string name="habit_notification_title">%1$s · وقت عادت است</string>
     <string name="habit_notification_body_build">امروز چند دقیقه هم کافی است.</string>
     <string name="habit_notification_body_quit">امروز هم پاک بمان؛ یک روز دیگر به زنجیره اضافه می‌شود.</string>

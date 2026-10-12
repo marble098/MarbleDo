@@ -53,6 +53,8 @@ data class AppSettings(
     val favoriteOccasionIds: List<String> = emptyList(),
     /** Days before a favourite occasion that a preparation reminder is posted; 0 disables it. */
     val occasionReminderLeadDays: Int = 0,
+    /** How the dashboard lays out its task and countdown sections; see [DashboardViewMode]. */
+    val dashboardViewMode: DashboardViewMode = DashboardViewMode.LIST,
 ) {
     init {
         require(languageTag in setOf("fa", "en"))

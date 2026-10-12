@@ -1,7 +1,9 @@
 package com.marbledo.feature.countdown
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -193,6 +195,7 @@ fun CountdownThemeGallerySheet(
 }
 
 /** Small card for the dashboard's "upcoming moments" strip. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CountdownMiniCard(
     title: String,
@@ -200,12 +203,19 @@ fun CountdownMiniCard(
     themeId: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    fillWidth: Boolean = false,
+    onLongPress: (() -> Unit)? = null,
 ) {
     val theme = CountdownTheme.from(themeId)
     val units = rememberCountdownUnits(dueAtEpochMillis)
     val numeralMode = LocalNumeralMode.current
     Surface(
-        modifier = modifier.width(184.dp).clickable(onClick = onClick),
+        modifier = (
+            if (fillWidth) modifier.fillMaxWidth() else modifier.width(184.dp)
+            ).then(
+                if (onLongPress != null) Modifier.combinedClickable(onClick = onClick, onLongClick = onLongPress)
+                else Modifier.clickable(onClick = onClick),
+            ),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 2.dp,

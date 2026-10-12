@@ -15,7 +15,7 @@
     <string name="countdown_unit_hours">ساعت</string>
     <string name="countdown_unit_minutes">دقیقه</string>
     <string name="countdown_unit_seconds">ثانیه</string>
-    <string name="countdown_finished">این لحظه رسید</string>
+    <string name="countdown_finished">رسیدیم به لحظه! 🎉</string>
     <string name="countdown_disable">خاموش کردن این شمارش</string>
 
     <string name="countdown_theme_marble_orb">گوی مرمر</string>
@@ -45,26 +45,26 @@
     <string name="countdown_caption_dial_gauge">صفحهٔ اندازه‌گیری با خط‌های مدرج</string>
 
     <string name="countdown_gallery_title">گالری تم‌ها</string>
-    <string name="countdown_gallery_hint">هر تم چیدمان، رنگ و حرکت خودش را دارد. انتخابت ظاهر پیش‌فرض شمارش‌های تازه می‌شود و کارهای قبلی ظاهر خودشان را نگه می‌دارند.</string>
+    <string name="countdown_gallery_hint">هر تم چیدمان، رنگ و حرکت خودش را دارد. انتخابت پیش‌فرض شمارش‌های تازه می‌شود.</string>
     <string name="countdown_theme_active">فعال</string>
 
     <string name="countdown_widget_name">برنامه‌ریز روز ماربل‌دو</string>
     <string name="countdown_widget_description">نمای روزانهٔ تاریخ‌ها، مناسبت‌ها، کار بعدی و شمارش معکوس</string>
-    <string name="countdown_add">شمارش جدید</string>
-    <string name="countdown_add_first">ساخت اولین شمارش معکوس</string>
+    <string name="countdown_add">شمارش تازه</string>
+    <string name="countdown_add_first">ساخت اولین شمارش</string>
     <string name="countdown_calendar_display">تقویم نمایش و ورود تاریخ</string>
     <string name="countdown_calendar_persian">شمسی</string>
     <string name="countdown_calendar_gregorian">میلادی</string>
     <string name="countdown_calendar_lunar">قمری</string>
     <string name="countdown_create_title">ساخت شمارش معکوس</string>
-    <string name="countdown_create_hint">عنوان را بنویس، تقویم را انتخاب کن و یک زمان آماده بزن یا تاریخ و ساعت را دقیق کن.</string>
+    <string name="countdown_create_hint">عنوان را بنویس، یک زمان آماده بزن یا تاریخ و ساعت را دقیق کن.</string>
     <string name="countdown_title_field">عنوان لحظهٔ مهم</string>
     <string name="countdown_date_field">تاریخ</string>
     <string name="countdown_date_hint">نمونه: ۱۴۰۵/۰۸/۲۵</string>
     <string name="countdown_date_preview">موعد: %1$s</string>
     <string name="countdown_time_field">ساعت</string>
     <string name="countdown_time_hint">نمونه: ۱۴:۳۰</string>
-    <string name="countdown_quick_presets">تنظیم فوری زمان</string>
+    <string name="countdown_quick_presets">تنظیم سریع زمان</string>
     <string name="countdown_preset_hour">یک ساعت دیگر</string>
     <string name="countdown_preset_tomorrow">فردا</string>
     <string name="countdown_preset_week">یک هفته</string>

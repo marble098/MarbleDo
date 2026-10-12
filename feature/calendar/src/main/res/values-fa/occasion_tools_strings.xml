@@ -1,6 +1,6 @@
 <resources>
     <string name="calendar_category_educational">آموزشی و پرورشی</string>
-    <string name="catalog_lunar_caveat">تاریخ قمری با تقویم حسابی اسلامی و اصلاح ±۲ روز شما محاسبه می‌شود؛ ممکن است با اعلام دیدن هلال ماه فرق داشته باشد. تاریخ‌های مهم دینی را با مرجع خودش هماهنگ کن.</string>
+    <string name="catalog_lunar_caveat">تاریخ قمری با تقویم حسابی اسلامی محاسبه می‌شود؛ ممکن است با اعلام دیدن هلال ماه یکی دو روز فرق داشته باشد. تاریخ‌های مهم دینی را با مرجع خودشان هماهنگ کن.</string>
     <string name="catalog_references">منابع بررسی</string>
     <string name="catalog_kind_curated">دادهٔ گردآوری‌شده؛ منبع ثانویه</string>
     <string name="catalog_kind_traditional">سنت فرهنگی یا دینی</string>
@@ -10,18 +10,18 @@
     <string name="catalog_kind_report">گزارش منتشرشده</string>
     <string name="catalog_evidence_sourced">دارای ارجاع به منبع بررسی‌شده</string>
     <string name="catalog_evidence_traditional">مناسبت سنتی؛ احتمال تفاوت روایت یا آیین محلی</string>
-    <string name="catalog_evidence_guidance">بازهٔ راهنما · باید با بخشنامهٔ امسال هماهنگ شود</string>
-    <string name="catalog_evidence_legacy">دادهٔ پیشین · هنوز مستقل بازبینی منبع نشده</string>
+    <string name="catalog_evidence_guidance">بازهٔ راهنما · با بخشنامهٔ امسال هماهنگ شود</string>
+    <string name="catalog_evidence_legacy">دادهٔ پیشین · هنوز بازبینی منبع نشده</string>
     <string name="school_programs_title">برنامه‌های وابسته به بخشنامه</string>
-    <string name="school_programs_caveat">این برنامه‌ها تاریخ سراسری و سالانهٔ ثابت ندارند. تاریخ انتخابات، مسابقه یا اردوی سال پیش را تکرار نکن. اول یک پیش‌نویس بدون تاریخ بساز و پس از خواندن بخشنامهٔ مدرسه یا منطقه، برایش موعد بگذار.</string>
+    <string name="school_programs_caveat">این برنامه‌ها تاریخ ثابت سراسری ندارند. اول پیش‌نویس بساز، بخشنامه را بخوان و بعد موعد بگذار.</string>
     <string name="school_program_draft">ساخت پیش‌نویس چک‌لیست بدون تاریخ</string>
     <string name="calendar_window_days">بازهٔ مناسبت: %1$d روز از این تاریخ</string>
     <string name="calendar_prepare_lead">زمان آماده‌سازی</string>
     <string name="calendar_prepare_days">%1$d روز قبل</string>
-    <string name="calendar_plan_past_warning">تاریخ آماده‌سازی گذشته است؛ پیش از ذخیره، موعد را بررسی یا درستش کن.</string>
+    <string name="calendar_plan_past_warning">تاریخ آماده‌سازی گذشته است؛ پیش از ذخیره، موعد را درست کن.</string>
     <string name="calendar_template_title">چک‌لیست آماده‌سازی</string>
     <string name="calendar_template_use">استفاده از این چک‌لیست</string>
-    <string name="calendar_template_hint">پیش‌نویسی باز می‌شود که می‌شود ویرایشش کرد؛ تا تایید نکنی چیزی ذخیره نمی‌شود.</string>
+    <string name="calendar_template_hint">پیش‌نویسی باز می‌شود که می‌توانی ویرایشش کنی؛ تا تایید نکنی چیزی ذخیره نمی‌شود.</string>
     <string name="calendar_template_simple">ساده</string>
     <string name="calendar_template_family">خانوادگی</string>
     <string name="calendar_template_cultural">فرهنگی</string>
@@ -41,8 +41,8 @@
     <string name="calendar_workday_missing">تا ۳۶۶ روز آینده روز کاری پیدا نشد.</string>
     <string name="calendar_workday_thursday">پنجشنبه، جمعه و تعطیلات رسمی کنار گذاشته می‌شوند؛ حتی اگر نمایش دستهٔ مناسبت خاموش باشد.</string>
     <string name="calendar_workday_friday">جمعه و تعطیلات رسمی کنار گذاشته می‌شوند؛ حتی اگر نمایش دستهٔ مناسبت خاموش باشد.</string>
-    <string name="calendar_workday_caveat">این یک پیشنهاد برای برنامه‌ریزی است، نه تقویم رسمی مدرسه یا اداره. تعطیلی‌های ناگهانی، تعطیلی محلی و تغییر در دیدن هلال ماه را خودت بررسی کن.</string>
+    <string name="calendar_workday_caveat">فقط یک پیشنهاد برای برنامه‌ریزی است؛ تعطیلی‌های ناگهانی را خودت چک کن.</string>
     <string name="calendar_workday_show">نمایش این روز</string>
     <string name="catalog_reference_checked">بازبینی: %1$s</string>
-    <string name="catalog_link_failed">پیوند باز نشد. یک مرورگر نصب کن یا روشنش کن.</string>
+    <string name="catalog_link_failed">پیوند باز نشد؛ یک مرورگر نصب یا روشن کن.</string>
 </resources>

@@ -8,6 +8,7 @@ import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.HabitTheme
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CalendarDisplayMode
+import com.marbledo.domain.model.DashboardViewMode
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.StatusBarIconStyle
 import kotlinx.coroutines.flow.Flow
@@ -57,6 +58,7 @@ class SettingsRepository(private val context: Context) {
             reminderLeadMinutes = if (proto.hasReminderLeadMinutes()) proto.reminderLeadMinutes.coerceIn(0, 1440) else 10,
             favoriteOccasionIds = proto.favoriteOccasionIdsList.map { it.trim() }.filter { it.isNotBlank() }.distinct(),
             occasionReminderLeadDays = proto.occasionReminderLeadDays.coerceIn(0, 30),
+            dashboardViewMode = enumOrDefault(proto.dashboardViewMode, DashboardViewMode.LIST),
         )
     }
 
@@ -91,6 +93,7 @@ class SettingsRepository(private val context: Context) {
         .setReminderLeadMinutes(settings.reminderLeadMinutes)
         .addAllFavoriteOccasionIds(settings.favoriteOccasionIds.map { it.trim() }.filter { it.isNotBlank() }.distinct())
         .setOccasionReminderLeadDays(settings.occasionReminderLeadDays)
+        .setDashboardViewMode(settings.dashboardViewMode.name)
         .build()
 
     private inline fun <reified T : Enum<T>> enumOrDefault(value: String, default: T): T =

@@ -1,33 +1,40 @@
 package com.marble098.marbledo
 
 import com.marbledo.domain.model.CalendarDisplayMode
+import com.marbledo.domain.model.DashboardViewMode
 import com.marbledo.feature.tasks.TaskChange
 import com.marbledo.feature.tasks.TaskChangeKind
 import android.content.Context
+import android.content.Intent
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -36,10 +43,15 @@ import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.CircleOutline
 import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material.icons.outlined.ViewList
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -72,8 +84,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -107,6 +122,8 @@ import com.marbledo.feature.tasks.TaskRowCard
 import com.marbledo.feature.tasks.TaskSort
 import com.marbledo.feature.tasks.TasksViewModel
 import com.marbledo.feature.tasks.localizedTaskDate
+import com.marbledo.feature.tasks.localizedTaskDateTime
+import com.marbledo.feature.tasks.priorityColor
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -160,6 +177,7 @@ fun DashboardScreen(
     pendingEditTaskId: Long? = null,
     onPendingEditTaskConsumed: () -> Unit = {},
     onCalendarDisplaySelected: (CalendarDisplayMode) -> Unit = {},
+    onViewModeChange: (DashboardViewMode) -> Unit = {},
     favoriteOccasionIds: Set<String> = emptySet(),
     initialPlanRequest: OccasionPlanRequest? = null,
     onInitialPlanConsumed: () -> Unit = {},
@@ -180,6 +198,7 @@ fun DashboardScreen(
     var plannedCountdown by rememberSaveable { mutableStateOf(true) }
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     var collapsedTaskGroups by rememberSaveable { mutableStateOf("LATER,NO_DATE") }
     // The search field and the category chips stay folded away until they are needed, so the task
     // list starts right under its title instead of under three rows of controls.
@@ -286,6 +305,36 @@ fun DashboardScreen(
             task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == now.toLocalDate() } == true
         }
     }
+    val todayTasks = remember(activeTasks, zone, now) {
+        activeTasks.filter { task ->
+            task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == now.toLocalDate() } == true
+        }
+    }
+    // Finishing the last open task of the day deserves a little celebration of its own.
+    var previousTodayOpen by remember { mutableIntStateOf(todayOpen) }
+    val allDoneMessage = stringResource(R.string.dash_all_done_today)
+    LaunchedEffect(todayOpen) {
+        if (todayOpen == 0 && previousTodayOpen > 0) {
+            snackbarHost.showSnackbar(
+                message = allDoneMessage.toString(),
+                withDismissAction = true,
+            )
+        }
+        previousTodayOpen = todayOpen
+    }
+    // stringResource needs composable scope, so the pieces are read here and only the
+    // plain-text assembly happens inside the remember block below.
+    val shareTitle = stringResource(R.string.dash_share_title)
+    val shareSummary = stringResource(R.string.dash_summary, todayOpen, state.completedCount)
+    val shareTodayLine = PersianDateUtils.fullDateWithWeekday(todayEpoch, settings.languageTag, numeralMode)
+    val shareText = remember(todayTasks, shareTitle, shareSummary, shareTodayLine) {
+        buildString {
+            append(shareTitle).append("\n")
+            append(shareTodayLine).append("\n")
+            append(shareSummary)
+            todayTasks.forEach { task -> append("\n· ").append(task.title) }
+        }
+    }
     val progress = if (state.activeCount + state.completedCount == 0) 0f else state.completedCount.toFloat() / (state.activeCount + state.completedCount)
     val categoryChoices = remember(settings.taskCategories) {
         settings.taskCategories.map { it.trim() }.filter { it.isNotBlank() }.distinct()
@@ -307,6 +356,20 @@ fun DashboardScreen(
                     settings = settings,
                     numeralMode = numeralMode,
                     onOpenCalendar = onOpenCalendar,
+                    onShare = {
+                        haptics.performHapticFeedback(HapticFeedbackType.SelectionClick)
+                        runCatching {
+                            context.startActivity(
+                                Intent.createChooser(
+                                    Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, shareText)
+                                    },
+                                    null,
+                                ),
+                            )
+                        }
+                    },
                 )
             }
 
@@ -314,6 +377,13 @@ fun DashboardScreen(
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionHeader(stringResource(R.string.dash_tasks), state.visibleTasks.size, Modifier.weight(1f))
+                    DashboardModeSwitcher(
+                        mode = settings.dashboardViewMode,
+                        onSelect = { mode ->
+                            haptics.performHapticFeedback(HapticFeedbackType.SelectionClick)
+                            onViewModeChange(mode)
+                        },
+                    )
                     IconButton(onClick = { searchOpen = !searchOpen; if (!searchOpen) viewModel.setQuery("") }) {
                         Icon(
                             Icons.Outlined.Search,
@@ -442,36 +512,91 @@ fun DashboardScreen(
                     }
                 }
             } else {
-                groups.forEach { grouped ->
-                    val isCollapsed = grouped.group.name in collapsedTaskGroups.split(',').filter(String::isNotBlank)
-                    item(key = "header-${grouped.group.name}") {
-                        TaskGroupHeader(
-                            group = grouped.group,
-                            count = grouped.tasks.size,
-                            expanded = !isCollapsed,
-                            onClick = {
-                                val next = collapsedTaskGroups.split(',').filter(String::isNotBlank).toMutableSet()
-                                if (!next.add(grouped.group.name)) next.remove(grouped.group.name)
-                                collapsedTaskGroups = next.joinToString(",")
-                            },
-                        )
+                when (settings.dashboardViewMode) {
+                    DashboardViewMode.GRID -> {
+                        item {
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                state.visibleTasks.forEach { task ->
+                                    TaskGridCard(
+                                        task = task,
+                                        selected = task.id in state.selectedIds,
+                                        onToggle = {
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            viewModel.toggleCompleted(task)
+                                        },
+                                        onEdit = { editingTask = task },
+                                        onLongPress = { viewModel.toggleSelection(task.id) },
+                                        modifier = Modifier.fillMaxWidth(0.47f),
+                                    )
+                                }
+                            }
+                        }
                     }
-                    if (!isCollapsed) {
-                        items(grouped.tasks, key = { it.id }) { task ->
-                            TaskRowCard(
-                                task = task,
-                                selected = task.id in state.selectedIds,
-                                onToggle = { viewModel.toggleCompleted(task) },
-                                onOpenCountdown = { onOpenFocus(task) },
-                                onEdit = { editingTask = task },
-                                onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
-                                onDelete = { viewModel.delete(task) },
-                                onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
-                                onToggleCountdown = {
-                                    viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
-                                },
-                                onLongPress = { viewModel.toggleSelection(task.id) },
-                            )
+                    else -> {
+                        groups.forEach { grouped ->
+                            val isCollapsed = grouped.group.name in collapsedTaskGroups.split(',').filter(String::isNotBlank)
+                            item(key = "header-${grouped.group.name}") {
+                                TaskGroupHeader(
+                                    group = grouped.group,
+                                    count = grouped.tasks.size,
+                                    expanded = !isCollapsed,
+                                    onClick = {
+                                        val next = collapsedTaskGroups.split(',').filter(String::isNotBlank).toMutableSet()
+                                        if (!next.add(grouped.group.name)) next.remove(grouped.group.name)
+                                        collapsedTaskGroups = next.joinToString(",")
+                                    },
+                                )
+                            }
+                            if (!isCollapsed) {
+                                if (settings.dashboardViewMode == DashboardViewMode.LIST) {
+                                    items(grouped.tasks, key = { it.id }) { task ->
+                                        TaskRowCard(
+                                            task = task,
+                                            selected = task.id in state.selectedIds,
+                                            onToggle = {
+                                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                viewModel.toggleCompleted(task)
+                                            },
+                                            onOpenCountdown = { onOpenFocus(task) },
+                                            onEdit = { editingTask = task },
+                                            onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
+                                            onDelete = { viewModel.delete(task) },
+                                            onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
+                                            onToggleCountdown = {
+                                                viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
+                                            },
+                                            onLongPress = { viewModel.toggleSelection(task.id) },
+                                        )
+                                    }
+                                } else {
+                                    grouped.tasks.forEachIndexed { index, task ->
+                                        item(key = "timeline-${task.id}") {
+                                            TaskTimelineItem(
+                                                task = task,
+                                                isLast = index == grouped.tasks.lastIndex,
+                                                selected = task.id in state.selectedIds,
+                                                onToggle = {
+                                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    viewModel.toggleCompleted(task)
+                                                },
+                                                onOpenCountdown = { onOpenFocus(task) },
+                                                onEdit = { editingTask = task },
+                                                onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
+                                                onDelete = { viewModel.delete(task) },
+                                                onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
+                                                onToggleCountdown = {
+                                                    viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
+                                                },
+                                                onLongPress = { viewModel.toggleSelection(task.id) },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -515,38 +640,67 @@ fun DashboardScreen(
                         }
                     }
                 }
-            } else {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    ) {
-                        CountdownHero(
-                            task = heroCountdown,
-                            themeId = heroCountdown.countdownTheme.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme,
-                            calendarLabel = { epoch -> localizedTaskDate(epoch) },
-                            onOpenFocus = { onOpenFocus(heroCountdown) },
-                            onDisableRequested = {
-                                viewModel.editTask(heroCountdown.copy(countdownEnabled = false))
-                            },
-                            modifier = Modifier.padding(14.dp),
-                        )
-                    }
-                }
-            }
-
-            if (countdowns.size > 1) {
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader(stringResource(R.string.dash_upcoming_countdowns), countdowns.size - 1)
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            items(countdowns.drop(1), key = { it.id }) { task ->
+            } else when (settings.dashboardViewMode) {
+                DashboardViewMode.GRID -> {
+                    // Every countdown becomes a card; the first one is just the most urgent stop.
+                    item {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            countdowns.forEach { task ->
                                 CountdownMiniCard(
                                     title = task.title,
                                     dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
                                     themeId = task.countdownTheme,
                                     onClick = { editingTask = task },
+                                    onLongPress = { onOpenFocus(task) },
                                 )
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        ) {
+                            CountdownHero(
+                                task = heroCountdown,
+                                themeId = heroCountdown.countdownTheme.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme,
+                                calendarLabel = { epoch -> localizedTaskDate(epoch) },
+                                onOpenFocus = { onOpenFocus(heroCountdown) },
+                                onDisableRequested = {
+                                    viewModel.editTask(heroCountdown.copy(countdownEnabled = false))
+                                },
+                                modifier = Modifier.padding(14.dp),
+                            )
+                        }
+                    }
+                    if (settings.dashboardViewMode == DashboardViewMode.TIMELINE) {
+                        item {
+                            CountdownRoad(
+                                countdowns = countdowns,
+                                onOpenFocus = onOpenFocus,
+                                onEdit = { editingTask = it },
+                            )
+                        }
+                    } else if (countdowns.size > 1) {
+                        item {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                SectionHeader(stringResource(R.string.dash_upcoming_countdowns), countdowns.size - 1)
+                                countdowns.drop(1).forEach { task ->
+                                    CountdownMiniCard(
+                                        title = task.title,
+                                        dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
+                                        themeId = task.countdownTheme,
+                                        fillWidth = true,
+                                        onClick = { editingTask = task },
+                                        onLongPress = { onOpenFocus(task) },
+                                    )
+                                }
                             }
                         }
                     }
@@ -670,6 +824,7 @@ private fun DailyHeaderCard(
     settings: AppSettings,
     numeralMode: NumeralMode,
     onOpenCalendar: () -> Unit,
+    onShare: () -> Unit,
 ) {
     val greeting = when {
         currentHour < 12 -> stringResource(R.string.dash_greeting_morning)
@@ -709,13 +864,24 @@ private fun DailyHeaderCard(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
-                        IconButton(onClick = onOpenCalendar) {
-                            Icon(
-                                Icons.Outlined.CalendarMonth,
-                                contentDescription = stringResource(R.string.nav_calendar),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
+                            IconButton(onClick = onOpenCalendar) {
+                                Icon(
+                                    Icons.Outlined.CalendarMonth,
+                                    contentDescription = stringResource(R.string.nav_calendar),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
+                            IconButton(onClick = onShare) {
+                                Icon(
+                                    Icons.Outlined.Share,
+                                    contentDescription = stringResource(R.string.dash_share_today),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                         }
                     }
                 }
@@ -862,6 +1028,7 @@ private fun OccasionsCard(
                             accent = categoryColor(occasion.category),
                             badge = stringResource(R.string.dash_holiday_badge).takeIf { occasion.isHoliday },
                             trailing = null,
+                            onClick = onOpenCalendar,
                         )
                     }
                     val remaining = todayOccasions.size - MAX_DASHBOARD_OCCASIONS
@@ -887,6 +1054,7 @@ private fun OccasionsCard(
                             accent = categoryColor(item.occasion.category),
                             badge = null,
                             trailing = TextNormalizer.formatDigits(daysLeftLabel(item.daysUntil), numeralMode),
+                            onClick = onOpenCalendar,
                         )
                     }
                 }
@@ -906,11 +1074,14 @@ private fun OccasionLine(
     accent: Color,
     badge: String?,
     trailing: String?,
+    onClick: (() -> Unit)? = null,
 ) {
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = accent.copy(alpha = 0.10f),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
     ) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 9.dp),
@@ -1003,6 +1174,266 @@ private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onC
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 6.dp).size(20.dp),
+            )
+        }
+    }
+}
+
+/** Three-icon switcher for the dashboard view mode; the choice is persisted in settings. */
+@Composable
+private fun DashboardModeSwitcher(mode: DashboardViewMode, onSelect: (DashboardViewMode) -> Unit) {
+    val choices = listOf(
+        DashboardViewMode.LIST to (Icons.Outlined.ViewList to stringResource(R.string.dash_view_list)),
+        DashboardViewMode.TIMELINE to (Icons.Outlined.Timeline to stringResource(R.string.dash_view_timeline)),
+        DashboardViewMode.GRID to (Icons.Outlined.GridView to stringResource(R.string.dash_view_grid)),
+    )
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Row(Modifier.padding(horizontal = 3.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            choices.forEach { (value, iconAndLabel) ->
+                val selected = value == mode
+                IconButton(
+                    onClick = { onSelect(value) },
+                    modifier = Modifier.size(30.dp),
+                ) {
+                    Icon(
+                        iconAndLabel.first,
+                        contentDescription = iconAndLabel.second,
+                        tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(17.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * One task on the vertical timeline: a coloured node with a stub of the connecting line, then the
+ * full task card with all its interactions.
+ */
+@Composable
+private fun TaskTimelineItem(
+    task: Task,
+    isLast: Boolean,
+    selected: Boolean,
+    onToggle: () -> Unit,
+    onOpenCountdown: () -> Unit,
+    onEdit: () -> Unit,
+    onArchive: () -> Unit,
+    onDelete: () -> Unit,
+    onPin: () -> Unit,
+    onToggleCountdown: () -> Unit,
+    onLongPress: () -> Unit,
+) {
+    val railColor = priorityColor(task.priority)
+    Row(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.width(22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(Modifier.height(17.dp))
+            Box(Modifier.size(10.dp).clip(CircleShape).background(railColor))
+            if (!isLast) {
+                Spacer(Modifier.height(2.dp))
+                Box(
+                    Modifier
+                        .width(2.dp)
+                        .height(16.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.28f)),
+                )
+            }
+        }
+        TaskRowCard(
+            task = task,
+            selected = selected,
+            onToggle = onToggle,
+            onOpenCountdown = onOpenCountdown,
+            onEdit = onEdit,
+            onArchive = onArchive,
+            onDelete = onDelete,
+            onPin = onPin,
+            onToggleCountdown = onToggleCountdown,
+            onLongPress = onLongPress,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+/** Compact card used by the box (grid) layout: title, due line and category dot. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun TaskGridCard(
+    task: Task,
+    selected: Boolean,
+    onToggle: () -> Unit,
+    onEdit: () -> Unit,
+    onLongPress: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val accentColor = if (task.colorArgb == com.marbledo.feature.tasks.DEFAULT_TASK_COLOR_ARGB) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        Color(task.colorArgb.toInt())
+    }
+    Card(
+        modifier = modifier.combinedClickable(onClick = onEdit, onLongClick = onLongPress),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(
+                    Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onToggle),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        if (task.isCompleted) Icons.Filled.CheckCircle else Icons.Outlined.CircleOutline,
+                        contentDescription = task.title,
+                        tint = if (task.isCompleted) accentColor else MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                Text(
+                    task.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (task.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Text(
+                task.dueAtEpochMillis?.let { localizedTaskDateTime(it, task.isAllDay) }
+                    ?: stringResource(R.string.dash_group_no_date),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (task.category.isNotBlank()) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Box(Modifier.size(6.dp).clip(CircleShape).background(accentColor))
+                    Text(
+                        task.category,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The timeline layout for the countdowns: "now" on the leading edge, every countdown a stop on the
+ * road. Tapping a stop opens the focus view; holding it opens the editor.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CountdownRoad(
+    countdowns: List<Task>,
+    onOpenFocus: (Task) -> Unit,
+    onEdit: (Task) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val numeralMode = LocalNumeralMode.current
+    val nowEpoch = System.currentTimeMillis()
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(2.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
+            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                RoadNode(
+                    title = stringResource(R.string.dash_days_today),
+                    detail = "",
+                    accent = MaterialTheme.colorScheme.tertiary,
+                    isNow = true,
+                    onClick = {},
+                    onLongPress = {},
+                )
+                countdowns.forEach { task ->
+                    val days = ((task.dueAtEpochMillis ?: nowEpoch) - nowEpoch) / 86_400_000L
+                    RoadNode(
+                        title = task.title,
+                        detail = TextNormalizer.formatDigits(daysLeftLabel(days), numeralMode),
+                        accent = MaterialTheme.colorScheme.primary,
+                        isNow = false,
+                        onClick = { onOpenFocus(task) },
+                        onLongPress = { onEdit(task) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** One stop on the countdown road: a node on the track with the title and the time left. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun RoadNode(
+    title: String,
+    detail: String,
+    accent: Color,
+    isNow: Boolean,
+    onClick: () -> Unit,
+    onLongPress: () -> Unit,
+) {
+    Column(
+        Modifier
+            .clip(MaterialTheme.shapes.medium)
+            .combinedClickable(onClick = onClick, onLongClick = onLongPress)
+            .padding(horizontal = 3.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Box(
+            Modifier
+                .size(if (isNow) 13.dp else 17.dp)
+                .clip(CircleShape)
+                .background(accent),
+        )
+        Text(
+            title,
+            style = MarbleTextStyles.metaLabel,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            widthIn(max = 72.dp),
+            textAlign = TextAlign.Center,
+        )
+        if (detail.isNotBlank()) {
+            Text(
+                detail,
+                style = MarbleTextStyles.metaLabel,
+                color = accent,
+                maxLines = 1,
             )
         }
     }

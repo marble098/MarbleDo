@@ -10,8 +10,8 @@
     <string name="calendar_view_year">سال</string>
     <string name="calendar_tasks_count">%1$d کار</string>
     <string name="calendar_no_events">در این بازه کاری یا مناسبتی نیست.</string>
-    <string name="calendar_no_occasions">برای این روز مناسبتی ثبت نشده است.</string>
-    <string name="calendar_no_month_occasions">برای این ماه مناسبتی ثبت نشده است.</string>
+    <string name="calendar_no_occasions">برای این روز مناسبتی نیست.</string>
+    <string name="calendar_no_month_occasions">برای این ماه مناسبتی نیست.</string>
     <string name="calendar_month_occasions_count">%1$d مناسبت در این ماه</string>
     <string name="calendar_occasions_available">%1$d مناسبت در دسترس</string>
     <string name="calendar_occasions_short">%1$d مناسبت</string>
@@ -23,9 +23,9 @@
     <string name="calendar_category_international">روزهای جهانی</string>
     <string name="calendar_sync_now">به‌روزرسانی مناسبت‌ها</string>
     <string name="calendar_sync_refreshing">در حال به‌روزرسانی مناسبت‌ها…</string>
-    <string name="calendar_sync_error">به‌روزرسانی انجام نشد؛ همان نسخهٔ ذخیره‌شده نمایش داده می‌شود.</string>
+    <string name="calendar_sync_error">به‌روزرسانی نشد؛ همان نسخهٔ ذخیره‌شده را می‌بینی.</string>
     <string name="calendar_sync_last">به‌روزرسانی %1$s</string>
-    <string name="calendar_sync_bundled">دادهٔ همراه برنامه؛ برای به‌روزرسانی به اینترنت وصل شو</string>
+    <string name="calendar_sync_bundled">دادهٔ همراه برنامه؛ برای تازه‌شدن به اینترنت وصل شو</string>
     <string name="calendar_sat">ش</string><string name="calendar_sun">ی</string>
     <string name="calendar_mon">د</string><string name="calendar_tue">س</string>
     <string name="calendar_wed">چ</string><string name="calendar_thu">پ</string>
@@ -36,7 +36,7 @@
     <string name="calendar_month_7">مهر</string><string name="calendar_month_8">آبان</string>
     <string name="calendar_month_9">آذر</string><string name="calendar_month_10">دی</string>
     <string name="calendar_month_11">بهمن</string><string name="calendar_month_12">اسفند</string>
-    <string name="calendar_sync_offline">اینترنت وصل نیست؛ نسخهٔ ذخیره‌شدهٔ مناسبت‌ها همچنان نمایش داده می‌شود.</string>
+    <string name="calendar_sync_offline">اینترنت وصل نیست؛ نسخهٔ ذخیره‌شده همچنان جلوی چشمت است.</string>
     <string name="calendar_all_year_occasions">همهٔ مناسبت‌های سال %1$d</string>
     <string name="calendar_search_occasions">جست‌وجوی مناسبت</string>
     <string name="calendar_no_matching_occasions">مناسبتی با این عبارت پیدا نشد.</string>
