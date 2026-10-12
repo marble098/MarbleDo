@@ -601,11 +601,12 @@ fun MarbleDoApp(
         )
     }
 
-    if (showRestoreChoice && restoreEnvelope != null) {
+    val pendingRestore = if (showRestoreChoice) restoreEnvelope else null
+    if (pendingRestore != null) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showRestoreChoice = false },
             title = { Text(stringResource(R.string.settings_import)) },
-            text = { Text(TextNormalizer.formatDigits(stringResource(R.string.settings_import_confirmation, restoreEnvelope!!.tasks.size), settings.numeralMode)) },
+            text = { Text(TextNormalizer.formatDigits(stringResource(R.string.settings_import_confirmation, pendingRestore.tasks.size), settings.numeralMode)) },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     val backup = restoreEnvelope

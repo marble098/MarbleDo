@@ -78,6 +78,10 @@ class ReminderReceiver : BroadcastReceiver() {
                         }
                     }
                 }
+            } catch (_: kotlinx.coroutines.CancellationException) {
+                // The receiver is being torn down; nothing left to show.
+            } catch (_: Exception) {
+                // A failed reminder must never crash the app process.
             } finally {
                 pending.finish()
             }

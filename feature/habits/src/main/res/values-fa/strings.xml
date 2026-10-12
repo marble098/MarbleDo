@@ -6,8 +6,8 @@
     <string name="habit_cabinet_title">کشوی عادت‌ها</string>
     <string name="habit_cabinet_hint">یک کشو برای چیزی که می‌سازی، یک کشو برای چیزی که می‌خواهی بگذاری کنار.</string>
     <string name="habit_score_label">امتیاز رشد</string>
-    <string name="habit_today_progress">امروز %1$d از %2$d</string>
-    <string name="habit_best_streak">بهترین دوره · %1$d روز</string>
+    <string name="habit_today_progress">امروز %1$s از %2$s</string>
+    <string name="habit_best_streak">بهترین دوره · %1$s روز</string>
     <string name="habit_all_done">کار امروز تمام است</string>
     <string name="habit_summary_empty">برای امروز عادتی برنامه‌ریزی نشده.</string>
 
@@ -36,7 +36,7 @@
     <string name="habit_mark_done">زدن تیک امروز</string>
     <string name="habit_increase">یکی بیشتر</string>
     <string name="habit_decrease">یکی کمتر</string>
-    <string name="habit_target_progress">از %2$d، %1$d تا</string>
+    <string name="habit_target_progress">از %2$s، %1$s تا</string>
     <string name="habit_target_reached">به هدف رسیدی</string>
     <string name="habit_quit_hint">فقط روزهایی را بزن که لغزش داشتی؛ بقیهٔ روزها خودبه‌خود پاک می‌مانند.</string>
 
@@ -58,7 +58,7 @@
     <string name="habit_schedule_every_day">هر روز</string>
     <string name="habit_schedule_specific">روزهای مشخص</string>
     <string name="habit_schedule_times">چند بار در هفته</string>
-    <string name="habit_times_per_week">هفته‌ای %1$d بار</string>
+    <string name="habit_times_per_week">هفته‌ای %1$s بار</string>
     <string name="habit_field_difficulty">چقدر سخت است</string>
     <string name="habit_difficulty_easy">آسان</string>
     <string name="habit_difficulty_medium">معمولی</string>
@@ -116,7 +116,7 @@
     <string name="habit_heatmap_legend_more">بیشتر</string>
     <string name="habit_milestones_title">نقطه‌های راه</string>
     <string name="habit_milestone_reached">رسیدی</string>
-    <string name="habit_milestone_remaining">%1$d روز مانده</string>
+    <string name="habit_milestone_remaining">%1$s روز مانده</string>
     <string name="habit_insights_title">چه چیزی کمک می‌کند</string>
     <string name="habit_history_title">روزهای اخیر</string>
     <string name="habit_day_state_done">انجام شد</string>
@@ -126,12 +126,12 @@
     <string name="habit_day_state_today">امروز</string>
 
     <string name="habit_insight_start_small">یک نسخهٔ دو دقیقه‌ای از این عادت پیدا کن. کارِ روزهای اول ساختنِ خودِ رفتار است، نه بزرگ‌کردنش.</string>
-    <string name="habit_insight_relapse_kind">%1$d لغزش ثبت شده. لغزش داده است، نه حکم؛ همان روز بعد برگرد و بنویس چه چیزی باعثش شد.</string>
-    <string name="habit_insight_never_miss_twice">%1$d روز پیاپی پشت سرت است. قانون این است: هیچ‌وقت دو روز پیاپی را از دست نده؛ همان نسخهٔ دو‌دقیقه‌ای هم کافی است.</string>
-    <string name="habit_insight_milestone_close">تا نقطهٔ بعدی فقط %1$d روز مانده؛ امروز همان روزی است که می‌رساندت.</string>
-    <string name="habit_insight_weekly_behind">از هدف این هفته هنوز %1$d روز مانده؛ امروز راحت‌ترین روز برای جبران است.</string>
+    <string name="habit_insight_relapse_kind">%1$s لغزش ثبت شده. لغزش داده است، نه حکم؛ همان روز بعد برگرد و بنویس چه چیزی باعثش شد.</string>
+    <string name="habit_insight_never_miss_twice">%1$s روز پیاپی پشت سرت است. قانون این است: هیچ‌وقت دو روز پیاپی را از دست نده؛ همان نسخهٔ دو‌دقیقه‌ای هم کافی است.</string>
+    <string name="habit_insight_milestone_close">تا نقطهٔ بعدی فقط %1$s روز مانده؛ امروز همان روزی است که می‌رساندت.</string>
+    <string name="habit_insight_weekly_behind">از هدف این هفته هنوز %1$s روز مانده؛ امروز راحت‌ترین روز برای جبران است.</string>
     <string name="habit_insight_shrink_step">پایبندی پایین است و قدم بزرگ. هدف را نصف کن؛ عادت‌های کوچک می‌مانند و بزرگ‌ها رها می‌شوند.</string>
-    <string name="habit_insight_slip_free">%1$d روز پاک پشت سرت است. حالا محرک‌ها را بنویس تا روزِ سخت غافلگیرت نکند.</string>
+    <string name="habit_insight_slip_free">%1$s روز پاک پشت سرت است. حالا محرک‌ها را بنویس تا روزِ سخت غافلگیرت نکند.</string>
     <string name="habit_insight_strong_week">هفتهٔ گذشته از هفتهٔ پیش از آن بهتر بوده؛ هرچه را عوض کردی، نگه دار.</string>
     <string name="habit_insight_weak_weekday">روزهای %1$s ضعیف‌ترند؛ برای همان روز از پیش برنامه بریز، نه اینکه به اراده تکیه کنی.</string>
     <string name="habit_insight_identity">این را دربارهٔ خودت نوشته‌ای: «%1$s».</string>
@@ -139,9 +139,9 @@
 
     <string name="habit_widget_empty">هنوز عادتی نداری</string>
     <string name="habit_widget_empty_body">در ماربل‌دو عادت بساز و از همین‌جا تیک بزن.</string>
-    <string name="habit_widget_progress">امروز %1$d از %2$d</string>
+    <string name="habit_widget_progress">امروز %1$s از %2$s</string>
     <string name="habit_widget_all_done">امروز همه انجام شده</string>
-    <string name="habit_widget_streak">%1$d روز پیاپی</string>
+    <string name="habit_widget_streak">%1$s روز پیاپی</string>
     <string name="habit_widget_slip">لغزش امروز</string>
     <string name="habit_widget_clean">پاک</string>
     <string name="habit_widget_open">رفتن به عادت‌ها</string>

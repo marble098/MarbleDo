@@ -53,6 +53,10 @@ object RecurrenceCalculator {
                 return ZonedDateTime.of(candidate, previous.toLocalTime(), zoneId)
             }
         }
-        error("Could not calculate the next weekly recurrence")
+        // Defensive fallback: the loop above always matches for valid rules; if corrupted data ever
+        // reaches this point, fall back to the next selected weekday instead of crashing.
+        val fallback = (1L..7L).asSequence().map(start::plusDays)
+            .first { it.dayOfWeek.value in selectedDays }
+        return ZonedDateTime.of(fallback, previous.toLocalTime(), zoneId)
     }
 }

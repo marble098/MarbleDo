@@ -14,8 +14,11 @@ object AndroidRecurrenceCalculator {
         if (rule.calendar == RepeatCalendar.GREGORIAN) {
             return RecurrenceCalculator.nextAfter(previousMillis, rule, zone)
         }
-        require(rule.frequency == RepeatFrequency.MONTHLY || rule.frequency == RepeatFrequency.YEARLY) {
-            "Persian-calendar rules support monthly and yearly intervals"
+        if (rule.frequency != RepeatFrequency.MONTHLY && rule.frequency != RepeatFrequency.YEARLY) {
+            // Persian-calendar math only exists for monthly and yearly repeats. Legacy or imported
+            // data can still carry another combination; approximate it with the Gregorian rule
+            // instead of crashing while the user completes the task.
+            return RecurrenceCalculator.nextAfter(previousMillis, rule.copy(calendar = RepeatCalendar.GREGORIAN), zone)
         }
         val local = Instant.ofEpochMilli(previousMillis).atZone(zone)
         val calendar = persianCalendar(IcuTimeZone.getTimeZone(zone.id)).apply {

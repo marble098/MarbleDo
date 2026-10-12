@@ -111,6 +111,10 @@ class HabitReminderReceiver : BroadcastReceiver() {
                     ACTION_SLIP -> record(context, habitId, done = false)
                     else -> remind(context, habitId)
                 }
+            } catch (_: kotlinx.coroutines.CancellationException) {
+                // The receiver is being torn down; nothing left to do.
+            } catch (_: Exception) {
+                // A failed habit nudge must never crash the app process.
             } finally {
                 pending.finish()
             }

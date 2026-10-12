@@ -1,13 +1,6 @@
 <resources>
     <string name="calendar_category_educational">آموزشی و پرورشی</string>
-    <string name="catalog_sources_title">منبع مناسبت‌ها کجاست؟</string>
-    <string name="catalog_delivery_explanation">برنامه، فایل نسخه‌دارِ همین مخزن ماربل‌دو را تازه می‌کند، نه یک خوراک زندهٔ دولتی. با روشن‌بودن به‌روزرسانی خودکار، هنگام بازشدن پس از ۲۰ ساعت و در کار پس‌زمینهٔ روزانه با شرط اتصال، بررسی انجام می‌شود. چهار مسیر دریافت، همان یک فایل را می‌رسانند و چهار منبع پژوهشی مستقل نیستند. دادهٔ آفلاین همیشه می‌ماند.</string>
-    <string name="catalog_version">نسخهٔ فهرست %1$s · تاریخ بازبینی/ویرایش داده %2$s</string>
-    <string name="catalog_coverage_caveat">بودن مناسبت در همهٔ ماه‌ها به این معنا نیست که همهٔ مناسبت‌های ممکن هم پوشش داده شده باشد. موارد دارای منبع، سنتی، راهنما و موارد قدیمیِ بازبینی‌نشده از هم جدایند. پیوند منبع نشان می‌دهد کجا بررسی شده، نه اینکه تایید رسمی گرفته باشد.</string>
     <string name="catalog_lunar_caveat">تاریخ قمری با تقویم حسابی اسلامی و اصلاح ±۲ روز شما محاسبه می‌شود؛ ممکن است با اعلام دیدن هلال ماه فرق داشته باشد. تاریخ‌های مهم دینی را با مرجع خودش هماهنگ کن.</string>
-    <string name="catalog_last_delivery">آخرین مسیری که درست کار کرد: %1$s</string>
-    <string name="catalog_delivery_paths">مسیرهای دریافت (یک فهرست مشترک)</string>
-    <string name="catalog_delivery_path">%1$d · %2$s</string>
     <string name="catalog_references">منابع بررسی</string>
     <string name="catalog_kind_curated">دادهٔ گردآوری‌شده؛ منبع ثانویه</string>
     <string name="catalog_kind_traditional">سنت فرهنگی یا دینی</string>

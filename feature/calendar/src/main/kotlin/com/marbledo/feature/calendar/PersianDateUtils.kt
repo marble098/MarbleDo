@@ -54,7 +54,7 @@ object PersianDateUtils {
 
     fun weekdayShort(weekdayIndex: Int, languageTag: String): String {
         val name = weekdayName(weekdayIndex, languageTag)
-        return if (languageTag == "fa") name.first().toString() else name
+        return if (languageTag == "fa") name.firstOrNull()?.toString() ?: name else name
     }
 
     /** Example: `۱۲ آبان ۱۴۰۵`. */

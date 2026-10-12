@@ -26,9 +26,10 @@ refresh can run sooner. A bad or unavailable mirror never deletes the last valid
 Version/schema rollback, missing categories, loss of all school programs, >15% record loss,
 invalid references and responses over 3 million characters are rejected.
 
-The in-app Sources sheet distinguishes references from mirrors and reports the last successful
-mirror for this process. `checkedAt` is a **review date**, not the source publication date and not
-proof that its website will always remain accessible.
+Each occasion carries an evidence label (sourced, traditional, guidance or legacy) and, where one
+exists, a link to the checked reference; the four paths above are delivery mirrors of the same
+file, not independent research sources. `checkedAt` is a **review date**, not the source
+publication date and not proof that its website will always remain accessible.
 
 ## Inventory and limits
 
