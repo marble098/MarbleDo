@@ -2,9 +2,9 @@
 # Versions are pinned; the updater checks official Maven metadata before changing this file.
 [versions]
 # Android build toolchain (official release notes / Gradle release service)
-agp = "9.5.0-alpha08"
+agp = "9.5.0-alpha09"
 gradle = "9.9.0-milestone-2"
-kotlin = "2.4.20"
+kotlin = "2.5.0-Beta1"
 ksp = "2.3.12"
 compileSdk = "37.2"
 targetSdk = "37"
@@ -14,10 +14,10 @@ appVersionCode = "1"
 buildTools = "37.0.0"
 
 # Compose (AndroidX Compose alpha BOM and Material 3 Expressive alpha)
-composeBom = "2026.09.01"
-material3 = "1.5.0-alpha29"
+composeBom = "2026.10.00"
+material3 = "1.5.0-beta01"
 activity = "1.14.0-alpha03"
-navigation3 = "1.3.0-alpha01"
+navigation3 = "1.3.0-alpha02"
 lifecycle = "2.12.0-alpha04"
 core = "1.19.1"
 appcompat = "1.8.0"
@@ -43,11 +43,11 @@ protobuf = "4.36.2"
 
 # Quality and tests
 junit = "6.1.3"
-jsonTest = "20250517"
+jsonTest = "20260814"
 turbine = "1.2.1"
 androidxTestJunit = "1.3.0"
 androidxTestRunner = "1.7.0"
-baselineprofile = "1.5.0"
+baselineprofile = "1.6.0-alpha01"
 
 [libraries]
 # Compose BOM; the alpha BOM is intentional to use the current expressive component set.
