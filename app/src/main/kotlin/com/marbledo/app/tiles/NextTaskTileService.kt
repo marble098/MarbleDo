@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runCatching
 import kotlinx.coroutines.withContext
 
 private const val REQUEST_CODE_NEXT_TASK = 2
