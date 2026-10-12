@@ -1,6 +1,6 @@
 # Dependency version sources
 
-Last reviewed: **2026-10-06**. All dependency numbers are centralized in `gradle/libs.versions.toml`. The catalog intentionally includes pre-releases where that was selected; Renovate is configured with `ignoreUnstable: false`.
+Last reviewed: **2026-10-12**. All dependency numbers are centralized in `gradle/libs.versions.toml`. The catalog intentionally includes pre-releases where that was selected; Renovate is configured with `ignoreUnstable: false`.
 
 ## Official release indexes
 
@@ -16,7 +16,7 @@ Last reviewed: **2026-10-06**. All dependency numbers are centralized in `gradle
 | Koin, Coroutines, Kotlin Serialization, Kotlinx DateTime, JUnit, Turbine, Protobuf | Their upstream release pages or Maven Central metadata under `https://repo.maven.apache.org/maven2/` |
 | Compile / target SDK and Build Tools | [Android SDK Platform release notes](https://developer.android.com/tools/releases/platforms) and the official `sdkmanager` package index |
 
-Navigation 3 was selected intentionally instead of Navigation 2. Its official AndroidX release page lists `1.3.0-alpha01` as the latest 1.3 pre-release as of this review. The official Gradle version index lists `9.9.0-milestone-2` as the newest non-snapshot release, and Google Maven metadata lists `9.5.0-alpha08` for AGP. These pre-release toolchain pins are intentional and have not been build-validated in this environment. Kotlin's official matrix lists KGP 2.4.20 as fully supported through Gradle 9.7.0 and AGP 9.3.1; the newer selected Gradle/AGP versions are outside that tested range and may produce warnings or incompatibilities. Android modules use AGP 9's built-in Kotlin support rather than applying the incompatible `org.jetbrains.kotlin.android` plugin; see Google's [migration guide](https://developer.android.com/build/migrate-to-built-in-kotlin).
+Navigation 3 was selected intentionally instead of Navigation 2. Its official AndroidX release page lists `1.3.0-alpha02` as the latest 1.3 pre-release as of this review. The official Gradle version index lists `9.9.0-milestone-2` as the newest non-snapshot release, and Google Maven metadata lists `9.5.0-alpha09` for AGP. These pre-release toolchain pins are intentional; the weekly workflow builds, lints, and tests every module with them before it proposes an update. Kotlin's official matrix documents KGP 2.4.20 as fully supported through Gradle 9.7.0 and AGP 9.3.1; the catalog's newer Kotlin, Gradle, and AGP pins are outside that documented range, so they are validated by that build instead of by the matrix. Android modules use AGP 9's built-in Kotlin support rather than applying the incompatible `org.jetbrains.kotlin.android` plugin; see Google's [migration guide](https://developer.android.com/build/migrate-to-built-in-kotlin).
 
 The official Android SDK repository index currently lists the released `platforms;android-37.2` package. The Android 17 setup guide specifies API 37 and Build Tools 37, and AGP's [CompileSdkSpec](https://developer.android.com/reference/tools/gradle-api/9.5/com/android/build/api/dsl/CompileSdkSpec) supports selecting the minor API with `release(37) { minorApiLevel = 2 }`. Accordingly, the catalog stores `compileSdk = "37.2"`, each Android module uses the official minor-API DSL, and CI installs that exact SDK package rather than assuming `.0`. Sources: [official SDK package index](https://dl.google.com/android/repository/repository2-4.xml) and [Android 17 SDK setup](https://developer.android.com/about/versions/17/setup-sdk).
 
@@ -44,4 +44,4 @@ The automation commits exactly two files, declared via `add-paths`: `gradle/libs
 
 ## Calendar parser test fixture
 
-`jsonTest = "20250517"` is the JVM-only `org.json:json` fixture for exercising the production Android JSON parser in unit tests. The production app still uses Android's built-in `org.json` (no new runtime JSON dependency). The pinned tag was checked on 2026-10-11: [upstream tag](https://github.com/stleary/JSON-java/tree/20250517). It is included in the existing Maven metadata updater.
+`jsonTest = "20260814"` is the JVM-only `org.json:json` fixture for exercising the production Android JSON parser in unit tests. The production app still uses Android's built-in `org.json` (no new runtime JSON dependency). The pinned tag was checked on 2026-10-12: [upstream tag](https://github.com/stleary/JSON-java/tree/20260814). It is included in the existing Maven metadata updater.
