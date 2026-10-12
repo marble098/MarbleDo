@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -46,7 +47,6 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.CircleOutline
 import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.Timer
@@ -1300,7 +1300,7 @@ private fun TaskGridCard(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        if (task.isCompleted) Icons.Filled.CheckCircle else Icons.Outlined.CircleOutline,
+                        if (task.isCompleted) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
                         contentDescription = task.title,
                         tint = if (task.isCompleted) accentColor else MaterialTheme.colorScheme.outline,
                         modifier = Modifier.size(18.dp),
