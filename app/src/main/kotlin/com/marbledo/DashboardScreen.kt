@@ -357,7 +357,7 @@ fun DashboardScreen(
                     numeralMode = numeralMode,
                     onOpenCalendar = onOpenCalendar,
                     onShare = {
-                        haptics.performHapticFeedback(HapticFeedbackType.KeyPress)
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         runCatching {
                             context.startActivity(
                                 Intent.createChooser(
@@ -380,7 +380,7 @@ fun DashboardScreen(
                     DashboardModeSwitcher(
                         mode = settings.dashboardViewMode,
                         onSelect = { mode ->
-                            haptics.performHapticFeedback(HapticFeedbackType.KeyPress)
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             onViewModeChange(mode)
                         },
                     )
