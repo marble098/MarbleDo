@@ -78,7 +78,9 @@ abstract class MarbleDatabase : RoomDatabase() {
                         "`difficulty` TEXT NOT NULL, " +
                         "`reminderMinuteOfDay` INTEGER NOT NULL, " +
                         "`startDate` TEXT NOT NULL, " +
-                        "`isArchived` INTEGER NOT NULL, " +
+                        // HabitEntity declares @ColumnInfo(defaultValue = "0"); Room validates that
+                        // literal after migration, so the DEFAULT must be part of the definition.
+                        "`isArchived` INTEGER NOT NULL DEFAULT 0, " +
                         "`createdAtEpochMillis` INTEGER NOT NULL, " +
                         "`sortOrder` INTEGER NOT NULL)",
                 )
