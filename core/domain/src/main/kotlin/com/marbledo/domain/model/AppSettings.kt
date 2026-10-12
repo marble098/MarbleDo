@@ -42,7 +42,8 @@ data class AppSettings(
     val persistentDateNotificationEnabled: Boolean = true,
     /** Calendar whose day number is drawn inside the status-bar date icon. */
     val statusBarCalendar: CalendarDisplayMode = CalendarDisplayMode.PERSIAN,
-    /** How much of the status-bar icon the day number may use; see [StatusBarIconStyle]. */
+    /** Which look the status-bar icon uses for the day number; see [StatusBarIconStyle]. */
+    @Serializable(with = StatusBarIconStyleSerializer::class)
     val statusBarIconStyle: StatusBarIconStyle = StatusBarIconStyle.DEFAULT,
     /** Look of the habit cabinet; individual habits can carry their own look. */
     val habitTheme: String = HabitTheme.DEFAULT.id,

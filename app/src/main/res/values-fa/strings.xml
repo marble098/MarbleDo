@@ -193,8 +193,11 @@
     <string name="dash_category_all">همه دسته‌ها</string>
     <string name="settings_status_calendar">تقویم نوار وضعیت</string>
     <string name="settings_status_icon_style">آیکون نوار وضعیت</string>
-    <string name="settings_status_icon_style_hint">عدد روز حالا تا آخرین فضایی که نوار وضعیت می‌دهد بزرگ می‌شود و دقیقاً در همان اندازه‌ای رندر می‌شود که اندروید نشان می‌دهد؛ برای همین خطوطش تیز می‌ماند و محو نمی‌شود. نوار تیره اندازهٔ واقعی است و پیش‌نمای بزرگ، همان آیکون بزرگ‌شده.</string>
-    <string name="settings_status_icon_style_bold">عدد درشت</string>
+    <string name="settings_status_icon_style_hint">شش ظاهر برای عدد روز. هر کدام با فضایی که نوار وضعیت واقعاً در اختیار می‌گذارد سنجیده شده و دقیقاً در همان اندازهٔ پیکسلی کشیده می‌شود که اندروید نشان می‌دهد؛ برای همین عدد صاف و تمیز می‌ماند و کشیده و زمخت نمی‌شود. نوار تیره اندازهٔ واقعی را نشان می‌دهد و پیش‌نمای بزرگ‌تر همان تصویرِ بزرگ‌شده است. نشان کوچکی هم حال روز را می‌گوید: ستارهٔ چهارپر برای مناسبت، هلال برای روز مذهبی، پرچم برای تعطیل و سه‌نقطه برای کارهای سررسیدشده.</string>
+    <string name="settings_status_icon_style_numeral">عدد تمیز</string>
+    <string name="settings_status_icon_style_frame">قاب</string>
+    <string name="settings_status_icon_style_tile">کارت مربع</string>
+    <string name="settings_status_icon_style_disc">دایره</string>
     <string name="settings_status_icon_style_page">برگهٔ تقویم</string>
     <string name="settings_status_icon_style_icon">فقط آیکون</string>
     <string name="settings_status_icon_state_active">آیکون نوار وضعیت روشن است و امروز را نشان می‌دهد.</string>
