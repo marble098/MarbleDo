@@ -53,7 +53,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -197,6 +196,7 @@ fun TaskRowCard(
         animationSpec = spring(),
         label = "taskSwipeOffset",
     )
+    val swipeOffsetDp = with(density) { swipeOffset.toDp() }
     Box(modifier = modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
@@ -215,7 +215,7 @@ fun TaskRowCard(
         Card(
         modifier = modifier
             .fillMaxWidth()
-            .offset(Offset(x = swipeOffset, y = 0f))
+            .offset(x = swipeOffsetDp)
             .pointerInput(task.id, task.isCompleted) {
                 detectHorizontalDragGestures(
                     onDragStart = { dragging = true },
