@@ -643,8 +643,13 @@ private fun StatusIconStylePicker(
     val digits = TextNormalizer.formatDigits("28", numeralMode)
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         StatusBarIconStyle.entries.forEach { style ->
+            // Two renderings of the same style: the strip preview at the size the status bar really
+            // uses, and a high-resolution copy that shows what the digits look like up close.
+            val stripBitmap = remember(context, style, digits) {
+                NotificationArtwork.statusBitmap(context, digits, NotificationMood.OCCASION, style, NotificationArtwork.STATUS_ICON_DP)
+            }
             val bitmap = remember(context, style, digits) {
-                NotificationArtwork.statusBitmap(context, digits, NotificationMood.OCCASION, style)
+                NotificationArtwork.statusBitmap(context, digits, NotificationMood.OCCASION, style, NotificationArtwork.PREVIEW_ICON_DP)
             }
             val isSelected = style == selected
             val shape = MaterialTheme.shapes.medium
@@ -667,7 +672,7 @@ private fun StatusIconStylePicker(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(7.dp),
                     ) {
-                        StatusIconPreview(bitmap, style, Modifier.size(17.dp), Color.White)
+                        StatusIconPreview(stripBitmap, style, Modifier.size(17.dp), Color.White)
                         Box(
                             Modifier
                                 .size(width = 26.dp, height = 7.dp)

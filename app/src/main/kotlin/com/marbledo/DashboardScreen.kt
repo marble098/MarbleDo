@@ -9,12 +9,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,18 +32,21 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.Timer
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -61,6 +58,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -75,6 +73,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -137,7 +136,12 @@ private const val MAX_DASHBOARD_OCCASIONS = 3
 private const val MAX_DASHBOARD_UPCOMING = 4
 
 /**
- * A glanceable daily planner: date and workload first, then occasions, a countdown, and collapsible task groups.
+ * A glanceable daily planner: the date and the day's workload first, the task list right below it,
+ * and the calmer context — live countdown, occasions, weekly load — further down the page.
+ *
+ * Everything the screen could do before is still here; what changed is the order and the weight of
+ * each block. Search, category filter and sort moved into one compact toolbar above the task list
+ * instead of stacking three full-width controls on top of the tasks.
  */
 @Composable
 fun DashboardScreen(
@@ -177,6 +181,10 @@ fun DashboardScreen(
     val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
     var collapsedTaskGroups by rememberSaveable { mutableStateOf("LATER,NO_DATE") }
+    // The search field and the category chips stay folded away until they are needed, so the task
+    // list starts right under its title instead of under three rows of controls.
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var categoriesOpen by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(initialShareText, initialOpenAdd) {
         if (initialOpenAdd || !initialShareText.isNullOrBlank()) {
@@ -279,70 +287,229 @@ fun DashboardScreen(
         }
     }
     val progress = if (state.activeCount + state.completedCount == 0) 0f else state.completedCount.toFloat() / (state.activeCount + state.completedCount)
+    val categoryChoices = remember(settings.taskCategories) {
+        settings.taskCategories.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+    }
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 128.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item { DashboardHeader(todayOpen, state.completedCount, activeTasks.size, progress, todayEpoch, now.hour, settings, numeralMode, onOpenCalendar) }
-
             item {
-                OccasionsCard(
-                    occasions = todayOccasions.map {
-                        DashboardOccasion(it.title(settings.languageTag), it.category, it.isHoliday)
-                    },
-                    onClick = onOpenCalendar,
+                DailyHeaderCard(
+                    todayOpen = todayOpen,
+                    completedCount = state.completedCount,
+                    openCount = activeTasks.size,
+                    progress = progress,
+                    todayEpoch = todayEpoch,
+                    currentHour = now.hour,
+                    settings = settings,
+                    numeralMode = numeralMode,
+                    onOpenCalendar = onOpenCalendar,
                 )
             }
 
-            if (upcomingOccasions.isNotEmpty()) {
+            // Tasks are the reason the screen exists, so they come first and they keep the space.
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionHeader(stringResource(R.string.dash_tasks), state.visibleTasks.size, Modifier.weight(1f))
+                    IconButton(onClick = { searchOpen = !searchOpen; if (!searchOpen) viewModel.setQuery("") }) {
+                        Icon(
+                            Icons.Outlined.Search,
+                            contentDescription = stringResource(R.string.dash_search),
+                            tint = if (searchOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    IconButton(onClick = { categoriesOpen = !categoriesOpen }) {
+                        Icon(
+                            Icons.Outlined.FilterAlt,
+                            contentDescription = stringResource(R.string.dash_filters),
+                            tint = if (categoriesOpen || state.selectedCategory != null) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Box {
+                        IconButton(onClick = { sortMenuExpanded = true }) {
+                            Icon(
+                                Icons.Outlined.Sort,
+                                contentDescription = stringResource(R.string.dash_sort_menu),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                            TaskSort.entries.forEach { sort ->
+                                DropdownMenuItem(
+                                    text = { Text(sortLabel(sort)) },
+                                    onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            if (searchOpen) {
                 item {
-                    UpcomingOccasionsCard(
-                        upcoming = upcomingOccasions,
-                        favoritesOnly = favoriteIds.isNotEmpty(),
-                        languageTag = settings.languageTag,
-                        onClick = onOpenCalendar,
+                    OutlinedTextField(
+                        value = state.query,
+                        onValueChange = viewModel::setQuery,
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text(stringResource(R.string.dash_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (state.query.isNotBlank()) {
+                                IconButton(onClick = { viewModel.setQuery("") }) {
+                                    Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.dash_clear_search))
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.large,
                     )
+                }
+            }
+            if (categoriesOpen && categoryChoices.isNotEmpty()) {
+                item {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        item {
+                            FilterChip(
+                                selected = state.selectedCategory == null,
+                                onClick = { viewModel.setCategory(null) },
+                                label = { Text(stringResource(R.string.dash_category_all)) },
+                            )
+                        }
+                        items(categoryChoices) { name ->
+                            FilterChip(
+                                selected = state.selectedCategory == name,
+                                onClick = { viewModel.setCategory(name) },
+                                label = { Text(name, maxLines = 1) },
+                            )
+                        }
+                    }
+                }
+            }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
+                    items(TaskFilter.entries, key = { it.name }) { filter ->
+                        FilterChip(
+                            selected = state.filter == filter,
+                            onClick = { viewModel.setFilter(filter) },
+                            label = { Text(filterLabel(filter)) },
+                        )
+                    }
+                }
+            }
+            if (state.selectedIds.isNotEmpty()) {
+                item {
+                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                TextNormalizer.formatDigits(stringResource(R.string.dash_selected_count, state.selectedIds.size), numeralMode),
+                                style = MarbleTextStyles.metaLabel,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { viewModel.completeSelected() }) { Text(stringResource(R.string.dash_complete_selected)) }
+                            TextButton(onClick = { viewModel.clearSelection() }) { Text(stringResource(R.string.dash_clear_selection)) }
+                        }
+                    }
+                }
+            }
+
+            if (groups.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(22.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Text(stringResource(R.string.dash_empty_title), style = MarbleTextStyles.itemTitle)
+                            Text(
+                                stringResource(R.string.dash_empty_body),
+                                style = MarbleTextStyles.bodyPrimary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                }
+            } else {
+                groups.forEach { grouped ->
+                    val isCollapsed = grouped.group.name in collapsedTaskGroups.split(',').filter(String::isNotBlank)
+                    item(key = "header-${grouped.group.name}") {
+                        TaskGroupHeader(
+                            group = grouped.group,
+                            count = grouped.tasks.size,
+                            expanded = !isCollapsed,
+                            onClick = {
+                                val next = collapsedTaskGroups.split(',').filter(String::isNotBlank).toMutableSet()
+                                if (!next.add(grouped.group.name)) next.remove(grouped.group.name)
+                                collapsedTaskGroups = next.joinToString(",")
+                            },
+                        )
+                    }
+                    if (!isCollapsed) {
+                        items(grouped.tasks, key = { it.id }) { task ->
+                            TaskRowCard(
+                                task = task,
+                                selected = task.id in state.selectedIds,
+                                onToggle = { viewModel.toggleCompleted(task) },
+                                onOpenCountdown = { onOpenFocus(task) },
+                                onEdit = { editingTask = task },
+                                onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
+                                onDelete = { viewModel.delete(task) },
+                                onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
+                                onToggleCountdown = {
+                                    viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
+                                },
+                                onLongPress = { viewModel.toggleSelection(task.id) },
+                            )
+                        }
+                    }
                 }
             }
 
             item {
-                WeeklyWorkloadCard(state.allTasks, now.toInstant(), zone, settings.languageTag,
-                    onOpenTask = { editingTask = it },
-                    onAdd = { date ->
-                        sharedText = ""
-                        addDateIso = date.toString()
-                        plannedCountdown = false
-                        showQuickAdd = true
-                    })
-            }
-
-            item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    SectionHeader(stringResource(R.string.dash_countdown_hero), modifier = Modifier.weight(1f))
+                    SectionHeader(stringResource(R.string.dash_countdown_hero), countdowns.size.takeIf { it > 0 }, Modifier.weight(1f))
                     IconButton(onClick = { showCreateCountdown = true }) {
-                        Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.dash_create_countdown))
+                        Icon(
+                            Icons.Outlined.Add,
+                            contentDescription = stringResource(R.string.dash_create_countdown),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
             }
 
             if (heroCountdown == null) {
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                    ) {
-                        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(stringResource(R.string.dash_countdown_none_title), style = MarbleTextStyles.itemTitle)
-                            Text(
-                                stringResource(R.string.dash_countdown_none_body),
-                                style = MarbleTextStyles.bodyPrimary,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(
+                                Icons.Outlined.Timer,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
                             )
-                            Button(onClick = { showCreateCountdown = true }) {
-                                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
+                            Text(
+                                stringResource(R.string.dash_countdown_none_title),
+                                style = MarbleTextStyles.itemTitle,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { showCreateCountdown = true }) {
                                 Text(stringResource(R.string.dash_create_countdown))
                             }
                         }
@@ -387,131 +554,27 @@ fun DashboardScreen(
             }
 
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SectionHeader(stringResource(R.string.dash_tasks), state.visibleTasks.size, Modifier.weight(1f))
-                        Box {
-                            TextButton(onClick = { sortMenuExpanded = true }) {
-                                Icon(Icons.Outlined.Sort, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(3.dp))
-                                Text(stringResource(R.string.dash_sort_menu))
-                            }
-                            DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
-                                TaskSort.entries.forEach { sort ->
-                                    DropdownMenuItem(
-                                        text = { Text(sortLabel(sort)) },
-                                        onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    val categoryChoices = remember(settings.taskCategories) {
-                        settings.taskCategories.map { it.trim() }.filter { it.isNotBlank() }.distinct()
-                    }
-                    if (categoryChoices.isNotEmpty()) {
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            item {
-                                FilterChip(
-                                    selected = state.selectedCategory == null,
-                                    onClick = { viewModel.setCategory(null) },
-                                    label = { Text(stringResource(R.string.dash_category_all)) },
-                                )
-                            }
-                            items(categoryChoices) { name ->
-                                FilterChip(
-                                    selected = state.selectedCategory == name,
-                                    onClick = { viewModel.setCategory(name) },
-                                    label = { Text(name, maxLines = 1) },
-                                )
-                            }
-                        }
-                    }
-                    OutlinedTextField(
-                        value = state.query,
-                        onValueChange = viewModel::setQuery,
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.dash_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (state.query.isNotBlank()) {
-                                IconButton(onClick = { viewModel.setQuery("") }) {
-                                    Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.dash_clear_search))
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                    )
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
-                        items(TaskFilter.entries, key = { it.name }) { filter ->
-                            FilterChip(
-                                selected = state.filter == filter,
-                                onClick = { viewModel.setFilter(filter) },
-                                label = { Text(filterLabel(filter)) },
-                            )
-                        }
-                    }
-                    if (state.selectedIds.isNotEmpty()) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                TextNormalizer.formatDigits(stringResource(R.string.dash_selected_count, state.selectedIds.size), numeralMode),
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                            TextButton(onClick = { viewModel.completeSelected() }) { Text(stringResource(R.string.dash_complete_selected)) }
-                            TextButton(onClick = { viewModel.clearSelection() }) { Text(stringResource(R.string.dash_clear_selection)) }
-                        }
-                    }
-                }
+                OccasionsCard(
+                    todayOccasions = todayOccasions.map {
+                        DashboardOccasion(it.title(settings.languageTag), it.category, it.isHoliday)
+                    },
+                    upcoming = upcomingOccasions,
+                    favoritesOnly = favoriteIds.isNotEmpty(),
+                    languageTag = settings.languageTag,
+                    numeralMode = numeralMode,
+                    onOpenCalendar = onOpenCalendar,
+                )
             }
 
-            if (groups.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    ) {
-                        Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Text(stringResource(R.string.dash_empty_title), style = MarbleTextStyles.itemTitle)
-                            Text(stringResource(R.string.dash_empty_body), style = MarbleTextStyles.bodyPrimary, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            } else {
-                groups.forEach { grouped ->
-                    val isCollapsed = grouped.group.name in collapsedTaskGroups.split(',').filter(String::isNotBlank)
-                    item(key = "header-${grouped.group.name}") {
-                        TaskGroupHeader(
-                            group = grouped.group,
-                            count = grouped.tasks.size,
-                            expanded = !isCollapsed,
-                            onClick = {
-                                val next = collapsedTaskGroups.split(',').filter(String::isNotBlank).toMutableSet()
-                                if (!next.add(grouped.group.name)) next.remove(grouped.group.name)
-                                collapsedTaskGroups = next.joinToString(",")
-                            },
-                        )
-                    }
-                    if (!isCollapsed) {
-                        items(grouped.tasks, key = { it.id }) { task ->
-                            TaskRowCard(
-                                task = task,
-                                selected = task.id in state.selectedIds,
-                                onToggle = { viewModel.toggleCompleted(task) },
-                                onOpenCountdown = { onOpenFocus(task) },
-                                onEdit = { editingTask = task },
-                                onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
-                                onDelete = { viewModel.delete(task) },
-                                onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
-                                onToggleCountdown = {
-                                    viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
-                                },
-                                onLongPress = { viewModel.toggleSelection(task.id) },
-                            )
-                        }
-                    }
-                }
+            item {
+                WeeklyWorkloadCard(state.allTasks, now.toInstant(), zone, settings.languageTag,
+                    onOpenTask = { editingTask = it },
+                    onAdd = { date ->
+                        sharedText = ""
+                        addDateIso = date.toString()
+                        plannedCountdown = false
+                        showQuickAdd = true
+                    })
             }
         }
 
@@ -591,8 +654,13 @@ fun DashboardScreen(
     }
 }
 
+/**
+ * Today at a glance: greeting, the three dates, the day's counters and one progress bar. The three
+ * counters are plain columns on one row instead of three separate filled cards, and the weekday is
+ * part of the date line rather than a chip of its own.
+ */
 @Composable
-private fun DashboardHeader(
+private fun DailyHeaderCard(
     todayOpen: Int,
     completedCount: Int,
     openCount: Int,
@@ -611,77 +679,93 @@ private fun DashboardHeader(
     val gradient = Brush.verticalGradient(
         listOf(
             MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.secondaryContainer,
-            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.surface,
         ),
     )
-    Surface(shape = MaterialTheme.shapes.extraLarge, color = Color.Transparent) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .background(gradient, MaterialTheme.shapes.extraLarge)
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(11.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    // Screen hero greeting in Vazirmatn Black, contrasted against a Light date line.
-                    Text(greeting, style = MarbleTextStyles.screenTitle)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = Color.Transparent,
+    ) {
+        Box(Modifier.background(gradient, MaterialTheme.shapes.extraLarge)) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        // Screen hero greeting in Vazirmatn Black, with the weekday above a Light date line.
+                        Text(greeting, style = MarbleTextStyles.screenTitle)
+                        Text(
+                            PersianDateUtils.fullDateWithWeekday(todayEpoch, settings.languageTag, numeralMode),
+                            style = MarbleTextStyles.dateDigits.copy(fontSize = 15.sp, lineHeight = 21.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            PersianDateUtils.tripleDate(todayEpoch, settings.languageTag, numeralMode, settings.lunarOffsetDays),
+                            style = MarbleTextStyles.metaLabel,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
+                        IconButton(onClick = onOpenCalendar) {
+                            Icon(
+                                Icons.Outlined.CalendarMonth,
+                                contentDescription = stringResource(R.string.nav_calendar),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    HeaderStat(stringResource(R.string.dash_stat_today), todayOpen, numeralMode, Modifier.weight(1f))
+                    HeaderStatDivider()
+                    HeaderStat(stringResource(R.string.dash_stat_done), completedCount, numeralMode, Modifier.weight(1f))
+                    HeaderStatDivider()
+                    HeaderStat(stringResource(R.string.dash_stat_all), openCount, numeralMode, Modifier.weight(1f))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    LinearProgressIndicator(
+                        progress = { progress.coerceIn(0f, 1f) },
+                        modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
+                    )
                     Text(
-                        PersianDateUtils.fullDate(todayEpoch, settings.languageTag, numeralMode),
-                        style = MarbleTextStyles.dateDigits.copy(fontSize = 15.sp, lineHeight = 21.sp),
+                        TextNormalizer.formatDigits("${(progress * 100).toInt()}%", numeralMode),
+                        style = MarbleTextStyles.metaLabel,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
-                    IconButton(onClick = onOpenCalendar) {
-                        Icon(Icons.Outlined.CalendarMonth, contentDescription = stringResource(R.string.nav_calendar), tint = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
-            val weekdayLabel = PersianDateUtils.weekdayName(
-                PersianDateUtils.of(todayEpoch).weekdayIndex,
-                settings.languageTag,
-            )
-            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.62f)) {
-                Text(
-                    weekdayLabel,
-                    style = MarbleTextStyles.metaLabel,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                StatPill(stringResource(R.string.dash_stat_today), todayOpen, Modifier.weight(1f))
-                StatPill(stringResource(R.string.dash_stat_done), completedCount, Modifier.weight(1f))
-                StatPill(stringResource(R.string.dash_stat_all), openCount, Modifier.weight(1f))
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    TextNormalizer.formatDigits(stringResource(R.string.dash_progress, (progress * 100).toInt()), numeralMode),
-                    style = MarbleTextStyles.metaLabel,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                LinearProgressIndicator(
-                    progress = { progress.coerceIn(0f, 1f) },
-                    modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
-                )
             }
         }
     }
 }
 
 @Composable
-private fun StatPill(label: String, value: Int, modifier: Modifier = Modifier) {
-    Surface(modifier, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.68f)) {
-        Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                TextNormalizer.formatDigits(value.toString(), LocalNumeralMode.current),
-                style = MarbleTextStyles.cardTitle.copy(fontSize = 22.sp, lineHeight = 28.sp),
-            )
-            Text(label, style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-        }
+private fun HeaderStat(label: String, value: Int, numeralMode: NumeralMode, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        Text(
+            TextNormalizer.formatDigits(value.toString(), numeralMode),
+            style = MarbleTextStyles.cardTitle.copy(fontSize = 21.sp, lineHeight = 27.sp),
+        )
+        Text(label, style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
     }
+}
+
+@Composable
+private fun HeaderStatDivider() {
+    Box(
+        Modifier
+            .height(28.dp)
+            .width(1.dp)
+            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
+    )
 }
 
 @Composable
@@ -724,87 +808,27 @@ private fun CountdownHero(
     }
 }
 
+/**
+ * Today's occasions and the occasions ahead in one card. The two lists used to be two stacked
+ * cards with two identical headers; now they share one header and one switch.
+ */
 @Composable
-private fun OccasionsCard(occasions: List<DashboardOccasion>, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                    Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(8.dp).size(18.dp))
-                }
-                SectionHeader(stringResource(R.string.dash_occasions_today), occasions.size, Modifier.weight(1f).padding(start = 8.dp))
-                TextButton(onClick = onClick) { Text(stringResource(R.string.nav_calendar)) }
-            }
-            if (occasions.isEmpty()) {
-                Text(
-                    stringResource(R.string.dash_no_occasion),
-                    style = MarbleTextStyles.bodyPrimary,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                occasions.take(MAX_DASHBOARD_OCCASIONS).forEach { occasion ->
-                    val accent = categoryColor(occasion.category)
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = accent.copy(alpha = 0.12f),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 9.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(9.dp),
-                        ) {
-                            Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
-                            Text(
-                                occasion.title,
-                                style = MarbleTextStyles.itemTitle,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (occasion.isHoliday) {
-                                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
-                                    Text(
-                                        stringResource(R.string.dash_holiday_badge),
-                                        style = MarbleTextStyles.metaLabel,
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                val remaining = occasions.size - MAX_DASHBOARD_OCCASIONS
-                if (remaining > 0) {
-                    Text(
-                        TextNormalizer.formatDigits(stringResource(R.string.dash_more_occasions, remaining), LocalNumeralMode.current),
-                        style = MarbleTextStyles.metaLabel,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun UpcomingOccasionsCard(
+private fun OccasionsCard(
+    todayOccasions: List<DashboardOccasion>,
     upcoming: List<UpcomingOccasion>,
     favoritesOnly: Boolean,
     languageTag: String,
-    onClick: () -> Unit,
+    numeralMode: NumeralMode,
+    onOpenCalendar: () -> Unit,
 ) {
-    val numeralMode = LocalNumeralMode.current
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    val upcomingLabel = stringResource(if (favoritesOnly) R.string.dash_my_occasions else R.string.dash_upcoming_occasions)
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
                     Icon(
                         Icons.Outlined.StarBorder,
@@ -813,40 +837,137 @@ private fun UpcomingOccasionsCard(
                         modifier = Modifier.padding(8.dp).size(18.dp),
                     )
                 }
-                SectionHeader(
-                    stringResource(if (favoritesOnly) R.string.dash_my_occasions else R.string.dash_upcoming_occasions),
-                    upcoming.size,
-                    Modifier.weight(1f).padding(start = 8.dp),
+                SegmentedSwitch(
+                    options = listOf(
+                        stringResource(R.string.dash_stat_today) to todayOccasions.size,
+                        upcomingLabel to upcoming.size,
+                    ),
+                    selectedIndex = selectedTab,
+                    numeralMode = numeralMode,
+                    onSelect = { selectedTab = it },
+                    modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = onClick) { Text(stringResource(R.string.nav_calendar)) }
             }
-            upcoming.forEach { item ->
-                val accent = categoryColor(item.occasion.category)
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = accent.copy(alpha = 0.10f),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 9.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(9.dp),
-                    ) {
-                        Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
-                        Text(
-                            item.occasion.title(languageTag),
-                            style = MarbleTextStyles.itemTitle,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
+            if (selectedTab == 0) {
+                if (todayOccasions.isEmpty()) {
+                    Text(
+                        stringResource(R.string.dash_no_occasion),
+                        style = MarbleTextStyles.bodyPrimary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    todayOccasions.take(MAX_DASHBOARD_OCCASIONS).forEach { occasion ->
+                        OccasionLine(
+                            title = occasion.title,
+                            accent = categoryColor(occasion.category),
+                            badge = stringResource(R.string.dash_holiday_badge).takeIf { occasion.isHoliday },
+                            trailing = null,
                         )
+                    }
+                    val remaining = todayOccasions.size - MAX_DASHBOARD_OCCASIONS
+                    if (remaining > 0) {
                         Text(
-                            TextNormalizer.formatDigits(daysLeftLabel(item.daysUntil), numeralMode),
+                            TextNormalizer.formatDigits(stringResource(R.string.dash_more_occasions, remaining), numeralMode),
                             style = MarbleTextStyles.metaLabel,
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
+            } else {
+                if (upcoming.isEmpty()) {
+                    Text(
+                        stringResource(R.string.dash_no_upcoming_occasion),
+                        style = MarbleTextStyles.bodyPrimary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    upcoming.forEach { item ->
+                        OccasionLine(
+                            title = item.occasion.title(languageTag),
+                            accent = categoryColor(item.occasion.category),
+                            badge = null,
+                            trailing = TextNormalizer.formatDigits(daysLeftLabel(item.daysUntil), numeralMode),
+                        )
+                    }
+                }
+            }
+            TextButton(onClick = onOpenCalendar, modifier = Modifier.align(Alignment.Start)) {
+                Icon(Icons.Outlined.CalendarMonth, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.nav_calendar))
+            }
+        }
+    }
+}
+
+@Composable
+private fun OccasionLine(
+    title: String,
+    accent: Color,
+    badge: String?,
+    trailing: String?,
+) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = accent.copy(alpha = 0.10f),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
+            Text(
+                title,
+                style = MarbleTextStyles.itemTitle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (badge != null) {
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
+                    Text(
+                        badge,
+                        style = MarbleTextStyles.metaLabel,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                    )
+                }
+            }
+            if (trailing != null) {
+                Text(trailing, style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+/** Two-labelled switch with the counts inside the labels; smaller than two stacked cards. */
+@Composable
+private fun SegmentedSwitch(
+    options: List<Pair<String, Int>>,
+    selectedIndex: Int,
+    numeralMode: NumeralMode,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        options.forEachIndexed { index, (label, count) ->
+            val selected = index == selectedIndex
+            Surface(
+                shape = CircleShape,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.weight(1f).clickable { onSelect(index) },
+            ) {
+                Text(
+                    TextNormalizer.formatDigits("$label $count", numeralMode),
+                    style = MarbleTextStyles.metaLabel,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+                )
             }
         }
     }
@@ -859,31 +980,29 @@ private fun daysLeftLabel(days: Long): String = when (days) {
     else -> stringResource(R.string.dash_days_left, days.toInt())
 }
 
+/** One collapsible task group: a light row with the name, the count and a chevron. */
 @Composable
 private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+        color = Color.Transparent,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(stringResource(group.labelRes), modifier = Modifier.weight(1f), style = MarbleTextStyles.itemTitle)
-            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
-                Text(
-                    TextNormalizer.formatDigits(count.toString(), LocalNumeralMode.current),
-                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                    style = MarbleTextStyles.metaLabel,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(stringResource(group.labelRes), style = MarbleTextStyles.sectionTitle, modifier = Modifier.weight(1f))
             Text(
-                if (expanded) "−" else "+",
-                modifier = Modifier.padding(start = 12.dp),
-                color = MaterialTheme.colorScheme.primary,
-                style = MarbleTextStyles.cardTitle,
+                TextNormalizer.formatDigits(count.toString(), LocalNumeralMode.current),
+                style = MarbleTextStyles.metaLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Icon(
+                if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 6.dp).size(20.dp),
             )
         }
     }

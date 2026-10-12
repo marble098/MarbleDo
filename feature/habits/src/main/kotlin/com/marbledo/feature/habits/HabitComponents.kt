@@ -51,6 +51,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -440,33 +442,32 @@ fun HabitDrawer(
         color = palette.card,
         shadowElevation = 3.dp,
     ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .clickable(onClick = onToggle)
-                    .padding(4.dp),
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable(onClick = onToggle),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(palette.accentSoft),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(icon, contentDescription = null, tint = palette.accent, modifier = Modifier.size(24.dp))
+                    Icon(icon, contentDescription = null, tint = palette.accent, modifier = Modifier.size(22.dp))
                 }
                 Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                     Text(
                         title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = palette.onCard,
                     )
-                    Text(hint, style = MaterialTheme.typography.bodySmall, color = palette.muted, maxLines = 2)
+                    Text(hint, style = MaterialTheme.typography.labelSmall, color = palette.muted, maxLines = 2)
                 }
                 Surface(shape = CircleShape, color = palette.accentSoft) {
                     Text(
@@ -481,33 +482,19 @@ fun HabitDrawer(
                     if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                     contentDescription = if (expanded) stringResource(R.string.habit_drawer_close) else stringResource(R.string.habit_drawer_open),
                     tint = palette.muted,
-                    modifier = Modifier.size(22.dp),
+                    modifier = Modifier.padding(start = 4.dp).size(22.dp),
                 )
             }
-            Spacer(Modifier.height(9.dp))
-            // The rail the drawer slides on.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(5.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(palette.track),
-            )
             AnimatedVisibility(
                 visible = expanded,
                 enter = if (reduceMotion) EnterTransition.None else fadeIn(tween(160)) + expandVertically(tween(240)),
                 exit = if (reduceMotion) ExitTransition.None else fadeOut(tween(140)) + shrinkVertically(tween(200)),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp)
-                        .clip(MaterialTheme.shapes.large)
-                        .background(palette.track.copy(alpha = 0.45f))
-                        .padding(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    content()
+                Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    HabitRowDivider(palette)
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        content()
+                    }
                 }
             }
         }
@@ -516,10 +503,11 @@ fun HabitDrawer(
 
 /**
  * A habit folder as it sits inside its drawer: symbol, name, where it stands, and the control that
- * records today in one tap.
+ * records today in one tap. Drawers paint the surface, so a folder is a flat row with a divider
+ * rather than another card inside a card.
  */
 @Composable
-fun HabitCard(
+fun HabitFolderRow(
     habit: Habit,
     stats: HabitStats,
     palette: HabitPalette,
@@ -529,64 +517,70 @@ fun HabitCard(
     onAdjust: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = palette.card,
-        shadowElevation = 1.dp,
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onOpen)
+            .padding(horizontal = 6.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onOpen)
-                .padding(12.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(palette.accentSoft),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(habit.icon, fontSize = 21.sp)
-                }
-                Spacer(Modifier.width(11.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        habit.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.onCard,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        habitMetaLine(habit, stats, numeralMode),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = palette.muted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                HabitDayControl(
-                    habit = habit,
-                    stats = stats,
-                    palette = palette,
-                    numeralMode = numeralMode,
-                    onToggleDone = onToggleDone,
-                    onAdjust = onAdjust,
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(palette.accentSoft),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(habit.icon, fontSize = 20.sp)
+            }
+            Spacer(Modifier.width(11.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Text(
+                    habit.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.onCard,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    habitMetaLine(habit, stats, numeralMode),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = palette.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (habit.tracking == HabitTracking.COUNT && habit.kind == HabitKind.BUILD) {
-                Spacer(Modifier.height(9.dp))
-                HabitProgressBar(
-                    progress = (stats.todayValue.toFloat() / habit.dailyTarget.toFloat()).coerceIn(0f, 1f),
-                    palette = palette,
-                )
-            }
+            HabitDayControl(
+                habit = habit,
+                stats = stats,
+                palette = palette,
+                numeralMode = numeralMode,
+                onToggleDone = onToggleDone,
+                onAdjust = onAdjust,
+            )
+        }
+        if (habit.tracking == HabitTracking.COUNT && habit.kind == HabitKind.BUILD) {
+            HabitProgressBar(
+                progress = (stats.todayValue.toFloat() / habit.dailyTarget.toFloat()).coerceIn(0f, 1f),
+                palette = palette,
+            )
         }
     }
+}
+
+/** Hairline between habit folders inside a drawer. */
+@Composable
+fun HabitRowDivider(palette: HabitPalette, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .height(1.dp)
+            .background(palette.track.copy(alpha = 0.7f)),
+    )
 }
 
 @Composable
@@ -692,7 +686,11 @@ private fun RoundIconButton(
     }
 }
 
-/** Today's headline: the ring, the count and the score, on the cabinet's themed surface. */
+/**
+ * Today's headline: the ring, the count and the score, on the cabinet's themed surface. [footer]
+ * carries the cabinet's secondary controls (theme look, widget) so the screen needs one card
+ * instead of two stacked ones.
+ */
 @Composable
 fun HabitTodayHeader(
     done: Int,
@@ -702,69 +700,131 @@ fun HabitTodayHeader(
     palette: HabitPalette,
     numeralMode: NumeralMode,
     modifier: Modifier = Modifier,
+    footer: @Composable () -> Unit = {},
 ) {
     val progress = if (scheduled == 0) 0f else done.toFloat() / scheduled.toFloat()
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         color = palette.card,
-        shadowElevation = 3.dp,
+        shadowElevation = 2.dp,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            HabitRing(progress = progress, palette = palette, modifier = Modifier.size(92.dp)) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                HabitRing(progress = progress, palette = palette, modifier = Modifier.size(86.dp)) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "${habitNumber(done, numeralMode)}/${habitNumber(scheduled, numeralMode)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = palette.onCard,
+                        )
+                        Text(
+                            "${habitNumber((progress * 100).roundToInt(), numeralMode)}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = palette.muted,
+                        )
+                    }
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
-                        "${habitNumber(done, numeralMode)}/${habitNumber(scheduled, numeralMode)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
+                        stringResource(R.string.habit_cabinet_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
                         color = palette.onCard,
                     )
                     Text(
-                        "${habitNumber((progress * 100).roundToInt(), numeralMode)}%",
-                        style = MaterialTheme.typography.labelSmall,
+                        if (scheduled == 0) {
+                            stringResource(R.string.habit_summary_empty)
+                        } else if (done >= scheduled) {
+                            stringResource(R.string.habit_all_done)
+                        } else {
+                            stringResource(R.string.habit_today_progress, habitNumber(done, numeralMode), habitNumber(scheduled, numeralMode))
+                        },
+                        style = MaterialTheme.typography.bodySmall,
                         color = palette.muted,
                     )
+                    Spacer(Modifier.height(5.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        HabitOverviewStat(
+                            value = habitNumber(score, numeralMode),
+                            label = stringResource(R.string.habit_score_label),
+                            palette = palette,
+                            emphasize = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Box(Modifier.height(26.dp).width(1.dp).background(palette.track))
+                        Spacer(Modifier.width(12.dp))
+                        HabitOverviewStat(
+                            value = habitNumber(bestStreak, numeralMode),
+                            label = stringResource(R.string.habit_best_streak_label),
+                            palette = palette,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.habit_cabinet_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = palette.onCard,
+            footer()
+        }
+    }
+}
+
+/** One number over its caption; the header uses three of them instead of filled tiles. */
+@Composable
+private fun HabitOverviewStat(
+    value: String,
+    label: String,
+    palette: HabitPalette,
+    modifier: Modifier = Modifier,
+    emphasize: Boolean = false,
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        Text(
+            value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = if (emphasize) palette.accent else palette.onCard,
+        )
+        Text(label, style = MaterialTheme.typography.labelSmall, color = palette.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** Compact rule under the header: the chosen look, its name, and the widget shortcut. */
+@Composable
+fun HabitThemeDotRow(
+    selected: HabitTheme,
+    onSelect: (HabitTheme) -> Unit,
+    dark: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        items(HabitTheme.entries, key = { it.id }) { theme ->
+            val palette = habitPalette(theme, dark)
+            val isSelected = theme == selected
+            // Resolved here: a composable label cannot be read inside the semantics lambda below.
+            val label = habitThemeLabel(theme)
+            val shape = CircleShape
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(shape)
+                    .then(if (isSelected) Modifier.border(2.dp, palette.accent, shape) else Modifier)
+                    .background(Brush.linearGradient(listOf(palette.accentSoft, palette.heat.last())))
+                    .clickable { onSelect(theme) }
+                    .semantics { contentDescription = label },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(palette.accent),
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    if (scheduled == 0) {
-                        stringResource(R.string.habit_summary_empty)
-                    } else if (done >= scheduled) {
-                        stringResource(R.string.habit_all_done)
-                    } else {
-                        stringResource(R.string.habit_today_progress, habitNumber(done, numeralMode), habitNumber(scheduled, numeralMode))
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = palette.muted,
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    HabitStatTile(
-                        label = stringResource(R.string.habit_score_label),
-                        value = habitNumber(score, numeralMode),
-                        palette = palette,
-                        modifier = Modifier.weight(1f),
-                        emphasize = true,
-                    )
-                    HabitStatTile(
-                        label = stringResource(R.string.habit_best_streak, habitNumber(bestStreak, numeralMode)),
-                        value = "\uD83D\uDD25 ${habitNumber(bestStreak, numeralMode)}",
-                        palette = palette,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
             }
         }
     }
