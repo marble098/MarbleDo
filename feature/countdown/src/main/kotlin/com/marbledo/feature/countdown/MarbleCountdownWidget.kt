@@ -36,9 +36,11 @@ import androidx.glance.unit.ColorProvider
 import com.marbledo.core.data.db.MarbleDatabase
 import com.marbledo.core.data.repository.RoomTaskRepository
 import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.Task
+import com.marbledo.feature.calendar.OccasionCatalog
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.enabledOccasionCategories
 import com.marbledo.feature.calendar.OccasionCategory
@@ -53,33 +55,41 @@ import kotlinx.coroutines.withContext
 /** A resizable daily-planner widget: local dates, today’s occasions, next task and countdown. */
 class MarbleCountdownWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val settings = withContext(Dispatchers.IO) {
-            SettingsRepository(context).settings.first()
-        }
+        // Widget updates arrive from launcher broadcasts and background jobs, so every data source
+        // falls back to an empty value instead of letting an exception crash the process.
+        val settings = runCatching {
+            withContext(Dispatchers.IO) { SettingsRepository(context).settings.first() }
+        }.getOrDefault(AppSettings())
         val widgetContext = context.forLanguage(settings.languageTag)
-        val tasks = withContext(Dispatchers.IO) {
-            val database = MarbleDatabase.create(context)
-            try {
-                RoomTaskRepository(database.taskDao()).snapshot()
-                    .filter { !it.isCompleted && !it.isArchived }
-            } finally {
-                database.close()
+        val tasks = runCatching {
+            withContext(Dispatchers.IO) {
+                val database = MarbleDatabase.create(context)
+                try {
+                    RoomTaskRepository(database.taskDao()).snapshot()
+                        .filter { !it.isCompleted && !it.isArchived }
+                } finally {
+                    database.close()
+                }
             }
-        }
+        }.getOrDefault(emptyList())
         val nowMillis = System.currentTimeMillis()
         val zone = java.time.ZoneId.systemDefault()
         val today = PersianDateUtils.today(zone, nowMillis)
-        val catalog = withContext(Dispatchers.IO) {
-            OccasionRepository(context).also { it.load() }.state.value.catalog
-        }
+        val catalog = runCatching {
+            withContext(Dispatchers.IO) {
+                OccasionRepository(context).also { it.load() }.state.value.catalog
+            }
+        }.getOrDefault(OccasionCatalog.EMPTY)
         val enabledCategories = settings.enabledOccasionCategories()
-        val occasionIndex = OccasionIndex.build(
-            catalog = catalog,
-            jalaliYears = listOf(today.year),
-            lunarOffsetDays = settings.lunarOffsetDays,
-            enabledCategories = enabledCategories,
-            zone = zone,
-        )
+        val occasionIndex = runCatching {
+            OccasionIndex.build(
+                catalog = catalog,
+                jalaliYears = listOf(today.year),
+                lunarOffsetDays = settings.lunarOffsetDays,
+                enabledCategories = enabledCategories,
+                zone = zone,
+            )
+        }.getOrDefault(OccasionIndex.EMPTY)
         val todayOccasions = occasionIndex.on(today.year, today.month, today.day)
         val visibleOccasions = todayOccasions.take(2).map { it.title(settings.languageTag) }
         val remainingOccasions = todayOccasions.size - visibleOccasions.size
@@ -91,12 +101,13 @@ class MarbleCountdownWidget : GlanceAppWidget() {
             ).let { visibleOccasions.joinToString(" · ") + " · " + it }
             else -> visibleOccasions.joinToString(" · ")
         }
+        val deviceLocale = firstLocale(widgetContext)
         val dateSummary = PersianDateUtils.tripleDate(
             epochMillis = nowMillis,
             languageTag = settings.languageTag,
             numeralMode = settings.numeralMode,
             lunarOffsetDays = settings.lunarOffsetDays,
-            locale = widgetContext.resources.configuration.locales[0],
+            locale = deviceLocale,
             zone = zone,
         )
         val nextTask = nextWidgetTask(tasks, nowMillis)
@@ -109,7 +120,7 @@ class MarbleCountdownWidget : GlanceAppWidget() {
             CountdownDateUtils.format(
                 epochMillis = it,
                 mode = settings.countdownCalendar,
-                locale = widgetContext.resources.configuration.locales[0],
+                locale = deviceLocale,
                 numeralMode = settings.numeralMode,
             )
         }
@@ -332,9 +343,9 @@ fun requestCountdownWidgetPin(context: Context): CountdownWidgetPinResult {
     return if (accepted) CountdownWidgetPinResult.REQUESTED else CountdownWidgetPinResult.FAILED
 }
 
-/** Refresh all pinned countdown widgets after tasks or display preferences change. */
+/** Refreshes every pinned countdown widget. A failed refresh is silent, never fatal. */
 suspend fun updateMarbleCountdownWidgets(context: Context) {
-    MarbleCountdownWidget().updateAll(context.applicationContext)
+    runCatching { MarbleCountdownWidget().updateAll(context.applicationContext) }
 }
 
 private data class WidgetPalette(
@@ -389,4 +400,10 @@ private fun Context.forLanguage(languageTag: String): Context {
         setLayoutDirection(locale)
     }
     return createConfigurationContext(configuration)
+}
+
+/** The primary locale, falling back to a sensible default instead of crashing on an empty list. */
+private fun firstLocale(context: Context): Locale {
+    val locales = context.resources.configuration.locales
+    return if (!locales.isEmpty) locales[0] else Locale.forLanguageTag("fa")
 }

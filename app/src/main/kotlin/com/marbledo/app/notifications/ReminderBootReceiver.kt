@@ -25,6 +25,10 @@ class ReminderBootReceiver : BroadcastReceiver() {
                 repository.observeTasks().first().forEach(scheduler::schedule)
                 val habits = koin.get<com.marbledo.domain.repository.HabitRepository>().snapshot()
                 com.marbledo.feature.habits.HabitReminderScheduler.reschedule(context, habits.habits)
+            } catch (_: kotlinx.coroutines.CancellationException) {
+                // The receiver is being torn down; the next boot or app open retries.
+            } catch (_: Exception) {
+                // Rescheduling on boot must never crash the app process.
             } finally {
                 pending.finish()
             }

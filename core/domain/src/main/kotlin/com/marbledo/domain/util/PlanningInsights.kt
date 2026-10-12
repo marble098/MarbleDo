@@ -25,8 +25,14 @@ object PlanningInsights {
                 DayWorkload(day, scheduled.count { !it.isCompleted }, scheduled.count { it.isCompleted })
             },
             overdue = visible.count { task ->
-                !task.isCompleted && task.dueAtEpochMillis != null &&
-                    if (task.isAllDay) dueDate(task)!! < today else task.dueAtEpochMillis < now.toEpochMilli()
+                val dueMillis = if (task.isCompleted) null else task.dueAtEpochMillis
+                if (dueMillis == null) {
+                    false
+                } else if (task.isAllDay) {
+                    (dueDate(task) ?: today) < today
+                } else {
+                    dueMillis < now.toEpochMilli()
+                }
             },
             unscheduled = visible.count { !it.isCompleted && it.dueAtEpochMillis == null },
         )

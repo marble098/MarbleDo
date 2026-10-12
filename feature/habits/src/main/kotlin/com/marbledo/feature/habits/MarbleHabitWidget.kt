@@ -39,11 +39,13 @@ import androidx.glance.unit.ColorProvider
 import com.marbledo.core.data.db.MarbleDatabase
 import com.marbledo.core.data.repository.RoomHabitRepository
 import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.Habit
 import com.marbledo.domain.model.HabitEntry
 import com.marbledo.domain.model.HabitKind
 import com.marbledo.domain.model.HabitTheme
 import com.marbledo.domain.model.NumeralMode
+import com.marbledo.domain.repository.HabitsSnapshot
 import com.marbledo.domain.util.HabitAnalytics
 import com.marbledo.domain.util.TextNormalizer
 import java.time.LocalDate
@@ -64,16 +66,22 @@ private val HABIT_ID_KEY = ActionParameters.Key<Long>("habitId")
 class MarbleHabitWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val settings = withContext(Dispatchers.IO) { SettingsRepository(context).settings.first() }
+        // Widget updates arrive from launcher broadcasts and background jobs, so every data source
+        // falls back to an empty value instead of letting an exception crash the process.
+        val settings = runCatching {
+            withContext(Dispatchers.IO) { SettingsRepository(context).settings.first() }
+        }.getOrDefault(AppSettings())
         val widgetContext = context.forLanguage(settings.languageTag)
-        val snapshot = withContext(Dispatchers.IO) {
-            val database = MarbleDatabase.create(context)
-            try {
-                RoomHabitRepository(database.habitDao()).snapshot()
-            } finally {
-                database.close()
+        val snapshot = runCatching {
+            withContext(Dispatchers.IO) {
+                val database = MarbleDatabase.create(context)
+                try {
+                    RoomHabitRepository(database.habitDao()).snapshot()
+                } finally {
+                    database.close()
+                }
             }
-        }
+        }.getOrDefault(HabitsSnapshot())
         val today = LocalDate.now()
         val active = snapshot.habits.filter { !it.isArchived }
         val todays = active.filter { it.schedule.isScheduled(today) }
@@ -280,23 +288,26 @@ class HabitToggleAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val habitId = parameters[HABIT_ID_KEY] ?: return
         val today = LocalDate.now().toString()
-        withContext(Dispatchers.IO) {
-            val database = MarbleDatabase.create(context)
-            try {
-                val repository = RoomHabitRepository(database.habitDao())
-                val snapshot = repository.snapshot()
-                val habit = snapshot.habits.firstOrNull { it.id == habitId } ?: return@withContext
-                val current = snapshot.entries.firstOrNull { it.habitId == habitId && it.date == today }?.value ?: 0
-                val next = when (habit.kind) {
-                    HabitKind.QUIT -> if (current > 0) 0 else 1
-                    HabitKind.BUILD -> if (current >= habit.dailyTarget) 0 else habit.dailyTarget
+        // A widget tap must never crash the app, even if the database is momentarily unavailable.
+        runCatching {
+            withContext(Dispatchers.IO) {
+                val database = MarbleDatabase.create(context)
+                try {
+                    val repository = RoomHabitRepository(database.habitDao())
+                    val snapshot = repository.snapshot()
+                    val habit = snapshot.habits.firstOrNull { it.id == habitId } ?: return@withContext
+                    val current = snapshot.entries.firstOrNull { it.habitId == habitId && it.date == today }?.value ?: 0
+                    val next = when (habit.kind) {
+                        HabitKind.QUIT -> if (current > 0) 0 else 1
+                        HabitKind.BUILD -> if (current >= habit.dailyTarget) 0 else habit.dailyTarget
+                    }
+                    repository.setEntry(habitId, today, next)
+                } finally {
+                    database.close()
                 }
-                repository.setEntry(habitId, today, next)
-            } finally {
-                database.close()
             }
+            updateMarbleHabitWidgets(context)
         }
-        updateMarbleHabitWidgets(context)
     }
 }
 
@@ -316,9 +327,9 @@ fun requestHabitWidgetPin(context: Context): HabitWidgetPinResult {
     return if (accepted) HabitWidgetPinResult.REQUESTED else HabitWidgetPinResult.FAILED
 }
 
-/** Refreshes every pinned habit widget. */
+/** Refreshes every pinned habit widget. A failed refresh is silent, never fatal. */
 suspend fun updateMarbleHabitWidgets(context: Context) {
-    MarbleHabitWidget().updateAll(context.applicationContext)
+    runCatching { MarbleHabitWidget().updateAll(context.applicationContext) }
 }
 
 internal fun isDark(context: Context): Boolean =

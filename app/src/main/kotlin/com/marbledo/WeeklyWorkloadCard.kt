@@ -77,22 +77,23 @@ internal fun WeeklyWorkloadCard(
             }
         }
     }
-    val selectedDate = selectedDateIso?.let(LocalDate::parse)
+    val selectedDate = selectedDateIso?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
     if (selectedDate != null || showBacklog) {
         val today = now.atZone(zone).toLocalDate()
         val rows = tasks.filter { task ->
             if (task.isArchived) false else {
-                val date = task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+                val dueMillis = task.dueAtEpochMillis
+                val date = dueMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
                 if (showBacklog) !task.isCompleted && (date == null ||
-                    if (task.isAllDay) date < today else task.dueAtEpochMillis!! < now.toEpochMilli())
+                    if (task.isAllDay) date < today else (dueMillis ?: Long.MAX_VALUE) < now.toEpochMilli())
                 else date == selectedDate
             }
         }.sortedWith(compareBy({ it.isCompleted }, { it.dueAtEpochMillis ?: Long.MAX_VALUE }, { it.id }))
         fun close() { selectedDateIso = null; showBacklog = false }
         AlertDialog(
             onDismissRequest = ::close,
-            title = { Text(if (showBacklog) stringResource(R.string.weekly_backlog) else
-                PersianDateUtils.fullDate(selectedDate!!.atStartOfDay(zone).toInstant().toEpochMilli(), languageTag, numeralMode, zone)) },
+            title = { Text(if (showBacklog || selectedDate == null) stringResource(R.string.weekly_backlog) else
+                PersianDateUtils.fullDate(selectedDate.atStartOfDay(zone).toInstant().toEpochMilli(), languageTag, numeralMode, zone)) },
             text = {
                 if (rows.isEmpty()) Text(stringResource(R.string.weekly_empty)) else LazyColumn(Modifier.heightIn(max = 320.dp)) {
                     items(rows, key = { it.id }) { task ->

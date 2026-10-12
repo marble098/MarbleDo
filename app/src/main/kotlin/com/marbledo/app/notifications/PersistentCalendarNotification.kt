@@ -57,6 +57,17 @@ object PersistentCalendarNotification {
             cancel(context)
             return
         }
+        // The status-bar notification is a nicety; building it must never crash the app.
+        runCatching { updateInternal(context, settings, tasks, catalog, nowMillis) }
+    }
+
+    private fun updateInternal(
+        context: Context,
+        settings: AppSettings,
+        tasks: List<Task>,
+        catalog: OccasionCatalog,
+        nowMillis: Long,
+    ) {
 
         val notificationContext = context.applicationContext.forLanguage(settings.languageTag)
         NotificationChannels.create(notificationContext)
@@ -84,7 +95,7 @@ object PersistentCalendarNotification {
             hasOccasion = events.isNotEmpty(),
             tasksDueToday = tasksDueToday,
         )
-        val locale = notificationContext.resources.configuration.locales[0]
+        val locale = firstLocale(notificationContext)
         val dateText = PersianDateUtils.tripleDate(
             epochMillis = nowMillis,
             languageTag = settings.languageTag,
@@ -246,6 +257,12 @@ object PersistentCalendarNotification {
             setLayoutDirection(locale)
         }
         return createConfigurationContext(configuration)
+    }
+
+    /** The primary locale, falling back to a sensible default instead of crashing on an empty list. */
+    private fun firstLocale(context: Context): Locale {
+        val locales = context.resources.configuration.locales
+        return if (!locales.isEmpty) locales[0] else Locale.forLanguageTag("fa")
     }
 
     private const val MAX_VISIBLE_EVENTS = 3

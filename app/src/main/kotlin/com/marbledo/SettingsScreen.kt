@@ -19,7 +19,6 @@ import com.marble098.marbledo.notifications.NotificationArtwork
 import com.marble098.marbledo.notifications.NotificationMood
 import com.marbledo.domain.model.StatusBarIconStyle
 import com.marbledo.domain.util.HiddenTapSequence
-import com.marbledo.feature.calendar.CatalogSourcesSheet
 import com.marbledo.feature.calendar.OccasionCategory
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Alarm
@@ -123,7 +122,6 @@ fun SettingsScreen(
     }
     var showCountdownThemeGallery by rememberSaveable { mutableStateOf(false) }
     var showBatteryHelp by remember { mutableStateOf(false) }
-    var showCatalogSources by rememberSaveable { mutableStateOf(false) }
     var showEducationControls by rememberSaveable { mutableStateOf(false) }
     val educationGesture = remember { HiddenTapSequence() }
     val listedCatalog = remember(occasionState.catalog, settings.educationModeEnabled) {
@@ -283,7 +281,6 @@ fun SettingsScreen(
                 color = if (occasionState.lastError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             SettingsActionRow(stringResource(R.string.settings_occasions_update_now), onRefreshOccasions, enabled = !occasionState.isRefreshing)
-            SettingsActionRow(stringResource(R.string.settings_catalog_sources), { showCatalogSources = true })
             Spacer(Modifier.height(6.dp))
             Text(
                 TextNormalizer.formatDigits(
@@ -509,9 +506,6 @@ fun SettingsScreen(
         )
     }
 
-    if (showCatalogSources) {
-        CatalogSourcesSheet(occasionState, settings.languageTag, includeEducation = settings.educationModeEnabled) { showCatalogSources = false }
-    }
     if (showEducationControls) {
         AlertDialog(
             onDismissRequest = { showEducationControls = false },

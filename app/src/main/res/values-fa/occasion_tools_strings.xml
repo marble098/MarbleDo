@@ -4,7 +4,6 @@
     <string name="settings_education_hint">مناسبت‌های مدرسه و فیلتر مرتبط با آموزش‌وپرورش در «تقویم ← مناسبت‌ها» اضافه می‌شود؛ همراه نمای سال تحصیلی مهر تا شهریور. برنامه‌های متغیر، جدا و بدون تاریخ ساختگی می‌آیند. این حالت روی همین دستگاه و دلخواه است، نه بخش خصوصیِ رمزدار و نه بخشنامهٔ رسمی وزارتخانه.</string>
     <string name="settings_education_enable">روشن کردن روی این دستگاه</string>
     <string name="settings_education_disable">خاموش و پنهان‌کردن</string>
-    <string name="settings_catalog_sources">منبع، درستی تاریخ‌ها و روش به‌روزرسانی</string>
     <string name="calendar_export_saved">تقویم ساخته شد؛ فایل ICS را در برنامهٔ تقویم خودت باز کن.</string>
     <string name="calendar_export_failed">خروجی تقویم انجام نشد؛ جایی را انتخاب کن که بشود در آن نوشت و دوباره تلاش کن.</string>
     <string name="weekly_title">نمای ۷ روز آینده</string>

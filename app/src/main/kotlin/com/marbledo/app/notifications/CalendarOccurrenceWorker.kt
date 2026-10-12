@@ -166,7 +166,7 @@ class CalendarOccurrenceWorker(
             .setColor(ContextCompat.getColor(context, R.color.marble_accent))
             .setContentTitle(title)
             .setContentText(days)
-            .setSubText(titles.first())
+            .setSubText(titles.firstOrNull())
             .setNumber(occasions.size)
             .setStyle(inbox)
             .setContentIntent(pending)

@@ -1,13 +1,6 @@
 <resources>
     <string name="calendar_category_educational">School &amp; education</string>
-    <string name="catalog_sources_title">Where occasions come from</string>
-    <string name="catalog_delivery_explanation">The app updates the versioned catalog in the MarbleDo repository, not a live government feed. It checks when opened after 20 hours and in a daily network-constrained background job when auto-update is on. The four delivery paths carry the SAME file; they are not four independent research sources. Offline data stays available.</string>
-    <string name="catalog_version">Catalog %1$s · data reviewed/edited %2$s</string>
-    <string name="catalog_coverage_caveat">Having an entry in every month does not mean every possible observance is covered. Sourced, traditional, guidance and unreviewed legacy entries are distinguished. A source link is evidence, not a claim of official approval.</string>
     <string name="catalog_lunar_caveat">Lunar dates are calculated with the Islamic civil calendar and your ±2-day adjustment. They can differ from moon-sighting announcements; verify important religious dates with the relevant authority.</string>
-    <string name="catalog_last_delivery">Last successful delivery: %1$s</string>
-    <string name="catalog_delivery_paths">Download paths (same catalog)</string>
-    <string name="catalog_delivery_path">%1$d · %2$s</string>
     <string name="catalog_references">Research references</string>
     <string name="catalog_kind_curated">Curated secondary dataset</string>
     <string name="catalog_kind_traditional">Cultural or religious tradition</string>

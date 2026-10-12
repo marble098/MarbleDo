@@ -102,8 +102,8 @@ fun SchedulePickerDialog(
     }
     var keyboardTime by rememberSaveable { mutableStateOf(false) }
 
-    val selectedDate = LocalDate.parse(selectedIso)
-    val viewDate = LocalDate.parse(viewIso)
+    val selectedDate = runCatching { LocalDate.parse(selectedIso) }.getOrDefault(today)
+    val viewDate = runCatching { LocalDate.parse(viewIso) }.getOrDefault(selectedDate)
     val startTime = initialTime ?: LocalTime.of(9, 0)
     val timeState = rememberTimePickerState(
         initialHour = startTime.hour,
