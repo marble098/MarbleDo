@@ -1,9 +1,9 @@
 {
   "schemaVersion": 4,
   "calendar": "persian",
-  "dataVersion": "6",
-  "updatedAt": "2026-10-11",
-  "note": "Versioned, curated offline catalog, not a live government feed. Sourced entries cite reviewed references; legacy entries remain explicitly unreviewed. Rules are resolved in their own calendar. Islamic dates use ICU civil arithmetic with user adjustment and may differ from announced dates. Guidance windows and school programs are not official holidays or nationwide execution deadlines.",
+  "dataVersion": "7",
+  "updatedAt": "2026-10-13",
+  "note": "Versioned, curated offline catalog, not a live government feed. Sourced entries cite reviewed references; legacy entries remain explicitly unreviewed. Rules are resolved in their own calendar. Islamic dates use ICU civil arithmetic with user adjustment and may differ from announced dates. Guidance windows and school programs are not official holidays or nationwide execution deadlines. School-occasion weeks are recorded with their published or customary start day and length; guidance weeks must still be confirmed against the current year's circular.",
   "jalali": [
     {
       "month": 1,
@@ -2941,7 +2941,10 @@
       "evidence": "sourced",
       "tags": [
         "education"
-      ]
+      ],
+      "durationDays": 7,
+      "noteFa": "۳۱ شهریور تا ۶ مهر؛ برنامه‌های مدرسه‌ای و مراسم آغاز سال تحصیلی در این بازه برگزار می‌شود.",
+      "noteEn": "31 Shahrivar–6 Mehr; school programs run across this window at the start of the academic year."
     },
     {
       "month": 7,
@@ -2984,9 +2987,12 @@
       "holiday": false,
       "id": "jalali-7-1-Start of the school year",
       "sourceIds": [
-        "legacy-v5"
+        "legacy-v5",
+        "chetor-1405"
       ],
-      "evidence": "legacy"
+      "evidence": "sourced",
+      "noteFa": "بازگشایی مدارس در ۱ مهر؛ زمان جشن شکوفه‌ها و جوانه‌ها را از ابلاغ منطقه بگیرید.",
+      "noteEn": "Schools reopen on 1 Mehr; check your district announcement for the first-grade and seventh-grade welcoming ceremonies."
     },
     {
       "month": 7,
@@ -4238,15 +4244,16 @@
       "id": "jalali-9-24-School Quran Etrat and Prayer Window",
       "sourceIds": [
         "iqna-quran-start",
-        "iqna-quran-week"
+        "iqna-quran-week",
+        "mehrnews-quran-week"
       ],
       "evidence": "guidance",
       "durationDays": 7,
       "tags": [
         "education"
       ],
-      "noteFa": "بازهٔ رایج ۲۴ تا ۳۰ آذر است. برای نمونه، گزارش سال ۱۳۹۹ به دلیل شرایط کرونا اجرای برنامه‌ها را تا هفتهٔ اول دی مجاز دانسته بود؛ این مجوز دائمی نیست. زمان امسال و تاریخ مسابقات را از بخشنامه بگیرید.",
-      "noteEn": "Common window: 24–30 Azar. In 1399, pandemic arrangements extended it into the first week of Dey; that was not a permanent rule. Check the current circular for this year and competition dates."
+      "noteFa": "بازهٔ ثابت سراسری ندارد: هفتهٔ پایانی آذر (۱۳۹۹)، ۱۱ تا ۱۷ آذر (۱۴۰۲) و نیمهٔ اول آبان (۱۴۰۵) نمونه‌های ابلاغی هستند. گزارش ۱۳۹۹ به دلیل کرونا اجرا را تا هفتهٔ اول دی مجاز دانسته بود؛ این مجوز دائمی نیست. زمان امسال و تاریخ مسابقات را از بخشنامه بگیرید.",
+      "noteEn": "No fixed nationwide window: late Azar (1399), 11–17 Azar (1402) and early Aban (1405) are all announced examples. The 1399 pandemic note extending it into Dey was not permanent. Check the current circular for this year and competition dates."
     },
     {
       "month": 9,
@@ -5648,6 +5655,488 @@
         "pc-1405"
       ],
       "evidence": "sourced"
+    },
+    {
+      "month": 2,
+      "day": 1,
+      "titleFa": "آغاز هفتهٔ معرفی مشاغل",
+      "titleEn": "Career Introduction Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-2-1-Career Introduction Week begins",
+      "sourceIds": [
+        "pana-jobs-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "هر سال ۱ تا ۷ اردیبهشت با روزشمار وزارت آموزش‌وپرورش؛ در برخی مناطق مرحلهٔ مکمل بهمن‌ماه هم برگزار می‌شود.",
+      "noteEn": "Held 1–7 Ordibehesht with a Ministry of Education schedule; some districts add a follow-up round in Bahman."
+    },
+    {
+      "month": 2,
+      "day": 1,
+      "titleFa": "آغاز هفتهٔ ملی سلامت",
+      "titleEn": "National Health Week begins",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-2-1-National Health Week begins",
+      "sourceIds": [
+        "health-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱ تا ۷ اردیبهشت؛ برنامه‌های هفتهٔ سلامت مدارس در همین بازه اجرا می‌شود.",
+      "noteEn": "1–7 Ordibehesht; school health programs run inside this window."
+    },
+    {
+      "month": 2,
+      "day": 5,
+      "titleFa": "آغاز هفتهٔ کار و کارگر",
+      "titleEn": "Labor Week begins",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-2-5-Labor Week begins",
+      "sourceIds": [
+        "behzisti-labor-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۵ تا ۱۱ اردیبهشت؛ ۱۱ اردیبهشت روز کارگر است.",
+      "noteEn": "5–11 Ordibehesht; 11 Ordibehesht is Labor Day."
+    },
+    {
+      "month": 2,
+      "day": 12,
+      "titleFa": "آغاز هفتهٔ بزرگداشت مقام معلم",
+      "titleEn": "Teachers' Appreciation Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-2-12-Teachers' Appreciation Week begins",
+      "sourceIds": [
+        "irna-teacher-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱۲ تا ۱۸ اردیبهشت با روزشمار ستاد بزرگداشت مقام معلم.",
+      "noteEn": "12–18 Ordibehesht with the national teachers' appreciation schedule."
+    },
+    {
+      "month": 3,
+      "day": 16,
+      "titleFa": "آغاز هفتهٔ ملی محیط زیست",
+      "titleEn": "National Environment Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-3-16-National Environment Week begins",
+      "sourceIds": [
+        "kanoon-environment-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱۶ تا ۲۲ خرداد؛ ۱۵ خرداد روز جهانی محیط زیست است.",
+      "noteEn": "16–22 Khordad; World Environment Day falls on 15 Khordad."
+    },
+    {
+      "month": 4,
+      "day": 1,
+      "titleFa": "آغاز هفتهٔ مبارزه با مواد مخدر",
+      "titleEn": "Drug Abuse Prevention Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-4-1-Drug Abuse Prevention Week begins",
+      "sourceIds": [
+        "mefda-drug-week"
+      ],
+      "evidence": "guidance",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "بازهٔ ثابت سراسری ندارد: ۱ تا ۸ تیر (۱۴۰۱)، ۴ تا ۱۰ تیر (۱۴۰۰) و ۱ تا ۷ تیر نمونه‌های ثبت‌شده‌اند؛ روز جهانی مبارزه با مواد مخدر در همین کاتالوگ هست. بازهٔ ابلاغی، نه تاریخ قطعی سراسری؛ با بخشنامهٔ منطقه و تعطیلات تطبیق دهید.",
+      "noteEn": "No fixed nationwide window: recorded examples are 1–8 Tir (1401), 4–10 Tir (1400) and 1–7 Tir; World Drug Day is already in this catalog. An announced/month-customary window, not a fixed nationwide execution date. Check the current circular and holidays."
+    },
+    {
+      "month": 4,
+      "day": 21,
+      "titleFa": "آغاز هفتهٔ عفاف و حجاب",
+      "titleEn": "Chastity and Hijab Week begins",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-4-21-Chastity and Hijab Week begins",
+      "sourceIds": [
+        "iribnews-hijab-week"
+      ],
+      "evidence": "guidance",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۲۱ تیر روز ملی عفاف و حجاب ثابت است؛ اما بازهٔ هفته ابلاغی است: ۱۵ تا ۲۱ تیر (۱۳۹۸) و ۲۱ تا ۲۷ تیر (۱۳۹۹). بازهٔ ابلاغی، نه تاریخ قطعی سراسری؛ با بخشنامهٔ منطقه و تعطیلات تطبیق دهید.",
+      "noteEn": "21 Tir is the fixed national day; the week itself is announced (15–21 Tir in 1398, 21–27 Tir in 1399). An announced/month-customary window, not a fixed nationwide execution date. Check the current circular and holidays."
+    },
+    {
+      "month": 4,
+      "day": 31,
+      "titleFa": "آغاز هفتهٔ ملی مهارت",
+      "titleEn": "National Skills Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-4-31-National Skills Week begins",
+      "sourceIds": [
+        "bazarekar-skills-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۳۱ تیر تا ۶ مرداد ۱۴۰۵؛ پایان هفته ۶ مرداد، روز ملی کارآفرینی و ترویج آموزش‌های فنی و حرفه‌ای است.",
+      "noteEn": "31 Tir–6 Mordad in 1405; the week closes on 6 Mordad, the national skills and vocational-training day."
+    },
+    {
+      "month": 7,
+      "day": 13,
+      "titleFa": "آغاز هفتهٔ نیروی انتظامی",
+      "titleEn": "Police Week begins",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-7-13-Police Week begins",
+      "sourceIds": [
+        "setare-police-week",
+        "eghtesaad24-police-week"
+      ],
+      "evidence": "guidance",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "روز نیروی انتظامی ۱۳ مهر ثابت است (از ۱۳۷۸؛ پیش‌تر ۲۷ تیر). بازهٔ ثبت‌شدهٔ هفته: ۱۳ تا ۱۹ مهر (۱۴۰۴ و ۱۴۰۵) و ۱۷ تا ۲۳ مهر (۱۴۰۳). بازهٔ ابلاغی، نه تاریخ قطعی سراسری؛ با بخشنامهٔ منطقه و تعطیلات تطبیق دهید.",
+      "noteEn": "Police Day is fixed on 13 Mehr (since 1378, previously 27 Tir). Recorded weeks: 13–19 Mehr (1404, 1405) and 17–23 Mehr (1403). An announced/month-customary window, not a fixed nationwide execution date. Check the current circular and holidays."
+    },
+    {
+      "month": 7,
+      "day": 16,
+      "titleFa": "آغاز هفتهٔ ملی کودک",
+      "titleEn": "National Child Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-7-16-National Child Week begins",
+      "sourceIds": [
+        "defapress-child-week"
+      ],
+      "evidence": "guidance",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱۶ مهر روز ملی و جهانی کودک در تقویم ثابت است؛ بازهٔ هفتهٔ ملی کودک هر سال ابلاغ می‌شود (۱۴۰۵: ۱۵ تا ۲۱ مهر). بازهٔ ابلاغی، نه تاریخ قطعی سراسری؛ با بخشنامهٔ منطقه و تعطیلات تطبیق دهید.",
+      "noteEn": "16 Mehr is the fixed national/global child day; the national child week is announced yearly (15–21 Mehr in 1405). An announced/month-customary window, not a fixed nationwide execution date. Check the current circular and holidays."
+    },
+    {
+      "month": 7,
+      "day": 24,
+      "titleFa": "آغاز هفتهٔ ملی سلامت بانوان ایران (سبا)",
+      "titleEn": "Iranian Women's Health Week begins",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-7-24-Iranian Women's Health Week begins",
+      "sourceIds": [
+        "kums-women-health-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۲۴ تا ۳۰ مهر؛ هفتهٔ پایانی مهرماه هر سال.",
+      "noteEn": "24–30 Mehr, the last week of Mehr every year."
+    },
+    {
+      "month": 8,
+      "day": 1,
+      "titleFa": "آغاز هفتهٔ پیشگیری از مسمومیت‌ها",
+      "titleEn": "Poisoning Prevention Week begins",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-8-1-Poisoning Prevention Week begins",
+      "sourceIds": [
+        "shmu-poison-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱ تا ۷ آبان با روزشمار ثابت: داروها، کودکان، گازها و مونوکسیدکربن، مواد غذایی و گیاهان سمی، سموم دفع آفات و مواد شیمیایی، گزیدگی‌ها و سوءمصرف مواد.",
+      "noteEn": "1–7 Aban with a fixed daily schedule: medicines, children, gases and CO, food and toxic plants, pesticides and chemicals, bites, substance misuse."
+    },
+    {
+      "month": 8,
+      "day": 8,
+      "titleFa": "آغاز هفتهٔ بسیج دانش‌آموزی",
+      "titleEn": "Student Basij Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-8-8-Student Basij Week begins",
+      "sourceIds": [
+        "yjc-student-basij-week",
+        "iribnews-student-basij-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 6,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۸ تا ۱۳ آبان؛ از سالروز شهادت محمدحسین فهمیده تا روز دانش‌آموز.",
+      "noteEn": "8–13 Aban, from the martyrdom anniversary of Mohammad Hossein Fahmideh to Student Day."
+    },
+    {
+      "month": 8,
+      "day": 8,
+      "titleFa": "آغاز هفتهٔ نکوداشت پدافند غیرعامل",
+      "titleEn": "Civil Defense Appreciation Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-8-8-Civil Defense Appreciation Week begins",
+      "sourceIds": [
+        "paydarymelli-civil-defense-week"
+      ],
+      "evidence": "guidance",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۸ آبان روز پدافند غیرعامل (سالروز فرمان تشکیل کمیتهٔ دائمی) ثابت است؛ بازهٔ هفته ابلاغی است (۱۴۰۰: ۸ تا ۱۴، ۱۴۰۳: ۵ تا ۱۱، ۱۴۰۵: ۴ تا ۱۱ آبان).",
+      "noteEn": "8 Aban (the fixed Civil Defense Day) anchors the week, but the window is announced: 8–14 in 1400, 5–11 in 1403 and 4–11 Aban in 1405."
+    },
+    {
+      "month": 8,
+      "day": 24,
+      "titleFa": "آغاز هفتهٔ کتاب و کتابخوانی",
+      "titleEn": "Book and Reading Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-8-24-Book and Reading Week begins",
+      "sourceIds": [
+        "iqna-book-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "بازهٔ رایج ۲۴ تا ۳۰ آبان؛ برخی منابع قدیمی‌تر تا ۲ آذر ادامهٔ آن را ثبت کرده‌اند.",
+      "noteEn": "The common window is 24–30 Aban; some older sources record it running to 2 Azar."
+    },
+    {
+      "month": 8,
+      "day": 29,
+      "titleFa": "آغاز هفتهٔ بسیج",
+      "titleEn": "Basij Week begins",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-8-29-Basij Week begins",
+      "sourceIds": [
+        "iribnews-basij-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۲۹ آبان تا ۵ آذر؛ ۵ آذر روز بسیج مستضعفین و پایان این هفته است.",
+      "noteEn": "29 Aban–5 Azar; 5 Azar, the Basij Day, closes the week."
+    },
+    {
+      "month": 9,
+      "day": 19,
+      "titleFa": "آغاز هفتهٔ پژوهش و فناوری",
+      "titleEn": "Research and Technology Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-9-19-Research and Technology Week begins",
+      "sourceIds": [
+        "mehrnews-research-week"
+      ],
+      "evidence": "guidance",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "هفتهٔ ملی پژوهش هر سال در هفتهٔ پایانی آذر ابلاغ می‌شود (۱۴۰۲: ۱۹ تا ۲۵، ۱۴۰۳: ۲۳ تا ۲۹، ۱۴۰۴: ۲۲ تا ۲۷ آذر)؛ ۲۵ آذر روز پژوهش ثابت است. بازهٔ ابلاغی، نه تاریخ قطعی سراسری؛ با بخشنامهٔ منطقه و تعطیلات تطبیق دهید.",
+      "noteEn": "The national research week is announced in the last third of Azar (19–25 in 1402, 23–29 in 1403, 22–27 in 1404); 25 Azar is the fixed Research Day. An announced/month-customary window, not a fixed nationwide execution date. Check the current circular and holidays."
+    },
+    {
+      "month": 10,
+      "day": 24,
+      "titleFa": "آغاز هفتهٔ شوراهای آموزش و پرورش",
+      "titleEn": "Education Councils Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-10-24-Education Councils Week begins",
+      "sourceIds": [
+        "isna-councils-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "از ۲۴ دی به مدت هفت روز؛ ۲۶ دی سالروز تصویب قانون شوراهای آموزش‌وپرورش در این بازه است.",
+      "noteEn": "From 24 Dey for seven days; the 26 Dey anniversary of the education councils act falls inside it."
+    },
+    {
+      "month": 10,
+      "day": 29,
+      "titleFa": "آغاز هفتهٔ هوای پاک",
+      "titleEn": "Clean Air Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-10-29-Clean Air Week begins",
+      "sourceIds": [
+        "borna-air-week"
+      ],
+      "evidence": "guidance",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۲۹ دی روز هوای پاک ثابت است؛ بازهٔ نمونهٔ هفته: ۲۴ تا ۳۰ دی (۱۴۰۱) و ۲۸ دی تا ۲ بهمن یا ۲۹ دی تا ۳ بهمن در سال‌های دیگر. بازهٔ ابلاغی، نه تاریخ قطعی سراسری؛ با بخشنامهٔ منطقه و تعطیلات تطبیق دهید.",
+      "noteEn": "29 Dey is the fixed Clean Air Day; sample weeks: 24–30 Dey (1401) and 28 Dey–2 Bahman or 29 Dey–3 Bahman in other years. An announced/month-customary window, not a fixed nationwide execution date. Check the current circular and holidays."
+    },
+    {
+      "month": 11,
+      "day": 12,
+      "titleFa": "آغاز دههٔ فجر انقلاب اسلامی",
+      "titleEn": "Fajr Decade begins",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-11-12-Fajr Decade begins",
+      "sourceIds": [
+        "atu-fajr-decade",
+        "chetor-1405"
+      ],
+      "evidence": "sourced",
+      "durationDays": 11,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱۲ تا ۲۲ بهمن؛ یازده روز گرامیداشت بازگشت امام خمینی و پیروزی انقلاب که مراسم مدرسه‌ای و زنگ انقلاب در آن برگزار می‌شود.",
+      "noteEn": "12–22 Bahman; the eleven-day commemoration of Imam Khomeini's return and the revolution, when school ceremonies are held."
+    },
+    {
+      "month": 12,
+      "day": 1,
+      "titleFa": "آغاز هفتهٔ ملی سلامت مردان (سما)",
+      "titleEn": "Men's Health Week begins",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-12-1-Men's Health Week begins",
+      "sourceIds": [
+        "yjc-men-health-week",
+        "khabaronline-men-health-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱ تا ۷ اسفند هر سال با ابلاغ معاونت بهداشت وزارت بهداشت.",
+      "noteEn": "1–7 Esfand every year, announced by the Health Ministry's deputy for health."
+    },
+    {
+      "month": 12,
+      "day": 8,
+      "titleFa": "آغاز هفتهٔ امور تربیتی و تربیت اسلامی",
+      "titleEn": "Education Affairs and Islamic Education Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-12-8-Education Affairs and Islamic Education Week begins",
+      "sourceIds": [
+        "farsnews-education-week",
+        "pana-education-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۸ تا ۱۴ اسفند؛ ۸ اسفند روز امور تربیتی و تربیت اسلامی و سالروز تأسیس این نهاد است.",
+      "noteEn": "8–14 Esfand; 8 Esfand is Education Affairs Day and the founding anniversary of the institution."
+    },
+    {
+      "month": 12,
+      "day": 14,
+      "titleFa": "آغاز هفتهٔ احسان و نیکوکاری",
+      "titleEn": "Charity and Benevolence Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-12-14-Charity and Benevolence Week begins",
+      "sourceIds": [
+        "irna-charity-week",
+        "imna-charity-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 8,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱۴ تا ۲۱ اسفند؛ ۱۴ اسفند روز احسان و نیکوکاری و سالروز تأسیس کمیتهٔ امداد است و زنگ نیکوکاری در مدارس نواخته می‌شود.",
+      "noteEn": "14–21 Esfand; 14 Esfand is Charity Day and the Imam Khomeini Relief Committee anniversary, marked by the school charity bell."
+    },
+    {
+      "month": 12,
+      "day": 15,
+      "titleFa": "آغاز هفتهٔ منابع طبیعی و آبخیزداری",
+      "titleEn": "Natural Resources Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-12-15-Natural Resources Week begins",
+      "sourceIds": [
+        "irib-natural-resources-week",
+        "yjc-natural-resources-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱۵ تا ۲۱ اسفند؛ ۱۵ اسفند روز درختکاری است.",
+      "noteEn": "15–21 Esfand; 15 Esfand is Tree Planting Day."
+    },
+    {
+      "month": 12,
+      "day": 16,
+      "titleFa": "آغاز هفتهٔ بزرگداشت شهدا",
+      "titleEn": "Martyrs Commemoration Week begins",
+      "category": "educational",
+      "holiday": false,
+      "id": "jalali-12-16-Martyrs Commemoration Week begins",
+      "sourceIds": [
+        "defapress-martyrs-week"
+      ],
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education"
+      ],
+      "noteFa": "۱۶ تا ۲۲ اسفند؛ ۲۲ اسفند روز بزرگداشت شهدا و سالروز تأسیس بنیاد شهید است و یادوارهٔ شهدای دانش‌آموز در مدارس برگزار می‌شود.",
+      "noteEn": "16–22 Esfand; 22 Esfand is Martyrs' Day and the Martyrs Foundation anniversary, when schools hold student-martyr commemorations."
     }
   ],
   "lunar": [
@@ -10118,15 +10607,23 @@
     {
       "month": 8,
       "day": 1,
-      "titleFa": "هفته جهانی شیردهی",
+      "titleFa": "هفتهٔ جهانی تغذیه با شیر مادر",
       "titleEn": "World Breastfeeding Week",
       "category": "international",
       "holiday": false,
       "id": "gregorian-8-1-World Breastfeeding Week",
       "sourceIds": [
-        "legacy-v5"
+        "legacy-v5",
+        "imna-breastfeeding-week"
       ],
-      "evidence": "legacy"
+      "evidence": "sourced",
+      "durationDays": 7,
+      "tags": [
+        "education",
+        "health"
+      ],
+      "noteFa": "۱ تا ۷ اوت برابر با ۱۰ تا ۱۶ مرداد؛ برنامه‌های آموزشی مدرسه و مراکز بهداشت در همین بازه اجرا می‌شود.",
+      "noteEn": "1–7 August (10–16 Mordad); school and health-centre education programs run in this window."
     },
     {
       "month": 8,
@@ -12220,6 +12717,302 @@
       "url": "https://report.mrc.ir/article_10004_a8a929bb618a5bc268aa115b1a441769.pdf",
       "kind": "institution",
       "checkedAt": "2026-10-11"
+    },
+    {
+      "id": "irna-teacher-week",
+      "titleFa": "ایرنا؛ روزشمار هفتهٔ معلم ۱۲ تا ۱۸ اردیبهشت",
+      "titleEn": "IRNA: Teachers' Week 12–18 Ordibehesht",
+      "url": "https://www.irna.ir/news/85805083",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "pana-jobs-week",
+      "titleFa": "پانا؛ روزشمار هفتهٔ معرفی مشاغل ۱ تا ۷ اردیبهشت",
+      "titleEn": "PANA: Career Introduction Week 1–7 Ordibehesht",
+      "url": "https://www.pana.ir/news/1365196",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "behzisti-labor-week",
+      "titleFa": "سازمان بهزیستی؛ هفتهٔ کار و کارگر ۵ تا ۱۱ اردیبهشت",
+      "titleEn": "Behzisti: Labor Week 5–11 Ordibehesht",
+      "url": "https://www.behzisti.ir/news/177752",
+      "kind": "institution",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "farsnews-education-week",
+      "titleFa": "خبرگزاری فارس؛ هفتهٔ تربیت اسلامی ۸ تا ۱۴ اسفند",
+      "titleEn": "Fars News: Islamic Education Week 8–14 Esfand",
+      "url": "https://farsnews.ir/social/1582617739000628791",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "pana-education-week",
+      "titleFa": "پانا؛ روزشمار هفتهٔ امور تربیتی و تربیت اسلامی ۸ تا ۱۴ اسفند",
+      "titleEn": "PANA: Education Affairs Week 8–14 Esfand",
+      "url": "https://www.pana.ir/news/1167451",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "irib-natural-resources-week",
+      "titleFa": "صداوسیما؛ هفتهٔ منابع طبیعی ۱۵ تا ۲۱ اسفند",
+      "titleEn": "IRIB: Natural Resources Week 15–21 Esfand",
+      "url": "https://www.irib-news.ir/fa/news/2663135",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "yjc-natural-resources-week",
+      "titleFa": "باشگاه خبرنگاران؛ روزشمار هفتهٔ منابع طبیعی ۱۵ تا ۲۱ اسفند",
+      "titleEn": "YJC: Natural Resources Week 15–21 Esfand",
+      "url": "https://www.yjc.ir/fa/news/6830186",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "irna-charity-week",
+      "titleFa": "ایرنا؛ هفتهٔ نیکوکاری ۱۴ تا ۲۱ اسفند",
+      "titleEn": "IRNA: Charity Week 14–21 Esfand",
+      "url": "https://www.irna.ir/news/85752648",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "imna-charity-week",
+      "titleFa": "ایمنا؛ هفتهٔ نیکوکاری ۱۴ تا ۲۱ اسفند",
+      "titleEn": "IMNA: Charity Week 14–21 Esfand",
+      "url": "https://www.imna.ir/news/478764",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "defapress-martyrs-week",
+      "titleFa": "دفاع‌پرس؛ هفتهٔ بزرگداشت شهدا ۱۶ تا ۲۲ اسفند",
+      "titleEn": "DefaPress: Martyrs Commemoration Week 16–22 Esfand",
+      "url": "https://defapress.ir/fa/news/655388",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "iqna-book-week",
+      "titleFa": "ایکنا؛ هفتهٔ کتاب ۲۴ تا ۳۰ آبان",
+      "titleEn": "IQNA: Book Week 24–30 Aban",
+      "url": "https://zanjan.iqna.ir/fa/news/4314403",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "iribnews-basij-week",
+      "titleFa": "صداوسیما؛ هفتهٔ بسیج ۲۹ آبان تا ۵ آذر",
+      "titleEn": "IRIB News: Basij Week 29 Aban–5 Azar",
+      "url": "https://www.iribnews.ir/fa/news/3281575",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "yjc-student-basij-week",
+      "titleFa": "باشگاه خبرنگاران؛ هفتهٔ بسیج دانش‌آموزی ۸ تا ۱۳ آبان",
+      "titleEn": "YJC: Student Basij Week 8–13 Aban",
+      "url": "https://www.yjc.ir/fa/news/8854494",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "iribnews-student-basij-week",
+      "titleFa": "صداوسیما؛ هفتهٔ بسیج دانش‌آموزی ۸ تا ۱۳ آبان",
+      "titleEn": "IRIB News: Student Basij Week 8–13 Aban",
+      "url": "https://www.iribnews.ir/fa/news/5610403",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "paydarymelli-civil-defense-week",
+      "titleFa": "پایداری ملی؛ هفتهٔ نکوداشت پدافند غیرعامل ۸ تا ۱۴ آبان",
+      "titleEn": "Paydar-e Melli: Civil Defense Week 8–14 Aban",
+      "url": "https://paydarymelli.ir/fa/news/66920",
+      "kind": "institution",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "isna-councils-week",
+      "titleFa": "ایسنا؛ هفتهٔ شوراهای آموزش‌وپرورش از ۲۴ دی به مدت هفت روز",
+      "titleEn": "ISNA: Education Councils Week from 24 Dey for seven days",
+      "url": "https://www.isna.ir/news/98102317867",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "mehrnews-research-week",
+      "titleFa": "مهر؛ هفتهٔ پژوهش و فناوری ۱۹ تا ۲۵ آذر (نمونه)",
+      "titleEn": "Mehr: Research and Technology Week 19–25 Azar (sample)",
+      "url": "https://www.mehrnews.com/news/5957328",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "mehrnews-quran-week",
+      "titleFa": "مهر؛ اعلام هفتهٔ قرآن، عترت و نماز مدارس در نیمهٔ اول آبان ۱۴۰۵",
+      "titleEn": "Mehr: school Quran week announced for early Aban 1405",
+      "url": "https://www.mehrnews.com/news/6975442",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "imna-breastfeeding-week",
+      "titleFa": "ایمنا؛ هفتهٔ جهانی تغذیه با شیر مادر ۱۰ تا ۱۶ مرداد",
+      "titleEn": "IMNA: World Breastfeeding Week 10–16 Mordad",
+      "url": "https://www.imna.ir/news/993003",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "kums-women-health-week",
+      "titleFa": "دانشگاه علوم پزشکی کرمانشاه؛ هفتهٔ ملی سلامت بانوان ایران ۲۴ تا ۳۰ مهر",
+      "titleEn": "KUMS: Iranian Women's Health Week 24–30 Mehr",
+      "url": "https://khc.kums.ac.ir/fa/home/monasebathaibehdashti/saba",
+      "kind": "institution",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "yjc-men-health-week",
+      "titleFa": "باشگاه خبرنگاران؛ هفتهٔ ملی سلامت مردان ۱ تا ۷ اسفند",
+      "titleEn": "YJC: Men's Health Week 1–7 Esfand",
+      "url": "https://www.yjc.ir/fa/news/9054140",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "khabaronline-men-health-week",
+      "titleFa": "خبرآنلاین؛ هفتهٔ ملی سلامت مردان ۱ تا ۷ اسفند ۱۴۰۴",
+      "titleEn": "Khabar Online: Men's Health Week 1–7 Esfand 1404",
+      "url": "https://www.khabaronline.ir/news/2185051",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "shmu-poison-week",
+      "titleFa": "دانشگاه علوم پزشکی شهید بهشتی؛ هفتهٔ پیشگیری از مسمومیت‌ها ۱ تا ۷ آبان",
+      "titleEn": "SBUMS: Poisoning Prevention Week 1–7 Aban",
+      "url": "https://shmu.ac.ir/fdo/fa/page/204",
+      "kind": "institution",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "mefda-drug-week",
+      "titleFa": "مفدا؛ هفتهٔ مبارزه با مواد مخدر ۴ تا ۱۰ تیر (نمونهٔ ۱۴۰۰)",
+      "titleEn": "MEFDA: Drug Abuse Prevention Week 4–10 Tir (1400 sample)",
+      "url": "https://www.mefda.ir/news/223922",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "atu-fajr-decade",
+      "titleFa": "دانشگاه علامه طباطبائی؛ روزشمار دههٔ فجر ۱۲ تا ۲۲ بهمن",
+      "titleEn": "ATU: Fajr Decade 12–22 Bahman",
+      "url": "https://farhangi.atu.ac.ir/fa/news/16999",
+      "kind": "institution",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "defapress-child-week",
+      "titleFa": "دفاع‌پرس؛ روزشمار هفتهٔ ملی کودک از ۱۵ تا ۲۱ مهر",
+      "titleEn": "DefaPress: National Child Week 15–21 Mehr",
+      "url": "https://defapress.ir/fa/news/864294",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "kanoon-environment-week",
+      "titleFa": "کانون پرورش فکری؛ هفتهٔ ملی محیط زیست ۱۶ تا ۲۲ خرداد",
+      "titleEn": "Kanoon: National Environment Week 16–22 Khordad",
+      "url": "https://www.kanoonnews.ir/news/374813",
+      "kind": "institution",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "bazarekar-skills-week",
+      "titleFa": "بازارکار؛ هفتهٔ ملی مهارت ۳۱ تیر تا ۶ مرداد ۱۴۰۵",
+      "titleEn": "Bazarekar: National Skills Week 31 Tir–6 Mordad 1405",
+      "url": "https://bazarekar.ir/fa/news/178896",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "setare-police-week",
+      "titleFa": "ستاره؛ روز نیروی انتظامی ۱۳ مهر و هفتهٔ ۱۳ تا ۱۹ مهر",
+      "titleEn": "Setare: Police Day 13 Mehr and Police Week 13–19 Mehr",
+      "url": "https://setare.com/fa/news/34932",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "eghtesaad24-police-week",
+      "titleFa": "اقتصاد۲۴؛ هفتهٔ نیروی انتظامی ۱۳ تا ۱۹ مهر ۱۴۰۴",
+      "titleEn": "Eghtesaad24: Police Week 13–19 Mehr 1404",
+      "url": "https://eghtesaad24.ir/fa/amp/news/330044",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "borna-air-week",
+      "titleFa": "برنا؛ هفتهٔ هوای پاک و روزشمار نمونه",
+      "titleEn": "Borna: Clean Air Week sample schedule",
+      "url": "https://borna.news/fa/news/1421464",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "iribnews-hijab-week",
+      "titleFa": "صداوسیما؛ هفتهٔ عفاف و حجاب ۱۵ تا ۲۱ تیر ۱۳۹۸",
+      "titleEn": "IRIB News: Chastity and Hijab Week 15–21 Tir 1398",
+      "url": "https://www.iribnews.ir/fa/news/2465060",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "chetor-1405",
+      "titleFa": "چطور؛ تقویم ۱۴۰۵ با مناسبت‌ها و تعطیلات",
+      "titleEn": "Chetor: 1405 calendar with occasions and holidays",
+      "url": "https://www.chetor.com/333113",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "school-health-blog",
+      "titleFa": "پایگاه اطلاع‌رسانی بهداشت مدارس جهرم؛ تقویم مناسبت‌های بهداشتی مدارس",
+      "titleEn": "Jahrom school health office: school health occasions",
+      "url": "https://behdasht-moshavereh.blogfa.com/post/26",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "namaz-student-meeting",
+      "titleFa": "ستاد اقامه نماز؛ اجلاس‌های نماز دانش‌آموزی",
+      "titleEn": "Namaz HQ: student prayer conventions",
+      "url": "https://www.namaz.ir/student-prayer-meetings/",
+      "kind": "institution",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "bazarekar-disability-week",
+      "titleFa": "بازارکار؛ برنامه‌های هفتهٔ معلولان از ۸ آذر ۱۴۰۴",
+      "titleEn": "Bazarekar: national disability week starting 8 Azar 1404",
+      "url": "https://bazarekar.ir/fa/print/174964",
+      "kind": "report",
+      "checkedAt": "2026-10-13"
+    },
+    {
+      "id": "piho-disability-week",
+      "titleFa": "بهداشت و درمان صنعت نفت گچساران؛ هفتهٔ معلولان ۹ تا ۱۵ آذر",
+      "titleEn": "PIHO: disability week 9–15 Azar",
+      "url": "https://www.piho.ir/fa/news/6252",
+      "kind": "institution",
+      "checkedAt": "2026-10-13"
     }
   ],
   "schoolPrograms": [
@@ -12562,6 +13355,47 @@
       ],
       "noteFa": "تاریخ سراسریِ ثابت ندارد؛ زمان و شیوهٔ اجرا را از بخشنامهٔ همان سال، منطقه یا شورای مدرسه تعیین کنید. ساخت کار در اپ به معنی ابلاغ یا الزام اجرا نیست.",
       "noteEn": "No fixed nationwide annual date. Set the schedule from the current year circular, district or school council. Creating a task is not an official mandate."
+    },
+    {
+      "id": "prayer-convention",
+      "titleFa": "اجلاس سراسری و منطقه‌ای نماز دانش‌آموزی",
+      "titleEn": "Student prayer conventions",
+      "sourceIds": [
+        "namaz-student-meeting"
+      ],
+      "noteFa": "تاریخ سراسریِ ثابت ندارد؛ مرحله‌های مدرسه‌ای، منطقه‌ای، استانی و کشوری هر سال جداگانه ابلاغ می‌شود (نمونهٔ کشوری: ۶ شهریور). زمان امسال را از بخشنامه بگیرید.",
+      "noteEn": "No fixed nationwide date; school, district, provincial and national rounds are announced separately each year (one national round: 6 Shahrivar). Check the current circular."
+    },
+    {
+      "id": "health-ambassadors",
+      "titleFa": "سفیران سلامت و بهداشتیاران دانش‌آموزی",
+      "titleEn": "Student health ambassadors and assistants",
+      "sourceIds": [
+        "school-health-blog"
+      ],
+      "noteFa": "تاریخ سراسریِ ثابت ندارد؛ افتتاحیه و دورهٔ آموزش بهداشتیاران در استان‌ها متفاوت است. زمان امسال را از منطقه بگیرید.",
+      "noteEn": "No fixed nationwide date; the opening and training rounds differ per province. Check with your district."
+    },
+    {
+      "id": "disability-week",
+      "titleFa": "هفتهٔ بزرگداشت معلولان و آموزش فراگیر",
+      "titleEn": "Disability week and inclusive education",
+      "sourceIds": [
+        "bazarekar-disability-week",
+        "piho-disability-week"
+      ],
+      "noteFa": "هفتهٔ ثابت سراسری ندارد؛ هفتهٔ شنبه‌تا‌جمعه‌ای است که ۱۲ آذر (روز جهانی معلولان) در آن قرار می‌گیرد (۱۴۰۴: ۸ تا ۱۴ آذر؛ ۱۳۹۸: ۹ تا ۱۵ آذر). برنامهٔ مدرسه را همان سال هماهنگ کنید.",
+      "noteEn": "No fixed nationwide window: it is the Saturday–Friday week containing 12 Azar, world disability day (8–14 Azar in 1404; 9–15 in 1398). Coordinate the school program that year."
+    },
+    {
+      "id": "muharram",
+      "titleFa": "سوگواره‌های محرم، صفر و ایام فاطمیه در مدرسه",
+      "titleEn": "Muharram, Safar and Fatimiyya commemorations",
+      "sourceIds": [
+        "school-execution"
+      ],
+      "noteFa": "تاریخ شمسیِ ثابت ندارد؛ بر پایهٔ تقویم قمری همان سال برگزار می‌شود (سوگوارهٔ دانش‌آموزی احلی من العسل و روز تجلیل از اسیران در همین کاتالوگ ثبت شده است). پیش از ساخت کار، برنامه را از بخشنامهٔ منطقه بگیرید.",
+      "noteEn": "No fixed solar date; it follows that year's lunar calendar (the student Ahli-man-al-Asl mourning day and the POW appreciation day are already in this catalog). Get the district circular before creating a task."
     }
   ]
 }
