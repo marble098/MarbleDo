@@ -229,7 +229,7 @@ class OccasionIndex private constructor(private val byYear: Map<Int, Map<Int, Li
             if (sortedYears.isEmpty()) return EMPTY
             val key = CacheKey(
                 catalogIdentity = System.identityHashCode(catalog),
-                catalogVersion = catalog.version,
+                catalogVersion = catalog.schemaVersion,
                 occasionCount = catalog.occasions.size,
                 years = sortedYears,
                 lunarOffsetDays = lunarOffsetDays.coerceIn(-2, 2),
