@@ -32,6 +32,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -87,17 +91,59 @@ fun countdownUnits(dueAtEpochMillis: Long, nowMillis: Long = System.currentTimeM
     )
 }
 
-/** A live-updating remaining time; ticks once per second while the screen shows it. */
+/**
+ * A live-updating remaining time; ticks only while the screen is RESUMED, pauses for static
+ * compact gallery previews, and slows its cadence when seconds are not displayed.
+ */
 @Composable
-fun rememberCountdownUnits(dueAtEpochMillis: Long): CountdownUnits {
+fun rememberCountdownUnits(
+    dueAtEpochMillis: Long,
+    includeSeconds: Boolean = true,
+    live: Boolean = true,
+): CountdownUnits {
     var nowMillis by remember(dueAtEpochMillis) { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(dueAtEpochMillis) {
-        while (true) {
-            nowMillis = System.currentTimeMillis()
-            delay(1_000L)
+    if (live) {
+        val lifecycleOwner = LocalLifecycleOwner.current
+        LaunchedEffect(dueAtEpochMillis, includeSeconds, lifecycleOwner) {
+            lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    val current = System.currentTimeMillis()
+                    nowMillis = current
+                    val remaining = dueAtEpochMillis - current
+                    if (remaining <= 0L) break
+                    val step = if (!includeSeconds && remaining > 86_400_000L) 15_000L else 1_000L
+                    delay(step)
+                }
+            }
         }
     }
     return remember(dueAtEpochMillis, nowMillis) { countdownUnits(dueAtEpochMillis, nowMillis) }
+}
+
+@Composable
+private fun rememberAmbientPhase(
+    compact: Boolean,
+    initialValue: Float,
+    targetValue: Float,
+    durationMillis: Int,
+    label: String,
+    reverse: Boolean = true,
+): Float {
+    val isResumed = LocalLifecycleOwner.current.lifecycle.currentStateAsState().value.isAtLeast(Lifecycle.State.RESUMED)
+    if (compact || reducedMotion() || !isResumed) {
+        return (initialValue + targetValue) * 0.5f
+    }
+    val transition = rememberInfiniteTransition(label = label)
+    val value by transition.animateFloat(
+        initialValue = initialValue,
+        targetValue = targetValue,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis, easing = if (reverse) FastOutSlowInEasing else androidx.compose.animation.core.LinearEasing),
+            repeatMode = if (reverse) RepeatMode.Reverse else RepeatMode.Restart,
+        ),
+        label = "$label-value",
+    )
+    return value
 }
 
 /**
@@ -192,7 +238,7 @@ fun CountdownFace(
     modifier: Modifier = Modifier,
     compact: Boolean = false,
 ) {
-    val units = rememberCountdownUnits(dueAtEpochMillis)
+    val units = rememberCountdownUnits(dueAtEpochMillis, live = !compact)
     val labels = unitLabels()
     val finishLabel = stringResource(R.string.countdown_finished)
     val height = if (compact) 150.dp else 236.dp
@@ -229,13 +275,7 @@ private fun daysText(units: CountdownUnits): String {
 
 @Composable
 private fun MarbleOrbFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
-    val transition = rememberInfiniteTransition(label = "marble-orb")
-    val shift by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(9_000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "marble-shift",
-    )
+    val shift = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 9_000, label = "marble-orb")
     Box(
         modifier.clip(RoundedCornerShape(28.dp))
             .background(Brush.linearGradient(listOf(Color(0xFF221C3C), Color(0xFF090812)))),
@@ -299,13 +339,7 @@ private fun MarbleOrbFace(title: String, units: CountdownUnits, labels: List<Str
 
 @Composable
 private fun AuroraVeilFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
-    val transition = rememberInfiniteTransition(label = "aurora")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(if (reducedMotion()) 12_000 else 6_000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "aurora-phase",
-    )
+    val phase = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 6_000, label = "aurora")
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFF0A1B36), Color(0xFF07122A))))) {
         Canvas(Modifier.fillMaxSize()) {
             val ribbons = listOf(
@@ -372,13 +406,7 @@ private fun auroraDigits(units: CountdownUnits): String {
 
 @Composable
 private fun NeonGridFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
-    val transition = rememberInfiniteTransition(label = "neon-grid")
-    val glow by transition.animateFloat(
-        initialValue = 0.55f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(if (reducedMotion()) 6_000 else 2_200), RepeatMode.Reverse),
-        label = "neon-glow",
-    )
+    val glow = rememberAmbientPhase(compact = compact, initialValue = 0.55f, targetValue = 1f, durationMillis = 2_200, label = "neon-grid")
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.verticalGradient(listOf(Color(0xFF25064B), Color(0xFF0B0B2B))))) {
         Canvas(Modifier.fillMaxSize()) {
             val horizon = size.height * 0.62f
@@ -502,13 +530,7 @@ private fun FlipStudioFace(title: String, units: CountdownUnits, labels: List<St
 
 @Composable
 private fun GlassLayersFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
-    val transition = rememberInfiniteTransition(label = "glass")
-    val drift by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(if (reducedMotion()) 14_000 else 8_000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "glass-drift",
-    )
+    val drift = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 8_000, label = "glass")
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFF3B2F73), Color(0xFF171436))))) {
         Canvas(Modifier.fillMaxSize()) {
             val orbs = listOf(
@@ -590,13 +612,7 @@ private fun GlassPanel(value: String, label: String, modifier: Modifier, compact
 
 @Composable
 private fun OrbitalRingsFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
-    val transition = rememberInfiniteTransition(label = "orbital")
-    val spin by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(if (reducedMotion()) 90_000 else 24_000, easing = androidx.compose.animation.core.LinearEasing)),
-        label = "orbital-spin",
-    )
+    val spin = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 360f, durationMillis = 24_000, label = "orbital", reverse = false)
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.radialGradient(listOf(Color(0xFF16204C), Color(0xFF05060F))))) {
         Canvas(Modifier.fillMaxSize()) {
             val center = Offset(size.width * 0.5f, size.height * 0.52f)
@@ -656,13 +672,7 @@ private fun OrbitalRingsFace(title: String, units: CountdownUnits, labels: List<
 
 @Composable
 private fun TerminalMatrixFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
-    val transition = rememberInfiniteTransition(label = "terminal")
-    val blink by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(if (reducedMotion()) 3_000 else 900), RepeatMode.Reverse),
-        label = "cursor-blink",
-    )
+    val blink = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 900, label = "terminal")
     Box(modifier.clip(RoundedCornerShape(18.dp)).background(Color(0xFF03130A))) {
         Canvas(Modifier.fillMaxSize()) {
             var y = 0f
@@ -710,13 +720,7 @@ private fun TerminalMatrixFace(title: String, units: CountdownUnits, labels: Lis
 
 @Composable
 private fun LiquidTideFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
-    val transition = rememberInfiniteTransition(label = "tide")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(if (reducedMotion()) 12_000 else 4_200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "tide-phase",
-    )
+    val phase = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 4_200, label = "tide")
     val level = 0.42f + ((units.totalSeconds % 86_400L) / 86_400f) * 0.34f
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFFEAF8F6), Color(0xFFCDEDF3))))) {
         Canvas(Modifier.fillMaxSize()) {
@@ -813,13 +817,7 @@ private fun PaperTypeFace(title: String, units: CountdownUnits, labels: List<Str
 
 @Composable
 private fun StellarNightFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
-    val transition = rememberInfiniteTransition(label = "stellar")
-    val twinkle by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(if (reducedMotion()) 8_000 else 2_600), RepeatMode.Reverse),
-        label = "twinkle",
-    )
+    val twinkle = rememberAmbientPhase(compact = compact, initialValue = 0.35f, targetValue = 1f, durationMillis = 2_600, label = "stellar")
     val stars = remember { List(46) { Offset(Random(7 * it + 3).nextFloat(), Random(11 * it + 5).nextFloat()) } }
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.radialGradient(listOf(Color(0xFF1A1F4C), Color(0xFF06070F))))) {
         Canvas(Modifier.fillMaxSize()) {

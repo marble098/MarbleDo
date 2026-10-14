@@ -187,8 +187,6 @@ fun TaskRowCard(
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
     val swipeThreshold = with(density) { 120.dp.toPx() }
-    // Toward the start of the line is "forward" in both directions: right in RTL, left in LTR.
-    val swipesPositive = layoutDirection == LayoutDirection.Rtl
     var dragging by remember { mutableStateOf(false) }
     var swipeTarget by remember { mutableFloatStateOf(0f) }
     val swipeOffset by animateFloatAsState(
@@ -196,56 +194,61 @@ fun TaskRowCard(
         animationSpec = spring(),
         label = "taskSwipeOffset",
     )
-    val swipeOffsetDp = with(density) { swipeOffset.toDp() }
+    // Modifier.offset(x) mirrors x in RTL, so negate in RTL to keep card motion locked to finger direction.
+    val visualOffsetPx = if (layoutDirection == LayoutDirection.Rtl) -swipeOffset else swipeOffset
+    val swipeOffsetDp = with(density) { visualOffsetPx.toDp() }
     Box(modifier = modifier.fillMaxWidth()) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .clip(MaterialTheme.shapes.large),
-            contentAlignment = Alignment.CenterEnd,
-        ) {
-            Icon(
-                Icons.Filled.CheckCircle,
-                contentDescription = stringResource(R.string.tasks_swipe_complete),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(end = 20.dp),
-            )
-        }
-        Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .offset(x = swipeOffsetDp)
-            .pointerInput(task.id, task.isCompleted) {
-                detectHorizontalDragGestures(
-                    onDragStart = { dragging = true },
-                    onDragEnd = { dragging = false; swipeTarget = 0f },
-                    onDragCancel = { dragging = false; swipeTarget = 0f },
-                    onHorizontalDrag = { change, dragAmount ->
-                        change.consume()
-                        val next = swipeTarget + dragAmount
-                        swipeTarget = if (swipesPositive) {
-                            next.coerceIn(-16f, swipeThreshold + 24f)
-                        } else {
-                            next.coerceIn(-swipeThreshold - 24f, 16f)
-                        }
-                        val committed = if (swipesPositive) swipeTarget >= swipeThreshold else swipeTarget <= -swipeThreshold
-                        if (committed) {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onToggle()
-                            dragging = false
-                            swipeTarget = 0f
-                        }
-                    },
+        if (kotlin.math.abs(swipeOffset) > 0.5f) {
+            Row(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Filled.CheckCircle,
+                    contentDescription = stringResource(R.string.tasks_swipe_complete),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Icon(
+                    Icons.Filled.CheckCircle,
+                    contentDescription = stringResource(R.string.tasks_swipe_complete),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
-            .combinedClickable(onClick = onEdit, onLongClick = onLongPress),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    ) {
+        }
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset(x = swipeOffsetDp)
+                .pointerInput(task.id, task.isCompleted) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { dragging = true },
+                        onDragEnd = { dragging = false; swipeTarget = 0f },
+                        onDragCancel = { dragging = false; swipeTarget = 0f },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            val next = swipeTarget + dragAmount
+                            swipeTarget = next.coerceIn(-swipeThreshold - 24f, swipeThreshold + 24f)
+                            if (kotlin.math.abs(swipeTarget) >= swipeThreshold) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onToggle()
+                                dragging = false
+                                swipeTarget = 0f
+                            }
+                        },
+                    )
+                }
+                .combinedClickable(onClick = onEdit, onLongClick = onLongPress),
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(
+                containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        ) {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
             Box(
                 Modifier

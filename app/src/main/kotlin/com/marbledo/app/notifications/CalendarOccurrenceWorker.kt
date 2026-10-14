@@ -143,7 +143,7 @@ class CalendarOccurrenceWorker(
         val inbox = NotificationCompat.InboxStyle()
             .setBigContentTitle(title)
             .setSummaryText(days)
-        titles.take(MAX_VISIBLE_EVENTS).forEach { inbox.addLine(it) }
+        titles.take(MAX_VISIBLE_EVENTS).forEach { inbox.addLine("✦ $it") }
 
         val contentIntent = Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
@@ -157,6 +157,7 @@ class CalendarOccurrenceWorker(
             contentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val collapsedUpcoming = titles.firstOrNull()?.let { "✦ $it" } ?: days
         val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
             .addExtras(Bundle().apply {
                 putBoolean(EXTRA_EDUCATIONAL_CONTENT, occasions.any { it.category == OccasionCategory.EDUCATIONAL })
@@ -165,8 +166,8 @@ class CalendarOccurrenceWorker(
             .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
             .setColor(ContextCompat.getColor(context, R.color.marble_accent))
             .setContentTitle(title)
-            .setContentText(days)
-            .setSubText(titles.firstOrNull())
+            .setContentText(collapsedUpcoming)
+            .setSubText(days)
             .setNumber(occasions.size)
             .setStyle(inbox)
             .setContentIntent(pending)
@@ -216,9 +217,9 @@ class CalendarOccurrenceWorker(
         val eventTitles = events.map { bidi.unicodeWrap(it.title(languageTag)) }
         val title = context.getString(R.string.calendar_notification_title)
         val inbox = NotificationCompat.InboxStyle()
-            .setBigContentTitle(title)
+            .setBigContentTitle(dateLabel)
             .setSummaryText(summary)
-        eventTitles.take(MAX_VISIBLE_EVENTS).forEach { inbox.addLine(it) }
+        eventTitles.take(MAX_VISIBLE_EVENTS).forEach { inbox.addLine("✦ $it") }
         val hiddenCount = eventTitles.size - MAX_VISIBLE_EVENTS
         if (hiddenCount > 0) {
             inbox.addLine(
@@ -243,6 +244,7 @@ class CalendarOccurrenceWorker(
             contentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val collapsedEvent = eventTitles.firstOrNull()?.let { "✦ $it" } ?: summary
         val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
             .addExtras(Bundle().apply {
                 putBoolean(EXTRA_EDUCATIONAL_CONTENT, events.any { it.category == OccasionCategory.EDUCATIONAL })
@@ -251,8 +253,8 @@ class CalendarOccurrenceWorker(
             .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
             .setColor(ContextCompat.getColor(context, R.color.marble_accent))
             .setContentTitle(title)
-            .setContentText(summary)
-            .setSubText(dateLabel)
+            .setContentText(collapsedEvent)
+            .setSubText(eventCount)
             .setNumber(events.size)
             .setStyle(inbox)
             .setContentIntent(pending)

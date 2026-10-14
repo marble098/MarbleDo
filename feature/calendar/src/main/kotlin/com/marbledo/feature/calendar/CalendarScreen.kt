@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,8 +22,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Add
@@ -174,10 +180,13 @@ fun CalendarScreen(
         }
     }
 
-    LaunchedEffect(zone) {
-        while (true) {
-            todayIsoDate = LocalDate.now(zone).toString()
-            kotlinx.coroutines.delay(60_000L)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(zone, lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                todayIsoDate = LocalDate.now(zone).toString()
+                kotlinx.coroutines.delay(60_000L)
+            }
         }
     }
     val todayDate = remember(todayIsoDate) { LocalDate.parse(todayIsoDate) }
@@ -202,8 +211,8 @@ fun CalendarScreen(
             zone = zone,
         )
     }
-    val selectedPersian = PersianDateUtils.of(selectedDateEpoch, zone)
-    val selectedOccasions = index.on(selectedPersian.year, selectedPersian.month, selectedPersian.day)
+    val selectedPersian = remember(selectedDateEpoch, zone) { PersianDateUtils.of(selectedDateEpoch, zone) }
+    val selectedOccasions = remember(index, selectedPersian) { index.on(selectedPersian.year, selectedPersian.month, selectedPersian.day) }
     val matchingTasks = remember(tasks, selectedDate, zone) {
         tasks.filter { task ->
             task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == selectedDate } == true
@@ -414,7 +423,10 @@ fun CalendarScreen(
                                 occasions = index.on(cell.year, cell.month, cell.day),
                                 languageTag = languageTag,
                                 numeralMode = numeralMode,
-                                onClick = { selectedIsoDate = Instant.ofEpochMilli(cell.epochMillis).atZone(zone).toLocalDate().toString() },
+                                onClick = {
+                                    selectedIsoDate = Instant.ofEpochMilli(cell.epochMillis).atZone(zone).toLocalDate().toString()
+                                    viewMode = CalendarViewMode.MONTH
+                                },
                             )
                         }
                     }
@@ -600,6 +612,9 @@ fun CalendarScreen(
                                     val rowEpoch = remember(dated.year, dated.month, dated.day, zone) {
                                         PersianDateUtils.startOfJalaliDay(dated.year, dated.month, dated.day, zone)
                                     }
+                                    val rowWeekday = remember(dated.year, dated.month, dated.day, zone) {
+                                        weekdayIndexFor(dated.year, dated.month, dated.day, zone)
+                                    }
                                     OccasionRow(
                                         month = dated.month,
                                         day = dated.day,
@@ -607,7 +622,7 @@ fun CalendarScreen(
                                         occasion = dated.occasion,
                                         languageTag = languageTag,
                                         numeralMode = numeralMode,
-                                        weekdayIndex = weekdayIndexFor(dated.year, dated.month, dated.day, zone),
+                                        weekdayIndex = rowWeekday,
                                         isFavorite = dated.occasion.id in favoriteOccasionIds,
                                         daysUntil = rowEpoch?.let { epoch ->
                                             java.time.temporal.ChronoUnit.DAYS.between(
@@ -1053,12 +1068,24 @@ private fun SelectedDayCard(
     val epoch = remember(date, persian.year, persian.month, persian.day) {
         PersianDateUtils.startOfJalaliDay(persian.year, persian.month, persian.day) ?: System.currentTimeMillis()
     }
+    val secondaryDates = remember(epoch, languageTag, numeralMode, lunarOffsetDays, zone) {
+        val gregorian = PersianDateUtils.gregorianDate(epoch, Locale.forLanguageTag(languageTag), zone)
+        val lunar = PersianDateUtils.lunarDate(epoch, languageTag, NumeralMode.LATIN, lunarOffsetDays, zone)
+        TextNormalizer.formatDigits("$gregorian  ·  $lunar", numeralMode)
+    }
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 220.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
@@ -1066,7 +1093,7 @@ private fun SelectedDayCard(
                         style = MarbleTextStyles.itemTitle,
                     )
                     Text(
-                        PersianDateUtils.tripleDate(epoch, languageTag, numeralMode, lunarOffsetDays),
+                        secondaryDates,
                         style = MarbleTextStyles.metaLabel,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,

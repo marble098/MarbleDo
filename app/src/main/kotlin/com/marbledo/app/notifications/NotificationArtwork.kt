@@ -15,12 +15,14 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.os.Build
+import android.util.LruCache
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.IconCompat
 import com.marble098.marbledo.R
 import com.marble098.marbledo.core.designsystem.R as DesignR
 import com.marbledo.domain.model.StatusBarIconStyle
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -94,6 +96,11 @@ object NotificationArtwork {
     /** Footprint of a mood mark relative to the icon side. */
     private const val MARK_FRACTION = 0.23f
 
+    private val statusBitmapCache = LruCache<String, Bitmap>(28)
+    private val dateBadgeCache = LruCache<String, Bitmap>(8)
+    private val typefaceCache = ConcurrentHashMap<Int, Typeface>()
+    @Volatile private var baseVazirTypeface: Typeface? = null
+
     fun mood(
         hasHoliday: Boolean,
         hasReligiousOccasion: Boolean,
@@ -158,6 +165,10 @@ object NotificationArtwork {
         return runCatching {
             val metrics = context.resources.displayMetrics
             val pixels = (sizeDp * metrics.density).roundToInt().coerceIn(16, 1024)
+            val cacheKey = "${metrics.densityDpi}:$pixels:$dayDigits:${mood.name}:${style.name}"
+            synchronized(statusBitmapCache) {
+                statusBitmapCache.get(cacheKey)?.takeIf { !it.isRecycled }?.let { return@runCatching it }
+            }
             // Drawing larger and downsampling is what keeps the small digits smooth: at 24dp a real
             // status bar is only about sixty pixels wide, where plain anti-aliasing aliases.
             val supersample = (MAX_WORK_PIXELS / pixels).coerceIn(1, MAX_SUPERSAMPLE)
@@ -175,9 +186,14 @@ object NotificationArtwork {
                 StatusBarIconStyle.PAGE -> drawPage(canvas, run, mood, side)
                 StatusBarIconStyle.ICON_ONLY -> Unit
             }
-            val icon = if (supersample == 1) bitmap else Bitmap.createScaledBitmap(bitmap, pixels, pixels, true)
+            val icon = if (supersample == 1) bitmap else Bitmap.createScaledBitmap(bitmap, pixels, pixels, true).also {
+                if (it !== bitmap) bitmap.recycle()
+            }
             // Matching the density is what turns the generated pixels into 1:1 status-bar pixels.
             icon.density = metrics.densityDpi
+            synchronized(statusBitmapCache) {
+                statusBitmapCache.put(cacheKey, icon)
+            }
             icon
         }.getOrNull()
     }
@@ -185,11 +201,15 @@ object NotificationArtwork {
     /** Colored large icon: gradient date badge with the day number and month name. */
     fun dateBadge(context: Context, dayDigits: String, monthLabel: String, mood: NotificationMood): Bitmap? =
         runCatching {
+            val accent = accentColor(context, mood)
+            val cacheKey = "$dayDigits:$monthLabel:${mood.name}:$accent"
+            synchronized(dateBadgeCache) {
+                dateBadgeCache.get(cacheKey)?.takeIf { !it.isRecycled }?.let { return@runCatching it }
+            }
             val size = 256
             val side = size.toFloat()
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            val accent = accentColor(context, mood)
             val deep = ColorUtils.blendARGB(accent, Color.BLACK, 0.38f)
             val plate = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 shader = LinearGradient(
@@ -231,6 +251,9 @@ object NotificationArtwork {
                 size = side * 0.135f,
                 color = Color.WHITE,
             )
+            synchronized(dateBadgeCache) {
+                dateBadgeCache.put(cacheKey, bitmap)
+            }
             bitmap
         }.getOrNull()
 
@@ -572,12 +595,15 @@ object NotificationArtwork {
      * generated artwork matches the in-app typography ladder.
      */
     private fun vazirTypeface(context: Context, weight: Int): Typeface {
-        val base = ResourcesCompat.getFont(context, DesignR.font.vazirmatn_variable)
-            ?: Typeface.DEFAULT
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        typefaceCache[weight]?.let { return it }
+        val base = baseVazirTypeface ?: (ResourcesCompat.getFont(context.applicationContext, DesignR.font.vazirmatn_variable)
+            ?: Typeface.DEFAULT).also { baseVazirTypeface = it }
+        val resolved = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             Typeface.create(base, weight, false)
         } else {
             base
         }
+        typefaceCache[weight] = resolved
+        return resolved
     }
 }

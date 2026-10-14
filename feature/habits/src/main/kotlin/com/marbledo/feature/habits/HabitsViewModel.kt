@@ -40,28 +40,28 @@ class HabitsViewModel(
     private val appContext: Context,
 ) : ViewModel() {
 
-    private val dayTick = MutableStateFlow(0)
+    private val todayFlow = MutableStateFlow(LocalDate.now())
 
     val state: StateFlow<HabitsUiState> = combine(
         repository.observeHabits(),
         repository.observeEntries(),
-        dayTick,
-    ) { habits, entries, _ ->
-        val today = LocalDate.now()
+        todayFlow,
+    ) { habits, entries, today ->
         val byHabit = entries.groupBy { it.habitId }
+        val stats = habits.associate { habit ->
+            habit.id to HabitAnalytics.stats(habit, byHabit[habit.id].orEmpty(), today)
+        }
         HabitsUiState(
             habits = habits,
             entries = entries,
             today = today,
-            stats = habits.associate { habit ->
-                habit.id to HabitAnalytics.stats(habit, byHabit[habit.id].orEmpty(), today)
-            },
-            summary = HabitAnalytics.summary(habits, entries, today),
+            stats = stats,
+            summary = HabitAnalytics.summary(habits, entries, today, precomputedStats = stats),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HabitsUiState())
 
     fun refreshToday() {
-        dayTick.value += 1
+        todayFlow.value = LocalDate.now()
     }
 
     /** Ticks a build habit on or off for today. */

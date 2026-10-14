@@ -317,12 +317,14 @@ fun MarbleDoApp(
         notificationsGranted,
     ) {
         if (persistedSettings != null && occasionState.isLoaded) {
-            PersistentCalendarNotification.update(
-                context = context.applicationContext,
-                settings = settings,
-                tasks = taskState.allTasks,
-                catalog = occasionState.catalog,
-            )
+            withContext(Dispatchers.Default) {
+                PersistentCalendarNotification.update(
+                    context = context.applicationContext,
+                    settings = settings,
+                    tasks = taskState.allTasks,
+                    catalog = occasionState.catalog,
+                )
+            }
         }
     }
 
@@ -534,6 +536,7 @@ fun MarbleDoApp(
                                         }
                                     },
                                     onCheckUpdates = { openReleasePage(context) },
+                                    tasks = taskState.allTasks,
                                 )
                             }
                         },

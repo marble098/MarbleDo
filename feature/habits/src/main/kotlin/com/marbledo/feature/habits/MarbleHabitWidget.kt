@@ -78,11 +78,7 @@ class MarbleHabitWidget : GlanceAppWidget() {
         val snapshot = runCatching {
             withContext(Dispatchers.IO) {
                 val database = MarbleDatabase.create(context)
-                try {
-                    RoomHabitRepository(database.habitDao()).snapshot()
-                } finally {
-                    database.close()
-                }
+                RoomHabitRepository(database.habitDao()).snapshot()
             }
         }.getOrDefault(HabitsSnapshot())
         val today = LocalDate.now()
@@ -335,19 +331,15 @@ class HabitToggleAction : ActionCallback {
         runCatching {
             withContext(Dispatchers.IO) {
                 val database = MarbleDatabase.create(context)
-                try {
-                    val repository = RoomHabitRepository(database.habitDao())
-                    val snapshot = repository.snapshot()
-                    val habit = snapshot.habits.firstOrNull { it.id == habitId } ?: return@withContext
-                    val current = snapshot.entries.firstOrNull { it.habitId == habitId && it.date == today }?.value ?: 0
-                    val next = when (habit.kind) {
-                        HabitKind.QUIT -> if (current > 0) 0 else 1
-                        HabitKind.BUILD -> if (current >= habit.dailyTarget) 0 else habit.dailyTarget
-                    }
-                    repository.setEntry(habitId, today, next)
-                } finally {
-                    database.close()
+                val repository = RoomHabitRepository(database.habitDao())
+                val snapshot = repository.snapshot()
+                val habit = snapshot.habits.firstOrNull { it.id == habitId } ?: return@withContext
+                val current = snapshot.entries.firstOrNull { it.habitId == habitId && it.date == today }?.value ?: 0
+                val next = when (habit.kind) {
+                    HabitKind.QUIT -> if (current > 0) 0 else 1
+                    HabitKind.BUILD -> if (current >= habit.dailyTarget) 0 else habit.dailyTarget
                 }
+                repository.setEntry(habitId, today, next)
             }
             updateMarbleHabitWidgets(context)
         }
@@ -372,7 +364,14 @@ fun requestHabitWidgetPin(context: Context): HabitWidgetPinResult {
 
 /** Refreshes every pinned habit widget. A failed refresh is silent, never fatal. */
 suspend fun updateMarbleHabitWidgets(context: Context) {
-    runCatching { MarbleHabitWidget().updateAll(context.applicationContext) }
+    runCatching {
+        val appContext = context.applicationContext
+        val ids = AppWidgetManager.getInstance(appContext).getAppWidgetIds(
+            ComponentName(appContext, MarbleHabitWidgetReceiver::class.java),
+        )
+        if (ids.isEmpty()) return
+        MarbleHabitWidget().updateAll(appContext)
+    }
 }
 
 internal fun isDark(context: Context): Boolean =

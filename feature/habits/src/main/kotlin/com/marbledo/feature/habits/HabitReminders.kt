@@ -36,27 +36,41 @@ private const val EXTRA_HABIT_ID = "habitId"
  * receiver asks this scheduler to run again.
  */
 object HabitReminderScheduler {
+    private val scheduledTriggers = java.util.concurrent.ConcurrentHashMap<Long, Long>()
 
     /** Re-arms every habit that has a time set and removes the ones that do not. */
     fun reschedule(context: Context, habits: List<Habit>) {
         val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
+        val now = ZonedDateTime.now()
         habits.forEach { habit ->
             if (habit.isArchived || habit.reminderMinuteOfDay < 0) {
-                cancel(alarmManager, context, habit.id)
+                if (scheduledTriggers.remove(habit.id) != -1L) {
+                    scheduledTriggers[habit.id] = -1L
+                    cancel(alarmManager, context, habit.id)
+                }
             } else {
-                schedule(alarmManager, context, habit)
+                val trigger = nextTriggerMillis(habit.reminderMinuteOfDay, now)
+                if (scheduledTriggers[habit.id] != trigger) {
+                    schedule(alarmManager, context, habit, trigger)
+                    scheduledTriggers[habit.id] = trigger
+                }
             }
         }
     }
 
     fun cancel(context: Context, habitId: Long) {
+        scheduledTriggers.remove(habitId)
         val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
         cancel(alarmManager, context, habitId)
     }
 
-    private fun schedule(alarmManager: AlarmManager, context: Context, habit: Habit) {
+    private fun schedule(
+        alarmManager: AlarmManager,
+        context: Context,
+        habit: Habit,
+        trigger: Long = nextTriggerMillis(habit.reminderMinuteOfDay),
+    ) {
         val pending = pendingIntent(context, habit.id, ACTION_REMIND)
-        val trigger = nextTriggerMillis(habit.reminderMinuteOfDay)
         try {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pending)
@@ -173,11 +187,7 @@ class HabitReminderReceiver : BroadcastReceiver() {
 
     private suspend fun <T> withDatabase(context: Context, block: suspend (RoomHabitRepository) -> T): T? {
         val database = MarbleDatabase.create(context)
-        return try {
-            block(RoomHabitRepository(database.habitDao()))
-        } finally {
-            database.close()
-        }
+        return block(RoomHabitRepository(database.habitDao()))
     }
 
     private fun actionIntent(context: Context, habitId: Long, action: String): PendingIntent {

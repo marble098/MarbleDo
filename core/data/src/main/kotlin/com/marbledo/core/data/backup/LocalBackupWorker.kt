@@ -23,34 +23,30 @@ class LocalBackupWorker(
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         runCatching {
             val db = MarbleDatabase.create(applicationContext)
+            val tasks = RoomTaskRepository(db.taskDao()).snapshot()
+            val habits = RoomHabitRepository(db.habitDao()).snapshot()
+            val settings = SettingsRepository(applicationContext).settings.first()
+            val bytes = BackupCodec.encode(tasks, settings, habits = habits.habits, habitEntries = habits.entries)
+            val targetDir = File(applicationContext.filesDir, BACKUP_DIRECTORY)
+                .apply { if (!exists() && !mkdirs()) error("Cannot create backup folder") }
+            val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+                .withZone(ZoneOffset.UTC).format(Instant.now())
+            val target = File(targetDir, "marbledo-$timestamp.mdo")
+            val atomic = AtomicFile(target)
+            var output: java.io.FileOutputStream? = null
             try {
-                val tasks = RoomTaskRepository(db.taskDao()).snapshot()
-                val habits = RoomHabitRepository(db.habitDao()).snapshot()
-                val settings = SettingsRepository(applicationContext).settings.first()
-                val bytes = BackupCodec.encode(tasks, settings, habits = habits.habits, habitEntries = habits.entries)
-                val targetDir = File(applicationContext.filesDir, BACKUP_DIRECTORY)
-                    .apply { if (!exists() && !mkdirs()) error("Cannot create backup folder") }
-                val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
-                    .withZone(ZoneOffset.UTC).format(Instant.now())
-                val target = File(targetDir, "marbledo-$timestamp.mdo")
-                val atomic = AtomicFile(target)
-                var output: java.io.FileOutputStream? = null
-                try {
-                    output = atomic.startWrite()
-                    output.write(bytes)
-                    atomic.finishWrite(output)
-                    output = null
-                } catch (exception: Exception) {
-                    output?.let(atomic::failWrite)
-                    throw exception
-                }
-                targetDir.listFiles()?.filter { it.name.endsWith(".mdo") }
-                    ?.sortedByDescending(File::lastModified)
-                    ?.drop(MAX_BACKUPS)
-                    ?.forEach(File::delete)
-            } finally {
-                db.close()
+                output = atomic.startWrite()
+                output.write(bytes)
+                atomic.finishWrite(output)
+                output = null
+            } catch (exception: Exception) {
+                output?.let(atomic::failWrite)
+                throw exception
             }
+            targetDir.listFiles()?.filter { it.name.endsWith(".mdo") }
+                ?.sortedByDescending(File::lastModified)
+                ?.drop(MAX_BACKUPS)
+                ?.forEach(File::delete)
         }.fold(onSuccess = { Result.success() }, onFailure = { Result.retry() })
     }
 

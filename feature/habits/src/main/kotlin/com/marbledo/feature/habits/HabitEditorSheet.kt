@@ -1,6 +1,9 @@
 package com.marbledo.feature.habits
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -13,14 +16,15 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Button
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,10 +32,13 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.domain.model.Habit
@@ -174,36 +181,34 @@ fun HabitEditorSheet(
             }
 
             EditorLabel(stringResource(R.string.habit_field_schedule))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = scheduleType == HabitScheduleType.EVERY_DAY,
                     onClick = { scheduleType = HabitScheduleType.EVERY_DAY },
                     label = { Text(stringResource(R.string.habit_schedule_every_day)) },
-                    modifier = Modifier.weight(1f),
                 )
                 FilterChip(
                     selected = scheduleType == HabitScheduleType.SPECIFIC_DAYS,
                     onClick = { scheduleType = HabitScheduleType.SPECIFIC_DAYS },
                     label = { Text(stringResource(R.string.habit_schedule_specific)) },
-                    modifier = Modifier.weight(1f),
                 )
                 FilterChip(
                     selected = scheduleType == HabitScheduleType.TIMES_PER_WEEK,
                     onClick = { scheduleType = HabitScheduleType.TIMES_PER_WEEK },
                     label = { Text(stringResource(R.string.habit_schedule_times)) },
-                    modifier = Modifier.weight(1f),
                 )
             }
             when (scheduleType) {
                 HabitScheduleType.SPECIFIC_DAYS -> {
                     Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        (1..7).forEach { day ->
+                    val orderedDays = if (languageTag == "fa") listOf(6, 7, 1, 2, 3, 4, 5) else (1..7).toList()
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        orderedDays.forEach { day ->
                             val selected = day in weekdays
-                            FilterChip(
+                            CompactSelectorPill(
+                                label = weekdayName(day, languageTag, short = true),
                                 selected = selected,
                                 onClick = { weekdays = if (selected) weekdays - day else weekdays + day },
-                                label = { Text(weekdayName(day, languageTag, short = true)) },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -211,12 +216,12 @@ fun HabitEditorSheet(
                 }
                 HabitScheduleType.TIMES_PER_WEEK -> {
                     Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         (1..7).forEach { times ->
-                            FilterChip(
+                            CompactSelectorPill(
+                                label = TextNormalizer.formatDigits(times.toString(), numeralMode),
                                 selected = timesPerWeek == times,
                                 onClick = { timesPerWeek = times },
-                                label = { Text(TextNormalizer.formatDigits(times.toString(), numeralMode)) },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -338,6 +343,40 @@ fun HabitEditorSheet(
                     )
                 }) { Text(stringResource(R.string.habit_save)) }
             }
+        }
+    }
+}
+
+@Composable
+private fun CompactSelectorPill(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = MaterialTheme.shapes.small
+    Surface(
+        shape = shape,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        modifier = modifier
+            .height(38.dp)
+            .clip(shape)
+            .border(
+                width = if (selected) 1.5.dp else 1.dp,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
+                shape = shape,
+            )
+            .clickable(onClick = onClick),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+            )
         }
     }
 }
