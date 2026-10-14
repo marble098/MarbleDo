@@ -36,15 +36,11 @@ class PersistentCalendarNotificationWorker(
             val settings = SettingsRepository(applicationContext).settings.first()
             if (!settings.persistentDateNotificationEnabled) {
                 PersistentCalendarNotification.cancel(applicationContext)
-                WorkManager.getInstance(applicationContext).cancelUniqueWork(MIDNIGHT_WORK_NAME)
+                cancelScheduled(applicationContext)
                 return@withContext Result.success()
             }
             val database = MarbleDatabase.create(applicationContext)
-            val tasks = try {
-                RoomTaskRepository(database.taskDao()).snapshot()
-            } finally {
-                database.close()
-            }
+            val tasks = RoomTaskRepository(database.taskDao()).snapshot()
             val occasions = OccasionRepository(applicationContext).also { it.load() }.state.value.catalog
             PersistentCalendarNotification.update(applicationContext, settings, tasks, occasions)
             if (!inputData.getBoolean(KEY_MIDNIGHT_RUN, false)) {
@@ -65,12 +61,23 @@ class PersistentCalendarNotificationWorker(
         private const val KEY_MIDNIGHT_RUN = "midnight_run"
 
         fun ensurePeriodic(context: Context) {
-            val request = PeriodicWorkRequestBuilder<PersistentCalendarNotificationWorker>(1, TimeUnit.HOURS).build()
+            val request = PeriodicWorkRequestBuilder<PersistentCalendarNotificationWorker>(
+                6,
+                TimeUnit.HOURS,
+                1,
+                TimeUnit.HOURS,
+            ).build()
             WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(
                 WORK_NAME,
                 ExistingPeriodicWorkPolicy.UPDATE,
                 request,
             )
+        }
+
+        fun cancelScheduled(context: Context) {
+            val workManager = WorkManager.getInstance(context.applicationContext)
+            workManager.cancelUniqueWork(WORK_NAME)
+            workManager.cancelUniqueWork(MIDNIGHT_WORK_NAME)
         }
 
         fun refreshNow(context: Context) {

@@ -47,6 +47,7 @@ class OccasionRepository(private val context: Context) {
     private val loadMutex = Mutex()
     private val refreshMutex = Mutex()
     @Volatile private var loaded = false
+    @Volatile private var lastAutoRefreshAttemptMillis = 0L
 
     suspend fun load() {
         loadMutex.lock()
@@ -143,6 +144,12 @@ class OccasionRepository(private val context: Context) {
         if (lastUpdated != null && now >= lastUpdated && now - lastUpdated < maxAgeMillis) {
             return OccasionRefreshResult.SKIPPED
         }
+        if (lastAutoRefreshAttemptMillis > 0L && now >= lastAutoRefreshAttemptMillis &&
+            now - lastAutoRefreshAttemptMillis < AUTO_REFRESH_COOLDOWN_MILLIS
+        ) {
+            return OccasionRefreshResult.SKIPPED
+        }
+        lastAutoRefreshAttemptMillis = now
         return refresh()
     }
 
@@ -153,17 +160,29 @@ class OccasionRepository(private val context: Context) {
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    private suspend fun readAsset(): OccasionCatalog? = withContext(Dispatchers.IO) {
-        runCatching {
-            context.assets.open(CATALOG_ASSET).bufferedReader().use { it.readText() }
-        }.getOrNull()?.let(OccasionCatalog::parse)
+    private suspend fun readAsset(): OccasionCatalog? {
+        cachedBundledCatalog?.let { return it }
+        return withContext(Dispatchers.IO) {
+            cachedBundledCatalog ?: runCatching {
+                context.assets.open(CATALOG_ASSET).bufferedReader().use { it.readText() }
+            }.getOrNull()?.let(OccasionCatalog::parse)?.also { cachedBundledCatalog = it }
+        }
     }
 
     private suspend fun readCache(): Pair<OccasionCatalog, Long>? = withContext(Dispatchers.IO) {
         val file = cacheFile()
         if (!file.exists()) return@withContext null
+        val mtime = file.lastModified()
+        val path = file.absolutePath
+        if (cachedDiskPath == path && cachedDiskMtime == mtime && cachedDiskCatalog != null) {
+            return@withContext cachedDiskCatalog!! to mtime
+        }
         val text = runCatching { file.bufferedReader().use(::readBounded) }.getOrNull() ?: return@withContext null
-        OccasionCatalog.parse(text)?.let { it to file.lastModified() }
+        OccasionCatalog.parse(text)?.also { parsed ->
+            cachedDiskPath = path
+            cachedDiskMtime = mtime
+            cachedDiskCatalog = parsed
+        }?.let { it to mtime }
     }
 
     /** Writes to a temporary file and atomically replaces the previous cache when supported. */
@@ -236,7 +255,13 @@ class OccasionRepository(private val context: Context) {
         private const val READ_TIMEOUT_MILLIS = 4_000
         private const val MAX_CATALOG_CHARS = 3_000_000
         private const val DEFAULT_MAX_AGE_MILLIS = 20L * 60L * 60L * 1000L
+        private const val AUTO_REFRESH_COOLDOWN_MILLIS = 30L * 60L * 1000L
         private const val USER_AGENT = "MarbleDo-Android"
+
+        @Volatile private var cachedBundledCatalog: OccasionCatalog? = null
+        @Volatile private var cachedDiskPath: String? = null
+        @Volatile private var cachedDiskMtime: Long = -1L
+        @Volatile private var cachedDiskCatalog: OccasionCatalog? = null
 
         /**
          * Independent delivery paths for the same checked-in catalog: GitHub raw, two jsDelivr

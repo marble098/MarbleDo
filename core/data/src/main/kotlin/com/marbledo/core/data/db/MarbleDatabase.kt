@@ -97,13 +97,22 @@ abstract class MarbleDatabase : RoomDatabase() {
             }
         }
 
-        fun create(context: Context): MarbleDatabase = Room.databaseBuilder(
-            context.applicationContext,
-            MarbleDatabase::class.java,
-            DATABASE_NAME,
-        )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
-            .fallbackToDestructiveMigrationOnDowngrade()
-            .build()
+        @Volatile
+        private var instance: MarbleDatabase? = null
+
+        fun create(context: Context): MarbleDatabase {
+            instance?.takeIf { it.isOpen }?.let { return it }
+            return synchronized(this) {
+                instance?.takeIf { it.isOpen } ?: Room.databaseBuilder(
+                    context.applicationContext,
+                    MarbleDatabase::class.java,
+                    DATABASE_NAME,
+                )
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .fallbackToDestructiveMigrationOnDowngrade()
+                    .build()
+                    .also { instance = it }
+            }
+        }
     }
 }

@@ -79,7 +79,7 @@ fun HabitDetailSheet(
     val palette = remember(habit.themeId, darkMode) {
         habitPalette(HabitTheme.from(habit.themeId), darkMode)
     }
-    val heat = remember(habit.id, entries, today) {
+    val heat = remember(habit.id, entries, today, weekStartsSaturday) {
         HabitAnalytics.heatmap(habit, entries, today, weeks = 12, weekStartsSaturday = weekStartsSaturday)
     }
     val week = remember(heat) { heat.takeLast(7) }
@@ -281,7 +281,6 @@ fun HabitDetailSheet(
             }
             Spacer(Modifier.height(14.dp))
 
-            SectionLabel(stringResource(R.string.habit_insights_title))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -314,7 +313,6 @@ fun HabitDetailSheet(
             Spacer(Modifier.height(14.dp))
 
             if (recent.isNotEmpty()) {
-                SectionLabel(stringResource(R.string.habit_history_title))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -400,6 +398,15 @@ private fun RecentDayRow(
     numeralMode: NumeralMode,
     languageTag: String,
 ) {
+    val dayOfMonth = remember(day.date, languageTag) {
+        if (languageTag == "fa") {
+            val cal = android.icu.util.Calendar.getInstance(android.icu.util.ULocale("fa_IR@calendar=persian"))
+            cal.timeInMillis = day.date.atTime(12, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+            cal.get(android.icu.util.Calendar.DAY_OF_MONTH)
+        } else {
+            day.date.dayOfMonth
+        }
+    }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
@@ -417,7 +424,7 @@ private fun RecentDayRow(
         )
         Spacer(Modifier.width(10.dp))
         Text(
-            "${weekdayName(day.date.dayOfWeek.value, languageTag)} ${habitNumber(day.date.dayOfMonth, numeralMode)}",
+            "${weekdayName(day.date.dayOfWeek.value, languageTag)} ${habitNumber(dayOfMonth, numeralMode)}",
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyMedium,
         )

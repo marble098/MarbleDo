@@ -15,13 +15,16 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,7 +35,11 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Add
@@ -260,14 +267,18 @@ fun DashboardScreen(
     }
 
     var now by remember(zone) { mutableStateOf(ZonedDateTime.now(zone)) }
-    LaunchedEffect(zone) {
-        while (true) {
-            now = ZonedDateTime.now(zone)
-            delay(60_000L)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(zone, lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                now = ZonedDateTime.now(zone)
+                delay(60_000L)
+            }
         }
     }
-    val todayPersian = remember(zone, now) { PersianDateUtils.today(zone) }
-    val todayEpoch = remember(zone, now) { now.toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli() }
+    val todayDateForOccasions = remember(now) { now.toLocalDate() }
+    val todayEpoch = remember(zone, todayDateForOccasions) { todayDateForOccasions.atStartOfDay(zone).toInstant().toEpochMilli() }
+    val todayPersian = remember(zone, todayEpoch) { PersianDateUtils.today(zone, todayEpoch) }
     val occasionIndex = remember(occasionCatalog, enabledOccasionCategories, settings.lunarOffsetDays, todayPersian.year) {
         OccasionIndex.build(
             catalog = occasionCatalog,
@@ -277,7 +288,9 @@ fun DashboardScreen(
             zone = zone,
         )
     }
-    val todayOccasions = occasionIndex.on(todayPersian.year, todayPersian.month, todayPersian.day)
+    val todayOccasions = remember(occasionIndex, todayPersian) {
+        occasionIndex.on(todayPersian.year, todayPersian.month, todayPersian.day)
+    }
     val activeTasks = remember(state.allTasks) { state.allTasks.filter { !it.isCompleted && !it.isArchived } }
     val nowEpoch = remember(now) { now.toInstant().toEpochMilli() }
     val countdowns = remember(state.allTasks, nowEpoch) {
@@ -286,28 +299,27 @@ fun DashboardScreen(
             .sortedBy { it.dueAtEpochMillis }
     }
     val heroCountdown = countdowns.firstOrNull()
-    val todayDateForOccasions = remember(now) { now.toLocalDate() }
     val favoriteIds = remember(occasionCatalog, settings.favoriteOccasionIds) { occasionCatalog.canonicalFavoriteIds(settings.favoriteOccasionIds) }
     val upcomingOccasions = remember(occasionIndex, todayDateForOccasions, favoriteIds, settings.languageTag) {
         OccasionPlanner.upcoming(
             index = occasionIndex,
             jalaliYears = listOf(todayPersian.year, todayPersian.year + 1),
-            nowEpochMillis = todayDateForOccasions.atStartOfDay(zone).toInstant().toEpochMilli(),
+            nowEpochMillis = todayEpoch,
             favoriteIds = favoriteIds,
             favoritesOnly = favoriteIds.isNotEmpty(),
             limit = MAX_DASHBOARD_UPCOMING,
             zone = zone,
         )
     }
-    val groups = remember(state.visibleTasks, zone, now) { groupTasks(state.visibleTasks, zone) }
-    val todayOpen = remember(activeTasks, zone, now) {
+    val groups = remember(state.visibleTasks, zone, todayDateForOccasions) { groupTasks(state.visibleTasks, zone) }
+    val todayOpen = remember(activeTasks, zone, todayDateForOccasions) {
         activeTasks.count { task ->
-            task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == now.toLocalDate() } == true
+            task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == todayDateForOccasions } == true
         }
     }
-    val todayTasks = remember(activeTasks, zone, now) {
+    val todayTasks = remember(activeTasks, zone, todayDateForOccasions) {
         activeTasks.filter { task ->
-            task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == now.toLocalDate() } == true
+            task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == todayDateForOccasions } == true
         }
     }
     // Finishing the last open task of the day deserves a little celebration of its own.
@@ -514,13 +526,13 @@ fun DashboardScreen(
             } else {
                 when (settings.dashboardViewMode) {
                     DashboardViewMode.GRID -> {
-                        item {
-                            FlowRow(
+                        val gridRows = state.visibleTasks.chunked(2)
+                        items(gridRows, key = { row -> row.joinToString("-") { it.id.toString() } }) { row ->
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                state.visibleTasks.forEach { task ->
+                                row.forEach { task ->
                                     TaskGridCard(
                                         task = task,
                                         selected = task.id in state.selectedIds,
@@ -530,8 +542,11 @@ fun DashboardScreen(
                                         },
                                         onEdit = { editingTask = task },
                                         onLongPress = { viewModel.toggleSelection(task.id) },
-                                        modifier = Modifier.fillMaxWidth(0.47f),
+                                        modifier = Modifier.weight(1f),
                                     )
+                                }
+                                if (row.size == 1) {
+                                    Spacer(Modifier.weight(1f))
                                 }
                             }
                         }
@@ -1191,12 +1206,19 @@ private fun DashboardModeSwitcher(mode: DashboardViewMode, onSelect: (DashboardV
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
-        Row(Modifier.padding(horizontal = 3.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.padding(horizontal = 3.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
             choices.forEach { (value, iconAndLabel) ->
                 val selected = value == mode
                 IconButton(
                     onClick = { onSelect(value) },
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent),
                 ) {
                     Icon(
                         iconAndLabel.first,
@@ -1211,7 +1233,7 @@ private fun DashboardModeSwitcher(mode: DashboardViewMode, onSelect: (DashboardV
 }
 
 /**
- * One task on the vertical timeline: a coloured node with a stub of the connecting line, then the
+ * One task on the vertical timeline: a coloured node with a continuous connecting line, then the
  * full task card with all its interactions.
  */
 @Composable
@@ -1229,19 +1251,19 @@ private fun TaskTimelineItem(
     onLongPress: () -> Unit,
 ) {
     val railColor = priorityColor(task.priority)
-    Row(Modifier.fillMaxWidth()) {
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Column(
-            Modifier.width(22.dp),
+            Modifier.width(24.dp).fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(17.dp))
+            Spacer(Modifier.height(18.dp))
             Box(Modifier.size(10.dp).clip(CircleShape).background(railColor))
             if (!isLast) {
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 Box(
                     Modifier
                         .width(2.dp)
-                        .height(16.dp)
+                        .weight(1f)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.28f)),
                 )
@@ -1358,16 +1380,17 @@ private fun CountdownRoad(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.fillMaxWidth().padding(14.dp)) {
             Box(
                 Modifier
+                    .padding(top = 12.dp, start = 20.dp, end = 20.dp)
                     .fillMaxWidth()
                     .height(2.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)),
             )
             Row(
-                Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {

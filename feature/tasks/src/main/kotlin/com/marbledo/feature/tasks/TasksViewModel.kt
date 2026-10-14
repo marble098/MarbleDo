@@ -75,23 +75,36 @@ class TasksViewModel(
         val zone = ZoneId.systemDefault()
         val now = System.currentTimeMillis()
         val today = LocalDate.now(zone)
+        val tomorrow = today.plusDays(1)
+        val needle = TextNormalizer.searchKey(search)
         val filtered = tasks.filter { task ->
-            val date = task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+            if (org.category != null && task.category != org.category) return@filter false
             val matchesFilter = when (currentFilter) {
                 // Overdue open tasks stay in Today so they can be finished or rescheduled.
-                TaskFilter.TODAY -> !task.isArchived && !task.isCompleted && (date == null || !date.isAfter(today))
-                TaskFilter.TOMORROW -> !task.isArchived && !task.isCompleted && date == today.plusDays(1)
-                TaskFilter.UPCOMING -> !task.isArchived && !task.isCompleted && date?.isAfter(today.plusDays(1)) == true
+                TaskFilter.TODAY -> !task.isArchived && !task.isCompleted && (
+                    task.dueAtEpochMillis == null ||
+                        !Instant.ofEpochMilli(task.dueAtEpochMillis!!).atZone(zone).toLocalDate().isAfter(today)
+                    )
+                TaskFilter.TOMORROW -> !task.isArchived && !task.isCompleted &&
+                    task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == tomorrow } == true
+                TaskFilter.UPCOMING -> !task.isArchived && !task.isCompleted &&
+                    task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate().isAfter(tomorrow) } == true
                 TaskFilter.ALL -> !task.isArchived && !task.isCompleted
                 TaskFilter.COMPLETED -> !task.isArchived && task.isCompleted
                 TaskFilter.ARCHIVED -> task.isArchived
             }
-            val needle = TextNormalizer.searchKey(search)
+            if (!matchesFilter) return@filter false
+            if (needle.isBlank()) return@filter true
             val haystack = TextNormalizer.searchKey(
-                listOf(task.title, task.description, task.project, task.category, task.tags.joinToString(" ")).joinToString(" "),
+                buildString {
+                    append(task.title).append(' ')
+                    append(task.description).append(' ')
+                    append(task.project).append(' ')
+                    append(task.category)
+                    task.tags.forEach { append(' ').append(it) }
+                },
             )
-            val matchesCategory = org.category == null || task.category == org.category
-            matchesFilter && matchesCategory && (needle.isBlank() || haystack.contains(needle))
+            haystack.contains(needle)
         }
         val sorted = filtered.sortedWith(Comparator { left, right ->
             if (left.isPinned != right.isPinned) return@Comparator right.isPinned.compareTo(left.isPinned)

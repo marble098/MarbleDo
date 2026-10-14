@@ -207,7 +207,7 @@ fun CountdownMiniCard(
     onLongPress: (() -> Unit)? = null,
 ) {
     val theme = CountdownTheme.from(themeId)
-    val units = rememberCountdownUnits(dueAtEpochMillis)
+    val units = rememberCountdownUnits(dueAtEpochMillis, includeSeconds = false)
     val numeralMode = LocalNumeralMode.current
     Surface(
         modifier = (

@@ -41,11 +41,20 @@ class MarbleDoApplication : Application() {
         }
         BackupWorkInitializer.ensureDailyBackup(this)
         CalendarNotificationWorkInitializer.ensureDaily(this)
-        PersistentCalendarNotificationWorker.ensurePeriodic(this)
         OccasionSyncWorker.ensureDaily(this)
+        val settingsRepository = org.koin.java.KoinJavaComponent.getKoin().get<SettingsRepository>()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            SettingsRepository(this@MarbleDoApplication).settings.collect { settings ->
+            var lastPersistentEnabled: Boolean? = null
+            settingsRepository.settings.collect { settings ->
                 ReminderPreferences.write(this@MarbleDoApplication, settings)
+                if (lastPersistentEnabled != settings.persistentDateNotificationEnabled) {
+                    lastPersistentEnabled = settings.persistentDateNotificationEnabled
+                    if (settings.persistentDateNotificationEnabled) {
+                        PersistentCalendarNotificationWorker.ensurePeriodic(this@MarbleDoApplication)
+                    } else {
+                        PersistentCalendarNotificationWorker.cancelScheduled(this@MarbleDoApplication)
+                    }
+                }
             }
         }
     }

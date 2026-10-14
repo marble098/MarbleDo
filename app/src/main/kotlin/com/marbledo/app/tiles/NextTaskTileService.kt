@@ -61,23 +61,18 @@ class NextTaskTileService : TileService() {
 
     private suspend fun nextTaskId(): Long = withContext(Dispatchers.IO) {
         runCatching {
-            MarbleDatabase.create(applicationContext).let { db ->
-                try {
-                    val now = System.currentTimeMillis()
-                    RoomTaskRepository(db.taskDao())
-                        .snapshot()
-                        .filter { task ->
-                            !task.isCompleted &&
-                                !task.isArchived &&
-                                (task.dueAtEpochMillis ?: Long.MIN_VALUE) >= now
-                        }
-                        .minByOrNull { it.dueAtEpochMillis ?: Long.MAX_VALUE }
-                        ?.id
-                        ?: 0L
-                } finally {
-                    db.close()
+            val db = MarbleDatabase.create(applicationContext)
+            val now = System.currentTimeMillis()
+            RoomTaskRepository(db.taskDao())
+                .snapshot()
+                .filter { task ->
+                    !task.isCompleted &&
+                        !task.isArchived &&
+                        (task.dueAtEpochMillis ?: Long.MIN_VALUE) >= now
                 }
-            }
+                .minByOrNull { it.dueAtEpochMillis ?: Long.MAX_VALUE }
+                ?.id
+                ?: 0L
         }.getOrDefault(0L)
     }
 

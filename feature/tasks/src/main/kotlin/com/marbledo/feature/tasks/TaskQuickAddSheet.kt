@@ -146,17 +146,17 @@ fun TaskQuickAddSheet(
     val focusRequester = remember { FocusRequester() }
 
     // Date and time recognized in the typed text. The title is whatever text remains once the schedule is removed.
-    val titleDraft = remember(input) { SmartTaskParser.parseSchedule(input)?.title.orEmpty() }
-    val textSchedule = remember(input) {
-        val parsed = SmartTaskParser.parseSchedule(input)
-        val millis = parsed?.dueAtEpochMillis
-        if (parsed == null || millis == null) {
+    val parsedSchedule = remember(input) { SmartTaskParser.parseSchedule(input) }
+    val titleDraft = parsedSchedule?.title.orEmpty()
+    val textSchedule = remember(parsedSchedule, zone) {
+        val millis = parsedSchedule?.dueAtEpochMillis
+        if (parsedSchedule == null || millis == null) {
             TaskSchedule(null, null)
         } else {
             val zoned = Instant.ofEpochMilli(millis).atZone(zone)
             TaskSchedule(
-                date = if (parsed.recognizedDate || parsed.recognizedTime) zoned.toLocalDate() else null,
-                time = if (parsed.recognizedTime) zoned.toLocalTime() else null,
+                date = if (parsedSchedule.recognizedDate || parsedSchedule.recognizedTime) zoned.toLocalDate() else null,
+                time = if (parsedSchedule.recognizedTime) zoned.toLocalTime() else null,
             )
         }
     }

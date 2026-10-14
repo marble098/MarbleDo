@@ -480,20 +480,21 @@ object HabitAnalytics {
         habits: List<Habit>,
         entries: List<HabitEntry>,
         today: LocalDate = LocalDate.now(),
+        precomputedStats: Map<Long, HabitStats>? = null,
     ): HabitSummary {
         val active = habits.filter { !it.isArchived }
-        val valuesByHabit = entries.groupBy { it.habitId }
+        val valuesByHabit = if (precomputedStats == null) entries.groupBy { it.habitId } else emptyMap()
         var scheduledToday = 0
         var doneToday = 0
         var bestStreak = 0
         var scoreTotal = 0
         active.forEach { habit ->
-            val values = entriesByDate(valuesByHabit[habit.id].orEmpty())
+            val stats = precomputedStats?.get(habit.id)
+                ?: stats(habit, valuesByHabit[habit.id].orEmpty(), today)
             if (habit.schedule.isScheduled(today)) {
                 scheduledToday++
-                if (isDone(habit, valueOn(values, today))) doneToday++
+                if (stats.todayDone) doneToday++
             }
-            val stats = stats(habit, valuesByHabit[habit.id].orEmpty(), today)
             bestStreak = maxOf(bestStreak, stats.currentStreak)
             scoreTotal += stats.score
         }

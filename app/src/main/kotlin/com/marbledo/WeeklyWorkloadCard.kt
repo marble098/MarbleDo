@@ -47,26 +47,57 @@ internal fun WeeklyWorkloadCard(
     onAdd: (LocalDate) -> Unit,
 ) {
     val numeralMode = LocalNumeralMode.current
-    val review = remember(tasks, now, zone) { PlanningInsights.week(tasks, now, zone) }
+    val today = remember(now, zone) { now.atZone(zone).toLocalDate() }
+    val review = remember(tasks, today, zone) {
+        PlanningInsights.week(tasks, today.atStartOfDay(zone).toInstant(), zone)
+    }
     var selectedDateIso by rememberSaveable { mutableStateOf<String?>(null) }
     var showBacklog by rememberSaveable { mutableStateOf(false) }
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), modifier = Modifier.fillMaxWidth()) {
+    Card(
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.weekly_title), style = MarbleTextStyles.cardTitle)
-            Text(TextNormalizer.formatDigits(stringResource(R.string.weekly_summary, review.scheduledOpen, review.overdue, review.unscheduled), numeralMode),
-                style = MaterialTheme.typography.bodySmall)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp), contentPadding = PaddingValues(vertical = 3.dp)) {
+            Text(
+                TextNormalizer.formatDigits(stringResource(R.string.weekly_summary, review.scheduledOpen, review.overdue, review.unscheduled), numeralMode),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
                 items(review.days, key = { it.date.toString() }) { day ->
-                    val epoch = day.date.atStartOfDay(zone).toInstant().toEpochMilli()
-                    val persian = PersianDateUtils.of(epoch, zone)
-                    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.clickable { selectedDateIso = day.date.toString(); showBacklog = false }) {
-                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(PersianDateUtils.weekdayName(persian.weekdayIndex, languageTag), style = MaterialTheme.typography.labelSmall)
-                            Text(TextNormalizer.formatDigits("${persian.day} ${PersianDateUtils.monthName(persian.month, languageTag)}", numeralMode),
-                                style = MaterialTheme.typography.labelSmall)
-                            Text(TextNormalizer.formatDigits(stringResource(R.string.weekly_day_open, day.open), numeralMode), style = MaterialTheme.typography.titleSmall)
-                            Text(TextNormalizer.formatDigits(stringResource(R.string.weekly_day_done, day.completed), numeralMode), style = MaterialTheme.typography.labelSmall)
+                    val isToday = day.date == today
+                    val epoch = remember(day.date, zone) { day.date.atStartOfDay(zone).toInstant().toEpochMilli() }
+                    val persian = remember(epoch, zone) { PersianDateUtils.of(epoch, zone) }
+                    Surface(
+                        shape = MaterialTheme.shapes.medium,
+                        color = if (isToday) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                        modifier = Modifier.clickable { selectedDateIso = day.date.toString(); showBacklog = false },
+                    ) {
+                        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                PersianDateUtils.weekdayName(persian.weekdayIndex, languageTag),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                TextNormalizer.formatDigits("${persian.day} ${PersianDateUtils.monthName(persian.month, languageTag)}", numeralMode),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                TextNormalizer.formatDigits(stringResource(R.string.weekly_day_open, day.open), numeralMode),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = if (day.open > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                TextNormalizer.formatDigits(stringResource(R.string.weekly_day_done, day.completed), numeralMode),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }
@@ -79,7 +110,6 @@ internal fun WeeklyWorkloadCard(
     }
     val selectedDate = selectedDateIso?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
     if (selectedDate != null || showBacklog) {
-        val today = now.atZone(zone).toLocalDate()
         val rows = tasks.filter { task ->
             if (task.isArchived) false else {
                 val dueMillis = task.dueAtEpochMillis

@@ -202,6 +202,21 @@ class OccasionIndex private constructor(private val byYear: Map<Int, Map<Int, Li
 
     companion object {
         val EMPTY = OccasionIndex(emptyMap())
+
+        private data class CacheKey(
+            val catalogIdentity: Int,
+            val catalogVersion: Int,
+            val occasionCount: Int,
+            val years: List<Int>,
+            val lunarOffsetDays: Int,
+            val enabledCategories: Set<OccasionCategory>,
+            val zoneId: String,
+        )
+
+        private val buildCache = object : LinkedHashMap<CacheKey, OccasionIndex>(16, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<CacheKey, OccasionIndex>?): Boolean = size > 16
+        }
+
         fun build(
             catalog: OccasionCatalog,
             jalaliYears: Collection<Int>,
@@ -209,12 +224,27 @@ class OccasionIndex private constructor(private val byYear: Map<Int, Map<Int, Li
             enabledCategories: Set<OccasionCategory> = OccasionCategory.publicCategories,
             zone: ZoneId = ZoneId.systemDefault(),
         ): OccasionIndex {
+            if (catalog.occasions.isEmpty() && catalog.yearly.isEmpty()) return EMPTY
+            val sortedYears = jalaliYears.distinct().sorted()
+            if (sortedYears.isEmpty()) return EMPTY
+            val key = CacheKey(
+                catalogIdentity = System.identityHashCode(catalog),
+                catalogVersion = catalog.schemaVersion,
+                occasionCount = catalog.occasions.size,
+                years = sortedYears,
+                lunarOffsetDays = lunarOffsetDays.coerceIn(-2, 2),
+                enabledCategories = enabledCategories,
+                zoneId = zone.id,
+            )
+            synchronized(buildCache) {
+                buildCache[key]?.let { return it }
+            }
             val persian = JalaliCalendarMath.persianCalendar(zone)
             val gregorian = JalaliCalendarMath.gregorianCalendar(zone)
             val islamic = JalaliCalendarMath.islamicCalendar(zone)
             fun local(epoch: Long) = Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate()
             val byYear = mutableMapOf<Int, Map<Int, List<Occasion>>>()
-            jalaliYears.distinct().forEach { year ->
+            sortedYears.forEach { year ->
                 val startEpoch = JalaliCalendarMath.strictEpoch(persian, year, 1, 1) ?: return@forEach
                 val endEpoch = JalaliCalendarMath.strictEpoch(persian, year + 1, 1, 1) ?: return@forEach
                 val start = local(startEpoch)
@@ -250,7 +280,11 @@ class OccasionIndex private constructor(private val byYear: Map<Int, Map<Int, Li
                 }
                 byYear[year] = days
             }
-            return OccasionIndex(byYear)
+            val result = OccasionIndex(byYear)
+            synchronized(buildCache) {
+                buildCache[key] = result
+            }
+            return result
         }
         internal const val DAY_MILLIS = 24L * 60L * 60L * 1000L
     }

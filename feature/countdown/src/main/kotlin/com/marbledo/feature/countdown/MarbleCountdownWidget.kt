@@ -67,12 +67,8 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         val tasks = runCatching {
             withContext(Dispatchers.IO) {
                 val database = MarbleDatabase.create(context)
-                try {
-                    RoomTaskRepository(database.taskDao()).snapshot()
-                        .filter { !it.isCompleted && !it.isArchived }
-                } finally {
-                    database.close()
-                }
+                RoomTaskRepository(database.taskDao()).snapshot()
+                    .filter { !it.isCompleted && !it.isArchived }
             }
         }.getOrDefault(emptyList())
         val nowMillis = System.currentTimeMillis()
@@ -377,7 +373,14 @@ fun requestCountdownWidgetPin(context: Context): CountdownWidgetPinResult {
 
 /** Refreshes every pinned countdown widget. A failed refresh is silent, never fatal. */
 suspend fun updateMarbleCountdownWidgets(context: Context) {
-    runCatching { MarbleCountdownWidget().updateAll(context.applicationContext) }
+    runCatching {
+        val appContext = context.applicationContext
+        val ids = AppWidgetManager.getInstance(appContext).getAppWidgetIds(
+            ComponentName(appContext, MarbleCountdownWidgetReceiver::class.java),
+        )
+        if (ids.isEmpty()) return
+        MarbleCountdownWidget().updateAll(appContext)
+    }
 }
 
 private data class WidgetPalette(
