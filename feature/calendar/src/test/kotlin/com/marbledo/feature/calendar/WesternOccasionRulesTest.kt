@@ -67,6 +67,8 @@ class WesternOccasionRulesTest {
         assertNull(OccasionDateRules.resolve(LocalDate.of(2026, 2, 1), 28, 30, OccasionDateRule.WEEKDAY_ON_OR_BEFORE, weekday = 1))
         assertNull(OccasionDateRules.resolve(LocalDate.of(2026, 2, 1), 28, 1, OccasionDateRule.WEEKDAY_ON_OR_BEFORE, weekday = 9))
         assertThrows(IllegalArgumentException::class.java) { OccasionDateRules.westernEaster(1500) }
+        assertNull(OccasionDateRules.resolve(LocalDate.of(1500, 3, 1), 31, 1, OccasionDateRule.WESTERN_EASTER))
+        assertNull(OccasionDateRules.resolve(LocalDate.of(4100, 3, 1), 31, 1, OccasionDateRule.ORTHODOX_EASTER))
         assertThrows(IllegalArgumentException::class.java) {
             OccasionDateRules.resolve(LocalDate.of(2026, 3, 1), 31, 1, OccasionDateRule.WESTERN_EASTER, dayOffset = 61)
         }

@@ -46,7 +46,7 @@ object WeeklyReviewPlanner {
             overdue.isNotEmpty() -> ReviewAdvice.CLEAR_BACKLOG
             unscheduled.isNotEmpty() -> ReviewAdvice.SCHEDULE_UNDATED
             recent.scheduled == 0 -> ReviewAdvice.START_PLANNING
-            (recent.completionPercent ?: 100) < 50 && next > recent.completed -> ReviewAdvice.REDUCE_LOAD
+            next.toLong() > maxOf(5L, recent.completed.toLong() * 2) -> ReviewAdvice.REDUCE_LOAD
             else -> ReviewAdvice.KEEP_RHYTHM
         }
         return WeeklyReview(recent, previous, (1L..7L).reversed().map { offset ->

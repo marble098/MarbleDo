@@ -64,6 +64,16 @@ class WeeklyReviewTest {
         assertTrue(review.overdueTasks.isEmpty())
     }
 
+    @Test fun `a much heavier upcoming week produces actionable load advice even after a completed week`() {
+        val past = listOf(task(1, true), task(2, true))
+        val future = (0L..5L).map { task(-it) }
+        val review = WeeklyReviewPlanner.review(past + future, now, zone)
+        assertTrue(review.overdueTasks.isEmpty())
+        assertEquals(100, review.recent.completionPercent)
+        assertEquals(ReviewAdvice.REDUCE_LOAD, review.advice)
+        assertEquals(6, review.nextWeekOpen)
+    }
+
     @Test fun `week boundaries follow local dates through DST and year changes`() {
         val review = WeeklyReviewPlanner.review(emptyList(), Instant.parse("2027-01-01T00:30:00Z"), ZoneId.of("America/New_York"))
         assertEquals(LocalDate.of(2026, 12, 24), review.recent.start)

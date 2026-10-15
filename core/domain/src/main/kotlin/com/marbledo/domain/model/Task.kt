@@ -60,6 +60,7 @@ data class Task(
     val countdownEnabled: Boolean = true,
     val isCompleted: Boolean = false,
     val isArchived: Boolean = false,
+    /** Planned effort, as in the existing editor. Zero means unset; this is not a focus-session log. */
     val focusMinutes: Int = 0,
     val createdAtEpochMillis: Long = System.currentTimeMillis(),
     val updatedAtEpochMillis: Long = System.currentTimeMillis(),

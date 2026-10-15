@@ -69,8 +69,9 @@ internal fun WeeklyReviewSheet(
                         LinearProgressIndicator(progress = { percent / 100f }, modifier = Modifier.fillMaxWidth())
                         Text(digits(stringResource(R.string.review_percent, percent)), style = MaterialTheme.typography.labelLarge)
                     }
-                    Text(review.changePercentagePoints?.let { digits(context.getString(R.string.review_trend, it)) }
-                        ?: stringResource(R.string.review_no_baseline), style = MaterialTheme.typography.bodySmall)
+                    val changePoints = review.changePercentagePoints
+                    Text(if (changePoints != null) digits(stringResource(R.string.review_trend, changePoints))
+                        else stringResource(R.string.review_no_baseline), style = MaterialTheme.typography.bodySmall)
                     Text(digits(stringResource(R.string.review_focus, review.recent.plannedFocusMinutes)), style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -88,6 +89,12 @@ internal fun WeeklyReviewSheet(
                 style = MaterialTheme.typography.bodyMedium)
             Text(advice, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
             val actionTask = review.overdueTasks.firstOrNull() ?: review.unscheduledTasks.firstOrNull()
+                ?: if (review.advice == ReviewAdvice.REDUCE_LOAD) {
+                    val today = now.atZone(zone).toLocalDate()
+                    tasks.filter { task -> !task.isCompleted && !task.isArchived && task.dueAtEpochMillis?.let {
+                        Instant.ofEpochMilli(it).atZone(zone).toLocalDate() in today..today.plusDays(6)
+                    } == true }.minWithOrNull(compareBy<Task> { it.priority.ordinal }.thenBy { it.dueAtEpochMillis })
+                } else null
             if (actionTask != null) Button(onClick = { onOpenTask(actionTask); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.review_take_action))
             }

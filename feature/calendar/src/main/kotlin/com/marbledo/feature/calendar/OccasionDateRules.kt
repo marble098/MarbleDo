@@ -45,8 +45,8 @@ object OccasionDateRules {
                 val anchor = firstDay.plusDays(day - 1L)
                 anchor.minusDays(Math.floorMod(anchor.dayOfWeek.value - weekday, 7).toLong())
             }
-            OccasionDateRule.WESTERN_EASTER -> westernEaster(firstDay.year)
-            OccasionDateRule.ORTHODOX_EASTER -> orthodoxEaster(firstDay.year)
+            OccasionDateRule.WESTERN_EASTER -> if (firstDay.year in 1583..4099) westernEaster(firstDay.year) else return null
+            OccasionDateRule.ORTHODOX_EASTER -> if (firstDay.year in 1583..4099) orthodoxEaster(firstDay.year) else return null
         }
         return date.plusDays(dayOffset.toLong())
     }

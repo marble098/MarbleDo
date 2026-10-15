@@ -69,7 +69,9 @@ returns the earliest fitting slot in each free gap and flags overlapping estimat
 Opening a conflict reviews the first task in the ordinary editor; nothing is automatically moved.
 
 The assumptions are shown in the sheet: a timed task's due time is the **end**, not the beginning,
-of its estimated focus block. `focusMinutes` is an estimate, with 25 minutes used when unset.
+of its estimated focus block. The existing task editor explicitly defines `focusMinutes` as
+**planned** focus time in both languages; that meaning and existing saved data are preserved.
+It is not an accumulated actual-focus counter. The planner assumes 25 minutes when it is unset.
 All-day tasks remain flexible and are listed separately; completed/archived/undated tasks do not
 reserve time. Cross-midnight blocks, today's current time, touching intervals and DST are handled
 using instants and civil work-window boundaries. Results are based only on MarbleDo tasks, not on
@@ -79,7 +81,9 @@ external calendars or actual presence. Choosing a slot opens an unsaved draft fo
 
 Home → **Weekly review** summarizes the seven complete civil days ending yesterday, with daily
 completion bars, a comparison to the preceding seven days, planned focus estimates, next-week load,
-and actionable overdue/undated work. The recommendation gives one manageable next step. Sharing is
+and actionable overdue/undated work. A week with more than twice the recently completed workload
+(and at least six open tasks) gets a breathing-room recommendation and an editable low-priority
+candidate, even if the previous week's tasks are all complete. The recommendation gives one manageable next step. Sharing is
 explicit and exports aggregate text without task titles.
 
 `Task` has no `completedAt` or focus-session log. Consequently these figures are explicitly a
