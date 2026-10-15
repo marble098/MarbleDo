@@ -104,13 +104,13 @@ object PersistentCalendarNotification {
         val favorites = catalog.canonicalFavoriteIds(settings.favoriteOccasionIds)
         val sortedEvents = events.sortedWith(compareBy<Occasion> { if (it.id in favorites) 0 else 1 }
             .thenBy { if (it.isHoliday) 0 else 1 }.thenBy { it.id })
-        val occasionTitles = sortedEvents.take(MAX_VISIBLE_EVENTS).map { bidi.unicodeWrap(it.title(settings.languageTag)) }
+        val occasionTitles = sortedEvents.take(MAX_VISIBLE_EVENTS).map { bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(it.title(settings.languageTag))) }
         val hiddenEvents = (events.size - occasionTitles.size).coerceAtLeast(0)
         val moreText = if (hiddenEvents > 0) digits(notificationContext.getString(R.string.notification_more, hiddenEvents)) else ""
         val noOccasion = notificationContext.getString(R.string.persistent_date_notification_no_occasion)
         val noTask = notificationContext.getString(R.string.persistent_date_notification_no_task)
         val next = plan.nextTask
-        val nextTitle = next?.let { bidi.unicodeWrap(it.title) }
+        val nextTitle = next?.let { bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(it.title)) }
         val nextTime = next?.dueAtEpochMillis?.let { due ->
             val instant = Instant.ofEpochMilli(due)
             val date = instant.atZone(zone).toLocalDate()

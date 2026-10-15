@@ -6,7 +6,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /** A due-date snapshot, not a fabricated completion-time history or tracked focus duration. */
-data class ReviewWindow(val start: LocalDate, val end: LocalDate, val scheduled: Int, val completed: Int, val plannedFocusMinutes: Int) {
+data class ReviewWindow(val start: LocalDate, val end: LocalDate, val scheduled: Int, val completed: Int, val plannedFocusMinutes: Long) {
     val completionPercent: Int? get() = if (scheduled == 0) null else completed * 100 / scheduled
 }
 enum class ReviewAdvice { START_PLANNING, CLEAR_BACKLOG, SCHEDULE_UNDATED, REDUCE_LOAD, KEEP_RHYTHM }
@@ -31,7 +31,7 @@ object WeeklyReviewPlanner {
         fun inRange(task: Task, start: LocalDate, end: LocalDate): Boolean = date(task)?.let { it >= start && it <= end } == true
         fun window(start: LocalDate, end: LocalDate): ReviewWindow {
             val rows = visible.filter { inRange(it, start, end) }
-            return ReviewWindow(start, end, rows.size, rows.count { it.isCompleted }, rows.sumOf { it.focusMinutes })
+            return ReviewWindow(start, end, rows.size, rows.count { it.isCompleted }, rows.sumOf { it.focusMinutes.toLong() })
         }
         val recent = window(today.minusDays(7), today.minusDays(1))
         val previous = window(today.minusDays(14), today.minusDays(8))

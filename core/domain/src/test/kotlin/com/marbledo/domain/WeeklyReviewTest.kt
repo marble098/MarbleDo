@@ -42,9 +42,14 @@ class WeeklyReviewTest {
     @Test fun `focus minutes remain estimates and completion is classified by due date not updatedAt`() {
         val task = task(3, true).copy(focusMinutes = 45, updatedAtEpochMillis = now.toEpochMilli())
         val review = WeeklyReviewPlanner.review(listOf(task), now, zone)
-        assertEquals(45, review.recent.plannedFocusMinutes)
+        assertEquals(45L, review.recent.plannedFocusMinutes)
         assertEquals(1, review.recent.completed)
         assertEquals(0, review.previous.completed)
+    }
+
+    @Test fun `large imported focus estimates do not overflow into a negative total`() {
+        val review = WeeklyReviewPlanner.review(listOf(task(1).copy(focusMinutes = Int.MAX_VALUE), task(2).copy(focusMinutes = Int.MAX_VALUE)), now, zone)
+        assertEquals(2L * Int.MAX_VALUE, review.recent.plannedFocusMinutes)
     }
 
     @Test fun `today all-day is not overdue but timed deadline earlier today is`() {

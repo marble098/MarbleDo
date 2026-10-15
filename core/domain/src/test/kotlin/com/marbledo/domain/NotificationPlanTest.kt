@@ -42,6 +42,16 @@ class NotificationPlanTest {
         assertNull(NotificationPlanBuilder.build(tasks, now, zone).nextTask)
     }
 
+    @Test fun `notification previews are bounded without splitting an emoji surrogate pair`() {
+        val short = "Plan 🎉"
+        assertEquals(short, NotificationPlanBuilder.previewTitle(short))
+        val long = "🎉".repeat(300)
+        val preview = NotificationPlanBuilder.previewTitle(long)
+        assertEquals(160, preview.codePointCount(0, preview.length))
+        assertTrue(preview.endsWith("…"))
+        assertEquals("🎉".repeat(159) + "…", preview)
+    }
+
     @Test fun `future timed tasks are selected chronologically and no-task states stay empty`() {
         val plan = NotificationPlanBuilder.build(listOf(task(1, "2026-10-15T14:00:00Z"), task(2, "2026-10-15T13:00:00Z")), now, zone)
         assertEquals(2L, plan.nextTask?.id)

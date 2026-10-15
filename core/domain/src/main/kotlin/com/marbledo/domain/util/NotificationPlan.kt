@@ -16,6 +16,12 @@ data class NotificationPlan(
 
 /** Shared glanceable content policy, independent of Android rendering and the status-bar artwork. */
 object NotificationPlanBuilder {
+    fun previewTitle(text: String, maxCodePoints: Int = 160): String {
+        require(maxCodePoints >= 2)
+        if (text.codePointCount(0, text.length) <= maxCodePoints) return text
+        return text.substring(0, text.offsetByCodePoints(0, maxCodePoints - 1)) + "…"
+    }
+
     fun build(tasks: List<Task>, now: Instant, zone: ZoneId): NotificationPlan {
         val today = now.atZone(zone).toLocalDate()
         val visible = tasks.filterNot { it.isArchived }

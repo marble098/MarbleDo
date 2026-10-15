@@ -15,7 +15,7 @@ data class DayAgenda(
     val allDayTasks: List<Task>,
     val conflicts: List<AgendaConflict>,
     val freeSlots: List<FreeFocusSlot>,
-    val estimatedMinutes: Int,
+    val estimatedMinutes: Long,
 )
 
 /**
@@ -75,9 +75,9 @@ object DayAgendaPlanner {
             allDayTasks = active.filter { it.isAllDay && due(it)?.let { instant -> instant >= dayStart && instant < dayEnd } == true },
             conflicts = conflicts,
             freeSlots = slots,
-            estimatedMinutes = blocks.sumOf { estimate(it.task) },
+            estimatedMinutes = blocks.sumOf { estimate(it.task).toLong() },
         )
     }
 
-    private fun estimate(task: Task): Int = task.focusMinutes.takeIf { it > 0 }?.coerceAtMost(24 * 60) ?: 25
+    private fun estimate(task: Task): Int = task.focusMinutes.takeIf { it > 0 } ?: 25
 }

@@ -158,13 +158,13 @@ class ReminderReceiver : BroadcastReceiver() {
             .setContentTitle(task.title)
             .setContentText(detail)
             .setSubText(listOf(priority, task.category).filter { it.isNotBlank() }.joinToString(" · "))
-            .setStyle(NotificationCompat.InboxStyle().apply {
-                setBigContentTitle(task.title)
-                addLine(detail)
-                if (task.checklist.isNotEmpty()) addLine(TextNormalizer.formatDigits(context.getString(R.string.notification_checklist,
+            .setStyle(NotificationCompat.InboxStyle().also { inbox ->
+                inbox.setBigContentTitle(task.title)
+                inbox.addLine(detail)
+                if (task.checklist.isNotEmpty()) inbox.addLine(TextNormalizer.formatDigits(context.getString(R.string.notification_checklist,
                     task.checklist.count { it.isDone }, task.checklist.size), settings.numeralMode))
-                if (task.description.isNotBlank()) addLine(task.description.take(200))
-                setSummaryText(priority)
+                if (task.description.isNotBlank()) inbox.addLine(task.description.take(200))
+                inbox.setSummaryText(priority)
             })
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(NotificationCompat.Builder(context, NotificationChannels.TASKS)

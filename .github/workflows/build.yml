@@ -70,7 +70,8 @@ jobs:
         run: |
           log="$RUNNER_TEMP/gradle-build.log"
           if [[ -f "$log" ]]; then
-            diagnostics="$(grep -E '(^e: |^w: |^> Task .* FAILED|Execution failed for task|CompilationErrorException:)' "$log" | tail -n 80 || true)"
+            # Keep compiler errors ahead of deprecation warnings; annotation text is size-limited.
+            diagnostics="$(grep -E '(^e: |^> Task .* FAILED|Execution failed for task|CompilationErrorException:)' "$log" | tail -n 80 || true)"
             if [[ -z "$diagnostics" ]]; then
               diagnostics="$(tail -n 120 "$log")"
             fi

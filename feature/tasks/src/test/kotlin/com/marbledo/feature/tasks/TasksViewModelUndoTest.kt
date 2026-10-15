@@ -6,6 +6,7 @@ import com.marbledo.domain.repository.TaskReminderScheduler
 import com.marbledo.domain.repository.TaskRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -86,6 +87,19 @@ class TasksViewModelUndoTest {
     }
 
     @Test
+    fun `a batch confirmation waits for the Home collector instead of disappearing during navigation`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val viewModel = TasksViewModel(InMemoryTaskRepository(), NoOpBackupScheduler, RecordingReminderScheduler())
+            viewModel.addTasks(listOf(Task(title = "One"), Task(title = "Two")))
+            advanceUntilIdle()
+            val confirmation = viewModel.changes.first()
+            assertEquals(TaskChangeKind.ADDED, confirmation.kind)
+            assertEquals(2, confirmation.count)
+        } finally { Dispatchers.resetMain() }
+    }
+
+    @Test
     fun `completed preparation stages are retained rather than recreated`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
@@ -100,7 +114,21 @@ class TasksViewModelUndoTest {
         } finally { Dispatchers.resetMain() }
     }
 
-    private class InMemoryTaskRepository : TaskRepository {
+    @Test
+    fun `a failed atomic plan reports failure and preserves pre-existing tasks`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryTaskRepository(failBatch = true)
+            repository.save(Task(title = "Kept"))
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, RecordingReminderScheduler())
+            viewModel.addTasks(listOf(Task(title = "New one"), Task(title = "New two")))
+            advanceUntilIdle()
+            assertEquals(listOf("Kept"), repository.tasks.value.map { it.title })
+            assertEquals(TaskChangeKind.ADD_FAILED, viewModel.changes.first().kind)
+        } finally { Dispatchers.resetMain() }
+    }
+
+    private class InMemoryTaskRepository(private val failBatch: Boolean = false) : TaskRepository {
         val tasks = MutableStateFlow<List<Task>>(emptyList())
         private var nextId = 1L
 
@@ -114,7 +142,10 @@ class TasksViewModelUndoTest {
             return id
         }
 
-        override suspend fun saveNewTasks(tasks: List<Task>): List<Long> = tasks.map { save(it) }
+        override suspend fun saveNewTasks(tasks: List<Task>): List<Long> {
+            if (failBatch) throw java.io.IOException("Storage unavailable")
+            return tasks.map { save(it) }
+        }
 
         override suspend fun setCompleted(id: Long, completed: Boolean) {
             tasks.value = tasks.value.map { if (it.id == id) it.copy(isCompleted = completed) else it }

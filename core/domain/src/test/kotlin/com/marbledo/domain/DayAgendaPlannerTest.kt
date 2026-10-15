@@ -21,7 +21,7 @@ class DayAgendaPlannerTest {
         val plan = DayAgendaPlanner.plan(listOf(task(1, 10)), date, now, zone, 60)
         assertEquals(at(10), plan.freeSlots.first().start)
         assertEquals(at(11), plan.freeSlots.first().end)
-        assertEquals(30, plan.estimatedMinutes)
+        assertEquals(30L, plan.estimatedMinutes)
     }
 
     @Test fun `overlapping intervals merge for free-time purposes and touching intervals are not conflicts`() {
@@ -39,7 +39,7 @@ class DayAgendaPlannerTest {
         val plan = DayAgendaPlanner.plan(tasks, date, now, zone)
         assertEquals(at(9), plan.freeSlots.single().start)
         assertEquals(1, plan.allDayTasks.size)
-        assertEquals(0, plan.estimatedMinutes)
+        assertEquals(0L, plan.estimatedMinutes)
     }
 
     @Test fun `today never suggests the past and rounds up to a usable quarter hour`() {
@@ -55,6 +55,12 @@ class DayAgendaPlannerTest {
         assertEquals(at(9), plan.freeSlots.single().start)
         assertTrue(plan.freeSlots.all { it.end <= at(16, 30) })
         assertEquals(1, plan.timedTasks.size)
+    }
+
+    @Test fun `saved multi-day focus estimates are not silently capped to a single day`() {
+        val plan = DayAgendaPlanner.plan(listOf(task(1, 10, duration = 3000)), date, now, zone)
+        assertEquals(3000L, plan.estimatedMinutes)
+        assertEquals(at(10), plan.freeSlots.single().start)
     }
 
     @Test fun `self exclusion allows reviewing a replacement slot without changing saved data`() {

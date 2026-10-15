@@ -58,7 +58,7 @@ If the bounded working-day search cannot find a date, the UI says so instead of 
 day is available. Users can choose an explicit date or turn off the suggestion.
 
 Only confirmation inserts the selected tasks, as one Room transaction. Stable occurrence/stage tags
-protect against double taps and renamed completed stages. The normal Home Undo action removes the
+protect against double taps and renamed completed stages. A buffered confirmation survives Calendar-to-Home navigation. The normal Home Undo action removes the
 whole inserted plan. Tasks remain editable through the ordinary editor; backup includes their links,
 checklists, dates and estimates. Only the occasion-day stage enables a live countdown.
 

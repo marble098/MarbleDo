@@ -11,11 +11,11 @@ import com.marbledo.domain.util.TextNormalizer
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -67,12 +67,12 @@ class TasksViewModel(
     private val query = MutableStateFlow("")
     private val selected = MutableStateFlow<Set<Long>>(emptySet())
     private val organization = MutableStateFlow(TaskOrganization())
-    private val changeEvents = MutableSharedFlow<TaskChange>(extraBufferCapacity = 16)
+    private val changeEvents = Channel<TaskChange>(Channel.BUFFERED)
     private val batchMutex = Mutex()
     private var lastUndoAction: TaskUndoAction? = null
 
     /** Emits after every change the user made, so the screen can show a confirmation with undo. */
-    val changes: SharedFlow<TaskChange> = changeEvents.asSharedFlow()
+    val changes: Flow<TaskChange> = changeEvents.receiveAsFlow()
 
     val state = combine(repository.observeTasks(), filter, query, selected, organization) { tasks, currentFilter, search, ids, org ->
         val zone = ZoneId.systemDefault()
@@ -144,7 +144,7 @@ class TasksViewModel(
             scheduleOrCancel(task.copy(id = id))
             lastUndoAction = TaskUndoAction.Remove(listOf(id))
             backupScheduler.scheduleDebounced()
-            changeEvents.emit(TaskChange(TaskChangeKind.ADDED))
+            changeEvents.send(TaskChange(TaskChangeKind.ADDED))
         }
     }
 
@@ -165,13 +165,13 @@ class TasksViewModel(
                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
-                    changeEvents.emit(TaskChange(TaskChangeKind.ADD_FAILED, newTasks.size))
+                    changeEvents.send(TaskChange(TaskChangeKind.ADD_FAILED, newTasks.size))
                     return@withLock
                 }
                 lastUndoAction = TaskUndoAction.Remove(ids)
                 newTasks.zip(ids).forEach { (task, id) -> runCatching { scheduleOrCancel(task.copy(id = id)) } }
                 runCatching { backupScheduler.scheduleDebounced() }
-                changeEvents.emit(TaskChange(TaskChangeKind.ADDED, ids.size))
+                changeEvents.send(TaskChange(TaskChangeKind.ADDED, ids.size))
             }
         }
     }
@@ -184,7 +184,7 @@ class TasksViewModel(
             lastUndoAction = previous?.let { TaskUndoAction.Restore(listOf(it)) }
             scheduleOrCancel(saved)
             backupScheduler.scheduleDebounced()
-            changeEvents.emit(TaskChange(TaskChangeKind.EDITED))
+            changeEvents.send(TaskChange(TaskChangeKind.EDITED))
         }
     }
 
@@ -195,11 +195,11 @@ class TasksViewModel(
                 repository.setCompleted(task.id, false)
                 scheduleOrCancel(task.copy(isCompleted = false, updatedAtEpochMillis = now))
                 lastUndoAction = TaskUndoAction.Restore(listOf(task))
-                changeEvents.emit(TaskChange(TaskChangeKind.REOPENED))
+                changeEvents.send(TaskChange(TaskChangeKind.REOPENED))
             } else {
                 val spawnedId = completeTask(task, now)
                 lastUndoAction = TaskUndoAction.Restore(listOf(task), listOfNotNull(spawnedId))
-                changeEvents.emit(TaskChange(TaskChangeKind.COMPLETED))
+                changeEvents.send(TaskChange(TaskChangeKind.COMPLETED))
             }
             backupScheduler.scheduleDebounced()
         }
@@ -211,7 +211,7 @@ class TasksViewModel(
             reminderScheduler.cancel(task.id)
             lastUndoAction = TaskUndoAction.Restore(listOf(task))
             backupScheduler.scheduleDebounced()
-            changeEvents.emit(TaskChange(TaskChangeKind.ARCHIVED))
+            changeEvents.send(TaskChange(TaskChangeKind.ARCHIVED))
         }
     }
 
@@ -223,7 +223,7 @@ class TasksViewModel(
             scheduleOrCancel(restored)
             lastUndoAction = TaskUndoAction.Restore(listOf(task))
             backupScheduler.scheduleDebounced()
-            changeEvents.emit(TaskChange(TaskChangeKind.UNARCHIVED))
+            changeEvents.send(TaskChange(TaskChangeKind.UNARCHIVED))
         }
     }
 
@@ -233,7 +233,7 @@ class TasksViewModel(
             reminderScheduler.cancel(task.id)
             lastUndoAction = TaskUndoAction.Restore(listOf(task))
             backupScheduler.scheduleDebounced()
-            changeEvents.emit(TaskChange(TaskChangeKind.DELETED))
+            changeEvents.send(TaskChange(TaskChangeKind.DELETED))
         }
     }
 
@@ -255,7 +255,7 @@ class TasksViewModel(
             val spawnedIds = tasks.mapNotNull { completeTask(it, now) }
             lastUndoAction = TaskUndoAction.Restore(tasks, spawnedIds)
             backupScheduler.scheduleDebounced()
-            changeEvents.emit(TaskChange(TaskChangeKind.BULK_COMPLETED, tasks.size))
+            changeEvents.send(TaskChange(TaskChangeKind.BULK_COMPLETED, tasks.size))
         }
     }
 
