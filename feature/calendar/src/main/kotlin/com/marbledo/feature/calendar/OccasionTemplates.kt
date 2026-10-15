@@ -27,6 +27,7 @@ object OccasionTemplates {
     fun draft(request: OccasionPlanRequest, zone: ZoneId = ZoneId.systemDefault()): Task = Task(
         title = request.title,
         description = request.description,
+        tags = listOfNotNull(request.planningTag),
         dueAtEpochMillis = request.dateIso?.let { LocalDate.parse(it).atStartOfDay(zone).toInstant().toEpochMilli() },
         isAllDay = request.dateIso != null,
         countdownEnabled = request.asCountdown,

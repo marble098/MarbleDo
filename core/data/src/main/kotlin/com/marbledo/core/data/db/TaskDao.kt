@@ -28,6 +28,10 @@ interface TaskDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(tasks: List<TaskEntity>)
 
+    @Transaction
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertNewTasks(tasks: List<TaskEntity>): List<Long>
+
     @Query("UPDATE tasks SET isCompleted = :completed, updatedAtEpochMillis = :updatedAt WHERE id = :id")
     suspend fun setCompleted(id: Long, completed: Boolean, updatedAt: Long): Int
 

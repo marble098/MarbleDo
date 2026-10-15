@@ -1,29 +1,30 @@
 # Occasion provenance, date rules and update delivery
 
-Review date: **2026-10-13**. Asset: `feature/calendar/src/main/assets/calendar/occasions-v4-fa.json`.
+Review date: **2026-10-15**. Active asset: `feature/calendar/src/main/assets/calendar/occasions-v5-fa.json`.
 
 ## What actually updates the app
 
 The updater **does not query a government, Ministry, lunar authority or school API**. It downloads
 this repository's manually maintained `main` asset through these fallbacks, in order:
 
-1. `https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json`
-2. `https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json`
-3. `https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json`
-4. `https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json?ref=main`
+1. `https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json`
+2. `https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json`
+3. `https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json`
+4. `https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json?ref=main`
    with `Accept: application/vnd.github.raw+json`.
 
 These are four **delivery paths for the same data**, not four independent research sources.
 **Compatibility:** older app builds ignore `dateRule` and schema versions. Serving rule anchors
 at their old `holidays-fa.json` URL would make them display e.g. Quds on 1 Ramadan. Therefore that
 legacy endpoint remains byte-for-byte at the pre-migration data version 5. The new app explicitly
-uses `occasions-v4-fa.json` for its bundle and all four download paths. The expanded/rule-aware
+uses `occasions-v5-fa.json` (schema 5) for its bundle and all four download paths. The v4 rule-aware
+endpoint also remains byte-for-byte at schema 4/data version 7 for older v4 clients. The expanded/rule-aware
 catalog requires upgrading the app; an old installed build does not gain it from a data refresh.
 
 The downloaded cache is `filesDir/occasions/occasions-catalog.json`; the bundled asset remains the
 offline baseline. Startup and scheduled checks respect a 20-hour freshness interval; a manual
 refresh can run sooner. A bad or unavailable mirror never deletes the last valid catalog.
-Version/schema rollback, missing categories, loss of all school programs, >15% record loss,
+Version/schema rollback, missing categories/culture packs, loss of all school programs, >15% record loss,
 invalid references and responses over 3 million characters are rejected.
 
 Each occasion carries an evidence label (sourced, traditional, guidance or legacy) and, where one
@@ -33,7 +34,7 @@ publication date and not proof that its website will always remain accessible.
 
 ## Inventory and limits
 
-Schema 4 / data version 7 contains **859 recurring entries** (418 Jalali, 108 lunar, 333 Gregorian),
+Schema 5 / data version 8 contains **991 recurring entries** (418 Jalali, 108 lunar, 465 Gregorian),
 one explicitly year-specific school-election entry for 1404, and **38 undated school programs**.
 253 recurring entries carry an education-relevance tag; they include ordinary public occasions
 useful for school planning and should not be confused with 253 separate Ministry instructions.
@@ -42,10 +43,10 @@ Evidence metadata for recurring entries:
 
 | Status | Count | Meaning |
 | --- | ---: | --- |
-| sourced | 401 | Matched to the pinned compilation or a linked institutional/news reference; not a blanket claim of official approval |
-| traditional | 16 | A traditional/cultural/religious report; disagreements or variants can exist |
-| guidance | 14 | A planning window or customary ceremony; verify this year's circular |
-| legacy | 428 | Preserved from MarbleDo's previous catalog; individual date/source verification remains outstanding |
+| sourced | 519 | Matched to the pinned compilation or a linked institutional/news reference; not a blanket claim of official approval |
+| traditional | 33 | A traditional/cultural/religious report; disagreements or variants can exist |
+| guidance | 15 | A planning window or customary ceremony; verify this year's circular |
+| legacy | 424 | Preserved from MarbleDo's previous catalog; individual date/source verification remains outstanding |
 
 Every record has reference IDs. A link to the old MarbleDo catalog is **provenance, not independent
 corroboration**. Reference matching against the compilation used dates and titles; title similarity
@@ -63,10 +64,50 @@ authoritative replacement for the official annual calendar**.
   explanatory notes and preparation checklists are separately written.
 - [University of Tehran calendar PDF](https://calendar.ut.ac.ir/documents/2139738/7092644/Calendar-1405.pdf)
   was located but the fetch returned an interstitial. **The PDF itself was not independently read**;
-  it is not used as a claim that all 859 entries were verified against that official publication.
+  it is not used as a claim that all 991 entries were verified against that official publication.
 - Targeted PANA, IQNA, IRIB, university and cultural reporting was checked for school windows and
   disputed recurring dates. Some checks could only use indexed excerpts; full-page review is
   explicitly distinguished below. News reports are not themselves Ministry circulars.
+
+## Western expansion and source boundaries (2026-10-15)
+
+The new feed adds **131 Western/regional records** plus the missing October Migratory Bird Day,
+retaining every recurring v4 ID. Culture packs contain 526 Iranian/Islamic, 329 international,
+43 shared Western, 32 North American, 51 European, and 10 Australian/New Zealand records.
+
+Date facts were compared with the MIT-licensed [python-holidays community calendar, pinned commit
+5d0f4aac695d4c3c3a46d4747725fdac80bd4fff](https://github.com/vacanza/holidays/tree/5d0f4aac695d4c3c3a46d4747725fdac80bd4fff/holidays).
+References point to the checked Christian rule module and country files for the US, UK, Canada,
+Australia, New Zealand, Germany, France, Ireland, Spain, Italy, the Netherlands, Sweden, Norway,
+Denmark, Finland, Portugal, Austria, Switzerland, Mexico and Brazil. The MIT notice is preserved in
+`feature/calendar/licenses/MIT-python-holidays.txt`. The app has no runtime dependency on that library.
+This is a community ruleset, **not 21 official government confirmations**.
+
+Shared Christian cycles, national commemorations, Thanksgiving variants, family days, Carnival,
+Halloween, Advent, Christmas, Black Friday/Cyber Monday and selected regional customs are named in
+both languages. `traditional` customs whose reference is regional context rather than independent
+corroboration explicitly say so in their notes. Black Friday/Cyber Monday/Giving Tuesday references
+anchor US Thanksgiving, not legal recognition of those commercial/charitable customs. Evidence
+labels do not turn every traditional or contextual record into a newly verified official event.
+
+New rules are Gregorian Western and Julian-computus Orthodox Easter (with Julian-day conversion,
+not a fixed 13-day drift), weekday on/before an anchor, and the Dutch Sunday-to-Saturday exception.
+Offsets are bounded to ±60 days; affected neighboring calendar years are included in the index.
+Advent is computed from the Sunday on/before December 24. Earlier rules still handle nth/last
+weekdays and adjusted lunar month ends. Year-specific entries with the same ID now correctly
+supersede a recurring row rather than being discarded by de-duplication.
+
+World Maritime Day, Habitat Day, Road Traffic Victims Day, Philosophy Day, Cooperatives Day and
+both Migratory Bird Day observances now use annual weekday rules. Fixed world weeks carry their
+actual durations. Science and Peace Week uses an explicitly labelled Monday–Sunday planning
+convention containing November 11 and remains **guidance**, not a newly verified official schedule.
+Their inherited legacy references are not relabelled as independently verified sources.
+
+Foreign observances never set `holiday=true` in this feed. International Workers' Day is not treated
+as an unconditional closure of every Iranian institution; worker-specific/workplace rules require
+separate confirmation. The calendar still does not promise every regional variation, all religious
+calendars, substitute bank holidays or one-off future proclamations. Source notes and evidence remain
+visible when opening an occasion. No lunar/Western feast dates are guessed from a single past year.
 
 ## Important corrections and school-date decisions
 

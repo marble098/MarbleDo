@@ -24,6 +24,7 @@ internal fun ReferenceLink(reference: CatalogReference, languageTag: String) {
             }
         }) { Text(reference.title(languageTag)) }
         val kind = when (reference.kind) {
+            "community-rules (MIT)" -> R.string.catalog_kind_community_rules
             "curated" -> R.string.catalog_kind_curated
             "traditional" -> R.string.catalog_kind_traditional
             "institution" -> R.string.catalog_kind_institution

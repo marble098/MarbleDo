@@ -9,6 +9,7 @@ import com.marbledo.domain.model.HabitTheme
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.DashboardViewMode
+import com.marbledo.domain.model.OccasionCulture
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.StatusBarIconStyle
 import kotlinx.coroutines.flow.Flow
@@ -59,6 +60,7 @@ class SettingsRepository(private val context: Context) {
             favoriteOccasionIds = proto.favoriteOccasionIdsList.map { it.trim() }.filter { it.isNotBlank() }.distinct(),
             occasionReminderLeadDays = proto.occasionReminderLeadDays.coerceIn(0, 30),
             dashboardViewMode = enumOrDefault(proto.dashboardViewMode, DashboardViewMode.LIST),
+            occasionCultureIds = if (proto.hasOccasionCulturesConfigured()) proto.occasionCultureIdsList.distinct() else OccasionCulture.defaultIds,
         )
     }
 
@@ -94,6 +96,8 @@ class SettingsRepository(private val context: Context) {
         .addAllFavoriteOccasionIds(settings.favoriteOccasionIds.map { it.trim() }.filter { it.isNotBlank() }.distinct())
         .setOccasionReminderLeadDays(settings.occasionReminderLeadDays)
         .setDashboardViewMode(settings.dashboardViewMode.name)
+        .addAllOccasionCultureIds(settings.occasionCultureIds.distinct())
+        .setOccasionCulturesConfigured(true)
         .build()
 
     private inline fun <reified T : Enum<T>> enumOrDefault(value: String, default: T): T =

@@ -43,6 +43,7 @@ class BackupCodecTest {
             persistentDateNotificationEnabled = true,
             educationModeEnabled = true,
             thursdayWeekendEnabled = true,
+            occasionCultureIds = listOf("iranian", "western", "europe"),
         )
         val encoded = BackupCodec.encode(listOf(task), settings)
 
@@ -50,6 +51,14 @@ class BackupCodecTest {
         val decoded = BackupCodec.decode(encoded)
         assertEquals(listOf(task), decoded.tasks)
         assertEquals(settings, decoded.settings)
+    }
+
+    @Test
+    fun `an intentionally empty culture selection and preparation identities survive backup`() {
+        val linked = task.copy(tags = listOf("occasion:x:2026-12-25", "occasion-step:x:2026-12-25:plan"))
+        val backup = BackupCodec.decode(BackupCodec.encode(listOf(linked), AppSettings(occasionCultureIds = emptyList())))
+        assertTrue(backup.settings.occasionCultureIds.isEmpty())
+        assertEquals(linked.tags, backup.tasks.single().tags)
     }
 
     @Test

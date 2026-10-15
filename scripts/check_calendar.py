@@ -14,11 +14,12 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"
+CATALOG = ROOT / "feature/calendar/src/main/assets/calendar/occasions-v5-fa.json"
 CALENDARS = ("jalali", "lunar", "gregorian")
 CATEGORIES = {"official", "national", "religious", "personal", "international", "educational"}
 EVIDENCE = {"sourced", "traditional", "guidance", "legacy"}
-RULES = {"fixed", "month_end", "last_weekday", "nth_weekday"}
+RULES = {"fixed", "month_end", "last_weekday", "nth_weekday", "weekday_on_or_before", "western_easter", "orthodox_easter", "sunday_to_saturday"}
+CULTURES = {"iranian", "global", "western", "north_america", "europe", "oceania"}
 
 
 def require(condition: bool, message: str) -> None:
@@ -27,8 +28,8 @@ def require(condition: bool, message: str) -> None:
 
 
 def check(catalog: dict) -> dict:
-    require(catalog["schemaVersion"] == 4, "Unsupported schema")
-    require(int(catalog["dataVersion"]) >= 6, "Catalog must not roll back to pre-review data")
+    require(catalog["schemaVersion"] == 5, "Unsupported schema")
+    require(int(catalog["dataVersion"]) >= 8, "Catalog must not roll back to pre-review data")
     date.fromisoformat(catalog["updatedAt"])
     references = catalog["sources"]
     source_ids = {s["id"] for s in references}
@@ -63,19 +64,25 @@ def check(catalog: dict) -> dict:
                 if row["evidence"] == "guidance" or row["category"] == "educational":
                     require(not row["holiday"], "Guidance/school activity must not create a public holiday")
                 references_exist(row)
+                cultures = row.get("cultures", [])
+                require(bool(cultures) and set(cultures) <= CULTURES, "Unknown or missing culture pack")
+                if "iranian" not in cultures:
+                    require(not row["holiday"], "Foreign observance must not create an Iranian public holiday")
                 rule = row.get("dateRule", "fixed")
                 require(rule in RULES, "Unknown date rule")
-                if rule in {"last_weekday", "nth_weekday"}:
+                if rule in {"last_weekday", "nth_weekday", "weekday_on_or_before"}:
                     require(1 <= row.get("weekday", 0) <= 7, "Invalid rule weekday")
                 if rule == "nth_weekday":
                     require(1 <= row.get("ordinal", 0) <= 5, "Invalid weekday ordinal")
-                require(-7 <= row.get("dayOffset", 0) <= 7, "Unbounded rule offset")
+                require(-60 <= row.get("dayOffset", 0) <= 60, "Unbounded rule offset")
+                if rule in {"western_easter", "orthodox_easter"}:
+                    require(system == "gregorian", "Easter rules require Gregorian years")
                 require(1 <= row.get("durationDays", 1) <= 31, "Invalid window duration")
                 result.append(row | {"calendar": system})
         return result
 
     rows = entries(catalog)
-    require(len(rows) >= 800, "Unexpectedly depleted annual catalog")
+    require(len(rows) >= 990, "Unexpectedly depleted annual catalog")
     require(len(catalog["lunar"]) >= 100, "Unexpectedly depleted Islamic catalog")
     require({r["category"] for r in rows} == CATEGORIES, "Lost category")
     for system in CALENDARS:
@@ -118,9 +125,19 @@ def check(catalog: dict) -> dict:
         "Family and Retirees Day", "Endowment (Waqf) Day", "Girls' Day", "Mother and Women's Day",
         "Anniversary of Ali and Fatima's Wedding",
     } for r in rows), "A lunar occasion was incorrectly frozen to a solar date")
+    require({culture for row in rows for culture in row["cultures"]} == CULTURES, "Lost culture pack")
+    for title, expected in {
+        "Western Easter Sunday": "western_easter", "Orthodox Easter Sunday": "orthodox_easter",
+        "Thanksgiving (US)": "nth_weekday", "Thanksgiving (Canada)": "nth_weekday",
+        "Black Friday": "nth_weekday", "Cyber Monday": "nth_weekday",
+        "Advent Sunday 1": "weekday_on_or_before", "Kings Day (Netherlands)": "sunday_to_saturday",
+        "World Maritime Day": "last_weekday", "International Day of Cooperatives": "nth_weekday",
+    }.items():
+        require(by_title[title].get("dateRule") == expected, f"Lost floating-date rule: {title}")
     return {
         "annual_occasions": len(rows),
         "per_calendar": dict(Counter(r["calendar"] for r in rows)),
+        "per_culture": dict(Counter(culture for row in rows for culture in row["cultures"])),
         "evidence": dict(Counter(r["evidence"] for r in rows)),
         "school_relevant": sum("education" in r.get("tags", []) for r in rows),
         "variable_school_programs": len(programs),

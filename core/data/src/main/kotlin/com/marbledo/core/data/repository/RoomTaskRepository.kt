@@ -27,6 +27,12 @@ class RoomTaskRepository(
         return dao.insert(task.toEntity(updatedAt = now))
     }
 
+    override suspend fun saveNewTasks(tasks: List<Task>): List<Long> {
+        require(tasks.all { it.id == 0L })
+        val now = System.currentTimeMillis()
+        return dao.insertNewTasks(tasks.map { it.toEntity(updatedAt = now) })
+    }
+
     override suspend fun setCompleted(id: Long, completed: Boolean) {
         dao.setCompleted(id, completed, System.currentTimeMillis())
     }

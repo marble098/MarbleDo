@@ -23,6 +23,8 @@ import androidx.work.WorkerParameters
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
 import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.domain.model.enabledOccasionCultures
+import com.marbledo.domain.model.OccasionCulture
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
@@ -60,6 +62,7 @@ class CalendarOccurrenceWorker(
                 jalaliYears = listOf(today.year),
                 lunarOffsetDays = settings.lunarOffsetDays,
                 enabledCategories = enabledCategories,
+                enabledCultures = settings.enabledOccasionCultures(),
             )
             val events = index.on(today.year, today.month, today.day)
             if (events.isNotEmpty()) {
@@ -103,6 +106,7 @@ class CalendarOccurrenceWorker(
             jalaliYears = listOf(today.year, today.year + 1),
             lunarOffsetDays = settings.lunarOffsetDays,
             enabledCategories = enabledCategories,
+            enabledCultures = settings.enabledOccasionCultures(),
         )
         val upcoming = OccasionPlanner.upcoming(
             index = index,
@@ -143,7 +147,7 @@ class CalendarOccurrenceWorker(
         val inbox = NotificationCompat.InboxStyle()
             .setBigContentTitle(title)
             .setSummaryText(days)
-        titles.take(MAX_VISIBLE_EVENTS).forEach { inbox.addLine("✦ $it") }
+        titles.take(MAX_VISIBLE_EVENTS).forEach { inbox.addLine(it) }
 
         val contentIntent = Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
@@ -157,10 +161,11 @@ class CalendarOccurrenceWorker(
             contentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val collapsedUpcoming = titles.firstOrNull()?.let { "✦ $it" } ?: days
+        val collapsedUpcoming = titles.firstOrNull()?.let { it } ?: days
         val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
             .addExtras(Bundle().apply {
                 putBoolean(EXTRA_EDUCATIONAL_CONTENT, occasions.any { it.category == OccasionCategory.EDUCATIONAL })
+                putStringArrayList(EXTRA_CULTURES, ArrayList(occasions.flatMap { it.cultures }.map { it.key }.distinct()))
             })
             .setSmallIcon(R.drawable.ic_stat_calendar)
             .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
@@ -219,7 +224,7 @@ class CalendarOccurrenceWorker(
         val inbox = NotificationCompat.InboxStyle()
             .setBigContentTitle(dateLabel)
             .setSummaryText(summary)
-        eventTitles.take(MAX_VISIBLE_EVENTS).forEach { inbox.addLine("✦ $it") }
+        eventTitles.take(MAX_VISIBLE_EVENTS).forEach { inbox.addLine(it) }
         val hiddenCount = eventTitles.size - MAX_VISIBLE_EVENTS
         if (hiddenCount > 0) {
             inbox.addLine(
@@ -244,10 +249,11 @@ class CalendarOccurrenceWorker(
             contentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val collapsedEvent = eventTitles.firstOrNull()?.let { "✦ $it" } ?: summary
+        val collapsedEvent = eventTitles.firstOrNull()?.let { it } ?: summary
         val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
             .addExtras(Bundle().apply {
                 putBoolean(EXTRA_EDUCATIONAL_CONTENT, events.any { it.category == OccasionCategory.EDUCATIONAL })
+                putStringArrayList(EXTRA_CULTURES, ArrayList(events.flatMap { it.cultures }.map { it.key }.distinct()))
             })
             .setSmallIcon(R.drawable.ic_stat_calendar)
             .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
@@ -274,6 +280,19 @@ class CalendarOccurrenceWorker(
     }
 
     companion object {
+        private const val EXTRA_CULTURES = "com.marble098.marbledo.OCCASION_CULTURES"
+
+        /** Withdraw already-posted mixed summaries when a culture pack is hidden. */
+        fun clearHiddenCultureNotifications(context: Context, enabled: Set<OccasionCulture>) {
+            val manager = context.getSystemService(NotificationManager::class.java) ?: return
+            val keys = enabled.map { it.key }.toSet()
+            manager.activeNotifications.filter { posted ->
+                if (posted.notification.channelId != NotificationChannels.CALENDAR) false
+                else posted.notification.extras.getStringArrayList(EXTRA_CULTURES)?.any { it !in keys }
+                    ?: (enabled != OccasionCulture.all)
+            }.forEach { manager.cancel(it.tag, it.id) }
+        }
+
         private const val EXTRA_EDUCATIONAL_CONTENT = "com.marble098.marbledo.EDUCATIONAL_CONTENT"
 
         /** Remove already-posted mixed summaries too, not just future school reminders. */

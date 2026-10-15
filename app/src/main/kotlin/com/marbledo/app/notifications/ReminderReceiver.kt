@@ -14,6 +14,21 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
+import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.domain.model.AppSettings
+import com.marbledo.domain.model.Task
+import com.marbledo.domain.model.TaskPriority
+import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.calendar.PersianDateUtils
+import com.marbledo.feature.tasks.R as TaskR
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import android.content.res.Configuration
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.marbledo.domain.model.RepeatFrequency
 import com.marbledo.domain.repository.TaskBackupScheduler
 import com.marbledo.domain.repository.TaskReminderScheduler
@@ -35,13 +50,16 @@ class ReminderReceiver : BroadcastReceiver() {
                 val koin = GlobalContext.getOrNull() ?: return@launch
                 val repository = koin.get<TaskRepository>()
                 val task = repository.getTask(id) ?: return@launch
+                if (task.isArchived || (task.isCompleted && intent.action != ACTION_DONE)) return@launch
                 when (intent.action) {
-                    ACTION_DONE -> {
+                    ACTION_DONE -> completionMutex.withLock {
+                        val current = repository.getTask(id) ?: return@withLock
+                        if (current.isCompleted || current.isArchived) return@withLock
                         repository.setCompleted(id, true)
                         val scheduler = koin.get<TaskReminderScheduler>()
                         scheduler.cancel(id)
-                        val repeat = task.recurrence
-                        val previousDue = task.dueAtEpochMillis
+                        val repeat = current.recurrence
+                        val previousDue = current.dueAtEpochMillis
                         if (repeat != null && repeat.frequency != RepeatFrequency.NONE && previousDue != null) {
                             val now = System.currentTimeMillis()
                             var nextDue = AndroidRecurrenceCalculator.nextAfter(previousDue, repeat)
@@ -50,7 +68,8 @@ class ReminderReceiver : BroadcastReceiver() {
                                 nextDue = AndroidRecurrenceCalculator.nextAfter(nextDue, repeat)
                             }
                             if (nextDue > now) {
-                                val next = task.copy(
+                                val next = current.copy(
+                                    checklist = current.checklist.map { it.copy(isDone = false) },
                                     id = 0,
                                     dueAtEpochMillis = nextDue,
                                     isCompleted = false,
@@ -69,15 +88,17 @@ class ReminderReceiver : BroadcastReceiver() {
                         AndroidTaskReminderScheduler(context).remindAgainAt(id, System.currentTimeMillis() + SNOOZE_MILLIS)
                         NotificationManagerCompat.from(context).cancel(notificationId(id))
                     }
-                    else -> {
+                    ACTION_REMIND, ACTION_SNOOZED -> {
                         val deferUntil = ReminderPreferences.deferUntilQuietEnds(context, System.currentTimeMillis())
                         if (deferUntil != null) {
                             AndroidTaskReminderScheduler(context).remindAgainAt(id, deferUntil)
                         } else {
-                            showNotification(context, task.title, id, task.dueAtEpochMillis ?: System.currentTimeMillis())
+                            showNotification(context, task, SettingsRepository(context).settings.first())
                         }
                     }
+                    else -> return@launch
                 }
+                if (intent.action == ACTION_DONE) PersistentCalendarNotificationWorker.refreshNow(context)
             } catch (_: kotlinx.coroutines.CancellationException) {
                 // The receiver is being torn down; nothing left to show.
             } catch (_: Exception) {
@@ -88,7 +109,25 @@ class ReminderReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun showNotification(context: Context, title: String, id: Long, dueAtMillis: Long) {
+    private fun showNotification(baseContext: Context, task: Task, settings: AppSettings) {
+        val locale = Locale.forLanguageTag(settings.languageTag)
+        val context = baseContext.createConfigurationContext(Configuration(baseContext.resources.configuration).apply {
+            setLocale(locale); setLayoutDirection(locale)
+        })
+        val id = task.id
+        val dueAtMillis = task.dueAtEpochMillis ?: System.currentTimeMillis()
+        val zone = ZoneId.systemDefault()
+        val clock = if (task.isAllDay) context.getString(R.string.notification_all_day)
+            else Instant.ofEpochMilli(dueAtMillis).atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT))
+        val dueLabel = TextNormalizer.formatDigits("${PersianDateUtils.fullDate(dueAtMillis, settings.languageTag, settings.numeralMode, zone)} · $clock", settings.numeralMode)
+        val detail = context.getString(R.string.notification_reminder_detail, dueLabel)
+        val priority = context.getString(when (task.priority) {
+            TaskPriority.LOW -> TaskR.string.tasks_priority_low
+            TaskPriority.NORMAL -> TaskR.string.tasks_priority_normal
+            TaskPriority.HIGH -> TaskR.string.tasks_priority_high
+            TaskPriority.URGENT -> TaskR.string.tasks_priority_urgent
+        })
+        NotificationChannels.create(context)
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         val contentIntent = PendingIntent.getActivity(
             context,
@@ -116,13 +155,26 @@ class ReminderReceiver : BroadcastReceiver() {
             .setSmallIcon(R.drawable.ic_stat_marble)
             .setLargeIcon(largeIcon)
             .setColor(ContextCompat.getColor(context, R.color.marble_accent))
-            .setContentTitle(title)
-            .setContentText(context.getString(R.string.notification_task_reminder))
+            .setContentTitle(task.title)
+            .setContentText(detail)
+            .setSubText(listOf(priority, task.category).filter { it.isNotBlank() }.joinToString(" · "))
+            .setStyle(NotificationCompat.InboxStyle().also { inbox ->
+                inbox.setBigContentTitle(task.title)
+                inbox.addLine(detail)
+                if (task.checklist.isNotEmpty()) inbox.addLine(TextNormalizer.formatDigits(context.getString(R.string.notification_checklist,
+                    task.checklist.count { it.isDone }, task.checklist.size), settings.numeralMode))
+                if (task.description.isNotBlank()) inbox.addLine(task.description.take(200))
+                inbox.setSummaryText(priority)
+            })
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(NotificationCompat.Builder(context, NotificationChannels.TASKS)
+                .setSmallIcon(R.drawable.ic_stat_marble).setContentTitle(context.getString(R.string.app_name))
+                .setContentText(context.getString(R.string.notification_private)).build())
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setWhen(dueAtMillis)
-            .setUsesChronometer(dueAtMillis > System.currentTimeMillis())
+            .setUsesChronometer(!task.isAllDay && dueAtMillis > System.currentTimeMillis())
             .setChronometerCountDown(true)
             .addAction(R.drawable.ic_stat_marble, context.getString(R.string.notification_done), doneIntent)
             .addAction(R.drawable.ic_stat_marble, context.getString(R.string.notification_snooze), snoozeIntent)
@@ -132,6 +184,7 @@ class ReminderReceiver : BroadcastReceiver() {
     private fun notificationId(taskId: Long): Int = (taskId xor (taskId ushr 32)).toInt()
 
     companion object {
+        private val completionMutex = Mutex()
         const val EXTRA_TASK_ID = "com.marble098.marbledo.extra.TASK_ID"
         const val ACTION_REMIND = "com.marble098.marbledo.action.REMIND"
         const val ACTION_DONE = "com.marble098.marbledo.action.DONE"

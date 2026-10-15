@@ -250,7 +250,7 @@ class OccasionRepository(private val context: Context) {
     companion object {
         const val CACHE_DIRECTORY = "occasions"
         const val CATALOG_FILE_NAME = "occasions-catalog.json"
-        private const val CATALOG_ASSET = "calendar/occasions-v4-fa.json"
+        private const val CATALOG_ASSET = "calendar/occasions-v5-fa.json"
         private const val CONNECT_TIMEOUT_MILLIS = 3_000
         private const val READ_TIMEOUT_MILLIS = 4_000
         private const val MAX_CATALOG_CHARS = 3_000_000
@@ -268,11 +268,11 @@ class OccasionRepository(private val context: Context) {
          * edges and the GitHub Contents API raw media type. A mirror outage does not block the rest.
          */
         private val CATALOG_SOURCES = listOf(
-            CatalogSource("https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"),
-            CatalogSource("https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"),
-            CatalogSource("https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json"),
+            CatalogSource("https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json"),
+            CatalogSource("https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json"),
+            CatalogSource("https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json"),
             CatalogSource(
-                url = "https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/occasions-v4-fa.json?ref=main",
+                url = "https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json?ref=main",
                 accept = "application/vnd.github.raw+json",
             ),
         )

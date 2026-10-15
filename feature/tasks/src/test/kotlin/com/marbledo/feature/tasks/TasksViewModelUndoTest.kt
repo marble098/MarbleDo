@@ -6,6 +6,7 @@ import com.marbledo.domain.repository.TaskReminderScheduler
 import com.marbledo.domain.repository.TaskRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -64,7 +65,70 @@ class TasksViewModelUndoTest {
         }
     }
 
-    private class InMemoryTaskRepository : TaskRepository {
+    @Test
+    fun `preparation batch is deduplicated on double tap and undone as one change`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryTaskRepository()
+            val reminders = RecordingReminderScheduler()
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, reminders)
+            val tasks = listOf(Task(title = "Plan", tags = listOf("occasion-step:x:2026-12-25:plan")),
+                Task(title = "Prepare", tags = listOf("occasion-step:x:2026-12-25:prepare")))
+            viewModel.addTasks(tasks)
+            viewModel.addTasks(tasks)
+            advanceUntilIdle()
+            assertEquals(2, repository.tasks.value.size)
+            val ids = repository.tasks.value.map { it.id }
+            viewModel.undoLastChange()
+            advanceUntilIdle()
+            assertTrue(repository.tasks.value.isEmpty())
+            assertTrue(reminders.cancelled.containsAll(ids))
+        } finally { Dispatchers.resetMain() }
+    }
+
+    @Test
+    fun `a batch confirmation waits for the Home collector instead of disappearing during navigation`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val viewModel = TasksViewModel(InMemoryTaskRepository(), NoOpBackupScheduler, RecordingReminderScheduler())
+            viewModel.addTasks(listOf(Task(title = "One"), Task(title = "Two")))
+            advanceUntilIdle()
+            val confirmation = viewModel.changes.first()
+            assertEquals(TaskChangeKind.ADDED, confirmation.kind)
+            assertEquals(2, confirmation.count)
+        } finally { Dispatchers.resetMain() }
+    }
+
+    @Test
+    fun `completed preparation stages are retained rather than recreated`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryTaskRepository()
+            val saved = Task(title = "Renamed", isCompleted = true, tags = listOf("occasion-step:x:2026-12-25:plan"))
+            repository.save(saved)
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, RecordingReminderScheduler())
+            viewModel.addTasks(listOf(saved.copy(id = 0, isCompleted = false)))
+            advanceUntilIdle()
+            assertEquals(1, repository.tasks.value.size)
+            assertTrue(repository.tasks.value.single().isCompleted)
+        } finally { Dispatchers.resetMain() }
+    }
+
+    @Test
+    fun `a failed atomic plan reports failure and preserves pre-existing tasks`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryTaskRepository(failBatch = true)
+            repository.save(Task(title = "Kept"))
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, RecordingReminderScheduler())
+            viewModel.addTasks(listOf(Task(title = "New one"), Task(title = "New two")))
+            advanceUntilIdle()
+            assertEquals(listOf("Kept"), repository.tasks.value.map { it.title })
+            assertEquals(TaskChangeKind.ADD_FAILED, viewModel.changes.first().kind)
+        } finally { Dispatchers.resetMain() }
+    }
+
+    private class InMemoryTaskRepository(private val failBatch: Boolean = false) : TaskRepository {
         val tasks = MutableStateFlow<List<Task>>(emptyList())
         private var nextId = 1L
 
@@ -76,6 +140,11 @@ class TasksViewModelUndoTest {
             val id = if (task.id == 0L) nextId++ else task.id
             tasks.value = tasks.value.filterNot { it.id == id } + task.copy(id = id)
             return id
+        }
+
+        override suspend fun saveNewTasks(tasks: List<Task>): List<Long> {
+            if (failBatch) throw java.io.IOException("Storage unavailable")
+            return tasks.map { save(it) }
         }
 
         override suspend fun setCompleted(id: Long, completed: Boolean) {

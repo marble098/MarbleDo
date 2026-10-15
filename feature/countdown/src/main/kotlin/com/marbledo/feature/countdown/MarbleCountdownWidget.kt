@@ -43,6 +43,7 @@ import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.Task
+import com.marbledo.domain.model.enabledOccasionCultures
 import com.marbledo.feature.calendar.OccasionCatalog
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.enabledOccasionCategories
@@ -86,6 +87,7 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                 jalaliYears = listOf(today.year),
                 lunarOffsetDays = settings.lunarOffsetDays,
                 enabledCategories = enabledCategories,
+            enabledCultures = settings.enabledOccasionCultures(),
                 zone = zone,
             )
         }.getOrDefault(OccasionIndex.EMPTY)

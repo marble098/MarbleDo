@@ -1,0 +1,5 @@
+<resources>
+    <color name="notification_card_accent">#5E52B5</color>
+    <color name="notification_card_section">#0C6E61D8</color>
+    <color name="notification_card_track">#246E61D8</color>
+</resources>

@@ -75,6 +75,7 @@ import com.marbledo.core.data.settings.SettingsRepository
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.repository.HabitRepository
 import com.marbledo.domain.model.Task
+import com.marbledo.domain.model.enabledOccasionCultures
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.CalendarScreen
 import com.marbledo.feature.calendar.enabledOccasionCategories
@@ -308,6 +309,10 @@ fun MarbleDoApp(
         }
     }
 
+    LaunchedEffect(persistedSettings?.occasionCultureIds) {
+        persistedSettings?.let { CalendarOccurrenceWorker.clearHiddenCultureNotifications(context.applicationContext, it.enabledOccasionCultures()) }
+    }
+
     LaunchedEffect(
         persistedSettings,
         settings,
@@ -347,6 +352,7 @@ fun MarbleDoApp(
         settings.countdownCalendar,
         settings.countdownTheme,
         settings.enabledOccasionCategories(),
+        settings.occasionCultureIds,
         settings.lunarOffsetDays,
         occasionState.catalog,
     ) {
@@ -414,6 +420,15 @@ fun MarbleDoApp(
                                     onPendingEditTaskConsumed = { pendingEditTaskId = null },
                                     onCalendarDisplaySelected = updateCountdownCalendar,
                                     favoriteOccasionIds = occasionState.catalog.canonicalFavoriteIds(settings.favoriteOccasionIds),
+                                    onToggleFavoriteOccasion = { occasionId ->
+                                        coroutineScope.launch {
+                                            settingsRepository.update { current ->
+                                                val ids = occasionState.catalog.canonicalFavoriteIds(current.favoriteOccasionIds)
+                                                current.copy(favoriteOccasionIds =
+                                                    (if (occasionId in ids) ids - occasionId else ids + occasionId).toList())
+                                            }
+                                        }
+                                    },
                                     initialPlanRequest = pendingOccasionPlan,
                                     onInitialPlanConsumed = { pendingOccasionPlan = null },
                                 )
@@ -424,6 +439,8 @@ fun MarbleDoApp(
                                     catalog = occasionState.catalog,
                                     occasionState = occasionState,
                                     enabledCategories = enabledOccasionCategories,
+                                    enabledCultures = settings.enabledOccasionCultures(),
+                                    onCreatePreparation = { tasks -> taskViewModel.addTasks(tasks); navigateTo(HomeDestination) },
                                     languageTag = settings.languageTag,
                                     weekStartsSaturday = settings.weekStartsSaturday,
                                     lunarOffsetDays = settings.lunarOffsetDays,

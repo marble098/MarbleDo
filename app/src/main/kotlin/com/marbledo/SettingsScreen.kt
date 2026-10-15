@@ -87,6 +87,7 @@ import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.HiddenTapSequence
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.OccasionCategory
+import com.marbledo.feature.calendar.OccasionCultureSelector
 import com.marbledo.feature.calendar.OccasionPlanner
 import com.marbledo.feature.calendar.OccasionState
 import com.marbledo.feature.calendar.PersianDateUtils
@@ -310,6 +311,9 @@ fun SettingsScreen(
             SettingSwitchRow(stringResource(R.string.settings_religious_events), settings.religiousEventsEnabled) { onUpdate(settings.copy(religiousEventsEnabled = it)) }
             SettingSwitchRow(stringResource(R.string.settings_personal_events), settings.personalEventsEnabled) { onUpdate(settings.copy(personalEventsEnabled = it)) }
             SettingSwitchRow(stringResource(R.string.settings_international_events), settings.internationalEventsEnabled) { onUpdate(settings.copy(internationalEventsEnabled = it)) }
+            SettingsDivider()
+            OccasionCultureSelector(settings.occasionCultureIds) { onUpdate(settings.copy(occasionCultureIds = it)) }
+            SettingsDivider()
             SettingSwitchRow(stringResource(R.string.settings_thursday_weekend), settings.thursdayWeekendEnabled) { onUpdate(settings.copy(thursdayWeekendEnabled = it)) }
             if (settings.educationModeEnabled) {
                 SettingsDivider()
@@ -709,11 +713,7 @@ fun SettingsScreen(
     }
 }
 
-/**
- * Clean, minimal live preview of today's persistent notification card inside the Notification Box.
- * Shows the date badge, primary date title, secondary calendar dates, and separated pill rows for
- * today's occasions and next task instead of a continuous wall of text.
- */
+/** Uses exactly the same fields and hierarchy as the delivered expanded notification. */
 @Composable
 private fun MinimalNotificationPreviewBox(
     context: Context,
@@ -721,131 +721,54 @@ private fun MinimalNotificationPreviewBox(
     tasks: List<Task>,
     catalog: com.marbledo.feature.calendar.OccasionCatalog,
 ) {
-    val content = remember(
-        settings.languageTag,
-        settings.numeralMode,
-        settings.lunarOffsetDays,
-        settings.statusBarCalendar,
-        tasks,
-        catalog,
-    ) {
-        PersistentCalendarNotification.buildContent(context, settings, tasks, catalog)
+    val configuration = LocalConfiguration.current
+    val now by produceState(System.currentTimeMillis()) {
+        while (true) { value = System.currentTimeMillis(); kotlinx.coroutines.delay(60_000L) }
     }
-    val badgeBitmap = remember(context, content.dayDigits, content.monthLabel, content.mood) {
-        NotificationArtwork.dateBadge(context, content.dayDigits, content.monthLabel, content.mood)
+    val content = remember(settings, tasks, catalog, now, configuration) {
+        PersistentCalendarNotification.buildContent(context, settings, tasks, catalog, now)
     }
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
-                shape = MaterialTheme.shapes.large,
-            ),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                if (badgeBitmap != null) {
-                    Image(
-                        bitmap = badgeBitmap.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)),
-                    )
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            content.title,
-                            style = MarbleTextStyles.itemTitle,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                        ) {
-                            Text(
-                                content.moodSubtitle,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            )
-                        }
-                    }
-                    Text(
-                        content.secondaryDatesLine,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+    val badgeBitmap = remember(context, content.badgeDayDigits, content.monthLabel, content.mood, configuration) {
+        NotificationArtwork.dateBadge(context, content.badgeDayDigits, content.monthLabel, content.mood)
+    }
+    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(20.dp))) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (badgeBitmap != null) Image(badgeBitmap.asImageBitmap(), contentDescription = null,
+                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(content.title, style = MarbleTextStyles.itemTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(content.secondaryDatesLine, style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                val occasionPreview = if (content.occasionLines.isEmpty()) {
-                    content.fallbackOccasionText
-                } else {
-                    content.occasionLines.joinToString("  ·  ")
-                }
-                MinimalPreviewRow(
-                    symbol = "✦",
-                    text = occasionPreview,
-                    emphasized = content.occasionLines.isNotEmpty(),
-                )
-                MinimalPreviewRow(
-                    symbol = "⏳",
-                    text = content.nextTaskSummary ?: content.fallbackTaskText,
-                    emphasized = content.nextTaskSummary != null,
-                )
+                Text(content.progressSummary, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                androidx.compose.material3.LinearProgressIndicator(
+                    progress = { content.todayCompleted.toFloat() / content.todayTotal.coerceAtLeast(1) },
+                    modifier = Modifier.fillMaxWidth())
             }
-        }
-    }
-}
-
-@Composable
-private fun MinimalPreviewRow(
-    symbol: String,
-    text: String,
-    emphasized: Boolean,
-) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = if (emphasized) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                symbol,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (emphasized) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = if (emphasized) FontWeight.Medium else FontWeight.Normal,
-                color = if (emphasized) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
+            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)) {
+                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(content.nextTaskLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(content.nextTaskTitle ?: content.fallbackTaskText, style = MarbleTextStyles.itemTitle,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    content.nextTaskTime?.let { Text(it, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(R.string.notification_occasions), style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(content.occasionLines.joinToString("\n").ifEmpty { content.fallbackOccasionText },
+                    style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (content.moreOccasionsCount > 0) Text(content.moreOccasionsText, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary)
+            }
+            Text(stringResource(R.string.notification_preview_hint), style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
