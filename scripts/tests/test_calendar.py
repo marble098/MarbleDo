@@ -24,7 +24,10 @@ class CatalogIntegrityTest(unittest.TestCase):
         self.assertLess(json.loads(legacy)["schemaVersion"], 4)
         repository = validator.ROOT / "feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/OccasionRepository.kt"
         self.assertNotIn("calendar/holidays-fa.json", repository.read_text())
-        self.assertIn("calendar/occasions-v4-fa.json", repository.read_text())
+        self.assertIn("calendar/occasions-v5-fa.json", repository.read_text())
+        v4 = validator.CATALOG.with_name("occasions-v4-fa.json").read_bytes()
+        self.assertEqual("e5d3ec6b3761b62a46df797fba09d699843887a80295e941c93ec9c23ddb82c1", hashlib.sha256(v4).hexdigest(),
+                         "Rule-aware v4 clients also retain their own compatible feed")
 
     def test_no_duplicate_stable_ids(self):
         self.catalog["jalali"].append(copy.deepcopy(self.catalog["jalali"][0]))
@@ -56,6 +59,33 @@ class CatalogIntegrityTest(unittest.TestCase):
         row = next(r for r in self.catalog["jalali"] if r["titleEn"] == "Islamic Education Affairs Day")
         row["day"] = 24
         with self.assertRaisesRegex(ValueError, "regression"):
+            validator.check(self.catalog)
+
+    def test_missing_or_unknown_culture_is_rejected(self):
+        for value in [[], ["unknown"]]:
+            catalog = copy.deepcopy(self.catalog)
+            catalog["gregorian"][0]["cultures"] = value
+            with self.assertRaisesRegex(ValueError, "culture"):
+                validator.check(catalog)
+
+    def test_easter_cannot_be_applied_to_lunar_years(self):
+        self.catalog["lunar"][0]["dateRule"] = "western_easter"
+        with self.assertRaisesRegex(ValueError, "Gregorian"):
+            validator.check(self.catalog)
+
+    def test_foreign_observances_cannot_create_local_public_holidays(self):
+        self.catalog["gregorian"][0]["holiday"] = True
+        with self.assertRaisesRegex(ValueError, "Iranian public holiday"):
+            validator.check(self.catalog)
+
+    def test_rule_offsets_are_bounded(self):
+        self.catalog["gregorian"][0]["dayOffset"] = 61
+        with self.assertRaisesRegex(ValueError, "offset"):
+            validator.check(self.catalog)
+
+    def test_floating_western_rule_cannot_be_replaced_by_a_guessed_date(self):
+        next(r for r in self.catalog["gregorian"] if r["titleEn"] == "Western Easter Sunday")["dateRule"] = "fixed"
+        with self.assertRaisesRegex(ValueError, "floating-date"):
             validator.check(self.catalog)
 
     def test_unsafe_source_url_is_rejected(self):

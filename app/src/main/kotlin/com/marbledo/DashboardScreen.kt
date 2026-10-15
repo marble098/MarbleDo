@@ -106,6 +106,7 @@ import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.Task
+import com.marbledo.domain.model.enabledOccasionCultures
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.OccasionCatalog
 import com.marbledo.feature.calendar.OccasionCategory
@@ -113,6 +114,9 @@ import com.marbledo.feature.calendar.OccasionIndex
 import com.marbledo.feature.calendar.OccasionPlanRequest
 import com.marbledo.feature.calendar.OccasionPlanner
 import com.marbledo.feature.calendar.OccasionTemplates
+import com.marbledo.feature.calendar.OccasionPlanSheet
+import com.marbledo.feature.calendar.OccasionRadarCard
+import com.marbledo.feature.calendar.OccasionRecommendation
 import com.marbledo.feature.calendar.UpcomingOccasion
 import com.marbledo.feature.calendar.PersianDateUtils
 import com.marbledo.feature.calendar.categoryColor
@@ -186,6 +190,7 @@ fun DashboardScreen(
     onCalendarDisplaySelected: (CalendarDisplayMode) -> Unit = {},
     onViewModeChange: (DashboardViewMode) -> Unit = {},
     favoriteOccasionIds: Set<String> = emptySet(),
+    onToggleFavoriteOccasion: (String) -> Unit = {},
     initialPlanRequest: OccasionPlanRequest? = null,
     onInitialPlanConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -211,6 +216,9 @@ fun DashboardScreen(
     // list starts right under its title instead of under three rows of controls.
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var categoriesOpen by rememberSaveable { mutableStateOf(false) }
+    var showDayAgenda by rememberSaveable { mutableStateOf(false) }
+    var showWeeklyReview by rememberSaveable { mutableStateOf(false) }
+    var radarPlan by remember { mutableStateOf<OccasionRecommendation?>(null) }
 
     LaunchedEffect(initialShareText, initialOpenAdd) {
         if (initialOpenAdd || !initialShareText.isNullOrBlank()) {
@@ -230,7 +238,7 @@ fun DashboardScreen(
     }
     LaunchedEffect(initialPlanRequest) {
         if (initialPlanRequest != null) {
-            if (initialPlanRequest.checklist.isNotEmpty()) {
+            if (initialPlanRequest.checklist.isNotEmpty() || initialPlanRequest.planningTag != null) {
                 editingTask = OccasionTemplates.draft(initialPlanRequest, zone).copy(countdownTheme = settings.countdownTheme)
             } else {
                 sharedText = initialPlanRequest.title
@@ -258,7 +266,7 @@ fun DashboardScreen(
         viewModel.changes.collect { change ->
             val result = snackbarHost.showSnackbar(
                 message = taskChangeMessage(context, change),
-                actionLabel = undoActionLabel,
+                actionLabel = if (change.kind == TaskChangeKind.ADD_FAILED) null else undoActionLabel,
                 withDismissAction = false,
                 duration = SnackbarDuration.Short,
             )
@@ -279,12 +287,13 @@ fun DashboardScreen(
     val todayDateForOccasions = remember(now) { now.toLocalDate() }
     val todayEpoch = remember(zone, todayDateForOccasions) { todayDateForOccasions.atStartOfDay(zone).toInstant().toEpochMilli() }
     val todayPersian = remember(zone, todayEpoch) { PersianDateUtils.today(zone, todayEpoch) }
-    val occasionIndex = remember(occasionCatalog, enabledOccasionCategories, settings.lunarOffsetDays, todayPersian.year) {
+    val occasionIndex = remember(occasionCatalog, enabledOccasionCategories, settings.lunarOffsetDays, settings.occasionCultureIds, todayPersian.year) {
         OccasionIndex.build(
             catalog = occasionCatalog,
             jalaliYears = listOf(todayPersian.year, todayPersian.year + 1),
             lunarOffsetDays = settings.lunarOffsetDays,
             enabledCategories = enabledOccasionCategories,
+            enabledCultures = settings.enabledOccasionCultures(),
             zone = zone,
         )
     }
@@ -383,6 +392,17 @@ fun DashboardScreen(
                         }
                     },
                 )
+            }
+
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    androidx.compose.material3.OutlinedButton(onClick = { showDayAgenda = true }, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.agenda_title), maxLines = 2)
+                    }
+                    androidx.compose.material3.OutlinedButton(onClick = { showWeeklyReview = true }, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.review_title), maxLines = 2)
+                    }
+                }
             }
 
             // Tasks are the reason the screen exists, so they come first and they keep the space.
@@ -736,6 +756,11 @@ fun DashboardScreen(
             }
 
             item {
+                OccasionRadarCard(occasionIndex, listOf(todayPersian.year, todayPersian.year + 1), todayEpoch,
+                    state.allTasks, favoriteIds, settings.languageTag, onOpen = { radarPlan = it })
+            }
+
+            item {
                 WeeklyWorkloadCard(state.allTasks, now.toInstant(), zone, settings.languageTag,
                     onOpenTask = { editingTask = it },
                     onAdd = { date ->
@@ -758,6 +783,24 @@ fun DashboardScreen(
             hostState = snackbarHost,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp),
         )
+    }
+
+    if (showDayAgenda) DayAgendaSheet(state.allTasks, now.toInstant(), settings,
+        onDraft = { editingTask = it }, onOpenTask = { editingTask = it }, onDismiss = { showDayAgenda = false })
+    if (showWeeklyReview) WeeklyReviewSheet(state.allTasks, now.toInstant(), settings,
+        onOpenTask = { editingTask = it }, onDismiss = { showWeeklyReview = false })
+    radarPlan?.let { recommendation ->
+        val upcoming = recommendation.upcoming
+        OccasionPlanSheet(upcoming.occasion, upcoming.epochMillis, settings.languageTag, upcoming.isFavorite,
+            recommendation.preparationDays,
+            onPlan = { editingTask = OccasionTemplates.draft(it, zone).copy(countdownTheme = settings.countdownTheme); radarPlan = null },
+            onToggleFavorite = { onToggleFavoriteOccasion(upcoming.occasion.id); radarPlan = null },
+            onDismiss = { radarPlan = null },
+            references = occasionCatalog.sources.filter { it.id in upcoming.occasion.sourceIds },
+            educationModeEnabled = settings.educationModeEnabled, tasks = state.allTasks,
+            holidays = remember(occasionCatalog, todayPersian.year, settings.lunarOffsetDays) {
+                OccasionPlanner.holidayDates(occasionCatalog, listOf(todayPersian.year - 1, todayPersian.year, todayPersian.year + 1), settings.lunarOffsetDays, zone)
+            }, thursdayClosed = settings.thursdayWeekendEnabled, onCreatePreparation = viewModel::addTasks)
     }
 
     if (showQuickAdd) {
@@ -1481,7 +1524,7 @@ private fun sortLabel(sort: TaskSort): String = when (sort) {
 }
 
 private fun taskChangeMessage(context: Context, change: TaskChange): String = when (change.kind) {
-    TaskChangeKind.ADDED -> context.getString(R.string.dash_change_added)
+    TaskChangeKind.ADDED -> if (change.count > 1) context.getString(R.string.planning_added_count, change.count) else context.getString(R.string.dash_change_added)
     TaskChangeKind.EDITED -> context.getString(R.string.dash_change_saved)
     TaskChangeKind.COMPLETED -> context.getString(R.string.dash_change_completed)
     TaskChangeKind.REOPENED -> context.getString(R.string.dash_change_reopened)
@@ -1489,6 +1532,7 @@ private fun taskChangeMessage(context: Context, change: TaskChange): String = wh
     TaskChangeKind.ARCHIVED -> context.getString(R.string.dash_change_archived)
     TaskChangeKind.UNARCHIVED -> context.getString(R.string.dash_change_unarchived)
     TaskChangeKind.DELETED -> context.getString(R.string.dash_change_deleted)
+    TaskChangeKind.ADD_FAILED -> context.getString(R.string.planning_save_failed)
 }
 
 private fun groupTasks(tasks: List<Task>, zone: ZoneId): List<GroupedTasks> {

@@ -55,6 +55,8 @@ data class AppSettings(
     val occasionReminderLeadDays: Int = 0,
     /** How the dashboard lays out its task and countdown sections; see [DashboardViewMode]. */
     val dashboardViewMode: DashboardViewMode = DashboardViewMode.LIST,
+    /** Independent discovery packs; an empty list intentionally hides all occasion packs. */
+    val occasionCultureIds: List<String> = OccasionCulture.defaultIds,
 ) {
     init {
         require(languageTag in setOf("fa", "en"))

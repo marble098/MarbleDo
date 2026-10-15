@@ -14,6 +14,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.marbledo.domain.model.OccasionCulture
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -28,6 +29,9 @@ internal fun OccasionFilterSheet(
     onCategory: (OccasionCategory?) -> Unit,
     onCalendar: (OccasionCalendar?) -> Unit,
     onDismiss: () -> Unit,
+    culture: OccasionCulture? = null,
+    enabledCultures: Set<OccasionCulture> = OccasionCulture.all,
+    onCulture: (OccasionCulture?) -> Unit = {},
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(18.dp),
@@ -42,6 +46,11 @@ internal fun OccasionFilterSheet(
             FilterChip(selected = calendar == null, onClick = { onCalendar(null) }, label = { Text(stringResource(R.string.calendar_filter_all)) })
             OccasionCalendar.entries.forEach { option ->
                 FilterChip(selected = calendar == option, onClick = { onCalendar(option) }, label = { Text(stringResource(calendarLabelRes(option))) })
+            }
+            Text(stringResource(R.string.culture_title), style = MaterialTheme.typography.titleSmall)
+            FilterChip(selected = culture == null, onClick = { onCulture(null) }, label = { Text(stringResource(R.string.calendar_filter_all)) })
+            OccasionCulture.entries.filter { it in enabledCultures }.forEach { option ->
+                FilterChip(selected = culture == option, onClick = { onCulture(option) }, label = { Text(stringResource(cultureLabelRes(option))) })
             }
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.picker_confirm)) }
         }

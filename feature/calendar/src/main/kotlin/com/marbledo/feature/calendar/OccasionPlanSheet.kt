@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.marbledo.domain.util.TextNormalizer
 import java.time.LocalDate
+import com.marbledo.domain.model.Task
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -67,9 +68,19 @@ fun OccasionPlanSheet(
     onDismiss: () -> Unit,
     references: List<CatalogReference> = emptyList(),
     educationModeEnabled: Boolean = false,
+    tasks: List<Task> = emptyList(),
+    holidays: Set<LocalDate> = emptySet(),
+    thursdayClosed: Boolean = false,
+    onCreatePreparation: (List<Task>) -> Unit = {},
 ) {
     var days by rememberSaveable(occasion.id) { mutableIntStateOf(prepDays.coerceIn(0, 30)) }
     var template by rememberSaveable(occasion.id) { mutableStateOf(PreparationTemplate.SIMPLE) }
+    var showTimeline by rememberSaveable(occasion.id) { mutableStateOf(false) }
+    if (showTimeline) {
+        PreparationTimelineSheet(occasion, epochMillis, languageTag, tasks, holidays, thursdayClosed,
+            onCreate = onCreatePreparation, onDismiss = { showTimeline = false; onDismiss() })
+        return
+    }
     val numeralMode = LocalNumeralMode.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
@@ -106,6 +117,18 @@ fun OccasionPlanSheet(
                 Text(TextNormalizer.formatDigits(stringResource(R.string.calendar_window_days, occasion.durationDays), numeralMode),
                     style = MaterialTheme.typography.bodySmall)
             }
+            val cultureNames = occasion.cultures.map { stringResource(cultureLabelRes(it)) }
+            Text(cultureNames.joinToString(" · "), style = MaterialTheme.typography.labelSmall)
+            if (occasion.dateRule != OccasionDateRule.FIXED) {
+                Text(stringResource(R.string.occasion_calculated_date), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary)
+            }
+            val eventDate = java.time.Instant.ofEpochMilli(epochMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+            if (OccasionIntelligence.isPlanned(occasion, eventDate, tasks, java.time.ZoneId.systemDefault())) {
+                Text(stringResource(R.string.radar_planned), style = MaterialTheme.typography.bodySmall)
+            }
+            PlanAction(icon = Icons.Outlined.Checklist, title = stringResource(R.string.timeline_title),
+                subtitle = stringResource(R.string.timeline_short_hint), onClick = { showTimeline = true })
             Text(
                 stringResource(R.string.calendar_plan_hint),
                 style = MaterialTheme.typography.bodySmall,

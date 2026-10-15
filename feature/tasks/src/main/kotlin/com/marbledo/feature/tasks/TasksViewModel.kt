@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 fun interface TaskActionSink {
     fun onTaskChanged(task: Task)
@@ -29,7 +31,7 @@ enum class TaskFilter { TODAY, TOMORROW, UPCOMING, ALL, COMPLETED, ARCHIVED }
 enum class TaskSort { DUE_DATE, PRIORITY, TITLE, RECENT }
 
 /** What just happened, so the screen can confirm it with a short message and an undo action. */
-enum class TaskChangeKind { ADDED, EDITED, COMPLETED, REOPENED, BULK_COMPLETED, ARCHIVED, UNARCHIVED, DELETED }
+enum class TaskChangeKind { ADDED, EDITED, COMPLETED, REOPENED, BULK_COMPLETED, ARCHIVED, UNARCHIVED, DELETED, ADD_FAILED }
 
 data class TaskChange(val kind: TaskChangeKind, val count: Int = 1)
 
@@ -66,6 +68,7 @@ class TasksViewModel(
     private val selected = MutableStateFlow<Set<Long>>(emptySet())
     private val organization = MutableStateFlow(TaskOrganization())
     private val changeEvents = MutableSharedFlow<TaskChange>(extraBufferCapacity = 16)
+    private val batchMutex = Mutex()
     private var lastUndoAction: TaskUndoAction? = null
 
     /** Emits after every change the user made, so the screen can show a confirmation with undo. */
@@ -142,6 +145,34 @@ class TasksViewModel(
             lastUndoAction = TaskUndoAction.Remove(listOf(id))
             backupScheduler.scheduleDebounced()
             changeEvents.emit(TaskChange(TaskChangeKind.ADDED))
+        }
+    }
+
+    /** User-confirmed preparation timeline. Rechecks stable stage tags to reject double taps. */
+    fun addTasks(tasks: List<Task>) {
+        if (tasks.isEmpty()) return
+        require(tasks.all { it.id == 0L })
+        viewModelScope.launch {
+            batchMutex.withLock {
+                val existing = repository.observeTasks().first().filterNot { it.isArchived }.flatMap { it.tags }.toMutableSet()
+                val newTasks = tasks.filter { task ->
+                    val stage = task.tags.firstOrNull { it.startsWith("occasion-step:") }
+                    stage == null || existing.add(stage)
+                }
+                if (newTasks.isEmpty()) return@withLock
+                val ids = try {
+                    repository.saveNewTasks(newTasks)
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    changeEvents.emit(TaskChange(TaskChangeKind.ADD_FAILED, newTasks.size))
+                    return@withLock
+                }
+                lastUndoAction = TaskUndoAction.Remove(ids)
+                newTasks.zip(ids).forEach { (task, id) -> runCatching { scheduleOrCancel(task.copy(id = id)) } }
+                runCatching { backupScheduler.scheduleDebounced() }
+                changeEvents.emit(TaskChange(TaskChangeKind.ADDED, ids.size))
+            }
         }
     }
 

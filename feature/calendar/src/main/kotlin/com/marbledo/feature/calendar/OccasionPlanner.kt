@@ -16,6 +16,7 @@ data class OccasionPlanRequest(
     val asCountdown: Boolean,
     val checklist: List<String> = emptyList(),
     val description: String = "",
+    val planningTag: String? = null,
 )
 
 /** An enabled occasion resolved to the next day it occurs on, used by "upcoming occasions" lists. */
@@ -69,6 +70,7 @@ object OccasionPlanner {
             title = occasion.title(languageTag),
             dateIso = date.toString(),
             asCountdown = asCountdown,
+            planningTag = OccasionIntelligence.planningTag(occasion.id, Instant.ofEpochMilli(epochMillis).atZone(zone).toLocalDate()),
         )
     }
 
@@ -112,6 +114,16 @@ object OccasionPlanner {
             .sortedWith(compareBy({ it.daysUntil }, { it.epochMillis }, { it.occasion.titleFa }))
             .distinctBy { "${it.occasion.id}-${it.jalaliYear}-${it.month}-${it.day}" }
             .take(limit)
+    }
+
+    /** Public closures remain relevant to preparation even when their discovery pack is hidden. */
+    fun holidayDates(catalog: OccasionCatalog, years: List<Int>, lunarOffsetDays: Int, zone: ZoneId): Set<java.time.LocalDate> {
+        val index = OccasionIndex.build(catalog, years, lunarOffsetDays, OccasionCategory.publicCategories, zone)
+        return years.flatMap { index.forYear(it) }.filter { it.occasion.isHoliday }.mapNotNull { row ->
+            PersianDateUtils.startOfJalaliDay(row.year, row.month, row.day, zone)?.let {
+                Instant.ofEpochMilli(it).atZone(zone).toLocalDate()
+            }
+        }.toSet()
     }
 
     /** Catalogue statistics for the settings "coverage" line. */

@@ -79,6 +79,7 @@ import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.NumeralMode
+import com.marbledo.domain.model.OccasionCulture
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
 import java.time.Instant
@@ -142,6 +143,8 @@ fun CalendarScreen(
     thursdayWeekendEnabled: Boolean = false,
     onExport: (CalendarExportRequest) -> Unit = {},
     exportInProgress: Boolean = false,
+    enabledCultures: Set<OccasionCulture> = OccasionCulture.all,
+    onCreatePreparation: (List<Task>) -> Unit = {},
 ) {
     val zone = remember { ZoneId.systemDefault() }
     val numeralMode = LocalNumeralMode.current
@@ -155,6 +158,7 @@ fun CalendarScreen(
     var favoritesOnly by rememberSaveable { mutableStateOf(false) }
     var plannedOccasion by remember { mutableStateOf<PlannedOccasion?>(null) }
     var filterCategory by rememberSaveable { mutableStateOf<OccasionCategory?>(null) }
+    var filterCulture by rememberSaveable { mutableStateOf<OccasionCulture?>(null) }
     var filterCalendar by rememberSaveable { mutableStateOf<OccasionCalendar?>(null) }
     var holidaysOnly by rememberSaveable { mutableStateOf(false) }
     var culturalOnly by rememberSaveable { mutableStateOf(false) }
@@ -170,7 +174,9 @@ fun CalendarScreen(
     var occasionSearchOpen by rememberSaveable { mutableStateOf(false) }
     var expandedMonths by rememberSaveable { mutableStateOf("") }
     val educationEnabled = OccasionCategory.EDUCATIONAL in enabledCategories
-    LaunchedEffect(enabledCategories) {
+    LaunchedEffect(enabledCategories, enabledCultures) {
+        if (filterCulture !in enabledCultures) filterCulture = null
+        if (plannedOccasion?.occasion?.cultures?.none { it in enabledCultures } == true) plannedOccasion = null
         if (filterCategory !in enabledCategories) filterCategory = null
         if (!educationEnabled) {
             educationOnly = false
@@ -198,7 +204,7 @@ fun CalendarScreen(
     val monthData = remember(monthOffset, tasks, weekStartsSaturday, zone, todayDate) {
         buildMonth(monthOffset, tasks, zone, weekStartsSaturday, todayEpoch)
     }
-    val index = remember(catalog, enabledCategories, lunarOffsetDays, monthData.cells.first().year, monthData.year) {
+    val index = remember(catalog, enabledCategories, enabledCultures, lunarOffsetDays, monthData.cells.first().year, monthData.year) {
         OccasionIndex.build(
             catalog = catalog,
             jalaliYears = buildSet {
@@ -208,6 +214,7 @@ fun CalendarScreen(
             },
             lunarOffsetDays = lunarOffsetDays,
             enabledCategories = enabledCategories,
+            enabledCultures = enabledCultures,
             zone = zone,
         )
     }
@@ -225,7 +232,7 @@ fun CalendarScreen(
     val filter = OccasionFilter(
         query = occasionQuery, category = filterCategory, calendar = filterCalendar,
         holidaysOnly = holidaysOnly, favoritesOnly = favoritesOnly,
-        educationOnly = educationEnabled && educationOnly, culturalOnly = culturalOnly,
+        educationOnly = educationEnabled && educationOnly, culturalOnly = culturalOnly, culture = filterCulture,
     )
     val yearOccasions = remember(yearRows, filter, favoriteOccasionIds) {
         OccasionSearch.filter(yearRows, filter, favoriteOccasionIds)
@@ -259,6 +266,7 @@ fun CalendarScreen(
     val activeFilterCount = listOfNotNull(
         filterCategory,
         filterCalendar,
+        filterCulture,
         true.takeIf { holidaysOnly },
         true.takeIf { culturalOnly },
         true.takeIf { educationOnly },
@@ -268,7 +276,8 @@ fun CalendarScreen(
 
     if (showFilters) {
         OccasionFilterSheet(filterCategory, filterCalendar, enabledCategories,
-            onCategory = { filterCategory = it }, onCalendar = { filterCalendar = it }, onDismiss = { showFilters = false })
+            onCategory = { filterCategory = it }, onCalendar = { filterCalendar = it }, onDismiss = { showFilters = false },
+            culture = filterCulture, enabledCultures = enabledCultures, onCulture = { filterCulture = it })
     }
     if (showPrograms && educationEnabled) {
         SchoolProgramsSheet(catalog, languageTag, onPlan = { showPrograms = false; onPlanOccasion(it) }, onDismiss = { showPrograms = false })
@@ -324,6 +333,13 @@ fun CalendarScreen(
             onDismiss = { plannedOccasion = null },
             references = catalog.sources.filter { it.id in planned.occasion.sourceIds },
             educationModeEnabled = educationEnabled,
+            tasks = tasks,
+            holidays = remember(catalog, lunarOffsetDays, planned.epochMillis) {
+                val year = PersianDateUtils.of(planned.epochMillis, zone).year
+                OccasionPlanner.holidayDates(catalog, listOf(year - 1, year, year + 1), lunarOffsetDays, zone)
+            },
+            thursdayClosed = thursdayWeekendEnabled,
+            onCreatePreparation = onCreatePreparation,
         )
     }
 
@@ -539,6 +555,7 @@ fun CalendarScreen(
                                     occasionQuery = ""
                                     filterCategory = null
                                     filterCalendar = null
+                                    filterCulture = null
                                     favoritesOnly = false
                                     holidaysOnly = false
                                     culturalOnly = false

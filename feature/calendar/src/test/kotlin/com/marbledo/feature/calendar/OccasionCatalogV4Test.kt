@@ -32,7 +32,7 @@ class OccasionCatalogV4Test {
         assertEquals("5", old.dataVersion)
         assertEquals(726, old.occasions.size)
         assertFalse(CatalogUpdatePolicy.accepts(old, catalog))
-        assertTrue(OccasionRepository.CATALOG_URLS.all { it.contains("occasions-v4-fa.json") })
+        assertTrue(OccasionRepository.CATALOG_URLS.all { it.contains("occasions-v5-fa.json") })
     }
 
     @Test fun `old cache schema remains readable but cannot supersede this richer bundle`() {

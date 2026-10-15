@@ -64,6 +64,42 @@ class TasksViewModelUndoTest {
         }
     }
 
+    @Test
+    fun `preparation batch is deduplicated on double tap and undone as one change`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryTaskRepository()
+            val reminders = RecordingReminderScheduler()
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, reminders)
+            val tasks = listOf(Task(title = "Plan", tags = listOf("occasion-step:x:2026-12-25:plan")),
+                Task(title = "Prepare", tags = listOf("occasion-step:x:2026-12-25:prepare")))
+            viewModel.addTasks(tasks)
+            viewModel.addTasks(tasks)
+            advanceUntilIdle()
+            assertEquals(2, repository.tasks.value.size)
+            val ids = repository.tasks.value.map { it.id }
+            viewModel.undoLastChange()
+            advanceUntilIdle()
+            assertTrue(repository.tasks.value.isEmpty())
+            assertTrue(reminders.cancelled.containsAll(ids))
+        } finally { Dispatchers.resetMain() }
+    }
+
+    @Test
+    fun `completed preparation stages are retained rather than recreated`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val repository = InMemoryTaskRepository()
+            val saved = Task(title = "Renamed", isCompleted = true, tags = listOf("occasion-step:x:2026-12-25:plan"))
+            repository.save(saved)
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, RecordingReminderScheduler())
+            viewModel.addTasks(listOf(saved.copy(id = 0, isCompleted = false)))
+            advanceUntilIdle()
+            assertEquals(1, repository.tasks.value.size)
+            assertTrue(repository.tasks.value.single().isCompleted)
+        } finally { Dispatchers.resetMain() }
+    }
+
     private class InMemoryTaskRepository : TaskRepository {
         val tasks = MutableStateFlow<List<Task>>(emptyList())
         private var nextId = 1L
@@ -77,6 +113,8 @@ class TasksViewModelUndoTest {
             tasks.value = tasks.value.filterNot { it.id == id } + task.copy(id = id)
             return id
         }
+
+        override suspend fun saveNewTasks(tasks: List<Task>): List<Long> = tasks.map { save(it) }
 
         override suspend fun setCompleted(id: Long, completed: Boolean) {
             tasks.value = tasks.value.map { if (it.id == id) it.copy(isCompleted = completed) else it }

@@ -43,4 +43,7 @@ message MarbleDoSettingsProto {
   string habit_theme = 30;
   // How the dashboard lays out tasks and countdowns (LIST / TIMELINE / GRID).
   string dashboard_view_mode = 31;
+  repeated string occasion_culture_ids = 32;
+  // Presence distinguishes an intentionally empty selection from an older install.
+  optional bool occasion_cultures_configured = 33;
 }

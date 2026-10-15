@@ -1,5 +1,6 @@
 package com.marbledo.feature.calendar
 
+import com.marbledo.domain.model.OccasionCulture
 import com.marbledo.domain.util.TextNormalizer
 
 data class OccasionFilter(
@@ -10,6 +11,7 @@ data class OccasionFilter(
     val favoritesOnly: Boolean = false,
     val educationOnly: Boolean = false,
     val culturalOnly: Boolean = false,
+    val culture: OccasionCulture? = null,
 )
 
 object OccasionSearch {
@@ -21,6 +23,7 @@ object OccasionSearch {
             val text = searchKey("${occasion.titleFa} ${occasion.titleEn} ${occasion.tags.joinToString(" ")}")
             (filter.category == null || occasion.category == filter.category) &&
                 (filter.calendar == null || occasion.calendar == filter.calendar) &&
+                (filter.culture == null || filter.culture in occasion.cultures) &&
                 (!filter.holidaysOnly || occasion.isHoliday) &&
                 (!filter.favoritesOnly || occasion.id in favoriteIds) &&
                 (!filter.educationOnly || occasion.isEducational) &&
