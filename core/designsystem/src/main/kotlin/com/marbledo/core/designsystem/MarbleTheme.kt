@@ -50,8 +50,6 @@ private val LightColors: ColorScheme = lightColorScheme(
     outlineVariant = Color(0xFFC9C5D0),
     scrim = Color(0xFF1B1B1F).copy(alpha = 0.45f),
     error = Color(0xFFBA1A1A),
-    // Visual polish: subtle shadow tint for elevated cards in light mode
-    shadow = Color(0xFF1B1B1F),
 )
 
 private val GlassColors = LightColors.copy(
@@ -61,7 +59,6 @@ private val GlassColors = LightColors.copy(
     surfaceContainer = Color(0xFFF0EDF8),
     surfaceContainerHigh = Color(0xFFEDE8F5),
     primaryContainer = Color(0xFFE2DEFF),
-    shadow = Color(0xFF6258C8).copy(alpha = 0.12f),
 )
 
 private val DarkColors = darkColorScheme(
@@ -80,7 +77,6 @@ private val DarkColors = darkColorScheme(
     outline = Color(0xFF938F9A),
     outlineVariant = Color(0xFF4A474E),
     scrim = Color.Black.copy(alpha = 0.55f),
-    shadow = Color.Black,
 )
 
 private val AmoledColors = DarkColors.copy(
