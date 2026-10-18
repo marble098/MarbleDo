@@ -8,12 +8,10 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.marbledo.core.data.settings.SettingsRepository
 import com.marbledo.feature.calendar.OccasionRefreshResult
 import com.marbledo.feature.calendar.OccasionRepository
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
@@ -25,8 +23,6 @@ class OccasionSyncWorker(
     workerParameters: WorkerParameters,
 ) : CoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val settings = runCatching { SettingsRepository(applicationContext).settings.first() }.getOrNull()
-        if (settings != null && !settings.occasionAutoUpdateEnabled) return@withContext Result.success()
         val repository = OccasionRepository(applicationContext)
         when (repository.refreshIfStale()) {
             OccasionRefreshResult.FAILED -> if (runAttemptCount < 2) Result.retry() else Result.success()

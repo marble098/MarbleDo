@@ -93,7 +93,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.LayoutDirection
+import com.marble098.marbledo.ui.AuroraOrbs
+import com.marble098.marbledo.ui.FocusOrbit
+import com.marble098.marbledo.ui.auroraBrush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -889,18 +894,31 @@ private fun DailyHeaderCard(
         currentHour < 18 -> stringResource(R.string.dash_greeting_afternoon)
         else -> stringResource(R.string.dash_greeting_evening)
     }
-    val gradient = Brush.verticalGradient(
-        listOf(
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.surface,
-        ),
-    )
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val aurora = auroraBrush(currentHour, isRtl)
+    // Visual debt fixed: stronger elevation, clearer hierarchy, aurora motion replaces flat gradient.
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         color = Color.Transparent,
+        shadowElevation = 2.dp,
+        tonalElevation = 1.dp,
     ) {
-        Box(Modifier.background(gradient, MaterialTheme.shapes.extraLarge)) {
+        Box(
+            Modifier
+                .background(aurora, MaterialTheme.shapes.extraLarge)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                        ),
+                    ),
+                    MaterialTheme.shapes.extraLarge,
+                ),
+        ) {
+            // Soft blurred orbs behind content — adds depth without distracting from text
+            AuroraOrbs(hour = currentHour, modifier = Modifier.matchParentSize())
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -923,7 +941,7 @@ private fun DailyHeaderCard(
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)) {
                             IconButton(onClick = onOpenCalendar) {
                                 Icon(
                                     Icons.Outlined.CalendarMonth,
@@ -932,7 +950,7 @@ private fun DailyHeaderCard(
                                 )
                             }
                         }
-                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)) {
                             IconButton(onClick = onShare) {
                                 Icon(
                                     Icons.Outlined.Share,
@@ -944,22 +962,36 @@ private fun DailyHeaderCard(
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    HeaderStat(stringResource(R.string.dash_stat_today), todayOpen, numeralMode, Modifier.weight(1f))
-                    HeaderStatDivider()
-                    HeaderStat(stringResource(R.string.dash_stat_done), completedCount, numeralMode, Modifier.weight(1f))
-                    HeaderStatDivider()
-                    HeaderStat(stringResource(R.string.dash_stat_all), openCount, numeralMode, Modifier.weight(1f))
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LinearProgressIndicator(
-                        progress = { progress.coerceIn(0f, 1f) },
-                        modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
-                    )
-                    Text(
-                        TextNormalizer.formatDigits("${(progress * 100).toInt()}%", numeralMode),
-                        style = MarbleTextStyles.metaLabel,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                // Stats row now pairs with the Orbit ring for a richer, glanceable workload view
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            HeaderStat(stringResource(R.string.dash_stat_today), todayOpen, numeralMode, Modifier.weight(1f))
+                            HeaderStatDivider()
+                            HeaderStat(stringResource(R.string.dash_stat_done), completedCount, numeralMode, Modifier.weight(1f))
+                            HeaderStatDivider()
+                            HeaderStat(stringResource(R.string.dash_stat_all), openCount, numeralMode, Modifier.weight(1f))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            LinearProgressIndicator(
+                                progress = { progress.coerceIn(0f, 1f) },
+                                modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
+                            )
+                            Text(
+                                TextNormalizer.formatDigits("${(progress * 100).toInt()}%", numeralMode),
+                                style = MarbleTextStyles.metaLabel,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    FocusOrbit(
+                        completed = completedCount,
+                        total = (todayOpen + completedCount).coerceAtLeast(1),
+                        open = todayOpen,
+                        numeralMode = numeralMode,
+                        isRtl = isRtl,
+                        modifier = Modifier.padding(start = 4.dp),
+                        orbitSize = 88.dp,
                     )
                 }
             }

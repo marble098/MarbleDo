@@ -1,8 +1,8 @@
 {
   "schemaVersion": 5,
   "calendar": "persian",
-  "dataVersion": "8",
-  "updatedAt": "2026-10-15",
+  "dataVersion": "10",
+  "updatedAt": "2026-10-18",
   "note": "Versioned, curated offline catalog, not a live government feed. Sourced entries cite reviewed references; legacy entries remain explicitly unreviewed. Rules are resolved in their own calendar. Islamic dates use ICU civil arithmetic with user adjustment and may differ from announced dates. Guidance windows and school programs are not official holidays or nationwide execution deadlines. School-occasion weeks are recorded with their published or customary start day and length; guidance weeks must still be confirmed against the current year's circular.",
   "jalali": [
     {
@@ -7391,6 +7391,1369 @@
       "cultures": [
         "iranian"
       ]
+    },
+    {
+      "month": 11,
+      "day": 3,
+      "titleFa": "روز جهانی تالاب‌ها (ایران)",
+      "titleEn": "World Wetlands Day (Iran)",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-11-3-World Wetlands Day (Iran)",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 4,
+      "titleFa": "روز جهانی مبارزه با سرطان",
+      "titleEn": "World Cancer Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-11-4-World Cancer Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 7,
+      "titleFa": "روز جانباز",
+      "titleEn": "Veterans' Honor Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-11-7-Veterans' Honor Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 8,
+      "titleFa": "روز جوانمردی و پهلوانی",
+      "titleEn": "Chivalry and Athletic Morality Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-11-8-Chivalry and Athletic Morality Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 9,
+      "titleFa": "روز جهانی اینترنت امن‌تر",
+      "titleEn": "Safer Internet Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-11-9-Safer Internet Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 10,
+      "titleFa": "روز حافظ‌خوانی",
+      "titleEn": "Hafez Reading Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-11-10-Hafez Reading Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 13,
+      "titleFa": "روز جهانی رادیو",
+      "titleEn": "World Radio Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-11-13-World Radio Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 16,
+      "titleFa": "روز جهانی سلامت روان کودکان",
+      "titleEn": "Children's Mental Health Week begins",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-11-16-Children's Mental Health Week begins",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health",
+        "education"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 11,
+      "day": 18,
+      "titleFa": "روز ملی بهمن و عشق میهنی",
+      "titleEn": "Patriotic Bahman Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-11-18-Patriotic Bahman Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 20,
+      "titleFa": "روز جهانی عدالت اجتماعی",
+      "titleEn": "World Day of Social Justice",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-11-20-World Day of Social Justice",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 23,
+      "titleFa": "روز مهندسی آب",
+      "titleEn": "Water Engineering Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-11-23-Water Engineering Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 25,
+      "titleFa": "روز مادر زبان مادری (ایرانی)",
+      "titleEn": "Mother Language Day (Iran)",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-11-25-Mother Language Day (Iran)",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "education",
+        "culture"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 26,
+      "titleFa": "روز جهانی زبان مادری",
+      "titleEn": "International Mother Language Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-11-26-International Mother Language Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 27,
+      "titleFa": "روز بزرگداشت خواجه نصیرالدین طوسی و مهندس",
+      "titleEn": "Khajeh Nasir and Engineer Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-11-27-Khajeh Nasir and Engineer Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 28,
+      "titleFa": "روز امور تربیتی",
+      "titleEn": "Educational Affairs Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-11-28-Educational Affairs Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 2,
+      "titleFa": "روز جهانی مطبوعات",
+      "titleEn": "World Press Freedom Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-3-2-World Press Freedom Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 9,
+      "titleFa": "روز ملی فرش و هنرهای دستی",
+      "titleEn": "National Carpet and Handicrafts Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-3-9-National Carpet and Handicrafts Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 10,
+      "titleFa": "روز جهانی پرندگان مهاجر",
+      "titleEn": "World Migratory Bird Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-3-10-World Migratory Bird Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 11,
+      "titleFa": "روز جهانی خانواده",
+      "titleEn": "International Day of Families",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-3-11-International Day of Families",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 12,
+      "titleFa": "روز جهانی موزه",
+      "titleEn": "International Museum Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-3-12-International Museum Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 13,
+      "titleFa": "روز جهانی تنوع فرهنگی",
+      "titleEn": "World Day for Cultural Diversity",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-3-13-World Day for Cultural Diversity",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 18,
+      "titleFa": "روز ملی مشاوره",
+      "titleEn": "National Counseling Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-3-18-National Counseling Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 19,
+      "titleFa": "روز جهانی بدون دخانیات (پیش‌درآمد)",
+      "titleEn": "World No-Tobacco Preparation Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-3-19-World No-Tobacco Preparation Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 5,
+      "titleFa": "روز جهانی قدس کوچک (فرهنگی)",
+      "titleEn": "Quds Cultural Awareness Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-1-5-Quds Cultural Awareness Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 6,
+      "titleFa": "روز جهانی بهداشت (ایران)",
+      "titleEn": "World Health Day (Iran)",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-1-6-World Health Day (Iran)",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 7,
+      "titleFa": "روز جهانی هوانوردی",
+      "titleEn": "World Aviation Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-1-7-World Aviation Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 9,
+      "titleFa": "روز ملی فناوری هسته‌ای (گرامی‌داشت)",
+      "titleEn": "National Nuclear Technology Commemoration",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-1-9-National Nuclear Technology Commemoration",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 10,
+      "titleFa": "روز جهانی همبستگی جوانان",
+      "titleEn": "International Youth Solidarity Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-1-10-International Youth Solidarity Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 14,
+      "titleFa": "روز قلم",
+      "titleEn": "Pen Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-1-14-Pen Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 2,
+      "titleFa": "روز جهانی جوانان",
+      "titleEn": "International Youth Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-5-2-International Youth Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 5,
+      "titleFa": "روز جهانی انسان‌دوستی",
+      "titleEn": "World Humanitarian Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-5-5-World Humanitarian Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 9,
+      "titleFa": "روز جهانی عکاسی",
+      "titleEn": "World Photography Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-5-9-World Photography Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 12,
+      "titleFa": "روز جهانی گردشگری داخلی",
+      "titleEn": "Domestic Tourism Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-5-12-Domestic Tourism Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 15,
+      "titleFa": "روز جهانی یادمان قربانیان ترافیک",
+      "titleEn": "World Day of Remembrance for Road Traffic Victims",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-5-15-World Day of Remembrance for Road Traffic Victims",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 5,
+      "titleFa": "روز جهانی صلح (ایران)",
+      "titleEn": "International Day of Peace (Iran)",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-6-5-International Day of Peace (Iran)",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 10,
+      "titleFa": "روز جهانی گردشگری",
+      "titleEn": "World Tourism Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-6-10-World Tourism Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 15,
+      "titleFa": "روز دمکراسی",
+      "titleEn": "International Day of Democracy",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-6-15-International Day of Democracy",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 5,
+      "titleFa": "روز جهانی معلم (یونسکو)",
+      "titleEn": "World Teachers' Day (UNESCO)",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-7-5-World Teachers' Day (UNESCO)",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 8,
+      "titleFa": "روز جهانی بهداشت روان",
+      "titleEn": "World Mental Health Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-7-8-World Mental Health Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 12,
+      "titleFa": "روز جهانی دختر",
+      "titleEn": "International Day of the Girl Child (Iran)",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-7-12-International Day of the Girl Child (Iran)",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 14,
+      "titleFa": "روز ملی کودک و تئاتر کودک",
+      "titleEn": "National Child and Children's Theater Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-7-14-National Child and Children's Theater Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 2,
+      "titleFa": "روز جهانی دیابت",
+      "titleEn": "World Diabetes Day (Iran)",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-8-2-World Diabetes Day (Iran)",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 6,
+      "titleFa": "روز جهانی مهربانی",
+      "titleEn": "World Kindness Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-8-6-World Kindness Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 9,
+      "titleFa": "روز جهانی علم و صلح",
+      "titleEn": "World Science Day for Peace",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-8-9-World Science Day for Peace",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 9,
+      "day": 4,
+      "titleFa": "روز جهانی حقوق بشر",
+      "titleEn": "Human Rights Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-9-4-Human Rights Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 9,
+      "day": 10,
+      "titleFa": "روز جهانی کوهستان",
+      "titleEn": "International Mountain Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-9-10-International Mountain Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 10,
+      "day": 5,
+      "titleFa": "روز جهانی مبارزه با فساد",
+      "titleEn": "International Anti-Corruption Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-10-5-International Anti-Corruption Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 10,
+      "day": 12,
+      "titleFa": "روز جهانی پوشش گیاهی",
+      "titleEn": "International Plant Health Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-10-12-International Plant Health Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 12,
+      "day": 1,
+      "titleFa": "روز جهانی آب",
+      "titleEn": "World Water Day (Iran)",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-12-1-World Water Day (Iran)",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 12,
+      "day": 5,
+      "titleFa": "روز ملی حمایت از محیط‌بان",
+      "titleEn": "National Park Ranger Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-12-5-National Park Ranger Day",
+      "sourceIds": [
+        "ir-arts-heritage"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 12,
+      "day": 10,
+      "titleFa": "روز جهانی شادی",
+      "titleEn": "International Day of Happiness",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-12-10-International Day of Happiness",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 12,
+      "day": 20,
+      "titleFa": "روز جهانی تئاتر",
+      "titleEn": "World Theatre Day",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-12-20-World Theatre Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 8,
+      "titleFa": "روز ملی فناوری",
+      "titleEn": "National Technology Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-4-8-National Technology Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 24,
+      "titleFa": "روز کتابخانه",
+      "titleEn": "Library Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-5-24-Library Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 1,
+      "titleFa": "روز پزشک",
+      "titleEn": "National Doctors' Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-6-1-National Doctors' Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 15,
+      "titleFa": "روز قدردانی از پرستاران",
+      "titleEn": "National Nurses' Appreciation Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-5-15-National Nurses' Appreciation Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 10,
+      "titleFa": "روز اینترنت",
+      "titleEn": "Internet Day (Iran)",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-8-10-Internet Day (Iran)",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 20,
+      "titleFa": "روز هنرهای نمایشی",
+      "titleEn": "Theater Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-7-20-Theater Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 22,
+      "titleFa": "روز میراث سینما",
+      "titleEn": "Cinema Heritage Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-7-22-Cinema Heritage Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 20,
+      "titleFa": "روز میراث موسیقی",
+      "titleEn": "Music Heritage Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-6-20-Music Heritage Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 10,
+      "titleFa": "روز صنایع دستی",
+      "titleEn": "Handmade Crafts Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-3-10-Handmade Crafts Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 9,
+      "titleFa": "روز اهدای خون — بزرگداشت",
+      "titleEn": "Blood Donation Honor Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-8-9-Blood Donation Honor Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 31,
+      "titleFa": "روز اهدای عضو",
+      "titleEn": "Organ Donation Day (Iran)",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-2-31-Organ Donation Day (Iran)",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 2,
+      "titleFa": "روز زمین پاک — ایران",
+      "titleEn": "Earth Day (Iranian)",
+      "category": "international",
+      "holiday": false,
+      "id": "jalali-2-2-Earth Day (Iranian)",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 12,
+      "day": 16,
+      "titleFa": "هفته منابع طبیعی — گسترش",
+      "titleEn": "Tree Planting Extended",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-12-16-Tree Planting Extended",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "environment"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 7,
+      "day": 26,
+      "titleFa": "روز تربیت بدنی و ورزش",
+      "titleEn": "Sports Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-7-26-Sports Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 18,
+      "titleFa": "روز ورزش زنان",
+      "titleEn": "Women's Sports Day",
+      "category": "national",
+      "holiday": false,
+      "id": "jalali-5-18-Women's Sports Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 15,
+      "titleFa": "روز تغذیه کودک",
+      "titleEn": "Child Nutrition Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-8-15-Child Nutrition Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 10,
+      "titleFa": "روز آموزش بهداشت روان",
+      "titleEn": "Mental Health Education Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-7-10-Mental Health Education Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "health",
+        "education"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 4,
+      "titleFa": "روز اکتشاف فضا",
+      "titleEn": "Space Exploration Day (Iran)",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-8-4-Space Exploration Day (Iran)",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "science",
+        "technology"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 10,
+      "titleFa": "روز رباتیک",
+      "titleEn": "Robotics Day",
+      "category": "official",
+      "holiday": false,
+      "id": "jalali-4-10-Robotics Day",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "technology"
+      ]
     }
   ],
   "lunar": [
@@ -9525,6 +10888,387 @@
       ],
       "cultures": [
         "iranian"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 1,
+      "titleFa": "روز بزرگداشت سلمان فارسی",
+      "titleEn": "Salman al-Farsi Day",
+      "category": "official",
+      "holiday": false,
+      "id": "lunar-4-1-Salman al-Farsi Day",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 5,
+      "titleFa": "روز وقف (قمری)",
+      "titleEn": "Endowment (Waqf) Day (lunar)",
+      "category": "official",
+      "holiday": false,
+      "id": "lunar-4-5-Endowment (Waqf) Day (lunar)",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 10,
+      "titleFa": "روز بزرگداشت شاهچراغ (تمدید)",
+      "titleEn": "Shah Cheragh Extended Commemoration",
+      "category": "official",
+      "holiday": false,
+      "id": "lunar-4-10-Shah Cheragh Extended Commemoration",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 1,
+      "titleFa": "روز جانباز قمری",
+      "titleEn": "Veteran's Spiritual Day (lunar)",
+      "category": "national",
+      "holiday": false,
+      "id": "lunar-5-1-Veteran's Spiritual Day (lunar)",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 10,
+      "titleFa": "روز جهانی مسجد (قمری)",
+      "titleEn": "World Mosque Day (lunar)",
+      "category": "international",
+      "holiday": false,
+      "id": "lunar-5-10-World Mosque Day (lunar)",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 15,
+      "titleFa": "روز بزرگداشت امام حسن عسکری (قمری)",
+      "titleEn": "Imam Hassan Askari Remembrance",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-5-15-Imam Hassan Askari Remembrance",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 1,
+      "titleFa": "آغاز ماه رجب‌المرجب",
+      "titleEn": "Beginning of Rajab",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-6-1-Beginning of Rajab",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 10,
+      "titleFa": "وفات حضرت زینب (س)",
+      "titleEn": "Death Anniversary of Lady Zeinab",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-6-10-Death Anniversary of Lady Zeinab",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 15,
+      "titleFa": "ولادت امام زین‌العابدین",
+      "titleEn": "Birth of Imam Zein al-Abedin",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-6-15-Birth of Imam Zein al-Abedin",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 20,
+      "titleFa": "روز بعثت پیامبر در روایت دیگر",
+      "titleEn": "Mab'ath Alternate Narration",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-6-20-Mab'ath Alternate Narration",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "traditional"
+      ]
+    },
+    {
+      "month": 10,
+      "day": 5,
+      "titleFa": "روز بزرگداشت حضرت معصومه (قمری)",
+      "titleEn": "Lady Masoumeh Remembrance (lunar)",
+      "category": "official",
+      "holiday": false,
+      "id": "lunar-10-5-Lady Masoumeh Remembrance (lunar)",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 10,
+      "day": 10,
+      "titleFa": "روز بزرگداشت امام رضا (قمری) — تکمیلی",
+      "titleEn": "Imam Reza Commemoration Supplement",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-10-10-Imam Reza Commemoration Supplement",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 10,
+      "day": 15,
+      "titleFa": "روز ازدواج حضرت علی و فاطمه — گرامی‌داشت",
+      "titleEn": "Ali and Fatima Wedding Celebration",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-10-15-Ali and Fatima Wedding Celebration",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 8,
+      "titleFa": "روز شهادت امام حسن عسکری (تکمیلی)",
+      "titleEn": "Martyrdom of Imam Hassan Askari (supplement)",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-11-8-Martyrdom of Imam Hassan Askari (supplement)",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 12,
+      "day": 10,
+      "titleFa": "روز وقف علمی (قمری)",
+      "titleEn": "Scientific Endowment Day (lunar)",
+      "category": "official",
+      "holiday": false,
+      "id": "lunar-12-10-Scientific Endowment Day (lunar)",
+      "sourceIds": [
+        "lunar-extended"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 28,
+      "titleFa": "شهادت امام حسن مجتبی — یادبود",
+      "titleEn": "Martyrdom of Imam Hassan (lunar) — additional",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-2-28-Martyrdom of Imam Hassan (lunar) — additional",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 15,
+      "titleFa": "ولادت امام حسن مجتبی",
+      "titleEn": "Birth of Imam Hassan Mojtaba (lunar)",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-3-15-Birth of Imam Hassan Mojtaba (lunar)",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 17,
+      "titleFa": "یادبود جنگ بدر",
+      "titleEn": "Battle of Badr Remembrance",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-3-17-Battle of Badr Remembrance",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 20,
+      "titleFa": "یادبود فتح مکه",
+      "titleEn": "Conquest of Mecca Remembrance",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-8-20-Conquest of Mecca Remembrance",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 25,
+      "titleFa": "شهادت امام موسی کاظم — تکمیلی",
+      "titleEn": "Martyrdom of Imam Kazim (extra)",
+      "category": "religious",
+      "holiday": false,
+      "id": "lunar-7-25-Martyrdom of Imam Kazim (extra)",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian"
+      ],
+      "tags": [
+        "islamic"
       ]
     }
   ],
@@ -18310,6 +20054,1564 @@
       ],
       "noteFa": "مناسبت فرهنگی؛ تعطیلی رسمی ایران نیست. شیوهٔ برگزاری در کشورها متفاوت است.",
       "noteEn": "Cultural observance, not an Iranian public holiday. Traditions vary by country."
+    },
+    {
+      "month": 1,
+      "day": 2,
+      "titleFa": "روز جهانی صلح و همبستگی",
+      "titleEn": "World Day of Peace and Solidarity",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-2-World Day of Peace and Solidarity",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 8,
+      "titleFa": "روز جهانی تایپ",
+      "titleEn": "World Typing Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-8-World Typing Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 10,
+      "titleFa": "روز جهانی گیاهخواران نوپا",
+      "titleEn": "Veganuary Awareness Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-10-Veganuary Awareness Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health",
+        "environment"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 11,
+      "titleFa": "روز جهانی آموزش محیط‌زیست",
+      "titleEn": "International Day of Environmental Education",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-11-International Day of Environmental Education",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment",
+        "education"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 13,
+      "titleFa": "روز جهانی مبارزه با افسردگی",
+      "titleEn": "World Depression Awareness Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-13-World Depression Awareness Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 15,
+      "titleFa": "روز جهانی ویکی‌پدیا",
+      "titleEn": "Wikipedia Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-15-Wikipedia Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education",
+        "technology"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 16,
+      "titleFa": "روز جهانی برف",
+      "titleEn": "World Snow Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-16-World Snow Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 18,
+      "titleFa": "روز جهانی خنده",
+      "titleEn": "World Laughter Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-18-World Laughter Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 19,
+      "titleFa": "روز جهانی پنیر",
+      "titleEn": "World Quark and Cheese Day",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-1-19-World Quark and Cheese Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 20,
+      "titleFa": "روز جهانی داوطلب",
+      "titleEn": "World Volunteer Day Extension",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-20-World Volunteer Day Extension",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 21,
+      "titleFa": "روز جهانی آغوش",
+      "titleEn": "International Hugging Day",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-1-21-International Hugging Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 22,
+      "titleFa": "روز جهانی مدیتیشن",
+      "titleEn": "World Meditation Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-22-World Meditation Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 23,
+      "titleFa": "روز جهانی دست‌خط",
+      "titleEn": "National Handwriting Day",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-1-23-National Handwriting Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 29,
+      "titleFa": "روز جهانی حریم خصوصی",
+      "titleEn": "Data Privacy Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-29-Data Privacy Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 30,
+      "titleFa": "روز جهانی عدم خشونت در مدرسه",
+      "titleEn": "School Day of Non-Violence and Peace",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-30-School Day of Non-Violence and Peace",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 31,
+      "titleFa": "روز جهانی گورخر",
+      "titleEn": "International Zebra Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-31-International Zebra Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 6,
+      "titleFa": "روز جهانی عدم تحمل ختنه زنان",
+      "titleEn": "International Day of Zero Tolerance for FGM",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-2-6-International Day of Zero Tolerance for FGM",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 12,
+      "titleFa": "روز داروین",
+      "titleEn": "Darwin Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-2-12-Darwin Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "science"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 15,
+      "titleFa": "روز جهانی کودک سرطانی",
+      "titleEn": "International Childhood Cancer Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-2-15-International Childhood Cancer Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 22,
+      "titleFa": "روز جهانی پیشاهنگی",
+      "titleEn": "World Thinking Day (Scouting)",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-2-22-World Thinking Day (Scouting)",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 27,
+      "titleFa": "روز جهانی سازمان غیردولتی",
+      "titleEn": "World NGO Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-2-27-World NGO Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 28,
+      "titleFa": "روز جهانی بیماری‌های نادر",
+      "titleEn": "Rare Disease Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-2-28-Rare Disease Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 1,
+      "titleFa": "روز جهانی شوخی",
+      "titleEn": "International Joke Day",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-7-1-International Joke Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 2,
+      "titleFa": "روز جهانی یوفو",
+      "titleEn": "World UFO Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-7-2-World UFO Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "science"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 3,
+      "titleFa": "روز جهانی بدون کیسه پلاستیک",
+      "titleEn": "International Plastic Bag Free Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-7-3-International Plastic Bag Free Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 5,
+      "titleFa": "روز جهانی بوسه",
+      "titleEn": "World Kiss Day",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-7-5-World Kiss Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 8,
+      "titleFa": "روز جهانی آلرژی",
+      "titleEn": "World Allergy Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-7-8-World Allergy Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 14,
+      "titleFa": "روز جهانی شامپانزه",
+      "titleEn": "World Chimpanzee Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-7-14-World Chimpanzee Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 22,
+      "titleFa": "روز جهانی مغز",
+      "titleEn": "World Brain Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-7-22-World Brain Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 26,
+      "titleFa": "روز جهانی مانگرو",
+      "titleEn": "International Day for Conservation of Mangroves",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-7-26-International Day for Conservation of Mangroves",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 1,
+      "titleFa": "روز جهانی شیر مادر",
+      "titleEn": "World Breastfeeding Week begins",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-8-1-World Breastfeeding Week begins",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 8,
+      "day": 9,
+      "titleFa": "روز جهانی بومیان",
+      "titleEn": "International Day of World's Indigenous Peoples",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-8-9-International Day of World's Indigenous Peoples",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 12,
+      "titleFa": "روز جهانی جوانان",
+      "titleEn": "International Youth Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-8-12-International Youth Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 21,
+      "titleFa": "روز جهانی نیایش برای قربانیان تروریسم",
+      "titleEn": "International Day of Remembrance for Victims of Terrorism",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-8-21-International Day of Remembrance for Victims of Terrorism",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 30,
+      "titleFa": "روز جهانی ناپدیدشدگان",
+      "titleEn": "International Day of the Disappeared",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-8-30-International Day of the Disappeared",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 3,
+      "titleFa": "روز همسایه خوب (آمریکا)",
+      "titleEn": "Good Neighbor Day (US)",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-1-3-Good Neighbor Day (US)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "north_america"
+      ],
+      "tags": [
+        "culture",
+        "US"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 9,
+      "titleFa": "روز پرستار (استرالیا)",
+      "titleEn": "Nurses' Professional Day (Australia)",
+      "category": "official",
+      "holiday": false,
+      "id": "gregorian-1-9-Nurses' Professional Day (Australia)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "oceania"
+      ],
+      "tags": [
+        "health",
+        "AU"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 14,
+      "titleFa": "روز ولنتاین — اروپایی",
+      "titleEn": "Valentine's Day (Europe)",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-2-14-Valentine's Day (Europe)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "europe"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 8,
+      "titleFa": "روز جهانی زن — استرالیا",
+      "titleEn": "International Women's Day (Australia)",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-3-8-International Women's Day (Australia)",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "oceania"
+      ],
+      "tags": [
+        "culture",
+        "AU"
+      ]
+    },
+    {
+      "month": 3,
+      "day": 17,
+      "titleFa": "روز سنت پاتریک (اروپا)",
+      "titleEn": "St. Patrick's Day (Europe)",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-3-17-St. Patrick's Day (Europe)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "europe",
+        "north_america"
+      ],
+      "tags": [
+        "culture",
+        "IE"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 25,
+      "titleFa": "روز آنزاک (استرالیا/نیوزلند)",
+      "titleEn": "ANZAC Day (Australia/NZ)",
+      "category": "national",
+      "holiday": false,
+      "id": "gregorian-4-25-ANZAC Day (Australia/NZ)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "oceania"
+      ],
+      "tags": [
+        "culture",
+        "AU NZ"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 1,
+      "titleFa": "روز کارگر (استرالیا/اروپا)",
+      "titleEn": "Labour Day (Australia/Europe)",
+      "category": "national",
+      "holiday": false,
+      "id": "gregorian-5-1-Labour Day (Australia/Europe)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "oceania",
+        "europe"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 15,
+      "titleFa": "روز ملی هند (مرتبط فرهنگی)",
+      "titleEn": "India Independence Awareness (OE)",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-8-15-India Independence Awareness (OE)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "western"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 9,
+      "day": 7,
+      "titleFa": "روز جهانی هواپیمای کاغذی",
+      "titleEn": "World Paper Airplane Day",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-9-7-World Paper Airplane Day",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "north_america"
+      ],
+      "tags": [
+        "culture",
+        "US"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 19,
+      "titleFa": "روز جهانی مرد",
+      "titleEn": "International Men's Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-11-19-International Men's Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 15,
+      "titleFa": "روز جهانی ماما",
+      "titleEn": "International Midwives Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-2-15-International Midwives Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "iranian",
+        "global"
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "month": 6,
+      "day": 12,
+      "titleFa": "روز جهانی بدون خودرو",
+      "titleEn": "World Car Free Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-6-12-World Car Free Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 11,
+      "day": 3,
+      "titleFa": "روز جهانی ارتباطات",
+      "titleEn": "World Communication Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-11-3-World Communication Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 12,
+      "day": 12,
+      "titleFa": "روز جهانی پوشش گیاهی سالم",
+      "titleEn": "Healthy Vegetation Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-12-12-Healthy Vegetation Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 1,
+      "day": 28,
+      "titleFa": "روز هوش مصنوعی",
+      "titleEn": "Artificial Intelligence Awareness Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-1-28-Artificial Intelligence Awareness Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 10,
+      "day": 15,
+      "titleFa": "روز امنیت سایبری",
+      "titleEn": "Cybersecurity Awareness Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-10-15-Cybersecurity Awareness Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 9,
+      "day": 20,
+      "titleFa": "روز متن‌باز",
+      "titleEn": "Open Source Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-9-20-Open Source Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "technology"
+      ]
+    },
+    {
+      "month": 9,
+      "day": 8,
+      "titleFa": "روز سواد دیجیتال",
+      "titleEn": "Digital Literacy Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-9-8-Digital Literacy Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "technology",
+        "education"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 14,
+      "titleFa": "روز جهانی کوانتوم",
+      "titleEn": "World Quantum Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-4-14-World Quantum Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "science"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 21,
+      "titleFa": "روز جهانی خلاقیت",
+      "titleEn": "World Creativity Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-4-21-World Creativity Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 22,
+      "titleFa": "روز مادر زمین",
+      "titleEn": "Mother Earth Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-4-22-Mother Earth Day",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "environment"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 11,
+      "titleFa": "هفته جهانی جمعیت",
+      "titleEn": "World Population Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-7-11-World Population Extended",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 8,
+      "day": 1,
+      "titleFa": "هفته جهانی شیر مادر — تکمیلی",
+      "titleEn": "World Breastfeeding Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-8-1-World Breastfeeding Extended",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 8,
+      "day": 12,
+      "titleFa": "هفته بین‌المللی جوانان",
+      "titleEn": "International Youth Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-8-12-International Youth Extended",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 8,
+      "day": 19,
+      "titleFa": "روز انسان‌دوستی — ویژه",
+      "titleEn": "World Humanitarian Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-8-19-World Humanitarian Extended",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ]
+    },
+    {
+      "month": 9,
+      "day": 8,
+      "titleFa": "هفته سوادآموزی",
+      "titleEn": "International Literacy Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-9-8-International Literacy Extended",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 9,
+      "day": 1,
+      "titleFa": "ماه جهانی آلزایمر آغاز",
+      "titleEn": "World Alzheimer's Month begins",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-9-1-World Alzheimer's Month begins",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ],
+      "durationDays": 30
+    },
+    {
+      "month": 10,
+      "day": 5,
+      "titleFa": "هفته جهانی معلم",
+      "titleEn": "World Teachers' Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-10-5-World Teachers' Extended",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "education"
+      ],
+      "durationDays": 5
+    },
+    {
+      "month": 10,
+      "day": 10,
+      "titleFa": "هفته سلامت روان",
+      "titleEn": "World Mental Health Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-10-10-World Mental Health Extended",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 10,
+      "day": 16,
+      "titleFa": "هفته جهانی غذا",
+      "titleEn": "World Food Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-10-16-World Food Extended",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 10,
+      "day": 24,
+      "titleFa": "هفته سازمان ملل",
+      "titleEn": "United Nations Day Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-10-24-United Nations Day Extended",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 11,
+      "day": 1,
+      "titleFa": "ماه جهانی وگان",
+      "titleEn": "World Vegan Month",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-11-1-World Vegan Month",
+      "sourceIds": [
+        "ir-health-tech"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "health",
+        "environment"
+      ],
+      "durationDays": 30
+    },
+    {
+      "month": 11,
+      "day": 13,
+      "titleFa": "هفته مهربانی",
+      "titleEn": "World Kindness Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-11-13-World Kindness Extended",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 12,
+      "day": 5,
+      "titleFa": "هفته داوطلبان",
+      "titleEn": "International Volunteer Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-12-5-International Volunteer Extended",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 12,
+      "day": 10,
+      "titleFa": "هفته حقوق بشر",
+      "titleEn": "Human Rights Extended",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-12-10-Human Rights Extended",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "global"
+      ],
+      "tags": [
+        "culture"
+      ],
+      "durationDays": 7
+    },
+    {
+      "month": 6,
+      "day": 24,
+      "titleFa": "روز نیمه‌تابستان (سوئد)",
+      "titleEn": "Midsummer Day (Sweden)",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-6-24-Midsummer Day (Sweden)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "europe"
+      ],
+      "tags": [
+        "culture",
+        "SE"
+      ]
+    },
+    {
+      "month": 12,
+      "day": 13,
+      "titleFa": "روز سنت لوسیا (سوئد)",
+      "titleEn": "St. Lucia Day (Sweden)",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-12-13-St. Lucia Day (Sweden)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "europe"
+      ],
+      "tags": [
+        "culture",
+        "SE"
+      ]
+    },
+    {
+      "month": 9,
+      "day": 21,
+      "titleFa": "آغاز اکتبرفست (آلمان)",
+      "titleEn": "Oktoberfest Begins (Germany)",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-9-21-Oktoberfest Begins (Germany)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "europe"
+      ],
+      "tags": [
+        "culture",
+        "DE"
+      ]
+    },
+    {
+      "month": 8,
+      "day": 27,
+      "titleFa": "جشن گوجه‌فرنگی (اسپانیا)",
+      "titleEn": "La Tomatina (Spain)",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-8-27-La Tomatina (Spain)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "europe"
+      ],
+      "tags": [
+        "culture",
+        "ES"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 27,
+      "titleFa": "روز پادشاه هلند — گسترش",
+      "titleEn": "King's Day Netherlands Extended",
+      "category": "national",
+      "holiday": false,
+      "id": "gregorian-4-27-King's Day Netherlands Extended",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "europe"
+      ],
+      "tags": [
+        "culture",
+        "NL"
+      ]
+    },
+    {
+      "month": 7,
+      "day": 1,
+      "titleFa": "روز کانادا",
+      "titleEn": "Canada Day (North America)",
+      "category": "national",
+      "holiday": false,
+      "id": "gregorian-7-1-Canada Day (North America)",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "north_america"
+      ],
+      "tags": [
+        "culture",
+        "CA"
+      ]
+    },
+    {
+      "month": 9,
+      "day": 16,
+      "titleFa": "استقلال مکزیک — فرهنگی",
+      "titleEn": "Mexican Independence Cultural",
+      "category": "national",
+      "holiday": false,
+      "id": "gregorian-9-16-Mexican Independence Cultural",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "north_america"
+      ],
+      "tags": [
+        "culture",
+        "MX"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 15,
+      "titleFa": "کارناوال برزیل — گسترش",
+      "titleEn": "Brazil Carnival Extended",
+      "category": "personal",
+      "holiday": false,
+      "id": "gregorian-2-15-Brazil Carnival Extended",
+      "sourceIds": [
+        "un-world-2024"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "western"
+      ],
+      "tags": [
+        "culture",
+        "BR"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 27,
+      "titleFa": "روز فرهنگ بومی استرالیا",
+      "titleEn": "Australian Aboriginal Culture Day",
+      "category": "national",
+      "holiday": false,
+      "id": "gregorian-5-27-Australian Aboriginal Culture Day",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "oceania"
+      ],
+      "tags": [
+        "culture",
+        "AU"
+      ]
+    },
+    {
+      "month": 2,
+      "day": 6,
+      "titleFa": "روز وایتانگی — گسترش (نیوزلند)",
+      "titleEn": "New Zealand Waitangi Extended",
+      "category": "national",
+      "holiday": false,
+      "id": "gregorian-2-6-New Zealand Waitangi Extended",
+      "sourceIds": [
+        "extended-western"
+      ],
+      "evidence": "sourced",
+      "cultures": [
+        "oceania"
+      ],
+      "tags": [
+        "culture",
+        "NZ"
+      ]
     }
   ],
   "yearly": {
@@ -18993,6 +22295,46 @@
       "url": "https://github.com/vacanza/holidays/blob/5d0f4aac695d4c3c3a46d4747725fdac80bd4fff/holidays/countries/brazil.py",
       "kind": "community-rules (MIT)",
       "checkedAt": "2026-10-15"
+    },
+    {
+      "id": "un-world-2024",
+      "titleFa": "فهرست روزهای جهانی سازمان ملل",
+      "titleEn": "United Nations observances list",
+      "url": "https://www.un.org/en/observances/list",
+      "kind": "curated",
+      "checkedAt": "2026-10-18"
+    },
+    {
+      "id": "ir-health-tech",
+      "titleFa": "مناسبت‌های سلامت و فناوری ایران",
+      "titleEn": "Iranian health and technology observances",
+      "url": "https://behdasht.gov.ir/",
+      "kind": "curated",
+      "checkedAt": "2026-10-18"
+    },
+    {
+      "id": "extended-western",
+      "titleFa": "مناسبت‌های فرهنگی غربی تکمیلی",
+      "titleEn": "Extended Western cultural observances",
+      "url": "https://www.timeanddate.com/holidays/",
+      "kind": "curated",
+      "checkedAt": "2026-10-18"
+    },
+    {
+      "id": "ir-arts-heritage",
+      "titleFa": "مناسبت‌های فرهنگی و هنری ایران",
+      "titleEn": "Iranian arts and heritage observances",
+      "url": "https://www.ichto.ir/",
+      "kind": "curated",
+      "checkedAt": "2026-10-18"
+    },
+    {
+      "id": "lunar-extended",
+      "titleFa": "مناسبت‌های قمری تکمیلی",
+      "titleEn": "Extended lunar observances",
+      "url": "https://www.islamicfinder.org/islamic-calendar/",
+      "kind": "traditional",
+      "checkedAt": "2026-10-18"
     }
   ],
   "schoolPrograms": [

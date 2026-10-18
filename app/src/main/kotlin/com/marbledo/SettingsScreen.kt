@@ -114,7 +114,7 @@ fun SettingsScreen(
     onRestoreAutomatic: () -> Unit,
     onRequestNotifications: () -> Unit,
     onRequestExactAlarm: () -> Unit,
-    onRefreshOccasions: () -> Unit,
+    onRefreshOccasions: () -> Unit = {},
     onCheckUpdates: () -> Unit,
     modifier: Modifier = Modifier,
     tasks: List<Task> = emptyList(),
@@ -325,44 +325,7 @@ fun SettingsScreen(
             }
         }
 
-        SettingsSection(title = stringResource(R.string.settings_occasions), icon = Icons.Outlined.Refresh) {
-            SettingSwitchRow(
-                text = stringResource(R.string.settings_occasions_auto_update),
-                checked = settings.occasionAutoUpdateEnabled,
-                onCheckedChange = { onUpdate(settings.copy(occasionAutoUpdateEnabled = it)) },
-            )
-            Spacer(Modifier.height(6.dp))
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            TextNormalizer.formatDigits(stringResource(R.string.settings_occasions_count, listedCatalog.occasions.size), settings.numeralMode),
-                            style = MarbleTextStyles.itemTitle,
-                        )
-                        Text(
-                            occasionStatusText(occasionState, settings.numeralMode),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (occasionState.lastError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    FilledTonalActionPill(
-                        text = stringResource(R.string.settings_occasions_update_now),
-                        enabled = !occasionState.isRefreshing,
-                        onClick = onRefreshOccasions,
-                    )
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            SettingsDivider()
-            Spacer(Modifier.height(6.dp))
+        SettingsSection(title = stringResource(R.string.settings_occasion_reminder), icon = Icons.Outlined.Refresh) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
@@ -407,51 +370,6 @@ fun SettingsScreen(
                             )
                         },
                     )
-                }
-            }
-            val coverage = remember(listedCatalog) { OccasionPlanner.coverage(listedCatalog) }
-            if (coverage.total > 0) {
-                Spacer(Modifier.height(8.dp))
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                stringResource(R.string.settings_coverage_title),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                TextNormalizer.formatDigits(
-                                    stringResource(R.string.settings_coverage_summary, coverage.total, coverage.coveredMonths),
-                                    settings.numeralMode,
-                                ),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Text(
-                            TextNormalizer.formatDigits(
-                                if (coverage.isFullYear) stringResource(R.string.settings_coverage_complete)
-                                else stringResource(R.string.settings_coverage_missing, coverage.missingMonths.size),
-                                settings.numeralMode,
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (coverage.isFullYear) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-                        )
-                        Text(
-                            TextNormalizer.formatDigits(
-                                stringResource(R.string.settings_coverage_categories, coverage.categoryCount),
-                                settings.numeralMode,
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                 }
             }
         }
