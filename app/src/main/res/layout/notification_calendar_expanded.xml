@@ -4,13 +4,15 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layoutDirection="locale"
+    android:gravity="start"
     android:orientation="vertical"
     android:paddingTop="4dp"
     android:paddingBottom="4dp">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
+        android:layoutDirection="locale"
+        android:gravity="start|center_vertical"
         android:orientation="horizontal">
         <ImageView
             android:id="@+id/notification_badge"
@@ -22,6 +24,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layoutDirection="locale"
+            android:gravity="start"
             android:orientation="vertical">
             <TextView
                 android:id="@+id/notification_title"
@@ -29,7 +33,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
+                android:gravity="start"
                 android:maxLines="1"
+                android:textAlignment="viewStart"
                 android:textDirection="locale"
                 android:textSize="15sp" />
             <TextView
@@ -39,7 +45,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
                 android:ellipsize="end"
+                android:gravity="start"
                 android:maxLines="2"
+                android:textAlignment="viewStart"
                 android:textDirection="locale"
                 android:textSize="11sp" />
         </LinearLayout>
@@ -51,7 +59,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="9dp"
         android:ellipsize="end"
+        android:gravity="start"
         android:maxLines="1"
+        android:textAlignment="viewStart"
         android:textDirection="locale"
         android:textSize="11sp" />
     <ProgressBar
@@ -59,6 +69,7 @@
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="4dp"
+        android:layoutDirection="locale"
         android:layout_marginTop="5dp"
         android:importantForAccessibility="no"
         android:progressBackgroundTint="@color/notification_card_track"
@@ -66,8 +77,10 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layoutDirection="locale"
         android:layout_marginTop="9dp"
         android:background="@drawable/notification_section_background"
+        android:gravity="start"
         android:orientation="vertical"
         android:paddingStart="10dp"
         android:paddingTop="7dp"
@@ -79,7 +92,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
+            android:gravity="start"
             android:maxLines="1"
+            android:textAlignment="viewStart"
             android:textColor="@color/notification_card_accent"
             android:textDirection="locale"
             android:textSize="10sp"
@@ -91,7 +106,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:ellipsize="end"
+            android:gravity="start"
             android:maxLines="1"
+            android:textAlignment="viewStart"
             android:textDirection="locale"
             android:textSize="14sp" />
         <TextView
@@ -101,7 +118,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:ellipsize="end"
+            android:gravity="start"
             android:maxLines="1"
+            android:textAlignment="viewStart"
             android:textDirection="locale"
             android:textSize="11sp" />
     </LinearLayout>
@@ -111,7 +130,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="9dp"
+        android:gravity="start"
         android:maxLines="1"
+        android:textAlignment="viewStart"
         android:textDirection="locale"
         android:textSize="10sp"
         android:textStyle="bold" />
@@ -122,7 +143,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
         android:ellipsize="end"
+        android:gravity="start"
         android:maxLines="2"
+        android:textAlignment="viewStart"
         android:textDirection="locale"
         android:textSize="12sp" />
     <TextView
@@ -132,7 +155,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:ellipsize="end"
+        android:gravity="start"
         android:maxLines="1"
+        android:textAlignment="viewStart"
         android:textDirection="locale"
         android:textSize="10sp" />
 </LinearLayout>

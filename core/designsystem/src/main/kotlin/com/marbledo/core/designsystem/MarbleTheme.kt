@@ -44,15 +44,24 @@ private val LightColors: ColorScheme = lightColorScheme(
     background = Color(0xFFF7F5FB),
     surface = Color(0xFFFFFBFF),
     surfaceVariant = Color(0xFFECE8F2),
+    surfaceContainer = Color(0xFFF2ECF5),
+    surfaceContainerHigh = Color(0xFFEEE8F1),
     outline = Color(0xFF817C8C),
+    outlineVariant = Color(0xFFC9C5D0),
+    scrim = Color(0xFF1B1B1F).copy(alpha = 0.45f),
     error = Color(0xFFBA1A1A),
+    // Visual polish: subtle shadow tint for elevated cards in light mode
+    shadow = Color(0xFF1B1B1F),
 )
 
 private val GlassColors = LightColors.copy(
     background = Color(0xFFF2F3FA),
     surface = Color(0xF7FFFFFF),
     surfaceVariant = Color(0xDDE8E8F4),
+    surfaceContainer = Color(0xFFF0EDF8),
+    surfaceContainerHigh = Color(0xFFEDE8F5),
     primaryContainer = Color(0xFFE2DEFF),
+    shadow = Color(0xFF6258C8).copy(alpha = 0.12f),
 )
 
 private val DarkColors = darkColorScheme(
@@ -61,11 +70,17 @@ private val DarkColors = darkColorScheme(
     primaryContainer = Color(0xFF49409B),
     onPrimaryContainer = Color(0xFFE5DFFF),
     secondary = Color(0xFFB7C9DE),
+    onSecondary = Color(0xFF2D3B4E),
     tertiary = Color(0xFFFFB2C1),
     background = Color(0xFF141319),
     surface = Color(0xFF1C1B22),
     surfaceVariant = Color(0xFF34323A),
+    surfaceContainer = Color(0xFF25242D),
+    surfaceContainerHigh = Color(0xFF2E2C36),
     outline = Color(0xFF938F9A),
+    outlineVariant = Color(0xFF4A474E),
+    scrim = Color.Black.copy(alpha = 0.55f),
+    shadow = Color.Black,
 )
 
 private val AmoledColors = DarkColors.copy(
@@ -75,6 +90,8 @@ private val AmoledColors = DarkColors.copy(
     surfaceContainer = Color(0xFF09090D),
     surfaceContainerLow = Color.Black,
     surfaceContainerHigh = Color(0xFF17161C),
+    outline = Color(0xFF3A3840),
+    outlineVariant = Color(0xFF25232A),
 )
 
 @Composable

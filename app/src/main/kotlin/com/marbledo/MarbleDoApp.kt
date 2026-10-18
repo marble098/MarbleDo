@@ -193,8 +193,8 @@ fun MarbleDoApp(
     )
 
     LaunchedEffect(Unit) { occasionRepository.load() }
-    LaunchedEffect(settings.occasionAutoUpdateEnabled, occasionState.isLoaded) {
-        if (settings.occasionAutoUpdateEnabled && occasionState.isLoaded) occasionRepository.refreshIfStale()
+    LaunchedEffect(occasionState.isLoaded) {
+        if (occasionState.isLoaded) occasionRepository.refreshIfStale()
     }
 
     val createBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
@@ -472,15 +472,6 @@ fun MarbleDoApp(
                                         pendingOccasionPlan = request
                                         navigateTo(HomeDestination)
                                     },
-                                    onRefreshOccasions = {
-                                        coroutineScope.launch {
-                                            when (occasionRepository.refresh()) {
-                                                OccasionRefreshResult.FAILED -> Toast.makeText(context, refreshFailedMessage, Toast.LENGTH_LONG).show()
-                                                OccasionRefreshResult.OFFLINE -> Toast.makeText(context, refreshOfflineMessage, Toast.LENGTH_LONG).show()
-                                                else -> Unit
-                                            }
-                                        }
-                                    },
                                 )
                             }
                             entry<HabitsDestination> {
@@ -543,15 +534,6 @@ fun MarbleDoApp(
                                         else requestNotificationPermission(context)
                                     },
                                     onRequestExactAlarm = { requestExactAlarmSettings(context) },
-                                    onRefreshOccasions = {
-                                        coroutineScope.launch {
-                                            when (occasionRepository.refresh()) {
-                                                OccasionRefreshResult.FAILED -> Toast.makeText(context, refreshFailedMessage, Toast.LENGTH_LONG).show()
-                                                OccasionRefreshResult.OFFLINE -> Toast.makeText(context, refreshOfflineMessage, Toast.LENGTH_LONG).show()
-                                                else -> Unit
-                                            }
-                                        }
-                                    },
                                     onCheckUpdates = { openReleasePage(context) },
                                     tasks = taskState.allTasks,
                                 )

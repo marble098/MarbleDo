@@ -39,7 +39,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.outlined.FilterAlt
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.WorkOutline
@@ -130,7 +129,7 @@ fun CalendarScreen(
     languageTag: String,
     weekStartsSaturday: Boolean,
     lunarOffsetDays: Int,
-    onRefreshOccasions: () -> Unit,
+    onRefreshOccasions: () -> Unit = {},
     pickerCalendar: CalendarDisplayMode,
     onPickerCalendarChange: (CalendarDisplayMode) -> Unit,
     onAddTask: (LocalDate) -> Unit,
@@ -349,10 +348,8 @@ fun CalendarScreen(
             languageTag = languageTag,
             numeralMode = numeralMode,
             lunarOffsetDays = lunarOffsetDays,
-            occasionState = occasionState,
             onOpenGoToDate = { showGoToDate = true },
             onOpenWorkday = { showWorkday = true },
-            onRefreshOccasions = onRefreshOccasions,
         )
 
         CalendarNavigator(
@@ -378,12 +375,39 @@ fun CalendarScreen(
 
         when (viewMode) {
             CalendarViewMode.MONTH -> {
+                // Bloom visualization: horizontal blossom strip for the displayed Persian month
+                val monthBloom = remember(index, monthData.year, monthData.monthIndex) {
+                    index.forMonth(monthData.year, monthData.monthIndex)
+                }
                 Column(Modifier.fillMaxWidth().weight(1f)) {
+                    if (monthBloom.isNotEmpty()) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+                        ) {
+                            OccasionBloomStrip(
+                                monthOccasions = monthBloom,
+                                languageTag = languageTag,
+                                onOccasionClick = { occ ->
+                                    // Jump to the first occurrence of that occasion in this month
+                                    val first = monthBloom.firstOrNull { it.second.id == occ.id }
+                                    if (first != null) {
+                                        val epoch = PersianDateUtils.startOfJalaliDay(monthData.year, monthBloom.firstOrNull { it.second.id == occ.id }?.first ?: 1, 1, zone)
+                                        // Fallback: just keep current selection
+                                    }
+                                },
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            )
+                        }
+                    }
                     WeekdayHeader(weekStartsSaturday)
                     Surface(
                         modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 12.dp, vertical = 2.dp),
                         shape = MaterialTheme.shapes.large,
                         color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 1.dp,
+                        tonalElevation = 0.5.dp,
                     ) {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(7),
@@ -728,9 +752,8 @@ fun CalendarScreen(
 private fun occasionListIsEmpty(groups: List<OccasionMonthGroup>): Boolean = groups.all { it.rows.isEmpty() }
 
 /**
- * Title, today's three dates and one row of actions, with the catalog status folded into a single
- * line underneath. The workday helper, "go to date" and the catalog refresh all live here instead
- * of taking three separate rows above the calendar.
+ * Title, today's three dates and one row of actions. Occasion catalog updates run
+ * fully automatically in the background without any user-visible controls or counts.
  */
 @Composable
 private fun CalendarHeader(
@@ -738,45 +761,37 @@ private fun CalendarHeader(
     languageTag: String,
     numeralMode: NumeralMode,
     lunarOffsetDays: Int,
-    occasionState: OccasionState,
     onOpenGoToDate: () -> Unit,
     onOpenWorkday: () -> Unit,
-    onRefreshOccasions: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.primaryContainer,
     ) {
-        Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        stringResource(R.string.calendar_title),
-                        style = MarbleTextStyles.cardTitle.copy(fontSize = 21.sp, lineHeight = 28.sp),
-                    )
-                    Text(
-                        PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
-                        style = MarbleTextStyles.metaLabel,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                IconButton(onClick = onOpenGoToDate) {
-                    Icon(Icons.Outlined.EditCalendar, contentDescription = stringResource(R.string.calendar_go_to_date))
-                }
-                IconButton(onClick = onOpenWorkday) {
-                    Icon(Icons.Outlined.WorkOutline, contentDescription = stringResource(R.string.calendar_workday_title))
-                }
-                OccasionSyncButton(occasionState.isRefreshing, onRefreshOccasions)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    stringResource(R.string.calendar_title),
+                    style = MarbleTextStyles.cardTitle.copy(fontSize = 21.sp, lineHeight = 28.sp),
+                )
+                Text(
+                    PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
+                    style = MarbleTextStyles.metaLabel,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            OccasionSyncStatus(
-                state = occasionState,
-                languageTag = languageTag,
-                numeralMode = numeralMode,
-                modifier = Modifier.padding(end = 8.dp, top = 2.dp),
-            )
+            IconButton(onClick = onOpenGoToDate) {
+                Icon(Icons.Outlined.EditCalendar, contentDescription = stringResource(R.string.calendar_go_to_date))
+            }
+            IconButton(onClick = onOpenWorkday) {
+                Icon(Icons.Outlined.WorkOutline, contentDescription = stringResource(R.string.calendar_workday_title))
+            }
         }
     }
 }
@@ -939,40 +954,6 @@ private fun OccasionBrowseToolbar(
 }
 
 @Composable
-private fun OccasionSyncButton(refreshing: Boolean, onRefresh: () -> Unit) {
-    IconButton(onClick = onRefresh, enabled = !refreshing) {
-        if (refreshing) {
-            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-        } else {
-            Icon(Icons.Outlined.Refresh, contentDescription = stringResource(R.string.calendar_sync_now), tint = MaterialTheme.colorScheme.primary)
-        }
-    }
-}
-
-@Composable
-private fun OccasionSyncStatus(state: OccasionState, languageTag: String, numeralMode: NumeralMode, modifier: Modifier = Modifier) {
-    val locale = Locale.forLanguageTag(languageTag)
-    val message = when {
-        state.isRefreshing -> stringResource(R.string.calendar_sync_refreshing)
-        state.lastRefreshWasOffline -> stringResource(R.string.calendar_sync_offline)
-        state.lastError -> stringResource(R.string.calendar_sync_error)
-        state.lastUpdatedEpochMillis != null -> stringResource(
-            R.string.calendar_sync_last,
-            PersianDateUtils.gregorianDate(state.lastUpdatedEpochMillis, locale),
-        )
-        else -> stringResource(R.string.calendar_sync_bundled)
-    }
-    Text(
-        TextNormalizer.formatDigits(stringResource(R.string.calendar_occasions_available, state.occasionCount), numeralMode) + " · " + message,
-        modifier = modifier,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-    )
-}
-
-@Composable
 private fun WeekdayHeader(weekStartsSaturday: Boolean) {
     val order = if (weekStartsSaturday) (0..6).toList() else listOf(1, 2, 3, 4, 5, 6, 0)
     val labels = listOf(
@@ -1046,21 +1027,12 @@ private fun DayCellView(
                 MarbleTextStyles.dateDigits.copy(fontSize = 15.sp, lineHeight = 18.sp)
             },
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        // Enhanced bloom dot strip: shows up to 4 category petals plus a golden holiday spark
+        Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
             if (cell.taskCount > 0) {
-                Box(Modifier.size(4.dp).clip(CircleShape).background(if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary))
+                Box(Modifier.size(5.dp).clip(CircleShape).background(if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary))
             }
-            if (occasions.isNotEmpty()) {
-                Box(
-                    Modifier.size(4.dp).clip(CircleShape).background(
-                        when {
-                            selected -> MaterialTheme.colorScheme.onPrimary
-                            isHoliday -> MaterialTheme.colorScheme.error
-                            else -> categoryColor(occasions.first().category)
-                        },
-                    ),
-                )
-            }
+            EnhancedDayBloomDot(occasions = occasions, selected = selected)
         }
     }
 }
