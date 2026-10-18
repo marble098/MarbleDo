@@ -48,7 +48,7 @@ fun FocusOrbit(
     numeralMode: NumeralMode,
     isRtl: Boolean = false,
     modifier: Modifier = Modifier,
-    size: Dp = 96.dp,
+    orbitSize: Dp = 96.dp,
 ) {
     val progress = if (total <= 0) 0f else (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
     val animatedProgress by animateFloatAsState(
@@ -62,10 +62,10 @@ fun FocusOrbit(
     val percentage = (animatedProgress * 100).toInt()
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.size(size)) {
+        Canvas(modifier = Modifier.size(orbitSize)) {
             val stroke = 8.dp.toPx()
-            val radius = (size.toPx() - stroke) / 2f
-            val center = Offset(size.toPx() / 2f, size.toPx() / 2f)
+            val radius = (orbitSize.toPx() - stroke) / 2f
+            val center = Offset(orbitSize.toPx() / 2f, orbitSize.toPx() / 2f)
             // Track
             drawArc(
                 color = trackColor,
@@ -140,7 +140,7 @@ fun FocusOrbitLegend(
             Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.size(8.dp).padding(1.dp).then(Modifier.width(8.dp).height(8.dp)))
+            Box(Modifier.size(8.dp).padding(1.dp))
             Text(
                 TextNormalizer.formatDigits(
                     if (todayOpen > 0) "$todayOpen ${if (todayOpen == 1) "باز" else "باز"} · $completed انجام‌شده"

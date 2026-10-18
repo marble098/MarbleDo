@@ -389,14 +389,7 @@ fun CalendarScreen(
                             OccasionBloomStrip(
                                 monthOccasions = monthBloom,
                                 languageTag = languageTag,
-                                onOccasionClick = { occ ->
-                                    // Jump to the first occurrence of that occasion in this month
-                                    val first = monthBloom.firstOrNull { it.second.id == occ.id }
-                                    if (first != null) {
-                                        val epoch = PersianDateUtils.startOfJalaliDay(monthData.year, monthBloom.firstOrNull { it.second.id == occ.id }?.first ?: 1, 1, zone)
-                                        // Fallback: just keep current selection
-                                    }
-                                },
+                                onOccasionClick = {},
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                             )
                         }

@@ -991,7 +991,7 @@ private fun DailyHeaderCard(
                         numeralMode = numeralMode,
                         isRtl = isRtl,
                         modifier = Modifier.padding(start = 4.dp),
-                        size = 88.dp,
+                        orbitSize = 88.dp,
                     )
                 }
             }
