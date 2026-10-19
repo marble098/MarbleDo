@@ -52,9 +52,13 @@ object PersianDateUtils {
     fun weekdayName(weekdayIndex: Int, languageTag: String): String =
         (if (languageTag == "fa") weekdaysFa else weekdaysEn).getOrElse(weekdayIndex) { "" }
 
+    /**
+     * Two letters for Persian, not one: `شنبه` and `سه‌شنبه` both start with `س`, so a single-letter
+     * abbreviation rendered two different days as the same glyph in every dense calendar row.
+     */
     fun weekdayShort(weekdayIndex: Int, languageTag: String): String {
         val name = weekdayName(weekdayIndex, languageTag)
-        return if (languageTag == "fa") name.firstOrNull()?.toString() ?: name else name.take(3)
+        return if (languageTag == "fa") name.take(2) else name.take(3)
     }
 
     /** Example: `۱۲ آبان ۱۴۰۵`. */

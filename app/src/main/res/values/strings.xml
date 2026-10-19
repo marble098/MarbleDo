@@ -107,6 +107,8 @@
     <string name="dash_greeting_morning">Good morning</string>
     <string name="dash_greeting_afternoon">Good afternoon</string>
     <string name="dash_greeting_evening">Good evening</string>
+    <string name="dash_greeting_night">Good night</string>
+    <string name="dash_percent">%1$d%%</string>
     <string name="dash_summary">%1$d open · %2$d done</string>
     <string name="dash_stat_today">Today</string>
     <string name="dash_stat_done">Done</string>

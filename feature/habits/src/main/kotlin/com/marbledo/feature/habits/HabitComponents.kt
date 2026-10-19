@@ -8,6 +8,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,6 +41,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +50,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
@@ -60,6 +64,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.LocalReduceMotion
 import com.marbledo.domain.model.Habit
 import com.marbledo.domain.model.HabitKind
 import com.marbledo.domain.model.HabitTheme
@@ -106,11 +111,18 @@ fun HabitRing(
 ) {
     val stroke = with(LocalDensity.current) { strokeWidth.toPx() }
     val clamped = progress.coerceIn(0f, 1f)
+    val animatedValue by animateFloatAsState(
+        targetValue = clamped,
+        animationSpec = tween(durationMillis = 700),
+        label = "habitRing",
+    )
+    val animated = if (LocalReduceMotion.current) clamped else animatedValue
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
             val diameter = size.minDimension - stroke
             val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
             val arcSize = Size(diameter, diameter)
+            val center = Offset(size.width / 2f, size.height / 2f)
             drawArc(
                 color = palette.track,
                 startAngle = -90f,
@@ -120,16 +132,20 @@ fun HabitRing(
                 size = arcSize,
                 style = Stroke(width = stroke, cap = StrokeCap.Round),
             )
-            if (clamped > 0f) {
-                drawArc(
-                    brush = Brush.sweepGradient(listOf(palette.accent.copy(alpha = 0.55f), palette.accent)),
-                    startAngle = -90f,
-                    sweepAngle = 360f * clamped,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = stroke, cap = StrokeCap.Round),
-                )
+            if (animated > 0f) {
+                // sweepGradient starts at 3 o'clock; rotate it so the highlight begins at the top
+                // with the arc instead of jumping halfway around the ring.
+                rotate(degrees = -90f, pivot = center) {
+                    drawArc(
+                        brush = Brush.sweepGradient(listOf(palette.accent.copy(alpha = 0.55f), palette.accent)),
+                        startAngle = 0f,
+                        sweepAngle = 360f * animated,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = arcSize,
+                        style = Stroke(width = stroke, cap = StrokeCap.Round),
+                    )
+                }
             }
         }
         content()

@@ -185,6 +185,34 @@ conventions, health ambassadors, Muharram/Safar/Fatimiyya mourning programs). Th
 the Saturday–Friday week containing 12 Azar (8–14 Azar in 1404, 9–15 in 1398); the prayer convention
 and health-ambassador rounds differ per year and province.
 
+## Data version 11: duplicate and mis-date cleanup
+
+The v5 feed carried several classes of noise that made the catalogue look bigger but read as
+incomplete on screen. Data version 11 removes them and records the migration in `idAliases`:
+
+- **Wrong solar copies of international days.** 21 Jalali rows repeated a Gregorian observance
+  (for example "World Cancer Day" on 4 Bahman instead of its real Gregorian date) because the
+  Gregorian month/day had been pasted into a Jalali row. The Gregorian row is canonical and the
+  removed IDs now alias to it, so saved favourites still resolve.
+- **Placeholder padding.** Rows whose English title ended in "Extended" or "(extra)" repeated an
+  existing observance and were deleted; they were never separate occasions.
+- **Same-day duplicates.** "Pen Day" (1 Farvardin) vs "Day of the Pen" (14 Tir), two Organ
+  Donation rows, three Physician rows, and near-identical Gregorian entries (Rare Disease Day,
+  St. Lucia Day, Canada Day, "World Thinking Day (Scouting)", the Indigenous Peoples apostrophe
+  variant) were collapsed to one canonical row each.
+- **Misplaced entries.** "World Health Day (Iran)" on 6 Farvardin, "International Day of Peace
+  (Iran)" on 5 Shahrivar, "World Science Day for Peace" on 9 Aban and "Hope and Greetings Day"
+  were removed; the real Gregorian dates already exist.
+- **Missing observances added.** International Mine Awareness Day (4 April), World
+  Telecommunication Day (17 May), World Children's Day (20 November), Global Recycling Day
+  (18 March) and the International Day for Monuments and Sites (18 April), all sourced from the
+  existing UN and timeanddate references.
+- **Cultural filter coverage.** Every non-Iranian row now carries the `culture` tag, so the
+  "cultural occasions" filter no longer silently hides 344 entries.
+
+`scripts/check_calendar.py` now rejects the "Extended"/"(extra)" placeholder shape, a Jalali row
+that duplicates a Gregorian title, and a foreign row without the `culture` tag.
+
 ## Calendar semantics and maintenance
 
 - Android ICU uses `islamic-civil`; a user-set ±2-day lunar adjustment is not an astronomical or

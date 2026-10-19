@@ -96,7 +96,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
-import com.marble098.marbledo.ui.AuroraOrbs
+import com.marble098.marbledo.ui.GreetingHeadline
+import com.marble098.marbledo.ui.GreetingSky
 import com.marble098.marbledo.ui.FocusOrbit
 import com.marble098.marbledo.ui.auroraBrush
 import androidx.compose.ui.text.style.TextAlign
@@ -889,10 +890,12 @@ private fun DailyHeaderCard(
     onOpenCalendar: () -> Unit,
     onShare: () -> Unit,
 ) {
-    val greeting = when {
-        currentHour < 12 -> stringResource(R.string.dash_greeting_morning)
-        currentHour < 18 -> stringResource(R.string.dash_greeting_afternoon)
-        else -> stringResource(R.string.dash_greeting_evening)
+    // A 2 a.m. dashboard is not "good morning": the night has its own greeting and sky.
+    val greeting = when (currentHour) {
+        in 5..11 -> stringResource(R.string.dash_greeting_morning)
+        in 12..17 -> stringResource(R.string.dash_greeting_afternoon)
+        in 18..22 -> stringResource(R.string.dash_greeting_evening)
+        else -> stringResource(R.string.dash_greeting_night)
     }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val aurora = auroraBrush(currentHour, isRtl)
@@ -908,25 +911,26 @@ private fun DailyHeaderCard(
             Modifier
                 .background(aurora, MaterialTheme.shapes.extraLarge)
                 .background(
+                    // A light scrim keeps the pastel sky readable without hiding it completely.
                     Brush.verticalGradient(
                         listOf(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.40f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
                         ),
                     ),
                     MaterialTheme.shapes.extraLarge,
                 ),
         ) {
-            // Soft blurred orbs behind content — adds depth without distracting from text
-            AuroraOrbs(hour = currentHour, modifier = Modifier.matchParentSize())
+            // One animated sky — sun, clouds, stars and moon — replaces the static blurred orbs.
+            GreetingSky(hour = currentHour, modifier = Modifier.matchParentSize())
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        // Screen hero greeting in Vazirmatn Black, with the weekday above a Light date line.
-                        Text(greeting, style = MarbleTextStyles.screenTitle)
+                        // Screen hero greeting in Vazirmatn Black, with a slow light sweep across it.
+                        GreetingHeadline(greeting, Modifier.fillMaxWidth())
                         Text(
                             PersianDateUtils.fullDateWithWeekday(todayEpoch, settings.languageTag, numeralMode),
                             style = MarbleTextStyles.dateDigits.copy(fontSize = 15.sp, lineHeight = 21.sp),
@@ -978,7 +982,10 @@ private fun DailyHeaderCard(
                                 modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
                             )
                             Text(
-                                TextNormalizer.formatDigits("${(progress * 100).toInt()}%", numeralMode),
+                                TextNormalizer.formatDigits(
+                                    stringResource(R.string.dash_percent, (progress * 100).toInt()),
+                                    numeralMode,
+                                ),
                                 style = MarbleTextStyles.metaLabel,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

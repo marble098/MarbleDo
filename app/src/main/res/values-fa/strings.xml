@@ -105,8 +105,10 @@
 
     <string name="nav_home_short">خانه</string>
     <string name="dash_greeting_morning">صبح بخیر</string>
-    <string name="dash_greeting_afternoon">بعدازظهر بخیر</string>
-    <string name="dash_greeting_evening">شب بخیر</string>
+    <string name="dash_greeting_afternoon">ظهر بخیر</string>
+    <string name="dash_greeting_evening">عصر بخیر</string>
+    <string name="dash_greeting_night">شب بخیر</string>
+    <string name="dash_percent">%1$d٪</string>
     <string name="dash_summary">%1$d کار باز · %2$d انجام‌شده</string>
     <string name="dash_stat_today">امروز</string>
     <string name="dash_stat_done">انجام‌شده</string>
