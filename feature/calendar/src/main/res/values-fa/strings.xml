@@ -82,4 +82,10 @@
     <string name="calendar_show_more_occasions">%1$d مورد دیگر را نشان بده</string>
     <string name="calendar_show_less">بستن فهرست</string>
     <string name="calendar_search_clear">پاک‌کردن جست‌وجو</string>
+    <string name="calendar_more_occasions">+%1$d مناسبت دیگر</string>
+    <string name="calendar_lunar_note">تاریخ قمری محاسباتی است؛ با تقویم رسمی تطبیق دهید.</string>
+    <string name="calendar_bloom_title">%1$d مناسبت در این ماه</string>
+    <string name="calendar_today_marker">امروز</string>
+    <string name="calendar_weekend_marker">تعطیل</string>
+    <string name="calendar_month_summary">%1$d روز با مناسبت یا کار</string>
 </resources>

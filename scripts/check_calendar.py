@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import calendar
 import json
+import re
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -134,6 +135,23 @@ def check(catalog: dict) -> dict:
         "World Maritime Day": "last_weekday", "International Day of Cooperatives": "nth_weekday",
     }.items():
         require(by_title[title].get("dateRule") == expected, f"Lost floating-date rule: {title}")
+    # Review regressions for the "complete occasions" pass; these classes of noise must not return.
+    require(
+        not any(re.search(r"\bextended\b|\(extra\)", r["titleEn"], re.I) for r in rows),
+        "Placeholder 'Extended'/'extra' rows duplicate a real observance",
+    )
+    gregorian_titles = {re.sub(r"[^a-z0-9]", "", r["titleEn"].lower()) for r in rows if r["calendar"] == "gregorian"}
+    require(
+        not any(
+            r["calendar"] == "jalali" and re.sub(r"[^a-z0-9]", "", r["titleEn"].lower()) in gregorian_titles
+            for r in rows
+        ),
+        "A Gregorian observance was frozen to a wrong solar date",
+    )
+    require(
+        all("iranian" in r["cultures"] or "culture" in r.get("tags", []) for r in rows),
+        "Every foreign observance must be reachable from the cultural filter",
+    )
     return {
         "annual_occasions": len(rows),
         "per_calendar": dict(Counter(r["calendar"] for r in rows)),

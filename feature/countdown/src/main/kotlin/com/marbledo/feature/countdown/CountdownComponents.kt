@@ -402,7 +402,9 @@ internal fun countdownCalendarLabel(mode: CalendarDisplayMode): String = when (m
 }
 
 internal fun remainingShort(units: CountdownUnits): String = when {
-    units.isFinished -> "۰"
+    // Latin digits on purpose: callers localise with TextNormalizer, and a literal Persian zero
+    // stayed Persian even when the user had chosen Latin numerals.
+    units.isFinished -> "0"
     units.days > 0 -> "${units.days} · ${units.hours.toString().padStart(2, '0')}:${units.minutes.toString().padStart(2, '0')}"
     else -> "${units.hours.toString().padStart(2, '0')}:${units.minutes.toString().padStart(2, '0')}:${units.seconds.toString().padStart(2, '0')}"
 }

@@ -1,6 +1,8 @@
 package com.marbledo.feature.tasks
 
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -189,9 +191,13 @@ fun TaskRowCard(
     val swipeThreshold = with(density) { 120.dp.toPx() }
     var dragging by remember { mutableStateOf(false) }
     var swipeTarget by remember { mutableFloatStateOf(0f) }
+    // One gesture must produce exactly one completion; without this, the remaining drag events
+    // kept re-crossing the threshold and toggled the task again and again.
+    var toggledDuringDrag by remember { mutableStateOf(false) }
     val swipeOffset by animateFloatAsState(
         targetValue = if (dragging) swipeTarget else 0f,
-        animationSpec = spring(),
+        // While the finger is down the card must track it exactly; springing here made it lag.
+        animationSpec = if (dragging) snap() else spring(dampingRatio = Spring.DampingRatioNoBouncy),
         label = "taskSwipeOffset",
     )
     // Modifier.offset(x) mirrors x in RTL, so negate in RTL to keep card motion locked to finger direction.
@@ -226,14 +232,27 @@ fun TaskRowCard(
                 .offset(x = swipeOffsetDp)
                 .pointerInput(task.id, task.isCompleted) {
                     detectHorizontalDragGestures(
-                        onDragStart = { dragging = true },
-                        onDragEnd = { dragging = false; swipeTarget = 0f },
-                        onDragCancel = { dragging = false; swipeTarget = 0f },
+                        onDragStart = {
+                            dragging = true
+                            toggledDuringDrag = false
+                        },
+                        onDragEnd = {
+                            dragging = false
+                            toggledDuringDrag = false
+                            swipeTarget = 0f
+                        },
+                        onDragCancel = {
+                            dragging = false
+                            toggledDuringDrag = false
+                            swipeTarget = 0f
+                        },
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
+                            if (toggledDuringDrag) return@detectHorizontalDragGestures
                             val next = swipeTarget + dragAmount
                             swipeTarget = next.coerceIn(-swipeThreshold - 24f, swipeThreshold + 24f)
                             if (kotlin.math.abs(swipeTarget) >= swipeThreshold) {
+                                toggledDuringDrag = true
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onToggle()
                                 dragging = false

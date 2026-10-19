@@ -82,4 +82,10 @@
     <string name="calendar_show_more_occasions">Show %1$d more</string>
     <string name="calendar_show_less">Show fewer</string>
     <string name="calendar_search_clear">Clear search</string>
+    <string name="calendar_more_occasions">+%1$d more occasions</string>
+    <string name="calendar_lunar_note">Calculated lunar date; check the official announcement.</string>
+    <string name="calendar_bloom_title">%1$d occasions bloom this month</string>
+    <string name="calendar_today_marker">Today</string>
+    <string name="calendar_weekend_marker">Weekend</string>
+    <string name="calendar_month_summary">%1$d days with occasions or tasks</string>
 </resources>
