@@ -10,7 +10,7 @@
     <string name="habit_best_streak">بهترین دوره · %1$s روز</string>
     <string name="habit_best_streak_label">بهترین دوره</string>
     <string name="habit_all_done">کار امروزت هم تموم شد!</string>
-    <string name="habit_summary_empty">برای امروز عادتی نیست.</string>
+    <string name="habit_summary_empty">هنوز عادتی برای امروز نداری؛ دوست داری یکی اضافه کنی؟</string>
 
     <string name="habit_drawer_build">ساختن عادت‌های خوب</string>
     <string name="habit_drawer_build_hint">کارهای کوچکی که آن‌قدر تکرار می‌شوند تا بشوند بخشی از تو.</string>
@@ -19,7 +19,7 @@
     <string name="habit_drawer_open">باز کردن کشو</string>
     <string name="habit_drawer_close">بستن کشو</string>
     <string name="habit_drawer_count">%1$d عادت</string>
-    <string name="habit_drawer_done">امروز %1$d تا انجام شده</string>
+    <string name="habit_drawer_done">امروز %1$d عادت را انجام دادی 🌱</string>
     <string name="habit_add_widget">افزودن ویجت عادت‌ها</string>
     <string name="habit_new">عادت تازه</string>
     <string name="habit_add_in_drawer">افزودن به این کشو</string>

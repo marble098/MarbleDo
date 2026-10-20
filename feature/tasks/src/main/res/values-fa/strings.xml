@@ -3,7 +3,7 @@
     <string name="tasks_today">امروز</string>
     <string name="tasks_tomorrow">فردا</string>
     <string name="tasks_quick_add_hint">مثلاً «فردا ساعت ۸ صبح، جلسهٔ تیم»</string>
-    <string name="tasks_add">افزودن کار</string>
+    <string name="tasks_add">اضافه‌کردن کار</string>
     <string name="tasks_due_at">موعد %1$s</string>
     <string name="tasks_no_due_date">بدون تاریخ</string>
     <string name="tasks_priority_low">کم</string>
@@ -44,8 +44,8 @@
     <string name="tasks_voice_prompt_date">تاریخ شمسی را بگو، مثل ۲۵ آبان ۱۴۰۵ یا فردا؛ برای بدون تاریخ بگو «رد کن».</string>
     <string name="tasks_voice_prompt_time">ساعت و دقیقه را بگو، مثل ساعت ۱۴ و ۳۰ دقیقه؛ برای بدون ساعت بگو «رد کن».</string>
     <string name="tasks_voice_prompt_priority">اولویت را بگو: کم، معمولی، زیاد یا فوری.</string>
-    <string name="tasks_voice_title_required">برای ساخت کار، عنوان لازم است.</string>
-    <string name="tasks_voice_task_created">با صدا ساخته شد.</string>
+    <string name="tasks_voice_title_required">برای ثبت کار، یک عنوان کوتاه هم بگو.</string>
+    <string name="tasks_voice_task_created">کارت با صدایت ثبت شد؛ عالیه!</string>
     <string name="tasks_voice_date_retry">تاریخ را نفهمیدم؛ دوباره بگو یا این مرحله را رد کن.</string>
     <string name="tasks_voice_time_retry">ساعت را نفهمیدم؛ دوباره بگو یا این مرحله را رد کن.</string>
     <string name="tasks_voice_try_again">گفتار گرفته نشد؛ دوباره بزن یا مرحله را رد کن.</string>
@@ -58,10 +58,10 @@
     <string name="tasks_voice_repeat">گفتن دوباره</string>
     <string name="tasks_voice_skip">ردکردن</string>
 
-    <string name="tasks_quick_add_title">کار تازه</string>
-    <string name="tasks_quick_add_subtitle">طبیعی بنویس، یک زمان آماده بزن یا با صدایت بگو.</string>
+    <string name="tasks_quick_add_title">قدم تازه‌ای بردار</string>
+    <string name="tasks_quick_add_subtitle">هرطور راحت‌تری بگو: بنویس، زمان آماده‌ای انتخاب کن یا با صدایت ثبتش کن.</string>
     <string name="tasks_clear_input">پاک کردن متن</string>
-    <string name="tasks_parsed_hint">تاریخ یا ساعت را از نوشتهٔ تو فهمیدم</string>
+    <string name="tasks_parsed_hint">تاریخ یا ساعت را از نوشته‌ات پیدا کردم ✨</string>
     <string name="tasks_when">چه زمانی؟</string>
     <string name="tasks_date_none">بدون تاریخ</string>
     <string name="tasks_date_next_week">هفتهٔ بعد</string>
@@ -71,7 +71,7 @@
     <string name="tasks_repeat">تکرار</string>
     <string name="tasks_countdown_toggle_title">شمارش معکوس زنده</string>
     <string name="tasks_countdown_toggle_body">این کار در داشبورد و ویجت شمرده شود.</string>
-    <string name="tasks_countdown_needs_date">اول تاریخ یا ساعت بگذار.</string>
+    <string name="tasks_countdown_needs_date">برای شروع روزشمار، اول یک تاریخ یا ساعت انتخاب کن.</string>
     <string name="tasks_countdown_theme">تم: %1$s</string>
     <string name="tasks_countdown_on">روشن کردن شمارش معکوس</string>
     <string name="tasks_countdown_off">خاموش کردن شمارش معکوس</string>
