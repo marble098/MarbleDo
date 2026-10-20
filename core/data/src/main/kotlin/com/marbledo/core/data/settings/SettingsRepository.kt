@@ -55,6 +55,7 @@ class SettingsRepository(private val context: Context) {
             persistentDateNotificationEnabled = if (proto.hasStatusIconEnabled()) proto.statusIconEnabled else true,
             statusBarCalendar = enumOrDefault(proto.statusBarCalendar, CalendarDisplayMode.PERSIAN),
             statusBarIconStyle = StatusBarIconStyle.from(proto.statusIconStyle),
+            notificationDesign = proto.notificationDesign.ifBlank { "classic" },
             habitTheme = proto.habitTheme.ifBlank { HabitTheme.DEFAULT.id },
             reminderLeadMinutes = if (proto.hasReminderLeadMinutes()) proto.reminderLeadMinutes.coerceIn(0, 1440) else 10,
             favoriteOccasionIds = proto.favoriteOccasionIdsList.map { it.trim() }.filter { it.isNotBlank() }.distinct(),
@@ -91,6 +92,7 @@ class SettingsRepository(private val context: Context) {
         .setStatusIconEnabled(settings.persistentDateNotificationEnabled)
         .setStatusBarCalendar(settings.statusBarCalendar.name)
         .setStatusIconStyle(settings.statusBarIconStyle.name)
+        .setNotificationDesign(settings.notificationDesign)
         .setHabitTheme(settings.habitTheme)
         .setReminderLeadMinutes(settings.reminderLeadMinutes)
         .addAllFavoriteOccasionIds(settings.favoriteOccasionIds.map { it.trim() }.filter { it.isNotBlank() }.distinct())

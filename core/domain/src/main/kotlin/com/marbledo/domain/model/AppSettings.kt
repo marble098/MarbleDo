@@ -45,6 +45,8 @@ data class AppSettings(
     /** Which look the status-bar icon uses for the day number; see [StatusBarIconStyle]. */
     @Serializable(with = StatusBarIconStyleSerializer::class)
     val statusBarIconStyle: StatusBarIconStyle = StatusBarIconStyle.DEFAULT,
+    /** Persistent notification layout. Unknown future ids fall back to classic. */
+    val notificationDesign: String = "classic",
     /** Look of the habit cabinet; individual habits can carry their own look. */
     val habitTheme: String = HabitTheme.DEFAULT.id,
     /** Minutes before a task's due time that a heads-up reminder is shown; 0 disables it. */

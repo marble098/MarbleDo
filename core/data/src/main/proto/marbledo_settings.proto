@@ -46,4 +46,5 @@ message MarbleDoSettingsProto {
   repeated string occasion_culture_ids = 32;
   // Presence distinguishes an intentionally empty selection from an older install.
   optional bool occasion_cultures_configured = 33;
+  string notification_design = 34;
 }

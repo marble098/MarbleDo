@@ -245,4 +245,8 @@
     <string name="dash_filters">فیلترها</string>
     <string name="dash_search">جست‌وجو</string>
     <string name="dash_no_upcoming_occasion">مناسبت برگزیده‌ای پیش رو نیست.</string>
+    <string name="settings_notification_design">طرح اعلان</string>
+    <string name="notification_design_classic">کلاسیک · کارت متعادل</string>
+    <string name="notification_design_minimal">مینیمال · نوشتار ساده</string>
+    <string name="notification_design_editorial">مجله‌ای · تاریخ برجسته و کادر برنامه</string>
 </resources>
