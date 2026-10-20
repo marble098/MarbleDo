@@ -65,25 +65,15 @@ class DomainRulesTest {
     }
 
     @Test
-    fun `recurrence calculator clamps non-positive intervals, month days and invalid weekdays`() {
-        val zone = ZoneId.of("UTC")
-        val previous = LocalDateTime.of(2025, 1, 6, 9, 0).atZone(zone).toInstant().toEpochMilli()
-        val weekly = Instant.ofEpochMilli(
-            RecurrenceCalculator.nextAfter(
-                previous,
-                RecurrenceRule(RepeatFrequency.WEEKLY, interval = 0, daysOfWeek = setOf(0, 9)),
-                zone,
-            ),
-        ).atZone(zone)
-        assertEquals(LocalDateTime.of(2025, 1, 13, 9, 0), weekly.toLocalDateTime())
-
-        val monthly = Instant.ofEpochMilli(
-            RecurrenceCalculator.nextAfter(
-                previous,
-                RecurrenceRule(RepeatFrequency.MONTHLY, interval = 0, monthDay = 0),
-                zone,
-            ),
-        ).atZone(zone)
-        assertEquals(LocalDateTime.of(2025, 2, 1, 9, 0), monthly.toLocalDateTime())
+    fun `recurrence rule rejects non-positive intervals, invalid month days and invalid weekdays`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            RecurrenceRule(RepeatFrequency.DAILY, interval = 0)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            RecurrenceRule(RepeatFrequency.WEEKLY, interval = 1, daysOfWeek = setOf(0, 9))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            RecurrenceRule(RepeatFrequency.MONTHLY, interval = 1, monthDay = 0)
+        }
     }
 }
