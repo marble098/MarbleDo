@@ -112,7 +112,8 @@ fun repeatLabel(frequency: com.marbledo.domain.model.RepeatFrequency): String = 
 /** Compact due label for rows: the Persian date, plus the time unless the task is all-day. */
 @Composable
 fun localizedTaskDateTime(epochMillis: Long, allDay: Boolean): String {
-    val locale = LocalConfiguration.current.locales[0]
+    val locales = LocalConfiguration.current.locales
+    val locale = if (!locales.isEmpty) locales[0] else java.util.Locale.forLanguageTag("fa")
     val languageTag = if (locale.language == "fa") "fa" else "en"
     val numeralMode = LocalNumeralMode.current
     return remember(epochMillis, allDay, languageTag, numeralMode) {
@@ -129,7 +130,8 @@ fun localizedTaskDateTime(epochMillis: Long, allDay: Boolean): String {
 
 @Composable
 fun localizedTaskDate(epochMillis: Long): String {
-    val locale = LocalConfiguration.current.locales[0]
+    val locales = LocalConfiguration.current.locales
+    val locale = if (!locales.isEmpty) locales[0] else java.util.Locale.forLanguageTag("fa")
     val numeralMode = LocalNumeralMode.current
     return remember(epochMillis, locale, numeralMode) { TaskDateLabels.tripleDate(epochMillis, locale, numeralMode) }
 }

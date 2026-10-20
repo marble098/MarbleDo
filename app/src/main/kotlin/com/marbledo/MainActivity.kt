@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        acceptIntent(intent)
+        if (savedInstanceState == null) acceptIntent(intent)
         setContent {
             MarbleDoApp(
                 initialShareText = shareText,

@@ -72,7 +72,7 @@ fun OccasionBloomStrip(
             )
         }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(monthOccasions.take(24), key = { it.second.id }) { (day, occasion) ->
+            items(monthOccasions.take(24), key = { "${it.first}-${it.second.id}" }) { (day, occasion) ->
                 BloomPetal(
                     day = day,
                     occasion = occasion,

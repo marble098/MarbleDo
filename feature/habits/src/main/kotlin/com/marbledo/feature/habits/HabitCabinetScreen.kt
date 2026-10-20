@@ -73,7 +73,7 @@ fun HabitsScreen(
     val numeralMode = LocalNumeralMode.current
     val dark = habitDarkMode()
     val cabinet = habitPalette(HabitTheme.from(settings.habitTheme), dark)
-    val languageTag = if (LocalConfiguration.current.locales[0].language == "fa") "fa" else "en"
+    val languageTag = if (settings.languageTag == "fa") "fa" else "en"
     var buildOpen by rememberSaveable { mutableStateOf(true) }
     var quitOpen by rememberSaveable { mutableStateOf(true) }
     var archivedOpen by rememberSaveable { mutableStateOf(false) }

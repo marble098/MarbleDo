@@ -177,6 +177,10 @@ class TasksViewModel(
     }
 
     fun editTask(task: Task) {
+        if (task.id == 0L) {
+            addTask(task)
+            return
+        }
         viewModelScope.launch {
             val previous = repository.getTask(task.id)
             val saved = task.copy(updatedAtEpochMillis = System.currentTimeMillis())
@@ -261,6 +265,7 @@ class TasksViewModel(
 
     fun restoreTasks(incoming: List<Task>, merge: Boolean) {
         viewModelScope.launch {
+            val previousIds = repository.observeTasks().first().mapTo(mutableSetOf(), Task::id)
             if (!merge) {
                 repository.replaceAll(incoming)
             } else {
@@ -274,7 +279,10 @@ class TasksViewModel(
                     }
                 }
             }
-            repository.observeTasks().first().forEach(::scheduleOrCancel)
+            val currentTasks = repository.observeTasks().first()
+            val currentIds = currentTasks.mapTo(mutableSetOf(), Task::id)
+            (previousIds - currentIds).forEach(reminderScheduler::cancel)
+            currentTasks.forEach(::scheduleOrCancel)
             backupScheduler.scheduleDebounced()
         }
     }

@@ -53,6 +53,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -66,11 +67,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.marble098.marbledo.notifications.NotificationArtwork
 import com.marble098.marbledo.notifications.NotificationMood
@@ -644,7 +647,7 @@ fun SettingsScreen(
     }
 }
 
-/** Uses exactly the same fields and hierarchy as the delivered expanded notification. */
+/** Uses the same fields, hierarchy and design rules as the delivered expanded notification. */
 @Composable
 private fun MinimalNotificationPreviewBox(
     context: Context,
@@ -654,26 +657,141 @@ private fun MinimalNotificationPreviewBox(
 ) {
     val configuration = LocalConfiguration.current
     val now by produceState(System.currentTimeMillis()) {
-        while (true) { value = System.currentTimeMillis(); kotlinx.coroutines.delay(60_000L) }
+        while (true) {
+            kotlinx.coroutines.delay(60_000L)
+            value = System.currentTimeMillis()
+        }
     }
     val content = remember(settings, tasks, catalog, now, configuration) {
         PersistentCalendarNotification.buildContent(context, settings, tasks, catalog, now)
     }
-    val badgeBitmap = remember(content, configuration) {
+    val badgeBitmap = remember(context, content.badgeDayDigits, content.monthLabel, content.mood, configuration) {
         NotificationArtwork.dateBadge(context, content.badgeDayDigits, content.monthLabel, content.mood)
     }
-    androidx.compose.ui.viewinterop.AndroidView(
-        modifier = Modifier.fillMaxWidth(),
-        factory = { android.widget.FrameLayout(it) },
-        update = { host ->
-            host.removeAllViews()
-            val views = com.marble098.marbledo.notifications.CalendarNotificationViews.create(
-                context, content, badgeBitmap, true, settings.notificationDesign, settings.languageTag == "fa")
-            host.addView(views.apply(context, host))
-        },
+    val design = settings.notificationDesign
+    val isMinimal = design == "minimal"
+    val isEditorial = design == "editorial"
+    val previewDirection = if (settings.languageTag == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr
+    val outerShape = RoundedCornerShape(if (isEditorial) 10.dp else 20.dp)
+    val progressHeight = when (design) {
+        "minimal" -> 2.dp
+        "editorial" -> 3.dp
+        else -> 4.dp
+    }
+    CompositionLocalProvider(LocalLayoutDirection provides previewDirection) {
+        Surface(
+            shape = outerShape,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), outerShape),
+        ) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (!isMinimal && badgeBitmap != null) {
+                        Image(
+                            bitmap = badgeBitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(if (isEditorial) 6.dp else 12.dp)),
+                        )
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(content.title, style = MarbleTextStyles.itemTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            content.secondaryDatesLine,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(
+                        content.progressSummary,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    androidx.compose.material3.LinearProgressIndicator(
+                        progress = { content.todayCompleted.toFloat() / content.todayTotal.coerceAtLeast(1) },
+                        modifier = Modifier.fillMaxWidth().height(progressHeight),
+                    )
+                }
+                val sectionShape = RoundedCornerShape(if (isEditorial) 4.dp else 12.dp)
+                val sectionModifier = when {
+                    isMinimal -> Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp)
+                    isEditorial -> Modifier
+                        .fillMaxWidth()
+                        .clip(sectionShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f), sectionShape)
+                        .padding(horizontal = 10.dp, vertical = 7.dp)
+                    else -> Modifier
+                        .fillMaxWidth()
+                        .clip(sectionShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f))
+                        .padding(horizontal = 10.dp, vertical = 7.dp)
+                }
+                Column(modifier = sectionModifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        content.nextTaskLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        content.nextTaskTitle ?: content.fallbackTaskText,
+                        style = MarbleTextStyles.itemTitle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    content.nextTaskTime?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        stringResource(R.string.notification_occasions),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        content.occasionLines.joinToString("\n").ifEmpty { content.fallbackOccasionText },
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (content.moreOccasionsCount > 0) {
+                        Text(
+                            content.moreOccasionsText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
+    Text(
+        stringResource(R.string.notification_preview_hint),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Text(stringResource(R.string.notification_preview_hint), style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable
@@ -798,7 +916,8 @@ private val OCCASION_REMINDER_OPTIONS = listOf(0, 1, 2, 3, 7)
 
 @Composable
 private fun occasionStatusText(state: OccasionState, numeralMode: NumeralMode): String {
-    val locale = LocalConfiguration.current.locales[0]
+    val locales = LocalConfiguration.current.locales
+    val locale = if (!locales.isEmpty) locales[0] else java.util.Locale.forLanguageTag("fa")
     val stamp = state.lastUpdatedEpochMillis
     return when {
         state.isRefreshing -> stringResource(R.string.settings_occasions_updating)

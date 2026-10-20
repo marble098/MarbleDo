@@ -41,10 +41,7 @@ class NextTaskTileService : TileService() {
     override fun onClick() {
         super.onClick()
         scope.launch {
-            val taskId = nextTaskId()
-            if (taskId > 0L) {
-                launchAppFor(taskId)
-            }
+            launchAppFor(nextTaskId())
         }
     }
 
@@ -78,7 +75,7 @@ class NextTaskTileService : TileService() {
 
     private fun launchAppFor(taskId: Long) {
         val launch = Intent(this, MainActivity::class.java).apply {
-            putExtra(MainActivity.EXTRA_TASK_ID, taskId)
+            if (taskId > 0L) putExtra(MainActivity.EXTRA_TASK_ID, taskId)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         // TileService.startActivityAndCollapse(Intent) is deprecated in favour of the

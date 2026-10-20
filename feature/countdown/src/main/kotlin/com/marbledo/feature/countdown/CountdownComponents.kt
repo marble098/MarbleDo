@@ -257,7 +257,8 @@ fun CountdownCreateSheet(
 ) {
     val zone = remember { ZoneId.systemDefault() }
     val numeralMode = LocalNumeralMode.current
-    val languageTag = if (LocalConfiguration.current.locales[0].language == "fa") "fa" else "en"
+    val locales = LocalConfiguration.current.locales
+    val languageTag = if (!locales.isEmpty && locales[0].language == "fa") "fa" else "en"
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var title by rememberSaveable { mutableStateOf("") }
     var selectedCalendar by rememberSaveable { mutableStateOf(calendarDisplay) }
@@ -387,7 +388,8 @@ fun CountdownRemoveAction(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
 @Composable
 internal fun countdownDateLabel(epochMillis: Long, mode: CalendarDisplayMode): String {
-    val locale = LocalConfiguration.current.locales[0]
+    val locales = LocalConfiguration.current.locales
+    val locale = if (!locales.isEmpty) locales[0] else java.util.Locale.forLanguageTag("fa")
     val numeralMode = LocalNumeralMode.current
     return remember(epochMillis, mode, locale, numeralMode) {
         CountdownDateUtils.format(epochMillis, mode, locale, numeralMode)

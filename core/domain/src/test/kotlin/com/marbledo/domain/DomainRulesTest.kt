@@ -63,4 +63,17 @@ class DomainRulesTest {
             )
         }
     }
+
+    @Test
+    fun `recurrence rule rejects non-positive intervals, invalid month days and invalid weekdays`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            RecurrenceRule(RepeatFrequency.DAILY, interval = 0)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            RecurrenceRule(RepeatFrequency.WEEKLY, interval = 1, daysOfWeek = setOf(0, 9))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            RecurrenceRule(RepeatFrequency.MONTHLY, interval = 1, monthDay = 0)
+        }
+    }
 }

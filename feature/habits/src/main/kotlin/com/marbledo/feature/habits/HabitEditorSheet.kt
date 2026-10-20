@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -72,25 +73,32 @@ fun HabitEditorSheet(
     onDismiss: () -> Unit,
 ) {
     val numeralMode = LocalNumeralMode.current
-    val languageTag = if (LocalConfiguration.current.locales[0].language == "fa") "fa" else "en"
+    val locales = LocalConfiguration.current.locales
+    val languageTag = if (!locales.isEmpty && locales[0].language == "fa") "fa" else "en"
     val existing = habit != null
+    val habitKey = "${habit?.id ?: 0L}:${kind.name}"
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var name by rememberSaveable { mutableStateOf(habit?.name.orEmpty()) }
-    var icon by rememberSaveable { mutableStateOf(habit?.icon ?: Habit.DEFAULT_ICON) }
-    var habitKind by rememberSaveable { mutableStateOf(habit?.kind ?: kind) }
-    var tracking by rememberSaveable { mutableStateOf(habit?.tracking ?: HabitTracking.CHECK) }
-    var scheduleType by rememberSaveable { mutableStateOf(habit?.schedule?.type ?: HabitScheduleType.EVERY_DAY) }
-    var weekdays by rememberSaveable { mutableStateOf(habit?.schedule?.weekdays ?: setOf(1, 2, 3, 4, 5)) }
-    var timesPerWeek by rememberSaveable { mutableIntStateOf(habit?.schedule?.timesPerWeek ?: 3) }
-    var targetText by rememberSaveable { mutableStateOf((habit?.dailyTarget ?: 1).toString()) }
-    var unit by rememberSaveable { mutableStateOf(habit?.unitLabel.orEmpty()) }
-    var difficulty by rememberSaveable { mutableStateOf(habit?.difficulty ?: HabitDifficulty.MEDIUM) }
-    var reminder by rememberSaveable { mutableIntStateOf(habit?.reminderMinuteOfDay ?: Habit.NO_REMINDER) }
-    var cue by rememberSaveable { mutableStateOf(habit?.cue.orEmpty()) }
-    var identity by rememberSaveable { mutableStateOf(habit?.identity.orEmpty()) }
-    var why by rememberSaveable { mutableStateOf(habit?.why.orEmpty()) }
-    var themeId by rememberSaveable { mutableStateOf(habit?.themeId ?: HabitTheme.DEFAULT.id) }
-    var nameError by rememberSaveable { mutableStateOf(false) }
+    var name by rememberSaveable(habitKey) { mutableStateOf(habit?.name.orEmpty()) }
+    var icon by rememberSaveable(habitKey) { mutableStateOf(habit?.icon ?: Habit.DEFAULT_ICON) }
+    var habitKind by rememberSaveable(habitKey) { mutableStateOf(habit?.kind ?: kind) }
+    var tracking by rememberSaveable(habitKey) { mutableStateOf(habit?.tracking ?: HabitTracking.CHECK) }
+    var scheduleType by rememberSaveable(habitKey) { mutableStateOf(habit?.schedule?.type ?: HabitScheduleType.EVERY_DAY) }
+    var weekdaysCsv by rememberSaveable(habitKey) {
+        mutableStateOf((habit?.schedule?.weekdays ?: setOf(1, 2, 3, 4, 5)).sorted().joinToString(","))
+    }
+    val weekdays = remember(weekdaysCsv) {
+        weekdaysCsv.split(',').mapNotNull { it.trim().toIntOrNull() }.filter { it in 1..7 }.toSet()
+    }
+    var timesPerWeek by rememberSaveable(habitKey) { mutableIntStateOf(habit?.schedule?.timesPerWeek ?: 3) }
+    var targetText by rememberSaveable(habitKey) { mutableStateOf((habit?.dailyTarget ?: 1).toString()) }
+    var unit by rememberSaveable(habitKey) { mutableStateOf(habit?.unitLabel.orEmpty()) }
+    var difficulty by rememberSaveable(habitKey) { mutableStateOf(habit?.difficulty ?: HabitDifficulty.MEDIUM) }
+    var reminder by rememberSaveable(habitKey) { mutableIntStateOf(habit?.reminderMinuteOfDay ?: Habit.NO_REMINDER) }
+    var cue by rememberSaveable(habitKey) { mutableStateOf(habit?.cue.orEmpty()) }
+    var identity by rememberSaveable(habitKey) { mutableStateOf(habit?.identity.orEmpty()) }
+    var why by rememberSaveable(habitKey) { mutableStateOf(habit?.why.orEmpty()) }
+    var themeId by rememberSaveable(habitKey) { mutableStateOf(habit?.themeId ?: HabitTheme.DEFAULT.id) }
+    var nameError by rememberSaveable(habitKey) { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -208,7 +216,10 @@ fun HabitEditorSheet(
                             CompactSelectorPill(
                                 label = weekdayName(day, languageTag, short = true),
                                 selected = selected,
-                                onClick = { weekdays = if (selected) weekdays - day else weekdays + day },
+                                onClick = {
+                                    val next = if (selected) weekdays - day else weekdays + day
+                                    weekdaysCsv = next.sorted().joinToString(",")
+                                },
                                 modifier = Modifier.weight(1f),
                             )
                         }

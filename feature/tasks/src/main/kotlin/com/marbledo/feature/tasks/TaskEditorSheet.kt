@@ -130,26 +130,27 @@ fun TaskEditorSheet(
     val numeralMode = LocalNumeralMode.current
     val uriHandler = LocalUriHandler.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val initialSchedule = remember(task.id) { scheduleOf(task.dueAtEpochMillis, task.isAllDay, zone) }
+    val taskKey = if (task.id != 0L) task.id.toString() else "draft:${task.title}:${task.dueAtEpochMillis}"
+    val initialSchedule = remember(taskKey) { scheduleOf(task.dueAtEpochMillis, task.isAllDay, zone) }
 
-    var title by rememberSaveable(task.id) { mutableStateOf(task.title) }
-    var dateIso by rememberSaveable(task.id) { mutableStateOf(initialSchedule.date?.toString()) }
-    var timeIso by rememberSaveable(task.id) { mutableStateOf(initialSchedule.time?.toString()) }
+    var title by rememberSaveable(taskKey) { mutableStateOf(task.title) }
+    var dateIso by rememberSaveable(taskKey) { mutableStateOf(initialSchedule.date?.toString()) }
+    var timeIso by rememberSaveable(taskKey) { mutableStateOf(initialSchedule.time?.toString()) }
     var showPicker by rememberSaveable { mutableStateOf(false) }
-    var description by rememberSaveable(task.id) { mutableStateOf(task.description) }
-    var tags by rememberSaveable(task.id) { mutableStateOf(task.tags.joinToString(", ")) }
-    var project by rememberSaveable(task.id) { mutableStateOf(task.project) }
-    var category by rememberSaveable(task.id) { mutableStateOf(task.category) }
-    var priority by rememberSaveable(task.id) { mutableStateOf(task.priority) }
-    var frequency by rememberSaveable(task.id) { mutableStateOf(task.recurrence?.frequency ?: RepeatFrequency.NONE) }
-    var persianRepeat by rememberSaveable(task.id) { mutableStateOf(task.recurrence?.calendar == RepeatCalendar.PERSIAN) }
-    var countdownEnabled by rememberSaveable(task.id) { mutableStateOf(task.countdownEnabled) }
-    var themeId by rememberSaveable(task.id) { mutableStateOf(task.countdownTheme) }
-    var link by rememberSaveable(task.id) { mutableStateOf(task.link.orEmpty()) }
-    var attachment by rememberSaveable(task.id) { mutableStateOf(task.attachmentUri) }
-    var focusText by rememberSaveable(task.id) { mutableStateOf(if (task.focusMinutes > 0) task.focusMinutes.toString() else "") }
-    var colorArgb by rememberSaveable(task.id) { mutableStateOf(task.colorArgb) }
-    val checklist = rememberSaveable(task.id, saver = checklistSaver) { task.checklist.toMutableStateList() }
+    var description by rememberSaveable(taskKey) { mutableStateOf(task.description) }
+    var tags by rememberSaveable(taskKey) { mutableStateOf(task.tags.joinToString(", ")) }
+    var project by rememberSaveable(taskKey) { mutableStateOf(task.project) }
+    var category by rememberSaveable(taskKey) { mutableStateOf(task.category) }
+    var priority by rememberSaveable(taskKey) { mutableStateOf(task.priority) }
+    var frequency by rememberSaveable(taskKey) { mutableStateOf(task.recurrence?.frequency ?: RepeatFrequency.NONE) }
+    var persianRepeat by rememberSaveable(taskKey) { mutableStateOf(task.recurrence?.calendar == RepeatCalendar.PERSIAN) }
+    var countdownEnabled by rememberSaveable(taskKey) { mutableStateOf(task.countdownEnabled) }
+    var themeId by rememberSaveable(taskKey) { mutableStateOf(task.countdownTheme) }
+    var link by rememberSaveable(taskKey) { mutableStateOf(task.link.orEmpty()) }
+    var attachment by rememberSaveable(taskKey) { mutableStateOf(task.attachmentUri) }
+    var focusText by rememberSaveable(taskKey) { mutableStateOf(if (task.focusMinutes > 0) task.focusMinutes.toString() else "") }
+    var colorArgb by rememberSaveable(taskKey) { mutableStateOf(task.colorArgb) }
+    val checklist = rememberSaveable(taskKey, saver = checklistSaver) { task.checklist.toMutableStateList() }
     var showCategoryDialog by rememberSaveable { mutableStateOf(false) }
     var categoryDraft by rememberSaveable { mutableStateOf("") }
 

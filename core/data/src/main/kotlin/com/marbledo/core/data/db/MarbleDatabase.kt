@@ -101,9 +101,9 @@ abstract class MarbleDatabase : RoomDatabase() {
         private var instance: MarbleDatabase? = null
 
         fun create(context: Context): MarbleDatabase {
-            instance?.takeIf { it.isOpen }?.let { return it }
+            instance?.let { return it }
             return synchronized(this) {
-                instance?.takeIf { it.isOpen } ?: Room.databaseBuilder(
+                instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     MarbleDatabase::class.java,
                     DATABASE_NAME,
