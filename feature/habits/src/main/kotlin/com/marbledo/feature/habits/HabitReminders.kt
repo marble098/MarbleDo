@@ -139,6 +139,8 @@ class HabitReminderReceiver : BroadcastReceiver() {
         val snapshot = withDatabase(context) { repository -> repository.snapshot() } ?: return
         val habit = snapshot.habits.firstOrNull { it.id == habitId } ?: return
         if (habit.isArchived || habit.reminderMinuteOfDay < 0) return
+        // One-shot alarms have to re-arm themselves for tomorrow even if notifications are muted today.
+        HabitReminderScheduler.reschedule(context, listOf(habit))
         if (!canPostNotifications(context)) return
         createChannel(context)
         val title = context.getString(R.string.habit_notification_title, habit.name)
@@ -162,8 +164,6 @@ class HabitReminderReceiver : BroadcastReceiver() {
             builder.addAction(0, context.getString(R.string.habit_notification_done), actionIntent(context, habitId, ACTION_DONE))
         }
         runCatching { NotificationManagerCompat.from(context).notify(notificationId(habitId), builder.build()) }
-        // One-shot alarms have to re-arm themselves for tomorrow.
-        HabitReminderScheduler.reschedule(context, listOf(habit))
     }
 
     private suspend fun record(context: Context, habitId: Long, done: Boolean) {

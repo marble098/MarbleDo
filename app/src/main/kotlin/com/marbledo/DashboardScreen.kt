@@ -1485,7 +1485,7 @@ private fun CountdownRoad(
                     onLongPress = {},
                 )
                 countdowns.forEach { task ->
-                    val days = ((task.dueAtEpochMillis ?: nowEpoch) - nowEpoch) / 86_400_000L
+                    val days = (((task.dueAtEpochMillis ?: nowEpoch) - nowEpoch) / 86_400_000L).coerceAtLeast(0L)
                     RoadNode(
                         title = task.title,
                         detail = TextNormalizer.formatDigits(daysLeftLabel(days), numeralMode),

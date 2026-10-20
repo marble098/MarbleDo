@@ -232,7 +232,7 @@ fun CalendarScreen(
     val selectedOccasions = remember(index, selectedPersian) { index.on(selectedPersian.year, selectedPersian.month, selectedPersian.day) }
     val matchingTasks = remember(tasks, selectedDate, zone) {
         tasks.filter { task ->
-            task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == selectedDate } == true
+            !task.isArchived && task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == selectedDate } == true
         }
     }
     val yearRows = remember(index, monthData.year, educationEnabled, academicYear) {
@@ -1748,8 +1748,10 @@ private fun buildMonth(monthOffset: Int, tasks: List<Task>, zone: ZoneId, weekSt
     val firstWeekdayIndex = JalaliCalendarMath.saturdayBasedWeekday(firstDayOfWeek)
     val leadingCells = if (weekStartsSaturday) firstWeekdayIndex else (firstWeekdayIndex + 6) % 7
     val firstCell = (current.clone() as android.icu.util.Calendar).apply { add(android.icu.util.Calendar.DAY_OF_MONTH, -leadingCells) }
-    val today = LocalDate.now(zone)
-    val taskCounts = tasks.mapNotNull { task -> task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() } }
+    val today = Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate()
+    val taskCounts = tasks.asSequence()
+        .filter { !it.isArchived }
+        .mapNotNull { task -> task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() } }
         .groupingBy { it }
         .eachCount()
     val cells = (0 until 42).map { offset ->

@@ -36,3 +36,18 @@ class NotificationDesignTests(unittest.TestCase):
                 badge.get(ANDROID + 'layout_height'),
                 root.get(ANDROID + 'paddingTop'), root.get(ANDROID + 'paddingBottom')))
             self.assertLessEqual(height, 48, str(path))
+
+    def test_settings_preview_uses_compose_without_android_view_interop(self):
+        settings = (ROOT / 'app/src/main/kotlin/com/marbledo/SettingsScreen.kt').read_text()
+        self.assertNotIn('AndroidView', settings)
+        self.assertIn('val isMinimal = design == "minimal"', settings)
+        self.assertIn('val isEditorial = design == "editorial"', settings)
+
+    def test_occasion_bloom_lazy_row_uses_day_and_occasion_id_key(self):
+        bloom = (ROOT / 'feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/OccasionBloomView.kt').read_text()
+        self.assertIn('key = { "${it.first}-${it.second.id}" }', bloom)
+
+    def test_database_singleton_does_not_gate_on_is_open(self):
+        db = (ROOT / 'core/data/src/main/kotlin/com/marbledo/core/data/db/MarbleDatabase.kt').read_text()
+        self.assertNotIn('takeIf { it.isOpen }', db)
+

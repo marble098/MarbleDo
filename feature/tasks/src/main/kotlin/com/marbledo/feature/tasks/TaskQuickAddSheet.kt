@@ -261,6 +261,9 @@ fun TaskQuickAddSheet(
             return
         }
         val voiceCategoryName = voiceCategory.trim().takeUnless(::isVoiceSkipPhrase).orEmpty()
+        if (voiceCategoryName.isNotBlank() && availableCategories.none { TextNormalizer.searchKey(it) == TextNormalizer.searchKey(voiceCategoryName) }) {
+            onAddCategory(voiceCategoryName)
+        }
         onSubmit(
             voiceParsed.task.copy(
                 category = voiceCategoryName,

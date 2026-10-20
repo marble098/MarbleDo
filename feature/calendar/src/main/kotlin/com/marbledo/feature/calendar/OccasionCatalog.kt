@@ -288,7 +288,8 @@ class OccasionIndex private constructor(private val byYear: Map<Int, Map<Int, Li
                         ) ?: return@yearLoop
                         if (resolved < start || resolved >= end) return@yearLoop
                         val fields = JalaliCalendarMath.jalaliFieldsIn(persian, resolved.atTime(12, 0).atZone(zone).toInstant().toEpochMilli())
-                        days.getOrPut(fields.month * 100 + fields.day) { mutableListOf() }.add(occasion)
+                        val dayList = days.getOrPut(fields.month * 100 + fields.day) { mutableListOf() }
+                        if (dayList.none { it.id == occasion.id }) dayList.add(occasion)
                     }
                 }
                 byYear[year] = days

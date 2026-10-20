@@ -24,14 +24,15 @@ object AndroidRecurrenceCalculator {
         val calendar = persianCalendar(IcuTimeZone.getTimeZone(zone.id)).apply {
             timeInMillis = previousMillis
         }
+        val interval = rule.interval.coerceAtLeast(1)
         val targetDay = rule.monthDay ?: calendar.get(Calendar.DAY_OF_MONTH)
         if (rule.frequency == RepeatFrequency.YEARLY) {
-            calendar.add(Calendar.YEAR, rule.interval)
+            calendar.add(Calendar.YEAR, interval)
         } else {
-            calendar.add(Calendar.MONTH, rule.interval)
+            calendar.add(Calendar.MONTH, interval)
         }
         val lastDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-        calendar.set(Calendar.DAY_OF_MONTH, targetDay.coerceAtMost(lastDay))
+        calendar.set(Calendar.DAY_OF_MONTH, targetDay.coerceIn(1, lastDay))
         calendar.set(Calendar.HOUR_OF_DAY, local.hour)
         calendar.set(Calendar.MINUTE, local.minute)
         calendar.set(Calendar.SECOND, local.second)
