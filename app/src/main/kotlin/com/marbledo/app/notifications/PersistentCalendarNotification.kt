@@ -149,7 +149,7 @@ object PersistentCalendarNotification {
         val notificationContext = context.applicationContext.forLanguage(settings.languageTag)
         NotificationChannels.create(notificationContext)
         val content = buildContent(notificationContext, settings, tasks, catalog, nowMillis)
-        val signature = listOf(content, settings.statusBarIconStyle, notificationContext.resources.configuration.uiMode,
+        val signature = listOf(content, settings.notificationDesign, settings.languageTag, settings.statusBarIconStyle, notificationContext.resources.configuration.uiMode,
             notificationContext.resources.displayMetrics.densityDpi, notificationContext.resources.configuration.fontScale).hashCode()
         val isVisible = notificationContext.getSystemService(NotificationManager::class.java)?.activeNotifications
             ?.any { it.id == NOTIFICATION_ID } == true
@@ -173,8 +173,8 @@ object PersistentCalendarNotification {
             .setColor(NotificationArtwork.accentColor(notificationContext, content.mood))
             .setContentTitle(content.title).setContentText(content.collapsedLine).setSubText(content.moodSubtitle)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            .setCustomContentView(CalendarNotificationViews.create(notificationContext, content, largeIcon, false))
-            .setCustomBigContentView(CalendarNotificationViews.create(notificationContext, content, largeIcon, true))
+            .setCustomContentView(CalendarNotificationViews.create(notificationContext, content, largeIcon, false, settings.notificationDesign, settings.languageTag == "fa"))
+            .setCustomBigContentView(CalendarNotificationViews.create(notificationContext, content, largeIcon, true, settings.notificationDesign, settings.languageTag == "fa"))
             .setContentIntent(calendarIntent).setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(publicVersion).setShowWhen(false).setLocalOnly(true).setSilent(true)

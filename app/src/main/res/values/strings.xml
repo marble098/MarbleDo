@@ -245,4 +245,8 @@
     <string name="dash_filters">Filters</string>
     <string name="dash_search">Search</string>
     <string name="dash_no_upcoming_occasion">No starred occasion is coming up.</string>
+    <string name="settings_notification_design">Notification design</string>
+    <string name="notification_design_classic">Classic · balanced card</string>
+    <string name="notification_design_minimal">Minimal · quiet typography</string>
+    <string name="notification_design_editorial">Editorial · bold date and outlined agenda</string>
 </resources>

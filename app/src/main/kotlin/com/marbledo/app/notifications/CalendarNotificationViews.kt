@@ -8,15 +8,35 @@ import com.marble098.marbledo.R
 
 /** Framework-decorated layouts: Android retains its trusted header, expand affordance and actions. */
 internal object CalendarNotificationViews {
+    private fun layout(design: String, expanded: Boolean, rtl: Boolean): Int = when (design) {
+        "minimal" -> if (expanded) {
+            if (rtl) R.layout.notification_minimal_expanded_rtl else R.layout.notification_minimal_expanded_ltr
+        } else {
+            if (rtl) R.layout.notification_minimal_compact_rtl else R.layout.notification_minimal_compact_ltr
+        }
+        "editorial" -> if (expanded) {
+            if (rtl) R.layout.notification_editorial_expanded_rtl else R.layout.notification_editorial_expanded_ltr
+        } else {
+            if (rtl) R.layout.notification_editorial_compact_rtl else R.layout.notification_editorial_compact_ltr
+        }
+        else -> if (expanded) {
+            if (rtl) R.layout.notification_classic_expanded_rtl else R.layout.notification_classic_expanded_ltr
+        } else {
+            if (rtl) R.layout.notification_classic_compact_rtl else R.layout.notification_classic_compact_ltr
+        }
+    }
+
     fun create(
         context: Context,
         content: PersistentCalendarNotification.NotificationBoxContent,
         badge: Bitmap?,
         expanded: Boolean,
+        design: String = "classic",
+        rtl: Boolean = false,
     ): RemoteViews = RemoteViews(context.packageName,
-        if (expanded) R.layout.notification_calendar_expanded else R.layout.notification_calendar_compact).apply {
+        layout(design, expanded, rtl)).apply {
         setTextViewText(R.id.notification_title, content.title)
-        if (badge != null) setImageViewBitmap(R.id.notification_badge, badge)
+        if (badge != null && design != "minimal") setImageViewBitmap(R.id.notification_badge, badge)
         else setViewVisibility(R.id.notification_badge, View.GONE)
         setContentDescription(R.id.notification_root, if (expanded) content.expandedText else "${content.title}. ${content.collapsedLine}")
         if (!expanded) {

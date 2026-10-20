@@ -400,6 +400,19 @@ fun SettingsScreen(
                 isError = statusError,
             )
 
+            Text(stringResource(R.string.settings_notification_design), style = MaterialTheme.typography.titleSmall)
+            listOf("classic" to R.string.notification_design_classic,
+                "minimal" to R.string.notification_design_minimal,
+                "editorial" to R.string.notification_design_editorial).forEach { (design, label) ->
+                Row(Modifier.fillMaxWidth().clickable { onUpdate(settings.copy(notificationDesign = design)) }
+                    .padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.RadioButton(selected = settings.notificationDesign == design,
+                        onClick = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(label))
+                }
+            }
+
             // 2. Minimal Live Notification Preview Card so the user sees the clean notification layout
             if (settings.persistentDateNotificationEnabled) {
                 Spacer(Modifier.height(10.dp))
@@ -646,49 +659,21 @@ private fun MinimalNotificationPreviewBox(
     val content = remember(settings, tasks, catalog, now, configuration) {
         PersistentCalendarNotification.buildContent(context, settings, tasks, catalog, now)
     }
-    val badgeBitmap = remember(context, content.badgeDayDigits, content.monthLabel, content.mood, configuration) {
+    val badgeBitmap = remember(content, configuration) {
         NotificationArtwork.dateBadge(context, content.badgeDayDigits, content.monthLabel, content.mood)
     }
-    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(20.dp))) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (badgeBitmap != null) Image(badgeBitmap.asImageBitmap(), contentDescription = null,
-                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(content.title, style = MarbleTextStyles.itemTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(content.secondaryDatesLine, style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(content.progressSummary, style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                androidx.compose.material3.LinearProgressIndicator(
-                    progress = { content.todayCompleted.toFloat() / content.todayTotal.coerceAtLeast(1) },
-                    modifier = Modifier.fillMaxWidth())
-            }
-            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)) {
-                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(content.nextTaskLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                    Text(content.nextTaskTitle ?: content.fallbackTaskText, style = MarbleTextStyles.itemTitle,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    content.nextTaskTime?.let { Text(it, style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                }
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(R.string.notification_occasions), style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(content.occasionLines.joinToString("\n").ifEmpty { content.fallbackOccasionText },
-                    style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (content.moreOccasionsCount > 0) Text(content.moreOccasionsText, style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary)
-            }
-            Text(stringResource(R.string.notification_preview_hint), style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
+    androidx.compose.ui.viewinterop.AndroidView(
+        modifier = Modifier.fillMaxWidth(),
+        factory = { android.widget.FrameLayout(it) },
+        update = { host ->
+            host.removeAllViews()
+            val views = com.marble098.marbledo.notifications.CalendarNotificationViews.create(
+                context, content, badgeBitmap, true, settings.notificationDesign, settings.languageTag == "fa")
+            host.addView(views.apply(context, host))
+        },
+    )
+    Text(stringResource(R.string.notification_preview_hint), style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable

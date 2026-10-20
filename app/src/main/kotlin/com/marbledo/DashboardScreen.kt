@@ -903,7 +903,7 @@ private fun DailyHeaderCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        color = Color.Transparent,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp,
         tonalElevation = 1.dp,
     ) {

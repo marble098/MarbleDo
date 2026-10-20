@@ -846,7 +846,7 @@ private fun CalendarHeader(
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
         shape = shape,
-        color = Color.Transparent,
+        color = colors.surface,
         shadowElevation = 2.dp,
     ) {
         Box(
@@ -854,8 +854,8 @@ private fun CalendarHeader(
                 Brush.linearGradient(
                     listOf(
                         colors.primaryContainer,
-                        colors.tertiaryContainer.copy(alpha = 0.55f),
-                        colors.secondaryContainer.copy(alpha = 0.70f),
+                        colors.tertiaryContainer,
+                        colors.secondaryContainer,
                     ),
                 ),
                 shape,
