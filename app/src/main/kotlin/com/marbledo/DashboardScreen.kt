@@ -469,7 +469,7 @@ fun DashboardScreen(
                                         DropdownMenuItem(
                                             text = { Text(sortLabel(sort)) },
                                             trailingIcon = {
-                                                if (state.sort == sort) Icon(Icons.Outlined.Check, contentDescription = null)
+                                                if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
                                             },
                                             onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
                                         )
