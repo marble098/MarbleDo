@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.NotificationsActive
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -136,6 +138,7 @@ fun SettingsScreen(
     var showCountdownThemeGallery by rememberSaveable { mutableStateOf(false) }
     var showBatteryHelp by remember { mutableStateOf(false) }
     var showEducationControls by rememberSaveable { mutableStateOf(false) }
+    var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategoryFilter.ALL) }
     val educationGesture = remember { HiddenTapSequence() }
     val listedCatalog = remember(occasionState.catalog, settings.educationModeEnabled) {
         if (settings.educationModeEnabled) occasionState.catalog else occasionState.catalog.copy(
@@ -148,14 +151,15 @@ fun SettingsScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(
-            stringResource(R.string.settings_title),
-            style = MarbleTextStyles.screenTitle,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+        SettingsCommandCard(
+            settings = settings,
+            selectedCategory = selectedCategory,
+            onSelectCategory = { selectedCategory = it },
         )
 
+        if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.APPEARANCE) {
         SettingsSection(title = stringResource(R.string.settings_appearance), icon = Icons.Outlined.Palette) {
             SettingMenuRow(
                 label = stringResource(R.string.settings_theme),
@@ -261,7 +265,9 @@ fun SettingsScreen(
                 Text(stringResource(R.string.settings_add_widget))
             }
         }
+        }
 
+        if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.CALENDAR) {
         SettingsSection(title = stringResource(R.string.settings_calendar), icon = Icons.Outlined.CalendarMonth) {
             SettingMenuRow(
                 label = stringResource(R.string.settings_countdown_calendar),
@@ -376,9 +382,11 @@ fun SettingsScreen(
                 }
             }
         }
+        }
 
         // Redesigned minimal Notification Box: structured sub-cards, status pill, live preview,
         // side-by-side quiet hours tiles, and zero wall-of-text stacking.
+        if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.NOTIFICATIONS) {
         SettingsSection(title = stringResource(R.string.settings_notifications), icon = Icons.Outlined.NotificationsActive) {
             val statusState = remember(settings.persistentDateNotificationEnabled, notificationsGranted) {
                 PersistentCalendarNotification.statusIconState(context, settings.persistentDateNotificationEnabled)
@@ -402,19 +410,17 @@ fun SettingsScreen(
                 state = statusState,
                 isError = statusError,
             )
-
-            Text(stringResource(R.string.settings_notification_design), style = MaterialTheme.typography.titleSmall)
-            listOf("classic" to R.string.notification_design_classic,
-                "minimal" to R.string.notification_design_minimal,
-                "editorial" to R.string.notification_design_editorial).forEach { (design, label) ->
-                Row(Modifier.fillMaxWidth().clickable { onUpdate(settings.copy(notificationDesign = design)) }
-                    .padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.RadioButton(selected = settings.notificationDesign == design,
-                        onClick = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(label))
-                }
-            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                stringResource(R.string.settings_notification_design),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(8.dp))
+            NotificationDesignSelector(
+                selectedDesign = settings.notificationDesign,
+                onSelectDesign = { design -> onUpdate(settings.copy(notificationDesign = design)) },
+            )
 
             // 2. Minimal Live Notification Preview Card so the user sees the clean notification layout
             if (settings.persistentDateNotificationEnabled) {
@@ -553,7 +559,9 @@ fun SettingsScreen(
                 }
             }
         }
+        }
 
+        if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.BACKUP) {
         SettingsSection(title = stringResource(R.string.settings_backup), icon = Icons.Outlined.Backup) {
             Text(
                 stringResource(R.string.settings_local_only),
@@ -597,6 +605,7 @@ fun SettingsScreen(
             SettingsDivider()
             SettingsActionRow(stringResource(R.string.settings_battery_guide_title), onClick = { showBatteryHelp = true })
             SettingsActionRow(stringResource(R.string.settings_update), onCheckUpdates)
+        }
         }
 
         Text(
@@ -647,6 +656,194 @@ fun SettingsScreen(
     }
 }
 
+private enum class SettingsCategoryFilter {
+    ALL,
+    APPEARANCE,
+    NOTIFICATIONS,
+    CALENDAR,
+    BACKUP,
+}
+
+@Composable
+private fun SettingsCommandCard(
+    settings: AppSettings,
+    selectedCategory: SettingsCategoryFilter,
+    onSelectCategory: (SettingsCategoryFilter) -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Surface(shape = CircleShape, color = colors.primaryContainer) {
+                    Icon(
+                        Icons.Outlined.Tune,
+                        contentDescription = null,
+                        tint = colors.primary,
+                        modifier = Modifier.padding(9.dp).size(20.dp),
+                    )
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(stringResource(R.string.settings_title), style = MarbleTextStyles.screenTitle)
+                    Text(
+                        "${themeLabel(settings.themeMode)} • ${numeralLabel(settings.numeralMode)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+                Surface(shape = CircleShape, color = colors.secondaryContainer) {
+                    Text(
+                        if (settings.languageTag == "fa") stringResource(R.string.language_persian)
+                        else stringResource(R.string.language_english),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    )
+                }
+            }
+            val tabs = listOf(
+                SettingsCategoryFilter.ALL to stringResource(R.string.dash_filter_all),
+                SettingsCategoryFilter.APPEARANCE to stringResource(R.string.settings_appearance),
+                SettingsCategoryFilter.NOTIFICATIONS to stringResource(R.string.settings_notifications),
+                SettingsCategoryFilter.CALENDAR to stringResource(R.string.settings_calendar),
+                SettingsCategoryFilter.BACKUP to stringResource(R.string.settings_backup),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                tabs.forEach { (category, label) ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { onSelectCategory(category) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotificationDesignSelector(
+    selectedDesign: String,
+    onSelectDesign: (String) -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val options = listOf(
+        "classic" to R.string.notification_design_classic,
+        "minimal" to R.string.notification_design_minimal,
+        "editorial" to R.string.notification_design_editorial,
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        options.forEach { (design, labelRes) ->
+            val selected = selectedDesign == design
+            val shape = MaterialTheme.shapes.medium
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(shape)
+                    .background(
+                        if (selected) colors.primaryContainer.copy(alpha = 0.65f)
+                        else colors.surfaceVariant.copy(alpha = 0.45f),
+                    )
+                    .border(
+                        width = if (selected) 2.dp else 1.dp,
+                        color = if (selected) colors.primary else colors.outline.copy(alpha = 0.16f),
+                        shape = shape,
+                    )
+                    .clickable { onSelectDesign(design) }
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        stringResource(labelRes),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (selected) colors.primary else colors.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (selected) {
+                        Icon(
+                            Icons.Outlined.CheckCircle,
+                            contentDescription = null,
+                            tint = colors.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+                // Mini schematic preview of the notification layout
+                Surface(
+                    shape = RoundedCornerShape(if (design == "editorial") 5.dp else 8.dp),
+                    color = colors.surface.copy(alpha = 0.88f),
+                    modifier = Modifier.fillMaxWidth().height(34.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        if (design != "minimal") {
+                            Box(
+                                Modifier
+                                    .size(18.dp)
+                                    .clip(RoundedCornerShape(if (design == "editorial") 4.dp else 6.dp))
+                                    .background(colors.primary.copy(alpha = 0.85f)),
+                            )
+                        }
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(3.dp),
+                        ) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth(0.85f)
+                                    .height(4.dp)
+                                    .clip(CircleShape)
+                                    .background(colors.onSurface.copy(alpha = 0.65f)),
+                            )
+                            Box(
+                                Modifier
+                                    .fillMaxWidth(0.58f)
+                                    .height(4.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        when (design) {
+                                            "classic" -> colors.primary.copy(alpha = 0.45f)
+                                            "editorial" -> colors.tertiary.copy(alpha = 0.55f)
+                                            else -> colors.onSurfaceVariant.copy(alpha = 0.40f)
+                                        },
+                                    ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** Uses the same fields, hierarchy and design rules as the delivered expanded notification. */
 @Composable
 private fun MinimalNotificationPreviewBox(
@@ -672,7 +869,7 @@ private fun MinimalNotificationPreviewBox(
     val isMinimal = design == "minimal"
     val isEditorial = design == "editorial"
     val previewDirection = if (settings.languageTag == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr
-    val outerShape = RoundedCornerShape(if (isEditorial) 10.dp else 20.dp)
+    val outerShape = RoundedCornerShape(if (isEditorial) 12.dp else 20.dp)
     val progressHeight = when (design) {
         "minimal" -> 2.dp
         "editorial" -> 3.dp
@@ -693,12 +890,36 @@ private fun MinimalNotificationPreviewBox(
                             bitmap = badgeBitmap.asImageBitmap(),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(if (isEditorial) 6.dp else 12.dp)),
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(if (isEditorial) 8.dp else 13.dp)),
                         )
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text(content.title, style = MarbleTextStyles.itemTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                content.title,
+                                style = MarbleTextStyles.itemTitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                            ) {
+                                Text(
+                                    content.moodSubtitle,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                )
+                            }
+                        }
                         Text(
                             content.secondaryDatesLine,
                             style = MaterialTheme.typography.labelSmall,
@@ -708,80 +929,89 @@ private fun MinimalNotificationPreviewBox(
                         )
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(
-                        content.progressSummary,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    androidx.compose.material3.LinearProgressIndicator(
-                        progress = { content.todayCompleted.toFloat() / content.todayTotal.coerceAtLeast(1) },
-                        modifier = Modifier.fillMaxWidth().height(progressHeight),
-                    )
+                if (content.hasProgress) {
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(
+                            content.progressSummary,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = { content.todayCompleted.toFloat() / content.todayTotal.coerceAtLeast(1) },
+                            modifier = Modifier.fillMaxWidth().height(progressHeight).clip(CircleShape),
+                        )
+                    }
                 }
-                val sectionShape = RoundedCornerShape(if (isEditorial) 4.dp else 12.dp)
+                val sectionShape = RoundedCornerShape(if (isEditorial) 8.dp else 14.dp)
                 val sectionModifier = when {
-                    isMinimal -> Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp)
+                    isMinimal -> Modifier.fillMaxWidth().padding(vertical = 2.dp)
                     isEditorial -> Modifier
                         .fillMaxWidth()
                         .clip(sectionShape)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
                         .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f), sectionShape)
-                        .padding(horizontal = 10.dp, vertical = 7.dp)
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
                     else -> Modifier
                         .fillMaxWidth()
                         .clip(sectionShape)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f))
-                        .padding(horizontal = 10.dp, vertical = 7.dp)
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
                 }
-                Column(modifier = sectionModifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        content.nextTaskLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        content.nextTaskTitle ?: content.fallbackTaskText,
-                        style = MarbleTextStyles.itemTitle,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    content.nextTaskTime?.let {
+                if (content.hasNextTask || !content.hasOccasions) {
+                    Column(modifier = sectionModifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        stringResource(R.string.notification_occasions),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        content.occasionLines.joinToString("\n").ifEmpty { content.fallbackOccasionText },
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (content.moreOccasionsCount > 0) {
-                        Text(
-                            content.moreOccasionsText,
+                            content.nextTaskLabel,
                             style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        Text(
+                            content.nextTaskTitle ?: content.fallbackTaskText,
+                            style = MarbleTextStyles.itemTitle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        content.nextTaskTime?.let {
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+                if (content.hasOccasions) {
+                    Column(
+                        modifier = if (isMinimal) Modifier.fillMaxWidth().padding(vertical = 2.dp) else sectionModifier,
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        Text(
+                            stringResource(R.string.notification_occasions),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            content.occasionLines.joinToString("\n").ifEmpty { content.fallbackOccasionText },
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (content.moreOccasionsCount > 0) {
+                            Text(
+                                content.moreOccasionsText,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }

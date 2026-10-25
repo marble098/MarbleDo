@@ -66,6 +66,9 @@ object PersistentCalendarNotification {
         val monthLabel: String,
         val weekdayLabel: String,
         val badgeCount: Int,
+        val hasProgress: Boolean = todayTotal > 0,
+        val hasNextTask: Boolean = nextTaskTitle != null,
+        val hasOccasions: Boolean = occasionLines.isNotEmpty(),
     )
 
     @Volatile private var lastPostedSignature: Int = 0
@@ -104,7 +107,14 @@ object PersistentCalendarNotification {
         val favorites = catalog.canonicalFavoriteIds(settings.favoriteOccasionIds)
         val sortedEvents = events.sortedWith(compareBy<Occasion> { if (it.id in favorites) 0 else 1 }
             .thenBy { if (it.isHoliday) 0 else 1 }.thenBy { it.id })
-        val occasionTitles = sortedEvents.take(MAX_VISIBLE_EVENTS).map { bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(it.title(settings.languageTag))) }
+        val visibleEvents = sortedEvents.take(MAX_VISIBLE_EVENTS)
+        val occasionTitles = visibleEvents.map { occasion ->
+            val wrapped = bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(occasion.title(settings.languageTag)))
+            if (visibleEvents.size > 1) "• $wrapped" else wrapped
+        }
+        val firstOccasionPlain = visibleEvents.firstOrNull()?.let {
+            bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(it.title(settings.languageTag)))
+        }
         val hiddenEvents = (events.size - occasionTitles.size).coerceAtLeast(0)
         val moreText = if (hiddenEvents > 0) digits(notificationContext.getString(R.string.notification_more, hiddenEvents)) else ""
         val noOccasion = notificationContext.getString(R.string.persistent_date_notification_no_occasion)
@@ -125,7 +135,7 @@ object PersistentCalendarNotification {
         val workload = digits(notificationContext.getString(
             if (plan.overdueCount > 0) R.string.notification_overdue_count else R.string.notification_today_count,
             if (plan.overdueCount > 0) plan.overdueCount else plan.todayOpen))
-        val progressSummary = "$progress · $workload"
+        val progressSummary = if (plan.todayTotal > 0) "$progress · $workload" else workload
         val moodSubtitle = notificationContext.getString(when (mood) {
             NotificationMood.HOLIDAY -> R.string.persistent_date_notification_title_holiday
             NotificationMood.RELIGIOUS -> R.string.persistent_date_notification_title_religious
@@ -133,16 +143,27 @@ object PersistentCalendarNotification {
             NotificationMood.TASKS_DUE -> R.string.persistent_date_notification_title_tasks
             NotificationMood.QUIET -> R.string.persistent_date_notification_title
         })
-        val collapsed = nextSummary ?: occasionTitles.firstOrNull() ?: secondary
-        val expandedText = listOf(secondary, progressSummary, nextLabel, nextSummary ?: noTask,
-            notificationContext.getString(R.string.notification_occasions), occasionTitles.joinToString("\n").ifEmpty { noOccasion }, moreText)
+        val collapsed = when {
+            nextSummary != null && firstOccasionPlain != null && !plan.nextIsOverdue -> "$nextSummary  ·  $firstOccasionPlain"
+            nextSummary != null -> nextSummary
+            firstOccasionPlain != null -> if (events.size > 1) "$firstOccasionPlain · +${digits((events.size - 1).toString())}" else firstOccasionPlain
+            else -> secondary
+        }
+        val expandedText = listOf(secondary, progressSummary.takeIf { plan.todayTotal > 0 || plan.overdueCount > 0 }.orEmpty(),
+            nextLabel.takeIf { nextSummary != null || occasionTitles.isEmpty() }.orEmpty(),
+            nextSummary ?: if (occasionTitles.isEmpty()) noTask else "",
+            notificationContext.getString(R.string.notification_occasions).takeIf { occasionTitles.isNotEmpty() }.orEmpty(),
+            occasionTitles.joinToString("\n"), moreText)
             .filter { it.isNotBlank() }.joinToString("\n")
         return NotificationBoxContent(title, moodSubtitle, secondary, collapsed, occasionTitles, hiddenEvents, moreText,
             nextSummary, next?.id, nextTitle, nextTime, nextLabel, plan.todayCompleted, plan.todayTotal, progressSummary,
             noOccasion, noTask, expandedText, mood,
             digits(dayOfMonthIn(nowMillis, settings.statusBarCalendar, zone).toString()), digits(today.day.toString()),
             PersianDateUtils.monthName(today.month, settings.languageTag), PersianDateUtils.weekdayName(today.weekdayIndex, settings.languageTag),
-            if (plan.todayOpen > 0) plan.todayOpen else events.size)
+            if (plan.todayOpen > 0) plan.todayOpen else events.size,
+            hasProgress = plan.todayTotal > 0 || plan.overdueCount > 0,
+            hasNextTask = nextTitle != null,
+            hasOccasions = occasionTitles.isNotEmpty())
     }
 
     private fun updateInternal(context: Context, settings: AppSettings, tasks: List<Task>, catalog: OccasionCatalog, nowMillis: Long) {
