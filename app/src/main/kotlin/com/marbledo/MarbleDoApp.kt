@@ -30,15 +30,25 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TrendingUp
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -116,7 +126,8 @@ private data class Destination(
     val route: String,
     val key: NavKey,
     val label: Int,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    val unselectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
 )
 
 /** Deep-link aliases kept for shortcuts, the quick-settings tile and calendar notifications. */
@@ -186,10 +197,10 @@ fun MarbleDoApp(
     val exactAlarmGranted = rememberExactAlarmGranted()
 
     val destinations = listOf(
-        Destination("home", HomeDestination, R.string.nav_home, Icons.Outlined.Home),
-        Destination("habits", HabitsDestination, R.string.nav_habits, Icons.Outlined.TrendingUp),
-        Destination("calendar", CalendarDestination, R.string.nav_calendar, Icons.Outlined.CalendarMonth),
-        Destination("settings", SettingsDestination, R.string.nav_settings, Icons.Outlined.Settings),
+        Destination("home", HomeDestination, R.string.nav_home, Icons.Filled.Home, Icons.Outlined.Home),
+        Destination("habits", HabitsDestination, R.string.nav_habits, Icons.Filled.TrendingUp, Icons.Outlined.TrendingUp),
+        Destination("calendar", CalendarDestination, R.string.nav_calendar, Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth),
+        Destination("settings", SettingsDestination, R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings),
     )
 
     LaunchedEffect(Unit) { occasionRepository.load() }
@@ -543,32 +554,74 @@ fun MarbleDoApp(
                 }
 
                 if (isLarge) {
+                    val colors = MaterialTheme.colorScheme
                     Row(Modifier.fillMaxSize()) {
-                        NavigationRail {
+                        NavigationRail(containerColor = colors.surface) {
                             destinations.forEach { destination ->
                                 val selected = selectedDestination.key == destination.key
                                 NavigationRailItem(
                                     selected = selected,
                                     onClick = { navigateTo(destination.key) },
-                                    icon = { Icon(destination.icon, contentDescription = stringResource(destination.label)) },
-                                    label = { Text(stringResource(destination.label)) },
+                                    icon = {
+                                        Icon(
+                                            if (selected) destination.selectedIcon else destination.unselectedIcon,
+                                            contentDescription = stringResource(destination.label),
+                                        )
+                                    },
+                                    label = {
+                                        Text(
+                                            stringResource(destination.label),
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                        )
+                                    },
+                                    colors = NavigationRailItemDefaults.colors(
+                                        selectedIconColor = colors.primary,
+                                        selectedTextColor = colors.primary,
+                                        indicatorColor = colors.primaryContainer,
+                                        unselectedIconColor = colors.onSurfaceVariant,
+                                        unselectedTextColor = colors.onSurfaceVariant,
+                                    ),
                                 )
                             }
                         }
                         content(Modifier.weight(1f))
                     }
                 } else {
+                    val colors = MaterialTheme.colorScheme
                     Scaffold(
                         bottomBar = {
-                            NavigationBar {
-                                destinations.forEach { destination ->
-                                    val selected = selectedDestination.key == destination.key
-                                    NavigationBarItem(
-                                        selected = selected,
-                                        onClick = { navigateTo(destination.key) },
-                                        icon = { Icon(destination.icon, contentDescription = stringResource(destination.label)) },
-                                        label = { Text(stringResource(destination.label)) },
-                                    )
+                            Column {
+                                HorizontalDivider(color = colors.outlineVariant.copy(alpha = 0.35f))
+                                NavigationBar(
+                                    containerColor = colors.surface,
+                                    tonalElevation = 2.dp,
+                                ) {
+                                    destinations.forEach { destination ->
+                                        val selected = selectedDestination.key == destination.key
+                                        NavigationBarItem(
+                                            selected = selected,
+                                            onClick = { navigateTo(destination.key) },
+                                            icon = {
+                                                Icon(
+                                                    if (selected) destination.selectedIcon else destination.unselectedIcon,
+                                                    contentDescription = stringResource(destination.label),
+                                                )
+                                            },
+                                            label = {
+                                                Text(
+                                                    stringResource(destination.label),
+                                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                                )
+                                            },
+                                            colors = NavigationBarItemDefaults.colors(
+                                                selectedIconColor = colors.primary,
+                                                selectedTextColor = colors.primary,
+                                                indicatorColor = colors.primaryContainer,
+                                                unselectedIconColor = colors.onSurfaceVariant,
+                                                unselectedTextColor = colors.onSurfaceVariant,
+                                            ),
+                                        )
+                                    }
                                 }
                             }
                         },

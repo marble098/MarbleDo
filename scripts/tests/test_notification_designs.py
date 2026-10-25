@@ -51,3 +51,25 @@ class NotificationDesignTests(unittest.TestCase):
         db = (ROOT / 'core/data/src/main/kotlin/com/marbledo/core/data/db/MarbleDatabase.kt').read_text()
         self.assertNotIn('takeIf { it.isOpen }', db)
 
+    def test_expanded_notifications_have_smart_section_containers_and_mood_pill(self):
+        for design in ('classic', 'minimal', 'editorial'):
+            for direction in ('rtl', 'ltr'):
+                compact = (ROOT / f'app/src/main/res/layout/notification_{design}_compact_{direction}.xml').read_text()
+                expanded = (ROOT / f'app/src/main/res/layout/notification_{design}_expanded_{direction}.xml').read_text()
+                self.assertIn('@+id/notification_mood_pill', compact)
+                self.assertIn('@+id/notification_mood_pill', expanded)
+                self.assertIn('@+id/notification_progress_container', expanded)
+                self.assertIn('@+id/notification_next_container', expanded)
+                self.assertIn('@+id/notification_occasions_container', expanded)
+
+        views_kt = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
+        self.assertIn('R.id.notification_progress_container', views_kt)
+        self.assertIn('R.id.notification_next_container', views_kt)
+        self.assertIn('R.id.notification_occasions_container', views_kt)
+
+    def test_calendar_screen_uses_unified_command_card_and_adaptive_month_rows(self):
+        cal_kt = (ROOT / 'feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/CalendarScreen.kt').read_text()
+        self.assertIn('CalendarCommandCard', cal_kt)
+        self.assertIn('val cells = if (allCells.subList(35, 42).none { it.inDisplayedMonth }) allCells.take(35) else allCells', cal_kt)
+
+

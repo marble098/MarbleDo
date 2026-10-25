@@ -222,20 +222,48 @@ object NotificationArtwork {
                     Shader.TileMode.CLAMP,
                 )
             }
-            canvas.drawRoundRect(RectF(0f, 0f, side, side), 56f, 56f, plate)
+            val outerRect = RectF(0f, 0f, side, side)
+            canvas.drawRoundRect(outerRect, 58f, 58f, plate)
+
+            // Subtle top calendar header band + crisp inner rim for modern depth.
+            val headerClip = Path().apply {
+                addRoundRect(outerRect, 58f, 58f, Path.Direction.CW)
+            }
+            canvas.save()
+            canvas.clipPath(headerClip)
+            val headerBand = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                alpha = 28
+            }
+            canvas.drawRect(0f, 0f, side, side * 0.31f, headerBand)
+            val headerDivider = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                alpha = 36
+                strokeWidth = 2f
+            }
+            canvas.drawLine(0f, side * 0.31f, side, side * 0.31f, headerDivider)
+            canvas.restore()
+
+            val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                alpha = 44
+                style = Paint.Style.STROKE
+                strokeWidth = 3f
+            }
+            canvas.drawRoundRect(RectF(1.5f, 1.5f, side - 1.5f, side - 1.5f), 56.5f, 56.5f, rimPaint)
 
             val monthPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.WHITE
-                alpha = 232
+                alpha = 240
                 textAlign = Paint.Align.CENTER
-                typeface = vazirTypeface(context, 600)
+                typeface = vazirTypeface(context, 700)
             }
-            monthPaint.textSize = fitTextSize(monthLabel, monthPaint, side * 0.72f, side * 0.16f)
-            drawInkCentered(canvas, monthLabel, monthPaint, side / 2f, side * 0.22f)
+            monthPaint.textSize = fitTextSize(monthLabel, monthPaint, side * 0.74f, side * 0.15f)
+            drawInkCentered(canvas, monthLabel, monthPaint, side / 2f, side * 0.175f)
 
             // The same ink-filling layout the status icon uses, so the two always agree.
             val run = DigitRun(vazirTypeface(context, DIGIT_WEIGHT), dayDigits, DIGIT_GAP_EM)
-            val dayBox = RectF(side * 0.16f, side * 0.30f, side * 0.84f, side * 0.78f)
+            val dayBox = RectF(side * 0.16f, side * 0.36f, side * 0.84f, side * 0.78f)
             run.draw(
                 canvas = canvas,
                 textSize = run.fittedSize(dayBox.width(), dayBox.height()),

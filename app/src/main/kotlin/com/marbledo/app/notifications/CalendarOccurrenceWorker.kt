@@ -250,14 +250,26 @@ class CalendarOccurrenceWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val collapsedEvent = eventTitles.firstOrNull()?.let { it } ?: summary
+        val mood = NotificationArtwork.mood(
+            hasHoliday = events.any(Occasion::isHoliday),
+            hasReligiousOccasion = events.any { it.category == OccasionCategory.RELIGIOUS },
+            hasOccasion = events.isNotEmpty(),
+            tasksDueToday = 0,
+        )
+        val largeIcon = NotificationArtwork.dateBadge(
+            context = context,
+            dayDigits = TextNormalizer.formatDigits(day.toString(), numeralMode),
+            monthLabel = PersianDateUtils.monthName(month, languageTag),
+            mood = mood,
+        ) ?: ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap()
         val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
             .addExtras(Bundle().apply {
                 putBoolean(EXTRA_EDUCATIONAL_CONTENT, events.any { it.category == OccasionCategory.EDUCATIONAL })
                 putStringArrayList(EXTRA_CULTURES, ArrayList(events.flatMap { it.cultures }.map { it.key }.distinct()))
             })
             .setSmallIcon(R.drawable.ic_stat_calendar)
-            .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
-            .setColor(ContextCompat.getColor(context, R.color.marble_accent))
+            .setLargeIcon(largeIcon)
+            .setColor(NotificationArtwork.accentColor(context, mood))
             .setContentTitle(title)
             .setContentText(collapsedEvent)
             .setSubText(eventCount)

@@ -42,9 +42,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ExpandLess
@@ -59,6 +62,7 @@ import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material.icons.outlined.ViewList
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -68,7 +72,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -362,7 +365,6 @@ fun DashboardScreen(
             todayTasks.forEach { task -> append("\n· ").append(task.title) }
         }
     }
-    val progress = if (state.activeCount + state.completedCount == 0) 0f else state.completedCount.toFloat() / (state.activeCount + state.completedCount)
     val categoryChoices = remember(settings.taskCategories) {
         settings.taskCategories.map { it.trim() }.filter { it.isNotBlank() }.distinct()
     }
@@ -377,12 +379,16 @@ fun DashboardScreen(
                     todayOpen = todayOpen,
                     completedCount = state.completedCount,
                     openCount = activeTasks.size,
-                    progress = progress,
+                    todayOccasions = todayOccasions.map {
+                        DashboardOccasion(it.title(settings.languageTag), it.category, it.isHoliday)
+                    },
                     todayEpoch = todayEpoch,
                     currentHour = now.hour,
                     settings = settings,
                     numeralMode = numeralMode,
                     onOpenCalendar = onOpenCalendar,
+                    onOpenAgenda = { showDayAgenda = true },
+                    onOpenReview = { showWeeklyReview = true },
                     onShare = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         runCatching {
@@ -400,20 +406,13 @@ fun DashboardScreen(
                 )
             }
 
-            item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    androidx.compose.material3.OutlinedButton(onClick = { showDayAgenda = true }, modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.agenda_title), maxLines = 2)
-                    }
-                    androidx.compose.material3.OutlinedButton(onClick = { showWeeklyReview = true }, modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.review_title), maxLines = 2)
-                    }
-                }
-            }
-
             // Tasks are the reason the screen exists, so they come first and they keep the space.
             item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     SectionHeader(stringResource(R.string.dash_tasks), state.visibleTasks.size, Modifier.weight(1f))
                     DashboardModeSwitcher(
                         mode = settings.dashboardViewMode,
@@ -422,35 +421,60 @@ fun DashboardScreen(
                             onViewModeChange(mode)
                         },
                     )
-                    IconButton(onClick = { searchOpen = !searchOpen; if (!searchOpen) viewModel.setQuery("") }) {
-                        Icon(
-                            Icons.Outlined.Search,
-                            contentDescription = stringResource(R.string.dash_search),
-                            tint = if (searchOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    IconButton(onClick = { categoriesOpen = !categoriesOpen }) {
-                        Icon(
-                            Icons.Outlined.FilterAlt,
-                            contentDescription = stringResource(R.string.dash_filters),
-                            tint = if (categoriesOpen || state.selectedCategory != null) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Box {
-                        IconButton(onClick = { sortMenuExpanded = true }) {
-                            Icon(
-                                Icons.Outlined.Sort,
-                                contentDescription = stringResource(R.string.dash_sort_menu),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
-                            TaskSort.entries.forEach { sort ->
-                                DropdownMenuItem(
-                                    text = { Text(sortLabel(sort)) },
-                                    onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            IconButton(
+                                onClick = { searchOpen = !searchOpen; if (!searchOpen) viewModel.setQuery("") },
+                                modifier = Modifier.size(34.dp),
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Search,
+                                    contentDescription = stringResource(R.string.dash_search),
+                                    tint = if (searchOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
                                 )
+                            }
+                            IconButton(
+                                onClick = { categoriesOpen = !categoriesOpen },
+                                modifier = Modifier.size(34.dp),
+                            ) {
+                                Icon(
+                                    Icons.Outlined.FilterAlt,
+                                    contentDescription = stringResource(R.string.dash_filters),
+                                    tint = if (categoriesOpen || state.selectedCategory != null) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                            Box {
+                                IconButton(
+                                    onClick = { sortMenuExpanded = true },
+                                    modifier = Modifier.size(34.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Sort,
+                                        contentDescription = stringResource(R.string.dash_sort_menu),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                                DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                                    TaskSort.entries.forEach { sort ->
+                                        DropdownMenuItem(
+                                            text = { Text(sortLabel(sort)) },
+                                            trailingIcon = {
+                                                if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
+                                            },
+                                            onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -882,12 +906,14 @@ private fun DailyHeaderCard(
     todayOpen: Int,
     completedCount: Int,
     openCount: Int,
-    progress: Float,
+    todayOccasions: List<DashboardOccasion>,
     todayEpoch: Long,
     currentHour: Int,
     settings: AppSettings,
     numeralMode: NumeralMode,
     onOpenCalendar: () -> Unit,
+    onOpenAgenda: () -> Unit,
+    onOpenReview: () -> Unit,
     onShare: () -> Unit,
 ) {
     // A 2 a.m. dashboard is not "good morning": the night has its own greeting and sky.
@@ -899,11 +925,11 @@ private fun DailyHeaderCard(
     }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val aurora = auroraBrush(currentHour, isRtl)
-    // Visual debt fixed: stronger elevation, clearer hierarchy, aurora motion replaces flat gradient.
+    val colors = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surface,
+        color = colors.surface,
         shadowElevation = 2.dp,
         tonalElevation = 1.dp,
     ) {
@@ -911,85 +937,108 @@ private fun DailyHeaderCard(
             Modifier
                 .background(aurora, MaterialTheme.shapes.extraLarge)
                 .background(
-                    // A light scrim keeps the pastel sky readable without hiding it completely.
                     Brush.verticalGradient(
                         listOf(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.40f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
+                            colors.surface.copy(alpha = 0.40f),
+                            colors.surface.copy(alpha = 0.18f),
                         ),
                     ),
                     MaterialTheme.shapes.extraLarge,
                 ),
         ) {
-            // One animated sky — sun, clouds, stars and moon — replaces the static blurred orbs.
             GreetingSky(hour = currentHour, modifier = Modifier.matchParentSize())
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        // Screen hero greeting in Vazirmatn Black, with a slow light sweep across it.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(MaterialTheme.shapes.medium)
+                            .clickable(onClick = onOpenCalendar),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
                         GreetingHeadline(greeting, Modifier.fillMaxWidth())
                         Text(
                             PersianDateUtils.fullDateWithWeekday(todayEpoch, settings.languageTag, numeralMode),
                             style = MarbleTextStyles.dateDigits.copy(fontSize = 15.sp, lineHeight = 21.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = colors.onSurface,
                         )
-                        Text(
-                            PersianDateUtils.tripleDate(todayEpoch, settings.languageTag, numeralMode, settings.lunarOffsetDays),
-                            style = MarbleTextStyles.metaLabel,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = colors.surface.copy(alpha = 0.68f),
+                        ) {
+                            Text(
+                                PersianDateUtils.tripleDate(todayEpoch, settings.languageTag, numeralMode, settings.lunarOffsetDays),
+                                style = MarbleTextStyles.metaLabel,
+                                color = colors.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            )
+                        }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)) {
-                            IconButton(onClick = onOpenCalendar) {
+                        Surface(shape = CircleShape, color = colors.surface.copy(alpha = 0.78f)) {
+                            IconButton(onClick = onOpenCalendar, modifier = Modifier.size(38.dp)) {
                                 Icon(
                                     Icons.Outlined.CalendarMonth,
                                     contentDescription = stringResource(R.string.nav_calendar),
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(19.dp),
                                 )
                             }
                         }
-                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)) {
-                            IconButton(onClick = onShare) {
+                        Surface(shape = CircleShape, color = colors.surface.copy(alpha = 0.78f)) {
+                            IconButton(onClick = onShare, modifier = Modifier.size(38.dp)) {
                                 Icon(
                                     Icons.Outlined.Share,
                                     contentDescription = stringResource(R.string.dash_share_today),
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(19.dp),
                                 )
                             }
                         }
                     }
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
-                // Stats row now pairs with the Orbit ring for a richer, glanceable workload view
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            HeaderStat(stringResource(R.string.dash_stat_today), todayOpen, numeralMode, Modifier.weight(1f))
-                            HeaderStatDivider()
-                            HeaderStat(stringResource(R.string.dash_stat_done), completedCount, numeralMode, Modifier.weight(1f))
-                            HeaderStatDivider()
-                            HeaderStat(stringResource(R.string.dash_stat_all), openCount, numeralMode, Modifier.weight(1f))
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            LinearProgressIndicator(
-                                progress = { progress.coerceIn(0f, 1f) },
-                                modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
-                            )
-                            Text(
-                                TextNormalizer.formatDigits(
-                                    stringResource(R.string.dash_percent, (progress * 100).toInt()),
-                                    numeralMode,
-                                ),
-                                style = MarbleTextStyles.metaLabel,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                HorizontalDivider(color = colors.outline.copy(alpha = 0.16f))
+                // Stats tiles paired with the single unified FocusOrbit ring (no conflicting duplicate percentage bar).
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Row(
+                        Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        HeaderStat(
+                            label = stringResource(R.string.dash_stat_today),
+                            value = todayOpen,
+                            accent = colors.primary,
+                            numeralMode = numeralMode,
+                            modifier = Modifier.weight(1f),
+                        )
+                        HeaderStat(
+                            label = stringResource(R.string.dash_stat_done),
+                            value = completedCount,
+                            accent = colors.tertiary,
+                            numeralMode = numeralMode,
+                            modifier = Modifier.weight(1f),
+                        )
+                        HeaderStat(
+                            label = stringResource(R.string.dash_stat_all),
+                            value = openCount,
+                            accent = colors.secondary,
+                            numeralMode = numeralMode,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                     FocusOrbit(
                         completed = completedCount,
@@ -997,8 +1046,88 @@ private fun DailyHeaderCard(
                         open = todayOpen,
                         numeralMode = numeralMode,
                         isRtl = isRtl,
-                        modifier = Modifier.padding(start = 4.dp),
-                        orbitSize = 88.dp,
+                        modifier = Modifier.padding(start = 2.dp),
+                        orbitSize = 84.dp,
+                    )
+                }
+
+                if (todayOccasions.isNotEmpty()) {
+                    val primaryOccasion = todayOccasions.firstOrNull { it.isHoliday } ?: todayOccasions.first()
+                    val accent = if (primaryOccasion.isHoliday) colors.error else categoryColor(primaryOccasion.category)
+                    Surface(
+                        shape = MaterialTheme.shapes.large,
+                        color = colors.surface.copy(alpha = 0.74f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.large)
+                            .clickable(onClick = onOpenCalendar),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(accent),
+                            )
+                            Text(
+                                text = primaryOccasion.title,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (primaryOccasion.isHoliday) colors.error else colors.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (primaryOccasion.isHoliday) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = colors.errorContainer,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.dash_holiday_badge),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = colors.onErrorContainer,
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                    )
+                                }
+                            }
+                            if (todayOccasions.size > 1) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = colors.primaryContainer,
+                                ) {
+                                    Text(
+                                        text = TextNormalizer.formatDigits("+${todayOccasions.size - 1}", numeralMode),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    HeaderActionPill(
+                        icon = Icons.Outlined.AccessTime,
+                        label = stringResource(R.string.agenda_title),
+                        onClick = onOpenAgenda,
+                        modifier = Modifier.weight(1f),
+                    )
+                    HeaderActionPill(
+                        icon = Icons.Outlined.Insights,
+                        label = stringResource(R.string.review_title),
+                        onClick = onOpenReview,
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -1007,28 +1136,76 @@ private fun DailyHeaderCard(
 }
 
 @Composable
-private fun HeaderStat(label: String, value: Int, numeralMode: NumeralMode, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(1.dp),
+private fun HeaderActionPill(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = colors.surface.copy(alpha = 0.74f),
+        modifier = modifier
+            .clip(MaterialTheme.shapes.large)
+            .clickable(onClick = onClick),
     ) {
-        Text(
-            TextNormalizer.formatDigits(value.toString(), numeralMode),
-            style = MarbleTextStyles.cardTitle.copy(fontSize = 21.sp, lineHeight = 27.sp),
-        )
-        Text(label, style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = colors.primary,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
 @Composable
-private fun HeaderStatDivider() {
-    Box(
-        Modifier
-            .height(28.dp)
-            .width(1.dp)
-            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
-    )
+private fun HeaderStat(
+    label: String,
+    value: Int,
+    accent: Color,
+    numeralMode: NumeralMode,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.70f),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 9.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                TextNormalizer.formatDigits(value.toString(), numeralMode),
+                style = MarbleTextStyles.cardTitle.copy(fontSize = 20.sp, lineHeight = 25.sp),
+                color = accent,
+            )
+            Text(
+                label,
+                style = MarbleTextStyles.metaLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
 }
 
 @Composable
@@ -1248,29 +1425,60 @@ private fun daysLeftLabel(days: Long): String = when (days) {
     else -> stringResource(R.string.dash_days_left, days.toInt())
 }
 
-/** One collapsible task group: a light row with the name, the count and a chevron. */
+/** One collapsible task group: a semantic pill row with accent dot, name, count badge and chevron. */
 @Composable
 private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val accent = when (group) {
+        TaskGroup.OVERDUE -> colors.error
+        TaskGroup.TODAY -> colors.primary
+        TaskGroup.TOMORROW -> colors.tertiary
+        TaskGroup.WEEK -> colors.secondary
+        TaskGroup.LATER, TaskGroup.NO_DATE -> colors.outline
+    }
     Surface(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-        color = Color.Transparent,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (group == TaskGroup.OVERDUE) colors.errorContainer.copy(alpha = 0.35f)
+        else colors.surfaceVariant.copy(alpha = 0.45f),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(stringResource(group.labelRes), style = MarbleTextStyles.sectionTitle, modifier = Modifier.weight(1f))
-            Text(
-                TextNormalizer.formatDigits(count.toString(), LocalNumeralMode.current),
-                style = MarbleTextStyles.metaLabel,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(accent),
             )
+            Text(
+                stringResource(group.labelRes),
+                style = MarbleTextStyles.sectionTitle,
+                color = if (group == TaskGroup.OVERDUE) colors.error else colors.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Surface(
+                shape = CircleShape,
+                color = accent.copy(alpha = 0.14f),
+            ) {
+                Text(
+                    TextNormalizer.formatDigits(count.toString(), LocalNumeralMode.current),
+                    style = MarbleTextStyles.metaLabel,
+                    fontWeight = FontWeight.Bold,
+                    color = accent,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
             Icon(
                 if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 6.dp).size(20.dp),
+                tint = colors.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
             )
         }
     }
