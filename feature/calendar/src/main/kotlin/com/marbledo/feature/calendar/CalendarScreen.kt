@@ -1271,7 +1271,7 @@ private fun DayCellView(
                     Modifier
                 },
             )
-            .semantics(mergeDescendants = true) { contentDescription = cellDescription; selected = isSelected }
+            .semantics(mergeDescendants = true) { contentDescription = cellDescription; this.selected = isSelected }
             .clickable(onClick = onClick)
             .padding(horizontal = 1.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
