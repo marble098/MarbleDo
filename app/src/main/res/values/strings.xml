@@ -249,4 +249,8 @@
     <string name="notification_design_classic">Classic · balanced card</string>
     <string name="notification_design_minimal">Minimal · quiet typography</string>
     <string name="notification_design_editorial">Editorial · bold date and outlined agenda</string>
+    <string name="dash_state_expanded">Expanded</string>
+    <string name="dash_state_collapsed">Collapsed</string>
+    <string name="settings_decrease">Decrease</string>
+    <string name="settings_increase">Increase</string>
 </resources>

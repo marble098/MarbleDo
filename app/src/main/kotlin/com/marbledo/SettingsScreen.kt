@@ -11,6 +11,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,10 +20,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Alarm
@@ -49,6 +53,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -72,6 +77,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -81,6 +89,7 @@ import com.marble098.marbledo.notifications.NotificationArtwork
 import com.marble098.marbledo.notifications.NotificationMood
 import com.marble098.marbledo.notifications.PersistentCalendarNotification
 import com.marbledo.core.data.backup.AutomaticBackupStatus
+import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
@@ -146,20 +155,23 @@ fun SettingsScreen(
         )
     }
 
-    Column(
-        modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+    // Lazy so off-screen sections (the notification preview builds bitmaps, the icon picker
+    // builds twelve) are only composed when scrolled to (docs/UI_COUNCIL_REVIEW.md, S-1).
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = MarbleSpacing.lg, vertical = MarbleSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
     ) {
-        SettingsCommandCard(
-            settings = settings,
-            selectedCategory = selectedCategory,
-            onSelectCategory = { selectedCategory = it },
-        )
+        item {
+            SettingsCommandCard(
+                settings = settings,
+                selectedCategory = selectedCategory,
+                onSelectCategory = { selectedCategory = it },
+            )
+        }
 
         if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.APPEARANCE) {
+        item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
         SettingsSection(title = stringResource(R.string.settings_appearance), icon = Icons.Outlined.Palette) {
             SettingMenuRow(
                 label = stringResource(R.string.settings_theme),
@@ -200,7 +212,7 @@ fun SettingsScreen(
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.clickable { showCountdownThemeGallery = true },
+                    modifier = Modifier.minimumInteractiveComponentSize().clip(CircleShape).clickable(role = Role.Button) { showCountdownThemeGallery = true },
                 ) {
                     Text(
                         countdownThemeLabel(CountdownTheme.from(settings.countdownTheme)),
@@ -233,15 +245,13 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = { onUpdate(settings.copy(fontScale = (settings.fontScale - 0.1f).coerceAtLeast(0.8f))) },
-                            modifier = Modifier.size(36.dp),
                         ) {
-                            Icon(Icons.Outlined.Remove, contentDescription = stringResource(R.string.settings_font_smaller), modifier = Modifier.size(18.dp))
+                            Icon(Icons.Outlined.Remove, contentDescription = stringResource(R.string.settings_font_smaller), modifier = Modifier.size(20.dp))
                         }
                         IconButton(
                             onClick = { onUpdate(settings.copy(fontScale = (settings.fontScale + 0.1f).coerceAtMost(1.5f))) },
-                            modifier = Modifier.size(36.dp),
                         ) {
-                            Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.settings_font_larger), modifier = Modifier.size(18.dp))
+                            Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.settings_font_larger), modifier = Modifier.size(20.dp))
                         }
                     }
                 }
@@ -265,9 +275,11 @@ fun SettingsScreen(
                 Text(stringResource(R.string.settings_add_widget))
             }
         }
+        } }
         }
 
         if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.CALENDAR) {
+        item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
         SettingsSection(title = stringResource(R.string.settings_calendar), icon = Icons.Outlined.CalendarMonth) {
             SettingMenuRow(
                 label = stringResource(R.string.settings_countdown_calendar),
@@ -300,12 +312,14 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
                             onClick = { onUpdate(settings.copy(lunarOffsetDays = (settings.lunarOffsetDays - 1).coerceAtLeast(-2))) },
-                            modifier = Modifier.size(36.dp),
-                        ) { Text("−", fontWeight = FontWeight.Bold) }
+                        ) {
+                            Icon(Icons.Outlined.Remove, contentDescription = stringResource(R.string.settings_decrease), modifier = Modifier.size(20.dp))
+                        }
                         IconButton(
                             onClick = { onUpdate(settings.copy(lunarOffsetDays = (settings.lunarOffsetDays + 1).coerceAtMost(2))) },
-                            modifier = Modifier.size(36.dp),
-                        ) { Text("+", fontWeight = FontWeight.Bold) }
+                        ) {
+                            Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.settings_increase), modifier = Modifier.size(20.dp))
+                        }
                     }
                 }
             }
@@ -382,11 +396,13 @@ fun SettingsScreen(
                 }
             }
         }
+        } }
         }
 
         // Redesigned minimal Notification Box: structured sub-cards, status pill, live preview,
         // side-by-side quiet hours tiles, and zero wall-of-text stacking.
         if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.NOTIFICATIONS) {
+        item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
         SettingsSection(title = stringResource(R.string.settings_notifications), icon = Icons.Outlined.NotificationsActive) {
             val statusState = remember(settings.persistentDateNotificationEnabled, notificationsGranted) {
                 PersistentCalendarNotification.statusIconState(context, settings.persistentDateNotificationEnabled)
@@ -559,9 +575,11 @@ fun SettingsScreen(
                 }
             }
         }
+        } }
         }
 
         if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.BACKUP) {
+        item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
         SettingsSection(title = stringResource(R.string.settings_backup), icon = Icons.Outlined.Backup) {
             Text(
                 stringResource(R.string.settings_local_only),
@@ -606,20 +624,25 @@ fun SettingsScreen(
             SettingsActionRow(stringResource(R.string.settings_battery_guide_title), onClick = { showBatteryHelp = true })
             SettingsActionRow(stringResource(R.string.settings_update), onCheckUpdates)
         }
+        } }
         }
 
-        Text(
-            stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .clip(CircleShape)
-                .clickable {
-                    if (educationGesture.tap(SystemClock.elapsedRealtime())) showEducationControls = true
-                }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        item {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text(
+                    stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable {
+                            if (educationGesture.tap(SystemClock.elapsedRealtime())) showEducationControls = true
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
     }
 
     if (showEducationControls) {
@@ -672,7 +695,7 @@ private fun SettingsCommandCard(
 ) {
     val colors = MaterialTheme.colorScheme
     Card(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -691,7 +714,7 @@ private fun SettingsCommandCard(
                         Icons.Outlined.Tune,
                         contentDescription = null,
                         tint = colors.primary,
-                        modifier = Modifier.padding(9.dp).size(20.dp),
+                        modifier = Modifier.padding(8.dp).size(20.dp),
                     )
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -748,7 +771,7 @@ private fun NotificationDesignSelector(
         "editorial" to R.string.notification_design_editorial,
     )
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         options.forEach { (design, labelRes) ->
@@ -767,7 +790,7 @@ private fun NotificationDesignSelector(
                         color = if (selected) colors.primary else colors.outline.copy(alpha = 0.16f),
                         shape = shape,
                     )
-                    .clickable { onSelectDesign(design) }
+                    .selectable(selected = selected, role = Role.RadioButton) { onSelectDesign(design) }
                     .padding(10.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
@@ -1079,7 +1102,7 @@ private fun QuietTimeTile(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
         modifier = modifier
             .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
@@ -1165,7 +1188,7 @@ private fun SettingsSection(
     content: @Composable () -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -1176,7 +1199,7 @@ private fun SettingsSection(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
                 ) {
                     Icon(
@@ -1190,6 +1213,7 @@ private fun SettingsSection(
                     title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
+                    modifier = Modifier.semantics { heading() },
                 )
             }
             Spacer(Modifier.height(10.dp))
@@ -1205,12 +1229,14 @@ private fun SettingSwitchRow(
     subtitle: String? = null,
     onCheckedChange: (Boolean) -> Unit,
 ) {
+    // One toggle target: the row carries the Switch role and the visual Switch is decorative.
+    // A clickable row plus a separately toggleable Switch gave TalkBack two stops (S-2).
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
-            .clickable { onCheckedChange(!checked) }
-            .padding(vertical = 6.dp),
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -1224,7 +1250,7 @@ private fun SettingSwitchRow(
                 )
             }
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -1253,8 +1279,8 @@ private fun SettingMenuRow(
         Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
-            .clickable { onExpandedChange(true) }
-            .padding(vertical = 7.dp),
+            .clickable(role = Role.Button) { onExpandedChange(true) }
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
@@ -1262,15 +1288,17 @@ private fun SettingMenuRow(
             Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         }
         Box {
+            // Display only: the row itself is the single click target that opens the menu (S-4).
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.clip(CircleShape).clickable { onExpandedChange(true) },
             ) {
                 Text(
                     value,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 )
             }
@@ -1310,7 +1338,7 @@ private fun StatusIconStylePicker(
 ) {
     val context = LocalContext.current
     val digits = TextNormalizer.formatDigits("28", numeralMode)
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier.fillMaxWidth().selectableGroup(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         StatusBarIconStyle.entries.chunked(STYLES_PER_ROW).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { style ->
@@ -1358,7 +1386,7 @@ private fun StatusIconStyleCard(
                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
                 shape = shape,
             )
-            .clickable { onSelect(style) }
+            .selectable(selected = isSelected, role = Role.RadioButton) { onSelect(style) }
             .padding(vertical = 10.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

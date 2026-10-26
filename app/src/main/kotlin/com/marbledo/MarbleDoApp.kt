@@ -25,10 +25,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
@@ -61,6 +63,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -584,7 +587,9 @@ fun MarbleDoApp(
                                 )
                             }
                         }
-                        content(Modifier.weight(1f))
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
+                            content(Modifier.widthIn(max = 880.dp).fillMaxSize())
+                        }
                     }
                 } else {
                     val colors = MaterialTheme.colorScheme
@@ -625,7 +630,11 @@ fun MarbleDoApp(
                                 }
                             }
                         },
-                    ) { innerPadding -> content(Modifier.padding(innerPadding)) }
+                    ) { innerPadding ->
+                        Box(Modifier.padding(innerPadding), contentAlignment = Alignment.TopCenter) {
+                            content(Modifier.widthIn(max = 880.dp).fillMaxSize())
+                        }
+                    }
                 }
             }
         }

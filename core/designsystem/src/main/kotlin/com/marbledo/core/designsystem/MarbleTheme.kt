@@ -29,6 +29,36 @@ import androidx.compose.ui.unit.sp
 import com.marbledo.domain.model.NumeralMode
 import com.marble098.marbledo.core.designsystem.R
 
+/**
+ * The single spacing scale for the whole app (docs/UI_COUNCIL_REVIEW.md, DS-2).
+ *
+ * Before this existed the three main screens used 29 distinct dp values, many off the 4dp grid
+ * (9, 11, 13, 17, 19, 3.5…), which is why paddings and gaps never lined up. New layout code must
+ * take its gaps and paddings from here instead of inventing literals.
+ */
+object MarbleSpacing {
+    /** Hairline gaps inside a single visual unit (dot rows, stacked micro-labels). */
+    val xxs = 2.dp
+
+    /** Inner gaps between an icon and its label, or stacked lines of one row. */
+    val xs = 4.dp
+
+    /** Default gap between rows, chips and inline controls. */
+    val sm = 8.dp
+
+    /** Gap between blocks inside one card, and the vertical rhythm of lists. */
+    val md = 12.dp
+
+    /** Card content padding and the screen's horizontal margin. */
+    val lg = 16.dp
+
+    /** Section breaks and empty-state padding. */
+    val xl = 24.dp
+
+    /** Minimum interactive size for any touch target (Material / WCAG). */
+    val touchTarget = 48.dp
+}
+
 val LocalReduceMotion = staticCompositionLocalOf { false }
 val LocalAppFontScale = staticCompositionLocalOf { 1f }
 val LocalNumeralMode = staticCompositionLocalOf { NumeralMode.PERSIAN }
@@ -142,12 +172,15 @@ fun MarbleTheme(
         MaterialTheme(
             colorScheme = scheme,
             typography = marbleTypography(languageTag),
+            // Council review (docs/UI_COUNCIL_REVIEW.md, DS-1): the old 12/16/22/30/36 scale was
+            // roughly double the Material 3 scale and made every card and field look inflated.
+            // 8/12/16/24/28 keeps the soft identity without the bloat.
             shapes = Shapes(
-                extraSmall = RoundedCornerShape(12.dp),
-                small = RoundedCornerShape(16.dp),
-                medium = RoundedCornerShape(22.dp),
-                large = RoundedCornerShape(30.dp),
-                extraLarge = RoundedCornerShape(36.dp),
+                extraSmall = RoundedCornerShape(8.dp),
+                small = RoundedCornerShape(12.dp),
+                medium = RoundedCornerShape(16.dp),
+                large = RoundedCornerShape(24.dp),
+                extraLarge = RoundedCornerShape(28.dp),
             ),
             content = content,
         )
@@ -248,6 +281,42 @@ object MarbleTextStyles {
         fontWeight = FontWeight.Black,
         fontSize = 24.sp,
         lineHeight = 32.sp,
+    )
+
+    // Roles the screens used to improvise with `.copy(fontSize = …)` on the styles above
+    // (docs/UI_COUNCIL_REVIEW.md, DS-3). They reuse existing weights, so the nine-weight
+    // one-to-one mapping of the core roles is unchanged.
+
+    /** Full-date line under the dashboard greeting — Vazirmatn Light (wght 300). */
+    val dateCaption: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.Light,
+        fontSize = 15.sp,
+        lineHeight = 21.sp,
+    )
+
+    /** Day-of-month numeral inside calendar cells — Vazirmatn SemiBold (wght 600), Light at rest. */
+    val cellNumber: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 15.sp,
+        lineHeight = 18.sp,
+    )
+
+    /** Day numeral in agenda and occasion date chips — Vazirmatn Bold (wght 700). */
+    val dayNumber: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        lineHeight = 20.sp,
+    )
+
+    /** Dense meta lines: triple-date captions and orbit fractions — Vazirmatn Medium (wght 500). */
+    val microLabel: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 11.sp,
+        lineHeight = 15.sp,
     )
 }
 

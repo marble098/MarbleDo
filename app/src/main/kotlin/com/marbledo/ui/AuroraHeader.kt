@@ -175,7 +175,9 @@ fun GreetingSky(
     val reduceMotion = LocalReduceMotion.current
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val transition = rememberInfiniteTransition(label = "greetingSky")
-    val drift by transition.animateFloat(
+    // Kept as States and read inside the Canvas draw block: delegating them here recomposed the
+    // sky on every animation frame (docs/UI_COUNCIL_REVIEW.md, D-9).
+    val driftState = transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -184,7 +186,7 @@ fun GreetingSky(
         ),
         label = "skyDrift",
     )
-    val twinkle by transition.animateFloat(
+    val twinkleState = transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -193,8 +195,6 @@ fun GreetingSky(
         ),
         label = "skyTwinkle",
     )
-    val time = if (reduceMotion) 0.32f else drift
-    val twinklePhase = if (reduceMotion) 0.45f else twinkle
     val starColor by animateColorAsState(palette.star, tween(900), label = "skyStar")
     val celestial by animateColorAsState(palette.celestial, tween(900), label = "skyCelestial")
     val core by animateColorAsState(palette.celestialCore, tween(900), label = "skyCore")
@@ -202,6 +202,8 @@ fun GreetingSky(
     val cloud by animateColorAsState(palette.cloud, tween(900), label = "skyCloud")
 
     Canvas(modifier.fillMaxSize()) {
+        val time = if (reduceMotion) 0.32f else driftState.value
+        val twinklePhase = if (reduceMotion) 0.45f else twinkleState.value
         val width = size.width
         val height = size.height
         // The light source sits on the action side of the header, where the icon buttons cover it.
