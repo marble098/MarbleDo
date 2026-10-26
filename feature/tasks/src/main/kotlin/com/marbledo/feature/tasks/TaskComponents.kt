@@ -53,6 +53,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -139,7 +141,11 @@ fun localizedTaskDate(epochMillis: Long): String {
 @Composable
 fun SectionHeader(title: String, count: Int? = null, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, style = MarbleTextStyles.sectionTitle)
+        Text(
+            title,
+            style = MarbleTextStyles.sectionTitle,
+            modifier = Modifier.semantics { heading() },
+        )
         if (count != null) {
             Spacer(Modifier.width(8.dp))
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {

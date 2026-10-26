@@ -35,6 +35,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.lifecycle.Lifecycle
@@ -73,6 +76,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -98,6 +102,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.LayoutDirection
 import com.marble098.marbledo.ui.GreetingHeadline
 import com.marble098.marbledo.ui.GreetingSky
@@ -107,9 +115,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.CountdownTheme
@@ -329,7 +337,7 @@ fun DashboardScreen(
             zone = zone,
         )
     }
-    val groups = remember(state.visibleTasks, zone, todayDateForOccasions) { groupTasks(state.visibleTasks, zone) }
+    val groups = remember(state.visibleTasks, zone, todayDateForOccasions) { groupTasks(state.visibleTasks, zone, todayDateForOccasions) }
     val todayOpen = remember(activeTasks, zone, todayDateForOccasions) {
         activeTasks.count { task ->
             task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == todayDateForOccasions } == true
@@ -371,8 +379,10 @@ fun DashboardScreen(
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 128.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            // Bottom inset only has to clear the extended FAB (56dp + 16dp margin); the old 128dp
+            // left a dead band at the end of the list (docs/UI_COUNCIL_REVIEW.md, D-7).
+            contentPadding = PaddingValues(start = MarbleSpacing.lg, end = MarbleSpacing.lg, top = MarbleSpacing.md, bottom = 92.dp),
+            verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
         ) {
             item {
                 DailyHeaderCard(
@@ -421,63 +431,6 @@ fun DashboardScreen(
                             onViewModeChange(mode)
                         },
                     )
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            IconButton(
-                                onClick = { searchOpen = !searchOpen; if (!searchOpen) viewModel.setQuery("") },
-                                modifier = Modifier.size(34.dp),
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Search,
-                                    contentDescription = stringResource(R.string.dash_search),
-                                    tint = if (searchOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                            IconButton(
-                                onClick = { categoriesOpen = !categoriesOpen },
-                                modifier = Modifier.size(34.dp),
-                            ) {
-                                Icon(
-                                    Icons.Outlined.FilterAlt,
-                                    contentDescription = stringResource(R.string.dash_filters),
-                                    tint = if (categoriesOpen || state.selectedCategory != null) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                            Box {
-                                IconButton(
-                                    onClick = { sortMenuExpanded = true },
-                                    modifier = Modifier.size(34.dp),
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.Sort,
-                                        contentDescription = stringResource(R.string.dash_sort_menu),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                                DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
-                                    TaskSort.entries.forEach { sort ->
-                                        DropdownMenuItem(
-                                            text = { Text(sortLabel(sort)) },
-                                            trailingIcon = {
-                                                if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
-                                            },
-                                            onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
             if (searchOpen) {
@@ -520,14 +473,72 @@ fun DashboardScreen(
                     }
                 }
             }
+            // The quick-filter chips share their row with the search/filter/sort toolbar. The title
+            // row above keeps only the section title and the view switch, so all six actions keep
+            // full-size touch targets on narrow screens (docs/UI_COUNCIL_REVIEW.md, D-1/D-2).
             item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
-                    items(TaskFilter.entries, key = { it.name }) { filter ->
-                        FilterChip(
-                            selected = state.filter == filter,
-                            onClick = { viewModel.setFilter(filter) },
-                            label = { Text(filterLabel(filter)) },
-                        )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+                ) {
+                    LazyRow(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        contentPadding = PaddingValues(horizontal = 1.dp),
+                    ) {
+                        items(TaskFilter.entries, key = { it.name }) { filter ->
+                            FilterChip(
+                                selected = state.filter == filter,
+                                onClick = { viewModel.setFilter(filter) },
+                                label = { Text(filterLabel(filter)) },
+                            )
+                        }
+                    }
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { searchOpen = !searchOpen; if (!searchOpen) viewModel.setQuery("") }) {
+                                Icon(
+                                    Icons.Outlined.Search,
+                                    contentDescription = stringResource(R.string.dash_search),
+                                    tint = if (searchOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            IconButton(onClick = { categoriesOpen = !categoriesOpen }) {
+                                Icon(
+                                    Icons.Outlined.FilterAlt,
+                                    contentDescription = stringResource(R.string.dash_filters),
+                                    tint = if (categoriesOpen || state.selectedCategory != null) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            Box {
+                                IconButton(onClick = { sortMenuExpanded = true }) {
+                                    Icon(
+                                        Icons.Outlined.Sort,
+                                        contentDescription = stringResource(R.string.dash_sort_menu),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                                DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                                    TaskSort.entries.forEach { sort ->
+                                        DropdownMenuItem(
+                                            text = { Text(sortLabel(sort)) },
+                                            trailingIcon = {
+                                                if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
+                                            },
+                                            onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -558,7 +569,7 @@ fun DashboardScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     ) {
                         Column(
-                            Modifier.fillMaxWidth().padding(22.dp),
+                            Modifier.fillMaxWidth().padding(MarbleSpacing.xl),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
@@ -740,7 +751,7 @@ fun DashboardScreen(
                                 onDisableRequested = {
                                     viewModel.editTask(heroCountdown.copy(countdownEnabled = false))
                                 },
-                                modifier = Modifier.padding(14.dp),
+                                modifier = Modifier.padding(MarbleSpacing.lg),
                             )
                         }
                     }
@@ -748,6 +759,7 @@ fun DashboardScreen(
                         item {
                             CountdownRoad(
                                 countdowns = countdowns,
+                                nowEpochMillis = nowEpoch,
                                 onOpenFocus = onOpenFocus,
                                 onEdit = { editingTask = it },
                             )
@@ -806,12 +818,12 @@ fun DashboardScreen(
             onClick = { sharedText = ""; showQuickAdd = true },
             icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
             text = { Text(stringResource(R.string.dash_new_task)) },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(18.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(MarbleSpacing.lg),
         )
 
         SnackbarHost(
             hostState = snackbarHost,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 84.dp),
         )
     }
 
@@ -947,26 +959,29 @@ private fun DailyHeaderCard(
                 ),
         ) {
             GreetingSky(hour = currentHour, modifier = Modifier.matchParentSize())
+            // Compacted by the UI council (D-3): tighter padding and gaps so the task list starts
+            // above the fold on short phones instead of below a ~300dp header.
             Column(
-                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                Modifier.fillMaxWidth().padding(horizontal = MarbleSpacing.lg, vertical = MarbleSpacing.md),
+                verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
+                    val calendarLabel = stringResource(R.string.nav_calendar)
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .clip(MaterialTheme.shapes.medium)
-                            .clickable(onClick = onOpenCalendar),
-                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                            .clickable(onClickLabel = calendarLabel, role = Role.Button, onClick = onOpenCalendar),
+                        verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
                     ) {
                         GreetingHeadline(greeting, Modifier.fillMaxWidth())
                         Text(
                             PersianDateUtils.fullDateWithWeekday(todayEpoch, settings.languageTag, numeralMode),
-                            style = MarbleTextStyles.dateDigits.copy(fontSize = 15.sp, lineHeight = 21.sp),
+                            style = MarbleTextStyles.dateCaption,
                             color = colors.onSurface,
                         )
                         Surface(
@@ -985,22 +1000,22 @@ private fun DailyHeaderCard(
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Surface(shape = CircleShape, color = colors.surface.copy(alpha = 0.78f)) {
-                            IconButton(onClick = onOpenCalendar, modifier = Modifier.size(38.dp)) {
+                            IconButton(onClick = onOpenCalendar) {
                                 Icon(
                                     Icons.Outlined.CalendarMonth,
                                     contentDescription = stringResource(R.string.nav_calendar),
                                     tint = colors.primary,
-                                    modifier = Modifier.size(19.dp),
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
                         }
                         Surface(shape = CircleShape, color = colors.surface.copy(alpha = 0.78f)) {
-                            IconButton(onClick = onShare, modifier = Modifier.size(38.dp)) {
+                            IconButton(onClick = onShare) {
                                 Icon(
                                     Icons.Outlined.Share,
                                     contentDescription = stringResource(R.string.dash_share_today),
                                     tint = colors.primary,
-                                    modifier = Modifier.size(19.dp),
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
                         }
@@ -1011,12 +1026,12 @@ private fun DailyHeaderCard(
                 Row(
                     Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                 ) {
                     Row(
                         Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                     ) {
                         HeaderStat(
                             label = stringResource(R.string.dash_stat_today),
@@ -1046,8 +1061,8 @@ private fun DailyHeaderCard(
                         open = todayOpen,
                         numeralMode = numeralMode,
                         isRtl = isRtl,
-                        modifier = Modifier.padding(start = 2.dp),
-                        orbitSize = 84.dp,
+                        modifier = Modifier.padding(start = MarbleSpacing.xs),
+                        orbitSize = 72.dp,
                     )
                 }
 
@@ -1060,7 +1075,11 @@ private fun DailyHeaderCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(MaterialTheme.shapes.large)
-                            .clickable(onClick = onOpenCalendar),
+                            .clickable(
+                                onClickLabel = stringResource(R.string.nav_calendar),
+                                role = Role.Button,
+                                onClick = onOpenCalendar,
+                            ),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1147,11 +1166,12 @@ private fun HeaderActionPill(
         shape = MaterialTheme.shapes.large,
         color = colors.surface.copy(alpha = 0.74f),
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
@@ -1188,13 +1208,13 @@ private fun HeaderStat(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.70f),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 9.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
                 TextNormalizer.formatDigits(value.toString(), numeralMode),
-                style = MarbleTextStyles.cardTitle.copy(fontSize = 20.sp, lineHeight = 25.sp),
+                style = MarbleTextStyles.cardTitle,
                 color = accent,
             )
             Text(
@@ -1219,14 +1239,14 @@ private fun CountdownHero(
 ) {
     val due = task.dueAtEpochMillis ?: return
     val theme = CountdownTheme.from(themeId)
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.dash_next_moment), style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.primary)
                 Text(task.title, style = MarbleTextStyles.itemTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(9.dp).size(20.dp))
+                Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(8.dp).size(20.dp))
             }
         }
         CountdownFace(title = task.title, dueAtEpochMillis = due, theme = theme, modifier = Modifier.fillMaxWidth())
@@ -1267,7 +1287,7 @@ private fun OccasionsCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.fillMaxWidth().padding(MarbleSpacing.lg), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
                     Icon(
@@ -1355,12 +1375,12 @@ private fun OccasionLine(
         color = accent.copy(alpha = 0.10f),
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 9.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
+            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
         ) {
             Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
             Text(
@@ -1387,7 +1407,11 @@ private fun OccasionLine(
     }
 }
 
-/** Two-labelled switch with the counts inside the labels; smaller than two stacked cards. */
+/**
+ * Two-labelled switch with the counts inside the labels; smaller than two stacked cards.
+ * Segments are proper tabs for accessibility services, not bare clickable surfaces
+ * (docs/UI_COUNCIL_REVIEW.md, D-4).
+ */
 @Composable
 private fun SegmentedSwitch(
     options: List<Pair<String, Int>>,
@@ -1396,13 +1420,17 @@ private fun SegmentedSwitch(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         options.forEachIndexed { index, (label, count) ->
             val selected = index == selectedIndex
             Surface(
                 shape = CircleShape,
                 color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.weight(1f).clickable { onSelect(index) },
+                modifier = Modifier
+                    .weight(1f)
+                    .minimumInteractiveComponentSize()
+                    .clip(CircleShape)
+                    .selectable(selected = selected, role = Role.Tab) { onSelect(index) },
             ) {
                 Text(
                     TextNormalizer.formatDigits("$label $count", numeralMode),
@@ -1411,7 +1439,7 @@ private fun SegmentedSwitch(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
                 )
             }
         }
@@ -1436,11 +1464,14 @@ private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onC
         TaskGroup.WEEK -> colors.secondary
         TaskGroup.LATER, TaskGroup.NO_DATE -> colors.outline
     }
+    val stateLabel = stringResource(if (expanded) R.string.dash_state_expanded else R.string.dash_state_collapsed)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .minimumInteractiveComponentSize()
             .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { stateDescription = stateLabel },
         shape = MaterialTheme.shapes.large,
         color = if (group == TaskGroup.OVERDUE) colors.errorContainer.copy(alpha = 0.35f)
         else colors.surfaceVariant.copy(alpha = 0.45f),
@@ -1484,7 +1515,11 @@ private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onC
     }
 }
 
-/** Three-icon switcher for the dashboard view mode; the choice is persisted in settings. */
+/**
+ * Three-icon switcher for the dashboard view mode; the choice is persisted in settings.
+ * Segments are 40dp tabs inside a 48dp-tall pill — the old 30dp IconButtons had their Material
+ * touch targets shrunk away with an explicit size (docs/UI_COUNCIL_REVIEW.md, D-1).
+ */
 @Composable
 private fun DashboardModeSwitcher(mode: DashboardViewMode, onSelect: (DashboardViewMode) -> Unit) {
     val choices = listOf(
@@ -1497,24 +1532,25 @@ private fun DashboardModeSwitcher(mode: DashboardViewMode, onSelect: (DashboardV
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
         Row(
-            Modifier.padding(horizontal = 3.dp, vertical = 2.dp),
+            Modifier.selectableGroup().padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
         ) {
             choices.forEach { (value, iconAndLabel) ->
                 val selected = value == mode
-                IconButton(
-                    onClick = { onSelect(value) },
+                Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent),
+                        .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                        .selectable(selected = selected, role = Role.Tab) { onSelect(value) },
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         iconAndLabel.first,
                         contentDescription = iconAndLabel.second,
                         tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(17.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -1600,22 +1636,25 @@ private fun TaskGridCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
-            Modifier.fillMaxWidth().padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(5.dp),
+            Modifier.fillMaxWidth().padding(MarbleSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // A real checkbox for accessibility services, not a 22dp bare clickable box
+                // (docs/UI_COUNCIL_REVIEW.md, D-6).
                 Box(
                     Modifier
-                        .size(22.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
-                        .clickable(onClick = onToggle),
+                        .toggleable(value = task.isCompleted, role = Role.Checkbox) { onToggle() }
+                        .semantics(mergeDescendants = true) { contentDescription = task.title },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         if (task.isCompleted) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                        contentDescription = task.title,
+                        contentDescription = null,
                         tint = if (task.isCompleted) accentColor else MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
                 Text(
@@ -1660,17 +1699,19 @@ private fun TaskGridCard(
 @Composable
 private fun CountdownRoad(
     countdowns: List<Task>,
+    nowEpochMillis: Long,
     onOpenFocus: (Task) -> Unit,
     onEdit: (Task) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val numeralMode = LocalNumeralMode.current
-    val nowEpoch = System.currentTimeMillis()
+    // "Now" comes from the screen's ticking state, not a fresh clock read mid-composition (D-8).
+    val nowEpoch = nowEpochMillis
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Box(Modifier.fillMaxWidth().padding(14.dp)) {
+        Box(Modifier.fillMaxWidth().padding(MarbleSpacing.lg)) {
             Box(
                 Modifier
                     .padding(top = 12.dp, start = 20.dp, end = 20.dp)
@@ -1729,7 +1770,7 @@ private fun RoadNode(
     ) {
         Box(
             Modifier
-                .size(if (isNow) 13.dp else 17.dp)
+                .size(if (isNow) 12.dp else 16.dp)
                 .clip(CircleShape)
                 .background(accent),
         )
@@ -1782,8 +1823,9 @@ private fun taskChangeMessage(context: Context, change: TaskChange): String = wh
     TaskChangeKind.ADD_FAILED -> context.getString(R.string.planning_save_failed)
 }
 
-private fun groupTasks(tasks: List<Task>, zone: ZoneId): List<GroupedTasks> {
-    val today = LocalDate.now(zone)
+private fun groupTasks(tasks: List<Task>, zone: ZoneId, today: LocalDate): List<GroupedTasks> {
+    // "Today" is the screen's single source of truth; re-reading the clock here could disagree
+    // with the header around midnight (docs/UI_COUNCIL_REVIEW.md, D-8).
     val buckets = linkedMapOf<TaskGroup, MutableList<Task>>()
     tasks.forEach { task ->
         val date = task.dueAtEpochMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }

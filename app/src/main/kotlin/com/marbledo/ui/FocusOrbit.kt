@@ -22,10 +22,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.marble098.marbledo.R
 import com.marbledo.core.designsystem.LocalReduceMotion
 import com.marbledo.core.designsystem.MarbleTextStyles
@@ -63,9 +64,16 @@ fun FocusOrbit(
     val dotColor = MaterialTheme.colorScheme.secondary
     val centerScrim = MaterialTheme.colorScheme.surface
     val percentage = (animatedProgress * 100).toInt()
+    // TalkBack summary uses the settled progress, not the per-frame animated value (D-9).
+    val progressDescription = TextNormalizer.formatDigits(
+        stringResource(R.string.dash_progress, (progress * 100).toInt()),
+        numeralMode,
+    )
 
     val transition = rememberInfiniteTransition(label = "orbitDots")
-    val spinValue by transition.animateFloat(
+    // Kept as a State and read inside the Canvas draw block below: reading it here would
+    // recompose this whole subtree on every animation frame (docs/UI_COUNCIL_REVIEW.md, D-9).
+    val spinState = transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
@@ -74,10 +82,13 @@ fun FocusOrbit(
         ),
         label = "orbitSpin",
     )
-    val spin = if (reduceMotion) 0f else spinValue * (if (isRtl) -1f else 1f)
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Box(
+        modifier = modifier.semantics(mergeDescendants = true) { contentDescription = progressDescription },
+        contentAlignment = Alignment.Center,
+    ) {
         Canvas(modifier = Modifier.size(orbitSize)) {
+            val spin = if (reduceMotion) 0f else spinState.value * (if (isRtl) -1f else 1f)
             val stroke = 8.dp.toPx()
             val radius = (orbitSize.toPx() - stroke) / 2f
             val center = Offset(orbitSize.toPx() / 2f, orbitSize.toPx() / 2f)
@@ -147,13 +158,13 @@ fun FocusOrbit(
                     stringResource(R.string.dash_percent, percentage),
                     numeralMode,
                 ),
-                style = MarbleTextStyles.cardTitle.copy(fontSize = 18.sp, lineHeight = 22.sp),
+                style = MarbleTextStyles.cardTitle,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
             )
             Text(
                 TextNormalizer.formatDigits("$completed / $total", numeralMode),
-                style = MarbleTextStyles.metaLabel.copy(fontSize = 11.sp),
+                style = MarbleTextStyles.microLabel,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )

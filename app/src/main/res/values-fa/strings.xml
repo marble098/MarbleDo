@@ -249,4 +249,8 @@
     <string name="notification_design_classic">کلاسیک · کارت متعادل</string>
     <string name="notification_design_minimal">مینیمال · نوشتار ساده</string>
     <string name="notification_design_editorial">مجله‌ای · تاریخ برجسته و کادر برنامه</string>
+    <string name="dash_state_expanded">باز شده</string>
+    <string name="dash_state_collapsed">بسته شده</string>
+    <string name="settings_decrease">کاهش</string>
+    <string name="settings_increase">افزایش</string>
 </resources>
