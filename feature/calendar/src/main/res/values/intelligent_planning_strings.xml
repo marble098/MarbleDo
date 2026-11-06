@@ -39,4 +39,5 @@
     <string name="catalog_kind_community_rules">Community-maintained calendar rules (MIT), not a government declaration</string>
     <string name="timeline_no_workday">No working date in the preceding 14 days. Choose a date manually or turn off the working-day suggestion.</string>
     <string name="radar_days_short">%1$d days</string>
+    <string name="radar_collapsed_summary">%1$d suggestions to plan</string>
 </resources>

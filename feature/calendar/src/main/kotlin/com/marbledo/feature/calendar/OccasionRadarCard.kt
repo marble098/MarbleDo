@@ -17,6 +17,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -36,6 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,6 +70,9 @@ fun OccasionRadarCard(
 ) {
     var horizon by rememberSaveable { mutableIntStateOf(30) }
     var includePlanned by rememberSaveable { mutableStateOf(false) }
+    // Suggestions are a secondary block: on Home they start folded to a single line and only
+    // unfold their filters and rows on request, so the page keeps a calm rhythm (V-3).
+    var expanded by rememberSaveable { mutableStateOf(false) }
     val numeral = LocalNumeralMode.current
     val zone = ZoneId.systemDefault()
     val colors = MaterialTheme.colorScheme
@@ -81,7 +88,13 @@ fun OccasionRadarCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(Modifier.padding(MarbleSpacing.lg), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
+            val stateLabel = stringResource(if (expanded) R.string.dash_state_expanded else R.string.dash_state_collapsed)
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button) { expanded = !expanded }
+                    .semantics { stateDescription = stateLabel },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
             ) {
@@ -96,12 +109,22 @@ fun OccasionRadarCard(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
                     Text(stringResource(R.string.radar_title), style = MarbleTextStyles.cardTitle)
                     Text(
-                        stringResource(R.string.radar_hint),
+                        if (expanded) stringResource(R.string.radar_hint)
+                        else TextNormalizer.formatDigits(stringResource(R.string.radar_collapsed_summary, recommendations.size), numeral),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
                 }
+                Surface(shape = CircleShape, color = colors.surfaceVariant.copy(alpha = 0.6f)) {
+                    Icon(
+                        if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                        contentDescription = null,
+                        tint = colors.onSurfaceVariant,
+                        modifier = Modifier.padding(6.dp).size(18.dp),
+                    )
+                }
             }
+            if (expanded) {
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
@@ -143,6 +166,7 @@ fun OccasionRadarCard(
                     numeral = numeral,
                     onClick = { onOpen(recommendation) },
                 )
+            }
             }
         }
     }

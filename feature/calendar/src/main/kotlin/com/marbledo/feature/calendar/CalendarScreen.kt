@@ -1391,8 +1391,7 @@ private fun SelectedDayCard(
                         secondaryDates,
                         style = MarbleTextStyles.metaLabel,
                         color = colors.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 2,
                     )
                 }
                 Surface(

@@ -39,4 +39,5 @@
     <string name="catalog_kind_community_rules">قواعد تقویمیِ جامعهٔ متن‌باز (MIT)، نه اعلام رسمی دولت</string>
     <string name="timeline_no_workday">در ۱۴ روز قبل، روز کاری پیدا نشد. تاریخ را دستی بده یا پیشنهاد روز کاری را خاموش کن.</string>
     <string name="radar_days_short">%1$d روز</string>
+    <string name="radar_collapsed_summary">%1$d پیشنهاد برای برنامه‌ریزی</string>
 </resources>
