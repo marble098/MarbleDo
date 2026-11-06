@@ -6,16 +6,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,27 +24,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
 
 /**
  * Occasion Bloom — a compact, scannable horizontal ribbon of the month's occasions.
- * Each occasion is a sleek pill ("petal") coloured by its category; holidays get a golden badge.
- * Tapping a petal selects that day (and opens its plan sheet), so the strip is an interactive
- * index of the month rather than a tall block pushing the calendar grid down.
+ * Each occasion is a pill ("petal") coloured by its category; holidays are outlined in the error
+ * colour. Tapping a petal selects that day and opens its plan sheet, so the strip is an
+ * interactive index of the month rather than a tall block pushing the calendar grid down.
  *
  * The strip is direction-neutral: a LazyRow already lays out right-to-left in RTL, and the caller's
- * chronological order is preserved.
+ * chronological order is preserved. It ends with real trailing padding so the last petal is never
+ * sliced in half at the screen edge (docs/UI_REFRESH.md, V-7).
  */
 @Composable
 fun OccasionBloomStrip(
@@ -55,15 +55,15 @@ fun OccasionBloomStrip(
     if (monthOccasions.isEmpty()) return
     val numeralMode = LocalNumeralMode.current
     val holidayCount = monthOccasions.count { it.second.isHoliday }
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
         ) {
             Box(
                 Modifier
-                    .size(7.dp)
+                    .size(6.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary),
             )
@@ -73,26 +73,28 @@ fun OccasionBloomStrip(
                     numeralMode,
                 ),
                 style = MarbleTextStyles.metaLabel,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             if (holidayCount > 0) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
                 ) {
                     Text(
                         TextNormalizer.formatDigits("$holidayCount ${stringResource(R.string.calendar_weekend_marker)}", numeralMode),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MarbleTextStyles.microLabel,
+                        color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                     )
                 }
             }
         }
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+            contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.sm),
+        ) {
             items(monthOccasions.take(24), key = { "${it.first}-${it.second.id}" }) { (day, occasion) ->
                 BloomPetal(
                     day = day,
@@ -105,9 +107,9 @@ fun OccasionBloomStrip(
             if (monthOccasions.size > 24) {
                 item(key = "bloom-more") {
                     Surface(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = MaterialTheme.shapes.medium,
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.height(38.dp),
+                        modifier = Modifier.height(40.dp),
                     ) {
                         Box(
                             modifier = Modifier.padding(horizontal = 12.dp),
@@ -127,6 +129,10 @@ fun OccasionBloomStrip(
     }
 }
 
+/**
+ * One occasion pill: the day numeral in a category disc and the title. The title is allowed two
+ * lines inside a wider pill, so ordinary occasion names no longer end in "…".
+ */
 @Composable
 private fun BloomPetal(
     day: Int,
@@ -135,82 +141,94 @@ private fun BloomPetal(
     numeralMode: NumeralMode,
     onClick: () -> Unit,
 ) {
+    val colors = MaterialTheme.colorScheme
     val accent = categoryColor(occasion.category)
     val isHoliday = occasion.isHoliday
-    val shape = RoundedCornerShape(14.dp)
+    val shape = MaterialTheme.shapes.medium
     Row(
         modifier = Modifier
-            .height(38.dp)
-            .widthIn(min = 84.dp, max = 168.dp)
+            .heightIn(min = 40.dp)
+            .widthIn(min = 104.dp, max = 208.dp)
             .clip(shape)
-            .background(
-                Brush.horizontalGradient(
-                    listOf(accent.copy(alpha = 0.20f), accent.copy(alpha = 0.08f)),
-                ),
-            )
+            .background(accent.copy(alpha = 0.10f))
             .border(
                 width = 1.dp,
-                color = if (isHoliday) MaterialTheme.colorScheme.error.copy(alpha = 0.32f) else accent.copy(alpha = 0.22f),
+                color = if (isHoliday) colors.error.copy(alpha = 0.30f) else accent.copy(alpha = 0.20f),
                 shape = shape,
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 5.dp),
+            .padding(horizontal = MarbleSpacing.sm, vertical = MarbleSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
     ) {
         Box(
             Modifier
-                .size(22.dp)
+                .size(24.dp)
                 .clip(CircleShape)
-                .background(if (isHoliday) MaterialTheme.colorScheme.error else accent),
+                .background(if (isHoliday) colors.error else accent),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 TextNormalizer.formatDigits(day.toString(), numeralMode),
-                style = MarbleTextStyles.metaLabel.copy(fontSize = 10.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold),
+                style = MarbleTextStyles.microLabel,
+                fontWeight = FontWeight.Bold,
                 color = Color.White,
                 textAlign = TextAlign.Center,
+                maxLines = 1,
             )
         }
         Text(
             occasion.title(languageTag),
-            style = MarbleTextStyles.metaLabel.copy(fontSize = 11.sp, lineHeight = 14.sp),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = MarbleTextStyles.metaLabel,
+            maxLines = 2,
+            color = colors.onSurface,
+            modifier = Modifier.widthIn(max = 152.dp),
         )
     }
 }
 
 /**
- * The compact dot strip under a day number. At most three category dots plus one holiday star, so
- * the strip can never grow wider than a 7-column calendar cell (the old `+N` label did).
+ * The compact dot strip under a day number. One dot per category, at most three in total, and a
+ * filled dot on the leading edge when the day has tasks. The previous version drew up to four
+ * dots in two sizes, which read as a row of grey dashes — "…" — under almost every day
+ * (docs/UI_REFRESH.md, V-6).
  */
 @Composable
 fun EnhancedDayBloomDot(
     occasions: List<Occasion>,
     selected: Boolean,
     modifier: Modifier = Modifier,
+    taskCount: Int = 0,
+    maxDots: Int = 3,
 ) {
-    if (occasions.isEmpty()) return
-    val isHoliday = occasions.any(Occasion::isHoliday)
-    val dotColor = if (selected) MaterialTheme.colorScheme.onPrimary else null
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
-        occasions.take(if (isHoliday) 2 else 3).forEach { occ ->
-            val color = dotColor ?: categoryColor(occ.category)
+    if (occasions.isEmpty() && taskCount <= 0) return
+    val colors = MaterialTheme.colorScheme
+    val slots = maxDots.coerceAtLeast(1)
+    // Distinct category colours only: two occasions of the same kind are one dot, not two, and a
+    // day with tasks gives the first slot to the task marker.
+    val accents = occasions
+        .map { if (it.isHoliday) colors.error else categoryColor(it.category) }
+        .distinct()
+        .take(if (taskCount > 0) (slots - 1).coerceAtLeast(0) else slots)
+    Row(
+        modifier.height(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (taskCount > 0) {
             Box(
                 Modifier
-                    .size(if (occ.isHoliday) 5.dp else 4.dp)
+                    .size(4.dp)
                     .clip(CircleShape)
-                    .background(color),
+                    .background(if (selected) colors.onPrimary else colors.primary),
             )
         }
-        if (isHoliday) {
+        accents.forEach { color ->
             Box(
                 Modifier
-                    .size(5.dp)
+                    .size(4.dp)
                     .clip(CircleShape)
-                    .background(if (selected) MaterialTheme.colorScheme.onPrimary else Color(0xFFFFC245)),
+                    .background(if (selected) colors.onPrimary else color),
             )
         }
     }

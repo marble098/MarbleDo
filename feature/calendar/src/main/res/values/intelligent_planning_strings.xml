@@ -10,18 +10,18 @@
     <string name="culture_oceania">Australia &amp; New Zealand</string>
     <string name="occasion_calculated_date">Calculated for this year using a calendar rule, not a copied date from last year.</string>
     <string name="radar_title">Occasion radar</string>
-    <string name="radar_hint">Local, explainable suggestions from your enabled packs. Favorites come first; nothing is created automatically. Tap an occasion to plan.</string>
+    <string name="radar_hint">Suggestions to prepare; nothing is created automatically.</string>
     <string name="radar_horizon">%1$d days</string>
     <string name="radar_include_planned">Include planned</string>
-    <string name="radar_empty">No unplanned occasions in this range. Try a longer range, include planned occasions, or enable another culture pack in Settings.</string>
+    <string name="radar_empty">No occasions in this range.</string>
     <string name="radar_days">In %1$d days</string>
-    <string name="radar_prepare">Suggested preparation: %1$d days ahead · tap to review</string>
-    <string name="radar_planned">Already planned · your saved task is kept</string>
-    <string name="radar_reason_favorite">Suggested because you starred this occasion.</string>
-    <string name="radar_reason_today">Happening today in one of your enabled packs.</string>
-    <string name="radar_reason_soon">Coming up within a week; there is still time to prepare.</string>
-    <string name="radar_reason_holiday">A registered public holiday worth planning around.</string>
-    <string name="radar_reason_discover">A chance to discover a tradition from your chosen packs.</string>
+    <string name="radar_prepare">Prepare %1$d days ahead</string>
+    <string name="radar_planned">Already planned</string>
+    <string name="radar_reason_favorite">One of your starred occasions</string>
+    <string name="radar_reason_today">Today, from your packs</string>
+    <string name="radar_reason_soon">Within the coming week</string>
+    <string name="radar_reason_holiday">A recorded holiday</string>
+    <string name="radar_reason_discover">From the cultures you picked</string>
     <string name="timeline_title">Preparation timeline</string>
     <string name="timeline_short_hint">Editable stages, working-day suggestions, and duplicate protection</string>
     <string name="timeline_hint">Review titles, dates and selected stages. Only confirmed stages are saved together. Past stages are excluded until you choose a future date. Undo on Home removes the whole plan.</string>
@@ -38,4 +38,6 @@
     <string name="timeline_change_date">Change stage date</string>
     <string name="catalog_kind_community_rules">Community-maintained calendar rules (MIT), not a government declaration</string>
     <string name="timeline_no_workday">No working date in the preceding 14 days. Choose a date manually or turn off the working-day suggestion.</string>
+    <string name="radar_days_short">%1$d days</string>
+    <string name="radar_collapsed_summary">%1$d suggestions to plan</string>
 </resources>

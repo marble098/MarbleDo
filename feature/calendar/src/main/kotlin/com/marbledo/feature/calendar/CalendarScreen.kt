@@ -489,26 +489,33 @@ fun CalendarScreen(
                     EmptyMessage(stringResource(R.string.calendar_no_events), Modifier.weight(1f))
                 } else {
                     Column(Modifier.fillMaxWidth().weight(1f)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            AgendaSummaryChip(
-                                text = TextNormalizer.formatDigits(stringResource(R.string.calendar_month_summary, agenda.size), numeralMode),
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            if (monthHolidayDays > 0) {
+                            item {
                                 AgendaSummaryChip(
-                                    text = TextNormalizer.formatDigits("$monthHolidayDays ${stringResource(R.string.calendar_weekend_marker)}", numeralMode),
-                                    color = MaterialTheme.colorScheme.error,
+                                    text = TextNormalizer.formatDigits(stringResource(R.string.calendar_month_summary, agenda.size), numeralMode),
+                                    color = MaterialTheme.colorScheme.primary,
                                 )
                             }
+                            if (monthHolidayDays > 0) {
+                                item {
+                                    AgendaSummaryChip(
+                                        text = TextNormalizer.formatDigits("$monthHolidayDays ${stringResource(R.string.calendar_weekend_marker)}", numeralMode),
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
                             if (monthTasksCount > 0) {
-                                AgendaSummaryChip(
-                                    text = TextNormalizer.formatDigits(stringResource(R.string.calendar_tasks_count, monthTasksCount), numeralMode),
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                )
+                                item {
+                                    AgendaSummaryChip(
+                                        text = TextNormalizer.formatDigits(stringResource(R.string.calendar_tasks_count, monthTasksCount), numeralMode),
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                    )
+                                }
                             }
                         }
                         LazyColumn(
@@ -983,14 +990,6 @@ private fun CalendarCommandCard(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        Text(
-                            PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
-                            style = MarbleTextStyles.microLabel,
-                            color = colors.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
                     }
                     CalendarStepButton(
                         icon = if (rtl) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,
@@ -1012,6 +1011,18 @@ private fun CalendarCommandCard(
                         )
                     }
                 }
+
+                // The triple date used to share the month row with two step buttons and the
+                // "today" chip, so the lunar part was always cut with an ellipsis. It now has the
+                // whole card width and may wrap to a second line.
+                Text(
+                    PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
+                    style = MarbleTextStyles.microLabel,
+                    color = colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
                 CalendarViewSwitch(
                     selected = selectedViewMode,
@@ -1283,22 +1294,13 @@ private fun DayCellView(
             style = MarbleTextStyles.cellNumber,
             fontWeight = if (cell.isToday || isHoliday || selected) FontWeight.SemiBold else FontWeight.Light,
         )
-        Row(
-            modifier = Modifier.height(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (cell.inDisplayedMonth) {
-                if (cell.taskCount > 0) {
-                    Box(
-                        Modifier
-                            .size(5.dp)
-                            .clip(CircleShape)
-                            .background(if (selected) colors.onPrimary else colors.primary),
-                    )
-                }
-                EnhancedDayBloomDot(occasions = occasions, selected = selected)
-            }
+        // One tidy strip: at most three dots, one per distinct category, plus a task dot. The old
+        // two-source dot row could stack four marks and looked like an ellipsis (V-6).
+        if (cell.inDisplayedMonth) {
+            EnhancedDayBloomDot(occasions = occasions, selected = selected, taskCount = cell.taskCount)
+        } else {
+            // Keep every row the same height so the grid never jumps between weeks.
+            Box(Modifier.height(8.dp))
         }
     }
 }
@@ -1389,8 +1391,7 @@ private fun SelectedDayCard(
                         secondaryDates,
                         style = MarbleTextStyles.metaLabel,
                         color = colors.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 2,
                     )
                 }
                 Surface(

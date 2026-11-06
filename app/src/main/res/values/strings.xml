@@ -25,7 +25,7 @@
     <string name="numerals_latin">English (123)</string>
     <string name="numerals_arabic">Arabic (١٢٣)</string>
     <string name="settings_home_widget">Home-screen widget</string>
-    <string name="settings_home_widget_hint">Dates, today’s occasions, your next task and a live countdown — all in one.</string>
+    <string name="settings_home_widget_hint">Date, occasions and the next task, in one place.</string>
     <string name="settings_add_widget">Add the widget</string>
     <string name="settings_widget_pin_requested">Your launcher will ask you to confirm adding the widget.</string>
     <string name="settings_widget_pin_unsupported">This launcher can’t pin it directly; add MarbleDo from the widget picker.</string>
@@ -112,17 +112,17 @@
     <string name="dash_summary">%1$d open · %2$d done</string>
     <string name="dash_stat_today">Today</string>
     <string name="dash_stat_done">Done</string>
-    <string name="dash_stat_all">All open</string>
+    <string name="dash_stat_all">Left</string>
     <string name="dash_progress">%1$d%% of today is behind you</string>
     <string name="dash_next_moment">Next moment</string>
     <string name="dash_countdown_hero">Live countdowns</string>
-    <string name="dash_countdown_none_title">No live countdown yet</string>
-    <string name="dash_countdown_none_body">Give a task a date, switch its countdown on and watch it here in real time.</string>
+    <string name="dash_countdown_none_title">No countdown yet</string>
+    <string name="dash_countdown_none_body">Give a task a date to start counting.</string>
     <string name="dash_create_countdown">Create a countdown</string>
     <string name="dash_upcoming_countdowns">Upcoming moments</string>
     <string name="dash_occasions_today">Today’s occasions</string>
     <string name="dash_no_occasion">Nothing special today.</string>
-    <string name="dash_search_hint">Search tasks, categories, tags</string>
+    <string name="dash_search_hint">Search tasks</string>
     <string name="dash_tasks">Tasks</string>
     <string name="dash_group_overdue">Overdue</string>
     <string name="dash_group_today">Today</string>
@@ -130,16 +130,16 @@
     <string name="dash_group_week">This week</string>
     <string name="dash_group_later">Later</string>
     <string name="dash_group_no_date">No date</string>
-    <string name="dash_empty_title">All clear here</string>
-    <string name="dash_empty_body">Enjoy the quiet, or add the next small step.</string>
+    <string name="dash_empty_title">Nothing here yet</string>
+    <string name="dash_empty_body">Add your first task. One step is enough.</string>
     <string name="dash_new_task">New task</string>
     <string name="dash_undo">Undo the last change</string>
     <string name="dash_sort_menu">Sort</string>
     <string name="dash_selected_count">%1$d selected</string>
     <string name="dash_complete_selected">Complete all</string>
     <string name="dash_clear_selection">Clear</string>
-    <string name="dash_countdown_disabled_hint">Countdown turned off for this task.</string>
-    <string name="dash_countdown_enabled_hint">Countdown turned on for this task.</string>
+    <string name="dash_countdown_disabled_hint">Countdown off.</string>
+    <string name="dash_countdown_enabled_hint">Countdown on</string>
     <string name="settings_occasions">Occasions and internet</string>
     <string name="settings_occasions_auto_update">Update occasions from the internet</string>
     <string name="settings_occasions_update_now">Refresh now</string>
@@ -149,7 +149,7 @@
     <string name="settings_occasions_count">%1$d occasions in the catalog</string>
     <string name="settings_occasions_failed">Update failed; check your connection and try again.</string>
     <string name="settings_permissions_hidden">Every permission is granted; this section stays out of your way.</string>
-    <string name="settings_privacy_body">Tasks and preferences stay on this device. The only network request is the occasion catalog, which you can switch off here.</string>
+    <string name="settings_privacy_body">Everything stays on this device. The only network request is the occasion list.</string>
 
     <string name="dash_focus_mode">Focus</string>
     <string name="dash_turn_off">Turn off</string>
@@ -169,9 +169,9 @@
     <string name="dash_view_grid">Cards</string>
     <string name="dash_share_today">Share today</string>
     <string name="dash_share_title">My day in MarbleDo</string>
-    <string name="dash_all_done_today">Well done! Everything for today is finished 🎉</string>
+    <string name="dash_all_done_today">Everything for today is done 🎉</string>
     <string name="settings_persistent_date_notification">Keep the calendar in notifications</string>
-    <string name="settings_persistent_date_notification_hint">Today’s dates, a few occasions and your next task, always in view — only the notification permission is needed.</string>
+    <string name="settings_persistent_date_notification_hint">Today’s date and your next task, always in the shade.</string>
     <string name="settings_occasions_offline">No internet; your saved catalog is still available.</string>
     <string name="persistent_date_notification_title">Today’s calendar</string>
     <string name="persistent_date_notification_title_holiday">Today is an official holiday</string>
@@ -191,9 +191,9 @@
     <string name="dash_more_occasions">and %1$d more occasions</string>
     <string name="dash_holiday_badge">Public holiday</string>
     <string name="dash_undo_action">Undo</string>
-    <string name="dash_change_added">Task added</string>
-    <string name="dash_change_saved">Saved</string>
-    <string name="dash_change_completed">Nice! One more done ✓</string>
+    <string name="dash_change_added">Task added ✨</string>
+    <string name="dash_change_saved">Saved ✓</string>
+    <string name="dash_change_completed">Done ✓</string>
     <string name="dash_change_reopened">Reopened</string>
     <string name="dash_change_bulk">%1$d tasks completed ✓</string>
     <string name="dash_change_archived">Archived</string>
@@ -253,4 +253,6 @@
     <string name="dash_state_collapsed">Collapsed</string>
     <string name="settings_decrease">Decrease</string>
     <string name="settings_increase">Increase</string>
+    <string name="dash_occasions_upcoming_short">Upcoming</string>
+    <string name="dash_occasions_mine_short">Starred</string>
 </resources>

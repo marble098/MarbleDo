@@ -3,8 +3,8 @@
     <string name="habit_widget_description">عادت‌های امروز، دورهٔ پیاپی و تیک‌زدن از روی ویجت</string>
 
     <string name="habit_nav_title">عادت‌ها</string>
-    <string name="habit_cabinet_title">کشوی عادت‌ها</string>
-    <string name="habit_cabinet_hint">یک کشو برای چیزی که می‌سازی، یک کشو برای چیزی که می‌خواهی بگذاری کنار.</string>
+    <string name="habit_cabinet_title">عادت‌ها</string>
+    <string name="habit_cabinet_hint">عادت تازه بساز یا یکی را کنار بگذار.</string>
     <string name="habit_score_label">امتیاز رشد</string>
     <string name="habit_today_progress">امروز %1$s از %2$s</string>
     <string name="habit_best_streak">بهترین دوره · %1$s روز</string>
@@ -12,19 +12,19 @@
     <string name="habit_all_done">کار امروزت هم تموم شد!</string>
     <string name="habit_summary_empty">هنوز عادتی برای امروز نداری؛ دوست داری یکی اضافه کنی؟</string>
 
-    <string name="habit_drawer_build">ساختن عادت‌های خوب</string>
-    <string name="habit_drawer_build_hint">کارهای کوچکی که آن‌قدر تکرار می‌شوند تا بشوند بخشی از تو.</string>
-    <string name="habit_drawer_quit">ترک عادت‌های بد</string>
-    <string name="habit_drawer_quit_hint">روزهایی که پاک ماندی، یکی‌یکی حساب می‌شوند.</string>
-    <string name="habit_drawer_open">باز کردن کشو</string>
-    <string name="habit_drawer_close">بستن کشو</string>
+    <string name="habit_drawer_build">می‌سازم</string>
+    <string name="habit_drawer_build_hint">کارهای کوچکی که تکرار می‌شوند.</string>
+    <string name="habit_drawer_quit">کنار می‌گذارم</string>
+    <string name="habit_drawer_quit_hint">روزهای پاک، یکی‌یکی.</string>
+    <string name="habit_drawer_open">باز کردن</string>
+    <string name="habit_drawer_close">بستن</string>
     <string name="habit_drawer_count">%1$d عادت</string>
     <string name="habit_drawer_done">امروز %1$d عادت را انجام دادی 🌱</string>
     <string name="habit_add_widget">افزودن ویجت عادت‌ها</string>
     <string name="habit_new">عادت تازه</string>
-    <string name="habit_add_in_drawer">افزودن به این کشو</string>
-    <string name="habit_empty_build">این کشو خالی است. با چیزی شروع کن که آن‌قدر کوچک است که نشود خرابش کرد.</string>
-    <string name="habit_empty_quit">هنوز چیزی برای ترک‌کردن نداری. عادتی را که می‌خواهی بگذاری کنار، اینجا بنویس.</string>
+    <string name="habit_add_in_drawer">افزودن</string>
+    <string name="habit_empty_build">هنوز عادتی اینجا نیست. با یک قدم کوچک شروع کن.</string>
+    <string name="habit_empty_quit">هنوز چیزی برای ترک‌کردن اینجا نیست.</string>
     <string name="habit_archived_section">بایگانی</string>
     <string name="habit_empty_archived">چیزی بایگانی نشده.</string>
 

@@ -44,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.PlanningInsights
@@ -61,6 +62,7 @@ internal fun WeeklyWorkloadCard(
     languageTag: String,
     onOpenTask: (Task) -> Unit,
     onAdd: (LocalDate) -> Unit,
+    onOpenReview: () -> Unit = {},
 ) {
     val numeralMode = LocalNumeralMode.current
     val today = remember(now, zone) { now.atZone(zone).toLocalDate() }
@@ -188,11 +190,21 @@ internal fun WeeklyWorkloadCard(
                     }
                 }
             }
-            Text(
-                stringResource(R.string.weekly_hint),
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.onSurfaceVariant,
-            )
+            // The weekly review used to be a second pill in the dashboard header; it lives here,
+            // next to the week it describes, and the long hint is one short line (V-5).
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+            ) {
+                Text(
+                    stringResource(R.string.weekly_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onOpenReview) { Text(stringResource(R.string.review_title)) }
+            }
         }
     }
     val selectedDate = selectedDateIso?.let { runCatching { LocalDate.parse(it) }.getOrNull() }

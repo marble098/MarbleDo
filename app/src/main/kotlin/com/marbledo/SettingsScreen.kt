@@ -34,6 +34,7 @@ import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.NotificationsActive
@@ -172,7 +173,11 @@ fun SettingsScreen(
 
         if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.APPEARANCE) {
         item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
-        SettingsSection(title = stringResource(R.string.settings_appearance), icon = Icons.Outlined.Palette) {
+        SettingsSection(
+            title = stringResource(R.string.settings_appearance),
+            icon = Icons.Outlined.Palette,
+            showHeader = selectedCategory == SettingsCategoryFilter.ALL,
+        ) {
             SettingMenuRow(
                 label = stringResource(R.string.settings_theme),
                 value = themeLabel(settings.themeMode),
@@ -280,7 +285,11 @@ fun SettingsScreen(
 
         if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.CALENDAR) {
         item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
-        SettingsSection(title = stringResource(R.string.settings_calendar), icon = Icons.Outlined.CalendarMonth) {
+        SettingsSection(
+            title = stringResource(R.string.settings_calendar),
+            icon = Icons.Outlined.CalendarMonth,
+            showHeader = selectedCategory == SettingsCategoryFilter.ALL,
+        ) {
             SettingMenuRow(
                 label = stringResource(R.string.settings_countdown_calendar),
                 value = countdownCalendarLabel(settings.countdownCalendar),
@@ -403,7 +412,11 @@ fun SettingsScreen(
         // side-by-side quiet hours tiles, and zero wall-of-text stacking.
         if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.NOTIFICATIONS) {
         item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
-        SettingsSection(title = stringResource(R.string.settings_notifications), icon = Icons.Outlined.NotificationsActive) {
+        SettingsSection(
+            title = stringResource(R.string.settings_notifications),
+            icon = Icons.Outlined.NotificationsActive,
+            showHeader = selectedCategory == SettingsCategoryFilter.ALL,
+        ) {
             val statusState = remember(settings.persistentDateNotificationEnabled, notificationsGranted) {
                 PersistentCalendarNotification.statusIconState(context, settings.persistentDateNotificationEnabled)
             }
@@ -580,7 +593,11 @@ fun SettingsScreen(
 
         if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.BACKUP) {
         item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
-        SettingsSection(title = stringResource(R.string.settings_backup), icon = Icons.Outlined.Backup) {
+        SettingsSection(
+            title = stringResource(R.string.settings_backup),
+            icon = Icons.Outlined.Backup,
+            showHeader = selectedCategory == SettingsCategoryFilter.ALL,
+        ) {
             Text(
                 stringResource(R.string.settings_local_only),
                 style = MaterialTheme.typography.bodySmall,
@@ -1185,6 +1202,7 @@ private fun occasionStatusText(state: OccasionState, numeralMode: NumeralMode): 
 private fun SettingsSection(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    showHeader: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     Card(
@@ -1193,30 +1211,34 @@ private fun SettingsSection(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+        Column(Modifier.fillMaxWidth().padding(MarbleSpacing.lg)) {
+            // When the user already filtered the screen to this very tab ("Appearance", "Calendar"…)
+            // repeating the same title inside the card was pure redundancy (docs/UI_REFRESH.md, V-10).
+            if (showHeader) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                 ) {
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(7.dp).size(18.dp),
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                    ) {
+                        Icon(
+                            icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(7.dp).size(18.dp),
+                        )
+                    }
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.semantics { heading() },
                     )
                 }
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.semantics { heading() },
-                )
+                Spacer(Modifier.height(MarbleSpacing.md))
             }
-            Spacer(Modifier.height(10.dp))
             content()
         }
     }
@@ -1289,17 +1311,25 @@ private fun SettingMenuRow(
         }
         Box {
             // Display only: the row itself is the single click target that opens the menu (S-4).
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
+            // A flat label plus a chevron reads as "current value"; the filled capsule it used to
+            // be looked like a second, separate button (docs/UI_REFRESH.md, V-11).
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                modifier = Modifier.padding(start = MarbleSpacing.md, end = MarbleSpacing.xs),
             ) {
                 Text(
                     value,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+                Icon(
+                    Icons.Outlined.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
                 )
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) { menuItems() }
