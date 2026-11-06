@@ -171,7 +171,7 @@
     <string name="dash_share_title">My day in MarbleDo</string>
     <string name="dash_all_done_today">Everything for today is done 🎉</string>
     <string name="settings_persistent_date_notification">Keep the calendar in notifications</string>
-    <string name="settings_persistent_date_notification_hint">Today's date and your next task, always in the shade.</string>
+    <string name="settings_persistent_date_notification_hint">Today’s date and your next task, always in the shade.</string>
     <string name="settings_occasions_offline">No internet; your saved catalog is still available.</string>
     <string name="persistent_date_notification_title">Today’s calendar</string>
     <string name="persistent_date_notification_title_holiday">Today is an official holiday</string>
