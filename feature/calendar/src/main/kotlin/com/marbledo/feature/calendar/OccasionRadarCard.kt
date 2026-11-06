@@ -88,7 +88,7 @@ fun OccasionRadarCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(Modifier.padding(MarbleSpacing.lg), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
-            val stateLabel = stringResource(if (expanded) R.string.dash_state_expanded else R.string.dash_state_collapsed)
+            val stateLabel = stringResource(if (expanded) R.string.calendar_state_expanded else R.string.calendar_state_collapsed)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

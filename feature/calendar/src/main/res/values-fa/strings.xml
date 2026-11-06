@@ -88,4 +88,6 @@
     <string name="calendar_today_marker">امروز</string>
     <string name="calendar_weekend_marker">تعطیل</string>
     <string name="calendar_month_summary">%1$d روز با رویداد</string>
+    <string name="calendar_state_expanded">باز شده</string>
+    <string name="calendar_state_collapsed">بسته شده</string>
 </resources>

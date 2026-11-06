@@ -88,4 +88,6 @@
     <string name="calendar_today_marker">Today</string>
     <string name="calendar_weekend_marker">Weekend</string>
     <string name="calendar_month_summary">%1$d days with events</string>
+    <string name="calendar_state_expanded">Expanded</string>
+    <string name="calendar_state_collapsed">Collapsed</string>
 </resources>
