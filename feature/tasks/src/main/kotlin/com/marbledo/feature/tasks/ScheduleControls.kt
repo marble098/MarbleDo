@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.formatClock
@@ -46,7 +47,11 @@ internal fun ScheduleQuickChips(
     onClear: () -> Unit,
 ) {
     val hasSchedule = !schedule.isEmpty
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+        // Trailing padding keeps the last chip ("next month") fully visible at the sheet edge.
+        contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
+    ) {
         item {
             FilterChip(
                 selected = !hasSchedule,
@@ -63,7 +68,11 @@ internal fun ScheduleQuickChips(
             )
         }
     }
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+        // Trailing padding keeps the last chip ("next month") fully visible at the sheet edge.
+        contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
+    ) {
         item {
             FilterChip(
                 selected = hasSchedule && schedule.time == null,

@@ -3,8 +3,8 @@
     <string name="habit_widget_description">Today’s habits, your streak and one-tap check-in</string>
 
     <string name="habit_nav_title">Habits</string>
-    <string name="habit_cabinet_title">Habit cabinet</string>
-    <string name="habit_cabinet_hint">One drawer for what you are building, one for what you are leaving behind.</string>
+    <string name="habit_cabinet_title">Habits</string>
+    <string name="habit_cabinet_hint">Build a habit or put one aside.</string>
     <string name="habit_score_label">Growth score</string>
     <string name="habit_today_progress">%1$s of %2$s done today</string>
     <string name="habit_best_streak">Best run · %1$s days</string>
@@ -12,19 +12,19 @@
     <string name="habit_all_done">All done for today</string>
     <string name="habit_summary_empty">No habit is planned for today.</string>
 
-    <string name="habit_drawer_build">Building good habits</string>
-    <string name="habit_drawer_build_hint">Small things repeated until they are just who you are.</string>
-    <string name="habit_drawer_quit">Breaking bad habits</string>
-    <string name="habit_drawer_quit_hint">Days you stay clean, counted one by one.</string>
-    <string name="habit_drawer_open">Open drawer</string>
-    <string name="habit_drawer_close">Close drawer</string>
+    <string name="habit_drawer_build">Building</string>
+    <string name="habit_drawer_build_hint">Small things you repeat.</string>
+    <string name="habit_drawer_quit">Letting go</string>
+    <string name="habit_drawer_quit_hint">Clean days, one by one.</string>
+    <string name="habit_drawer_open">Expand</string>
+    <string name="habit_drawer_close">Collapse</string>
     <string name="habit_drawer_count">%1$d habit</string>
     <string name="habit_drawer_done">%1$d done today</string>
     <string name="habit_add_widget">Add habits widget</string>
     <string name="habit_new">New habit</string>
-    <string name="habit_add_in_drawer">Add to this drawer</string>
-    <string name="habit_empty_build">This drawer is empty. Start with something so small it cannot fail.</string>
-    <string name="habit_empty_quit">Nothing to quit yet. Name the habit you want to leave behind.</string>
+    <string name="habit_add_in_drawer">Add</string>
+    <string name="habit_empty_build">Nothing here yet. Start with one small step.</string>
+    <string name="habit_empty_quit">Nothing to quit here yet.</string>
     <string name="habit_archived_section">Archived</string>
     <string name="habit_empty_archived">Nothing is archived.</string>
 

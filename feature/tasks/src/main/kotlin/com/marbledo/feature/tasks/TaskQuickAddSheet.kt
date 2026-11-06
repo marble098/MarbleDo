@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,6 +35,7 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -65,6 +67,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleSpacing
+import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.TaskPriority
@@ -327,18 +331,26 @@ fun TaskQuickAddSheet(
     }
     val hasTextSchedule = textSchedule.date != null || textSchedule.time != null
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier.imePadding()) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = modifier.imePadding(),
+        dragHandle = { androidx.compose.material3.BottomSheetDefaults.DragHandle() },
+    ) {
+        // Scrollable form + pinned action bar. The submit button used to sit at the very end of a
+        // long scroll, so it was both hard to find and — while disabled — almost invisible against
+        // the sheet (docs/UI_REFRESH.md, V-9).
         Column(
             Modifier
                 .fillMaxWidth()
+                .weight(1f, fill = false)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp)
-                .padding(bottom = 26.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(horizontal = MarbleSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.tasks_quick_add_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
+                    Text(stringResource(R.string.tasks_quick_add_title), style = MarbleTextStyles.screenTitle)
                     Text(
                         stringResource(R.string.tasks_quick_add_subtitle),
                         style = MaterialTheme.typography.bodySmall,
@@ -357,7 +369,7 @@ fun TaskQuickAddSheet(
                 value = input,
                 onValueChange = { input = it },
                 modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                placeholder = { Text(stringResource(R.string.tasks_quick_add_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                placeholder = { Text(stringResource(R.string.tasks_quick_add_hint), maxLines = 2) },
                 leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
                 trailingIcon = {
                     if (input.isNotBlank()) {
@@ -369,7 +381,7 @@ fun TaskQuickAddSheet(
             )
 
             if (hasTextSchedule && scheduleMode == SCHEDULE_AUTO) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs)) {
                     Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     Text(
                         TextNormalizer.formatDigits(stringResource(R.string.tasks_parsed_hint), numeralMode),
@@ -379,7 +391,8 @@ fun TaskQuickAddSheet(
                 }
             }
 
-            Text(stringResource(R.string.tasks_when), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // ---- when: the primary decision of this sheet --------------------------------
+            SheetSectionLabel(stringResource(R.string.tasks_when))
             SchedulePickerField(
                 label = stringResource(R.string.tasks_schedule_field),
                 value = scheduleText,
@@ -394,8 +407,9 @@ fun TaskQuickAddSheet(
                 onClear = { clearSchedule() },
             )
 
-            Text(stringResource(R.string.tasks_priority), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            // ---- priority -----------------------------------------------------------------
+            SheetSectionLabel(stringResource(R.string.tasks_priority))
+            Row(horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs)) {
                 TaskPriority.entries.forEach { option ->
                     FilterChip(
                         selected = priority == option,
@@ -405,16 +419,19 @@ fun TaskQuickAddSheet(
                 }
             }
 
+            // ---- category -----------------------------------------------------------------
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.tasks_category), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.weight(1f))
+                SheetSectionLabel(stringResource(R.string.tasks_category), Modifier.weight(1f))
                 TextButton(onClick = { categoryDraft = ""; showCategoryDialog = true }) {
                     Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(MarbleSpacing.xs))
                     Text(stringResource(R.string.tasks_create_category))
                 }
             }
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
+            ) {
                 item {
                     FilterChip(
                         selected = category.isBlank(),
@@ -427,39 +444,76 @@ fun TaskQuickAddSheet(
                 }
             }
 
-            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
-                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                        Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
-                            Text(stringResource(R.string.tasks_countdown_toggle_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                if (resolvedDue == null) stringResource(R.string.tasks_countdown_needs_date) else stringResource(R.string.tasks_countdown_toggle_body),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Switch(
-                            checked = countdownEnabled && resolvedDue != null,
-                            enabled = resolvedDue != null,
-                            onCheckedChange = { countdownEnabled = it },
-                        )
-                    }
-                    if (countdownEnabled && resolvedDue != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(Modifier.size(10.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                            Text(stringResource(R.string.tasks_countdown_theme, countdownThemeLabel(themeId)), style = MaterialTheme.typography.labelMedium)
-                        }
-                        countdownThemePicker(themeId) { selected -> themeId = selected }
-                    }
+            // ---- countdown: one plain row, no card inside the sheet -------------------------
+            androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Column(Modifier.weight(1f).padding(horizontal = MarbleSpacing.md), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
+                    Text(stringResource(R.string.tasks_countdown_toggle_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (resolvedDue == null) stringResource(R.string.tasks_countdown_needs_date) else stringResource(R.string.tasks_countdown_toggle_body),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
+                Switch(
+                    checked = countdownEnabled && resolvedDue != null,
+                    enabled = resolvedDue != null,
+                    onCheckedChange = { countdownEnabled = it },
+                )
             }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                Button(onClick = { submit() }, modifier = Modifier.weight(1f), enabled = titleDraft.isNotBlank()) {
-                    Text(stringResource(R.string.tasks_add))
+            if (countdownEnabled && resolvedDue != null) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm)) {
+                    Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                    Text(stringResource(R.string.tasks_countdown_theme, countdownThemeLabel(themeId)), style = MaterialTheme.typography.labelMedium)
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.tasks_cancel)) }
+                countdownThemePicker(themeId) { selected -> themeId = selected }
+            }
+            Spacer(Modifier.height(MarbleSpacing.xs))
+        }
+
+        // Pinned action bar: full-width primary action, always visible, with a real disabled
+        // container and a hint that explains why it is disabled.
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 3.dp,
+            shadowElevation = 8.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = MarbleSpacing.lg, vertical = MarbleSpacing.md),
+                verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+            ) {
+                if (titleDraft.isBlank()) {
+                    Text(
+                        stringResource(R.string.tasks_submit_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+                ) {
+                    Button(
+                        onClick = { submit() },
+                        modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                        enabled = titleDraft.isNotBlank(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    ) {
+                        Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(MarbleSpacing.sm))
+                        Text(stringResource(R.string.tasks_add))
+                    }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.tasks_cancel)) }
+                }
             }
         }
     }
@@ -592,5 +646,23 @@ private fun priorityFromVoice(value: String): TaskPriority {
         listOf("کم", "پایین", "low").any { phrase.contains(it) } -> TaskPriority.LOW
         compact in setOf("معمولی", "عادی", "normal", "medium") -> TaskPriority.NORMAL
         else -> TaskPriority.NORMAL
+    }
+}
+
+/**
+ * A small label with a hairline above it. These labels carry the sheet's hierarchy now that the
+ * four decisions ("when", "priority", "category", "countdown") are no longer wrapped in their own
+ * nested cards.
+ */
+@Composable
+private fun SheetSectionLabel(text: String, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm)) {
+        androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
+        Text(
+            text,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

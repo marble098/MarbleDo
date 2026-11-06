@@ -50,7 +50,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ExpandLess
@@ -70,7 +69,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -379,9 +378,9 @@ fun DashboardScreen(
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            // Bottom inset only has to clear the extended FAB (56dp + 16dp margin); the old 128dp
-            // left a dead band at the end of the list (docs/UI_COUNCIL_REVIEW.md, D-7).
-            contentPadding = PaddingValues(start = MarbleSpacing.lg, end = MarbleSpacing.lg, top = MarbleSpacing.md, bottom = 92.dp),
+            // The list ends above the compact FAB with room to spare, so the last card can be
+            // read in full instead of sitting underneath a wide pill (docs/UI_REFRESH.md, V-4).
+            contentPadding = PaddingValues(start = MarbleSpacing.lg, end = MarbleSpacing.lg, top = MarbleSpacing.md, bottom = 104.dp),
             verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
         ) {
             item {
@@ -398,7 +397,6 @@ fun DashboardScreen(
                     numeralMode = numeralMode,
                     onOpenCalendar = onOpenCalendar,
                     onOpenAgenda = { showDayAgenda = true },
-                    onOpenReview = { showWeeklyReview = true },
                     onShare = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         runCatching {
@@ -455,7 +453,10 @@ fun DashboardScreen(
             }
             if (categoriesOpen && categoryChoices.isNotEmpty()) {
                 item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                        contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
+                    ) {
                         item {
                             FilterChip(
                                 selected = state.selectedCategory == null,
@@ -484,8 +485,8 @@ fun DashboardScreen(
                 ) {
                     LazyRow(
                         modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        contentPadding = PaddingValues(horizontal = 1.dp),
+                        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                        contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
                     ) {
                         items(TaskFilter.entries, key = { it.name }) { filter ->
                             FilterChip(
@@ -678,6 +679,8 @@ fun DashboardScreen(
                 }
             }
 
+            item { Spacer(Modifier.height(MarbleSpacing.md)) }
+
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     SectionHeader(stringResource(R.string.dash_countdown_hero), countdowns.size.takeIf { it > 0 }, Modifier.weight(1f))
@@ -784,6 +787,8 @@ fun DashboardScreen(
                 }
             }
 
+            item { Spacer(Modifier.height(MarbleSpacing.md)) }
+
             item {
                 OccasionsCard(
                     todayOccasions = todayOccasions.map {
@@ -797,14 +802,21 @@ fun DashboardScreen(
                 )
             }
 
+            item { Spacer(Modifier.height(MarbleSpacing.md)) }
+
             item {
                 OccasionRadarCard(occasionIndex, listOf(todayPersian.year, todayPersian.year + 1), todayEpoch,
                     state.allTasks, favoriteIds, settings.languageTag, onOpen = { radarPlan = it })
             }
 
+            item { Spacer(Modifier.height(MarbleSpacing.md)) }
+
             item {
                 WeeklyWorkloadCard(state.allTasks, now.toInstant(), zone, settings.languageTag,
                     onOpenTask = { editingTask = it },
+                    // The week card owns the weekly-review entry point now; the dashboard header
+                    // no longer stacks two extra action pills on top of the task list.
+                    onOpenReview = { showWeeklyReview = true },
                     onAdd = { date ->
                         sharedText = ""
                         addDateIso = date.toString()
@@ -814,12 +826,17 @@ fun DashboardScreen(
             }
         }
 
-        ExtendedFloatingActionButton(
+        // A compact, clearly floating FAB: the old extended pill stretched over the last card
+        // and read as part of the bottom navigation.
+        FloatingActionButton(
             onClick = { sharedText = ""; showQuickAdd = true },
-            icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-            text = { Text(stringResource(R.string.dash_new_task)) },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.align(Alignment.BottomEnd).padding(MarbleSpacing.lg),
-        )
+            shape = CircleShape,
+        ) {
+            Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.dash_new_task))
+        }
 
         SnackbarHost(
             hostState = snackbarHost,
@@ -925,7 +942,6 @@ private fun DailyHeaderCard(
     numeralMode: NumeralMode,
     onOpenCalendar: () -> Unit,
     onOpenAgenda: () -> Unit,
-    onOpenReview: () -> Unit,
     onShare: () -> Unit,
 ) {
     // A 2 a.m. dashboard is not "good morning": the night has its own greeting and sky.
@@ -976,29 +992,17 @@ private fun DailyHeaderCard(
                             .weight(1f)
                             .clip(MaterialTheme.shapes.medium)
                             .clickable(onClickLabel = calendarLabel, role = Role.Button, onClick = onOpenCalendar),
-                        verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                        verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs),
                     ) {
                         GreetingHeadline(greeting, Modifier.fillMaxWidth())
                         Text(
                             PersianDateUtils.fullDateWithWeekday(todayEpoch, settings.languageTag, numeralMode),
                             style = MarbleTextStyles.dateCaption,
                             color = colors.onSurface,
+                            maxLines = 2,
                         )
-                        Surface(
-                            shape = CircleShape,
-                            color = colors.surface.copy(alpha = 0.68f),
-                        ) {
-                            Text(
-                                PersianDateUtils.tripleDate(todayEpoch, settings.languageTag, numeralMode, settings.lunarOffsetDays),
-                                style = MarbleTextStyles.metaLabel,
-                                color = colors.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            )
-                        }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
                         Surface(shape = CircleShape, color = colors.surface.copy(alpha = 0.78f)) {
                             IconButton(onClick = onOpenCalendar) {
                                 Icon(
@@ -1021,49 +1025,84 @@ private fun DailyHeaderCard(
                         }
                     }
                 }
+                // The triple date gets its own full-width line. Inside the greeting column it had
+                // to share the row with two 48dp buttons, so the lunar date was cut with an
+                // ellipsis while the width below it stayed empty.
+                Text(
+                    PersianDateUtils.tripleDate(todayEpoch, settings.languageTag, numeralMode, settings.lunarOffsetDays),
+                    style = MarbleTextStyles.microLabel,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 2,
+                )
                 HorizontalDivider(color = colors.outline.copy(alpha = 0.16f))
-                // Stats tiles paired with the single unified FocusOrbit ring (no conflicting duplicate percentage bar).
+                // Flat counters next to the single FocusOrbit ring: the three nested stat cards
+                // are gone, and the whole row opens the day's agenda, so the header no longer
+                // needs a second row of pill buttons (docs/UI_REFRESH.md, V-2/V-3).
                 Row(
-                    Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.large)
+                        .clickable(
+                            onClickLabel = stringResource(R.string.agenda_title),
+                            role = Role.Button,
+                            onClick = onOpenAgenda,
+                        )
+                        .padding(vertical = MarbleSpacing.xxs),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
                 ) {
-                    Row(
-                        Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
-                    ) {
-                        HeaderStat(
-                            label = stringResource(R.string.dash_stat_today),
-                            value = todayOpen,
-                            accent = colors.primary,
-                            numeralMode = numeralMode,
-                            modifier = Modifier.weight(1f),
-                        )
-                        HeaderStat(
-                            label = stringResource(R.string.dash_stat_done),
-                            value = completedCount,
-                            accent = colors.tertiary,
-                            numeralMode = numeralMode,
-                            modifier = Modifier.weight(1f),
-                        )
-                        HeaderStat(
-                            label = stringResource(R.string.dash_stat_all),
-                            value = openCount,
-                            accent = colors.secondary,
-                            numeralMode = numeralMode,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
                     FocusOrbit(
                         completed = completedCount,
                         total = (todayOpen + completedCount).coerceAtLeast(1),
                         open = todayOpen,
                         numeralMode = numeralMode,
                         isRtl = isRtl,
-                        modifier = Modifier.padding(start = MarbleSpacing.xs),
                         orbitSize = 72.dp,
                     )
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xs)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                        ) {
+                            Icon(
+                                Icons.Outlined.AccessTime,
+                                contentDescription = null,
+                                tint = colors.primary,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Text(
+                                stringResource(R.string.agenda_title),
+                                style = MarbleTextStyles.metaLabel,
+                                color = colors.primary,
+                                maxLines = 2,
+                            )
+                        }
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            HeaderMetric(
+                                label = stringResource(R.string.dash_stat_today),
+                                value = todayOpen,
+                                accent = colors.primary,
+                                numeralMode = numeralMode,
+                                modifier = Modifier.weight(1f),
+                            )
+                            HeaderStatDivider()
+                            HeaderMetric(
+                                label = stringResource(R.string.dash_stat_done),
+                                value = completedCount,
+                                accent = colors.tertiary,
+                                numeralMode = numeralMode,
+                                modifier = Modifier.weight(1f),
+                            )
+                            HeaderStatDivider()
+                            HeaderMetric(
+                                label = stringResource(R.string.dash_stat_all),
+                                value = openCount,
+                                accent = colors.secondary,
+                                numeralMode = numeralMode,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
                 }
 
                 if (todayOccasions.isNotEmpty()) {
@@ -1071,7 +1110,7 @@ private fun DailyHeaderCard(
                     val accent = if (primaryOccasion.isHoliday) colors.error else categoryColor(primaryOccasion.category)
                     Surface(
                         shape = MaterialTheme.shapes.large,
-                        color = colors.surface.copy(alpha = 0.74f),
+                        color = colors.surface.copy(alpha = 0.72f),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(MaterialTheme.shapes.large)
@@ -1084,7 +1123,7 @@ private fun DailyHeaderCard(
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                         ) {
                             Box(
                                 Modifier
@@ -1097,8 +1136,7 @@ private fun DailyHeaderCard(
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (primaryOccasion.isHoliday) colors.error else colors.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 2,
                                 modifier = Modifier.weight(1f),
                             )
                             if (primaryOccasion.isHoliday) {
@@ -1131,101 +1169,46 @@ private fun DailyHeaderCard(
                         }
                     }
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    HeaderActionPill(
-                        icon = Icons.Outlined.AccessTime,
-                        label = stringResource(R.string.agenda_title),
-                        onClick = onOpenAgenda,
-                        modifier = Modifier.weight(1f),
-                    )
-                    HeaderActionPill(
-                        icon = Icons.Outlined.Insights,
-                        label = stringResource(R.string.review_title),
-                        onClick = onOpenReview,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
             }
         }
     }
 }
 
+/** One header counter: a number and a wrapping label, with no card of its own. */
 @Composable
-private fun HeaderActionPill(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val colors = MaterialTheme.colorScheme
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = colors.surface.copy(alpha = 0.74f),
-        modifier = modifier
-            .minimumInteractiveComponentSize()
-            .clip(MaterialTheme.shapes.large)
-            .clickable(role = Role.Button, onClick = onClick),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = colors.primary,
-                modifier = Modifier.size(16.dp),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = colors.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HeaderStat(
+private fun HeaderMetric(
     label: String,
     value: Int,
     accent: Color,
     numeralMode: NumeralMode,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.70f),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                TextNormalizer.formatDigits(value.toString(), numeralMode),
-                style = MarbleTextStyles.cardTitle,
-                color = accent,
-            )
-            Text(
-                label,
-                style = MarbleTextStyles.metaLabel,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
+        Text(
+            TextNormalizer.formatDigits(value.toString(), numeralMode),
+            style = MarbleTextStyles.cardTitle,
+            color = accent,
+            maxLines = 1,
+        )
+        Text(
+            label,
+            style = MarbleTextStyles.metaLabel,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+        )
     }
+}
+
+/** Hairline between two header counters; keeps the row readable without boxes. */
+@Composable
+private fun HeaderStatDivider() {
+    Box(
+        Modifier
+            .padding(horizontal = MarbleSpacing.xs)
+            .width(1.dp)
+            .height(28.dp)
+            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
+    )
 }
 
 @Composable
@@ -1243,7 +1226,7 @@ private fun CountdownHero(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.dash_next_moment), style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.primary)
-                Text(task.title, style = MarbleTextStyles.itemTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(task.title, style = MarbleTextStyles.itemTitle, maxLines = 2)
             }
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
                 Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(8.dp).size(20.dp))
@@ -1282,7 +1265,7 @@ private fun OccasionsCard(
     onOpenCalendar: () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    val upcomingLabel = stringResource(if (favoritesOnly) R.string.dash_my_occasions else R.string.dash_upcoming_occasions)
+    val upcomingLabel = stringResource(if (favoritesOnly) R.string.dash_occasions_mine_short else R.string.dash_occasions_upcoming_short)
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -1370,39 +1353,36 @@ private fun OccasionLine(
     trailing: String?,
     onClick: (() -> Unit)? = null,
 ) {
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = accent.copy(alpha = 0.10f),
-        modifier = Modifier
+    // A plain row inside the card instead of a tinted sub-card: three stacked pills inside one
+    // card was the clearest case of "card inside a card" on this screen (docs/UI_REFRESH.md, V-2).
+    Row(
+        Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier),
+            .clip(MaterialTheme.shapes.small)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .padding(horizontal = MarbleSpacing.xs, vertical = MarbleSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
-        ) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
-            Text(
-                title,
-                style = MarbleTextStyles.itemTitle,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            if (badge != null) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
-                    Text(
-                        badge,
-                        style = MarbleTextStyles.metaLabel,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                    )
-                }
+        Box(Modifier.size(6.dp).clip(CircleShape).background(accent))
+        Text(
+            title,
+            style = MarbleTextStyles.itemTitle,
+            maxLines = 2,
+            modifier = Modifier.weight(1f),
+        )
+        if (badge != null) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
+                Text(
+                    badge,
+                    style = MarbleTextStyles.metaLabel,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                )
             }
-            if (trailing != null) {
-                Text(trailing, style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.primary)
-            }
+        }
+        if (trailing != null) {
+            Text(trailing, style = MarbleTextStyles.metaLabel, color = MaterialTheme.colorScheme.primary, maxLines = 1)
         }
     }
 }
@@ -1437,7 +1417,6 @@ private fun SegmentedSwitch(
                     style = MarbleTextStyles.metaLabel,
                     color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
                 )
@@ -1777,9 +1756,8 @@ private fun RoadNode(
         Text(
             title,
             style = MarbleTextStyles.metaLabel,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 72.dp),
+            maxLines = 2,
+            modifier = Modifier.widthIn(max = 96.dp),
             textAlign = TextAlign.Center,
         )
         if (detail.isNotBlank()) {

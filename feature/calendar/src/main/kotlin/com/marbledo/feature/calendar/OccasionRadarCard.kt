@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,11 +16,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AddTask
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,14 +37,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
+import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.util.TextNormalizer
 import java.time.ZoneId
 
+/**
+ * Offline suggestions for occasions that are close enough to plan for. The rows are plain list
+ * items separated by hairlines instead of tinted cards inside a card, so the card breathes and
+ * a two-line occasion title no longer has to fit next to a day badge and an action icon
+ * (docs/UI_REFRESH.md, V-8).
+ */
 @Composable
 fun OccasionRadarCard(
     index: OccasionIndex,
@@ -71,10 +80,10 @@ fun OccasionRadarCard(
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.padding(MarbleSpacing.lg), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
             ) {
                 Surface(shape = CircleShape, color = colors.primaryContainer) {
                     Icon(
@@ -84,7 +93,7 @@ fun OccasionRadarCard(
                         modifier = Modifier.padding(8.dp).size(18.dp),
                     )
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
                     Text(stringResource(R.string.radar_title), style = MarbleTextStyles.cardTitle)
                     Text(
                         stringResource(R.string.radar_hint),
@@ -93,7 +102,11 @@ fun OccasionRadarCard(
                     )
                 }
             }
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
+            ) {
                 listOf(7, 30, 90).forEach { days ->
                     item {
                         FilterChip(
@@ -120,76 +133,87 @@ fun OccasionRadarCard(
                     color = colors.onSurfaceVariant,
                 )
             }
-            recommendations.forEach { recommendation ->
-                val upcoming = recommendation.upcoming
-                val accent = categoryColor(upcoming.occasion.category)
-                Surface(
-                    shape = MaterialTheme.shapes.large,
-                    color = colors.surfaceContainer.copy(alpha = 0.72f),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.large)
-                        .clickable { onOpen(recommendation) },
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Box(
-                            Modifier
-                                .width(4.dp)
-                                .height(36.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(accent),
-                        )
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(
-                                upcoming.occasion.title(languageTag),
-                                style = MarbleTextStyles.itemTitle,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                stringResource(reasonLabel(recommendation.reason)),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = colors.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                if (recommendation.alreadyPlanned) stringResource(R.string.radar_planned)
-                                else TextNormalizer.formatDigits(
-                                    stringResource(R.string.radar_prepare, recommendation.preparationDays),
-                                    numeral,
-                                ),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (recommendation.alreadyPlanned) colors.tertiary else colors.primary,
-                            )
-                        }
-                        Surface(
-                            shape = CircleShape,
-                            color = colors.primaryContainer,
-                        ) {
-                            Text(
-                                TextNormalizer.formatDigits(
-                                    stringResource(R.string.radar_days, upcoming.daysUntil.toInt()),
-                                    numeral,
-                                ),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.onPrimaryContainer,
-                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                            )
-                        }
-                        Icon(
-                            Icons.Outlined.AddTask,
-                            contentDescription = null,
-                            tint = colors.primary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
+            recommendations.forEachIndexed { position, recommendation ->
+                if (position > 0) {
+                    HorizontalDivider(color = colors.outline.copy(alpha = 0.12f))
                 }
+                RadarRow(
+                    recommendation = recommendation,
+                    languageTag = languageTag,
+                    numeral = numeral,
+                    onClick = { onOpen(recommendation) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RadarRow(
+    recommendation: OccasionRecommendation,
+    languageTag: String,
+    numeral: NumeralMode,
+    onClick: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val upcoming = recommendation.upcoming
+    val accent = categoryColor(upcoming.occasion.category)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .clickable(onClick = onClick)
+            .padding(vertical = MarbleSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
+    ) {
+        Box(
+            Modifier
+                .width(4.dp)
+                .height(40.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(accent),
+        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
+            Text(
+                upcoming.occasion.title(languageTag),
+                style = MarbleTextStyles.itemTitle,
+                maxLines = 2,
+            )
+            Text(
+                stringResource(reasonLabel(recommendation.reason)),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+                maxLines = 2,
+            )
+            Text(
+                if (recommendation.alreadyPlanned) stringResource(R.string.radar_planned)
+                else TextNormalizer.formatDigits(
+                    stringResource(R.string.radar_prepare, recommendation.preparationDays),
+                    numeral,
+                ),
+                style = MarbleTextStyles.microLabel,
+                color = if (recommendation.alreadyPlanned) colors.tertiary else colors.primary,
+                maxLines = 1,
+            )
+        }
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+        ) {
+            Surface(shape = CircleShape, color = colors.primaryContainer) {
+                Text(
+                    TextNormalizer.formatDigits(
+                        stringResource(R.string.radar_days_short, upcoming.daysUntil.toInt()),
+                        numeral,
+                    ),
+                    style = MarbleTextStyles.microLabel,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.onPrimaryContainer,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                )
             }
         }
     }

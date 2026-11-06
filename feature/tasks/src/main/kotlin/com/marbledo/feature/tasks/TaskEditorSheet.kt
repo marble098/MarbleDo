@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -332,7 +334,10 @@ fun TaskEditorSheet(
                     Text(stringResource(R.string.tasks_create_category))
                 }
             }
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(start = 1.dp, end = 12.dp),
+            ) {
                 item {
                     FilterChip(selected = category.isBlank(), onClick = { category = "" }, label = { Text(stringResource(R.string.tasks_category_none)) })
                 }
@@ -342,7 +347,10 @@ fun TaskEditorSheet(
             }
 
             Text(stringResource(R.string.tasks_repeat), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(start = 1.dp, end = 12.dp),
+            ) {
                 items(RepeatFrequency.entries.filter { it != RepeatFrequency.CUSTOM }) { option ->
                     FilterChip(selected = frequency == option, onClick = { frequency = option }, label = { Text(repeatLabel(option)) })
                 }
@@ -359,7 +367,10 @@ fun TaskEditorSheet(
             }
 
             Text(stringResource(R.string.tasks_color), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(horizontal = 1.dp)) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(start = 1.dp, end = 12.dp),
+            ) {
                 items(taskColorOptions) { option ->
                     val selectedSwatch = colorArgb == option
                     Box(
@@ -448,7 +459,15 @@ fun TaskEditorSheet(
                         )
                     },
                     enabled = canSave,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                    shape = MaterialTheme.shapes.large,
+                    // A disabled save button must still read as a button (docs/UI_REFRESH.md, V-9).
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
                 ) { Text(stringResource(R.string.tasks_save)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.tasks_cancel)) }
             }

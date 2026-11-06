@@ -58,10 +58,10 @@
     <string name="tasks_voice_repeat">گفتن دوباره</string>
     <string name="tasks_voice_skip">ردکردن</string>
 
-    <string name="tasks_quick_add_title">قدم تازه‌ای بردار</string>
-    <string name="tasks_quick_add_subtitle">هرطور راحت‌تری بگو: بنویس، زمان آماده‌ای انتخاب کن یا با صدایت ثبتش کن.</string>
+    <string name="tasks_quick_add_title">کار تازه</string>
+    <string name="tasks_quick_add_subtitle">بنویس، زمان بگذار یا با صدا بگو.</string>
     <string name="tasks_clear_input">پاک کردن متن</string>
-    <string name="tasks_parsed_hint">تاریخ یا ساعت را از نوشته‌ات پیدا کردم ✨</string>
+    <string name="tasks_parsed_hint">تاریخ و ساعت از متنت خوانده شد</string>
     <string name="tasks_when">چه زمانی؟</string>
     <string name="tasks_date_none">بدون تاریخ</string>
     <string name="tasks_date_next_week">هفتهٔ بعد</string>
@@ -70,7 +70,7 @@
     <string name="tasks_category">دسته</string>
     <string name="tasks_repeat">تکرار</string>
     <string name="tasks_countdown_toggle_title">شمارش معکوس زنده</string>
-    <string name="tasks_countdown_toggle_body">این کار در داشبورد و ویجت شمرده شود.</string>
+    <string name="tasks_countdown_toggle_body">در خانه و ویجت شمرده شود.</string>
     <string name="tasks_countdown_needs_date">برای شروع روزشمار، اول یک تاریخ یا ساعت انتخاب کن.</string>
     <string name="tasks_countdown_theme">تم: %1$s</string>
     <string name="tasks_countdown_on">روشن کردن شمارش معکوس</string>
@@ -101,4 +101,5 @@
     <string name="tasks_focus_badge">تمرکز %1$d دقیقه</string>
     <string name="tasks_repeat_needs_date">کار تکراری تاریخ می‌خواهد.</string>
     <string name="tasks_color">رنگ</string>
+    <string name="tasks_submit_hint">برای ثبت، عنوان کار را بنویس.</string>
 </resources>

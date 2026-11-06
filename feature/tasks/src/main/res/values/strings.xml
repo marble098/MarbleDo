@@ -59,9 +59,9 @@
     <string name="tasks_voice_skip">Skip</string>
 
     <string name="tasks_quick_add_title">New task</string>
-    <string name="tasks_quick_add_subtitle">Type naturally, tap a preset, or use your voice.</string>
+    <string name="tasks_quick_add_subtitle">Type it, pick a time, or use your voice.</string>
     <string name="tasks_clear_input">Clear text</string>
-    <string name="tasks_parsed_hint">Date or time recognised in your text</string>
+    <string name="tasks_parsed_hint">Date and time read from your text</string>
     <string name="tasks_when">When?</string>
     <string name="tasks_date_none">No date</string>
     <string name="tasks_date_next_week">Next week</string>
@@ -70,7 +70,7 @@
     <string name="tasks_category">Category</string>
     <string name="tasks_repeat">Repeat</string>
     <string name="tasks_countdown_toggle_title">Live countdown</string>
-    <string name="tasks_countdown_toggle_body">Count this task down on the dashboard and the widget.</string>
+    <string name="tasks_countdown_toggle_body">Count it on Home and in the widget.</string>
     <string name="tasks_countdown_needs_date">Add a date or time first.</string>
     <string name="tasks_countdown_theme">Theme: %1$s</string>
     <string name="tasks_countdown_on">Turn the countdown on</string>
@@ -101,4 +101,5 @@
     <string name="tasks_focus_badge">Focus %1$d min</string>
     <string name="tasks_repeat_needs_date">A repeating task needs a date.</string>
     <string name="tasks_color">Color</string>
+    <string name="tasks_submit_hint">Add a title to save.</string>
 </resources>
