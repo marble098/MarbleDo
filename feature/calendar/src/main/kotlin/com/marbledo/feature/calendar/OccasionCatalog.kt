@@ -5,6 +5,7 @@ import android.icu.util.Calendar
 import android.icu.util.TimeZone as IcuTimeZone
 import android.icu.util.ULocale
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import org.json.JSONArray
 import org.json.JSONObject
@@ -67,11 +68,13 @@ data class OccasionCatalog(
     val sources: List<CatalogReference> = emptyList(),
     val schoolPrograms: List<SchoolProgram> = emptyList(),
     val idAliases: Map<String, String> = emptyMap(),
+    /** Schema 6: the official lunar month table that lunar occasions resolve against. */
+    val lunarAnchors: LunarAnchors? = null,
 ) {
     fun canonicalFavoriteIds(ids: Collection<String>): Set<String> = ids.map { id -> idAliases[id] ?: id }.toSet()
 
     companion object {
-        const val SUPPORTED_SCHEMA = 5
+        const val SUPPORTED_SCHEMA = 6
         val EMPTY = OccasionCatalog(emptyList())
 
         /** Reject a partial/malformed update as a whole; never silently drop its bad rows. */
@@ -84,9 +87,13 @@ data class OccasionCatalog(
                 require(root.opt("sources") is JSONArray && root.opt("schoolPrograms") is JSONArray)
                 java.time.LocalDate.parse(root.getString("updatedAt"))
             }
+            val lunarAnchors = if (schema >= 6) {
+                LunarAnchors.parse(root.optJSONObject("lunarAnchors")).also { requireNotNull(it) { "Schema 6 needs lunarAnchors" } }
+            } else null
             val sources = objects(root.optJSONArray("sources")).map {
                 CatalogReference(it.getString("id"), it.getString("titleFa"), it.getString("titleEn"),
-                    it.getString("url"), it.getString("kind"), it.getString("checkedAt")).also { ref ->
+                    it.getString("url"), it.getString("kind"), it.getString("checkedAt"),
+                    it.optString("tier").trim()).also { ref ->
                     require(ref.id.isNotBlank())
                     val uri = java.net.URI(ref.url)
                     require(uri.scheme == "https" && !uri.host.isNullOrBlank() && uri.userInfo == null)
@@ -140,6 +147,7 @@ data class OccasionCatalog(
                 sources = sources,
                 schoolPrograms = programs,
                 idAliases = aliases,
+                lunarAnchors = lunarAnchors,
             )
         }.getOrNull()
 
@@ -277,13 +285,35 @@ class OccasionIndex private constructor(private val byYear: Map<Int, Map<Int, Li
                     // and both edges after adjustment. No fixed 24-hour shifts across DST boundaries.
                     val firstEpoch = start.plusDays(offset - 61L).atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
                     val lastEpoch = end.plusDays(offset + 61L).atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
-                    val years = if (occasion.calendar == OccasionCalendar.JALALI) (year - 1)..(year + 1) else
-                        JalaliCalendarMath.yearOf(calendar, firstEpoch)..JalaliCalendarMath.yearOf(calendar, lastEpoch)
+                    val anchors = catalog.lunarAnchors
+                    val years = if (occasion.calendar == OccasionCalendar.JALALI) (year - 1)..(year + 1) else {
+                        val startYear = JalaliCalendarMath.yearOf(calendar, firstEpoch)
+                        val endYear = JalaliCalendarMath.yearOf(calendar, lastEpoch)
+                        // The official table can sit one lunar year away from the arithmetic
+                        // year at the edges, so the window is widened by one year each side.
+                        if (anchors != null) (startYear - 1)..(endYear + 1) else startYear..endYear
+                    }
                     years.forEach yearLoop@ { sourceYear ->
-                        val first = JalaliCalendarMath.strictEpoch(calendar, sourceYear, occasion.month, 1) ?: return@yearLoop
-                        val length = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                        // Lunar dates come from the official month table when it covers the
+                        // month; only uncovered months fall back to the arithmetic calendar.
+                        val anchoredStart = if (occasion.calendar == OccasionCalendar.LUNAR) {
+                            anchors?.monthStart(sourceYear, occasion.month)
+                        } else null
+                        val anchoredLength = if (occasion.calendar == OccasionCalendar.LUNAR) {
+                            anchors?.monthLength(sourceYear, occasion.month)
+                        } else null
+                        val firstDay: LocalDate
+                        val length: Int
+                        if (anchoredStart != null && anchoredLength != null) {
+                            firstDay = anchoredStart.minusDays(offset.toLong())
+                            length = anchoredLength.coerceIn(28, 31)
+                        } else {
+                            val first = JalaliCalendarMath.strictEpoch(calendar, sourceYear, occasion.month, 1) ?: return@yearLoop
+                            firstDay = local(first).minusDays(offset.toLong())
+                            length = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+                        }
                         val resolved = OccasionDateRules.resolve(
-                            firstDay = local(first).minusDays(offset.toLong()), monthLength = length, day = occasion.day,
+                            firstDay = firstDay, monthLength = length, day = occasion.day,
                             rule = occasion.dateRule, weekday = occasion.weekday, ordinal = occasion.ordinal, dayOffset = occasion.dayOffset,
                         ) ?: return@yearLoop
                         if (resolved < start || resolved >= end) return@yearLoop

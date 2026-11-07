@@ -357,6 +357,64 @@ fun SettingsScreen(
             }
         }
 
+        SettingsSection(title = stringResource(R.string.settings_occasion_sources), icon = Icons.Outlined.Language) {
+            Text(
+                occasionStatusText(occasionState, settings.numeralMode),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(
+                    if (occasionState.hasOfficialLunarAnchors) R.string.settings_occasion_anchors_official
+                    else R.string.settings_occasion_anchors_estimated,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (occasionState.crossCheck.feeds > 0) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    TextNormalizer.formatDigits(
+                        stringResource(
+                            R.string.settings_occasion_crosscheck,
+                            occasionState.crossCheck.confirmed.size,
+                            occasionState.crossCheck.communityOnly.size,
+                        ),
+                        settings.numeralMode,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (occasionState.sourceStatus.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                occasionState.sourceStatus.forEach { source ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(source.id, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            "${stringResource(tierLabelRes(source.tier))} · ${
+                                stringResource(if (source.ok) R.string.settings_source_ok else R.string.settings_source_failed)
+                            }",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (source.ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onRefreshOccasions,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !occasionState.isRefreshing,
+            ) {
+                Text(stringResource(R.string.settings_occasions_update_now))
+            }
+        }
+
         SettingsSection(title = stringResource(R.string.settings_occasion_reminder), icon = Icons.Outlined.Refresh) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -1183,6 +1241,13 @@ private fun SettingsDivider() {
 
 /** Reminder lead times offered for starred occasions; 0 keeps the reminder off. */
 private val OCCASION_REMINDER_OPTIONS = listOf(0, 1, 2, 3, 7)
+
+@Composable
+private fun tierLabelRes(tier: String): Int = when (tier) {
+    "official" -> R.string.settings_tier_official
+    "unofficial" -> R.string.settings_tier_unofficial
+    else -> R.string.settings_tier_open_source
+}
 
 @Composable
 private fun occasionStatusText(state: OccasionState, numeralMode: NumeralMode): String {

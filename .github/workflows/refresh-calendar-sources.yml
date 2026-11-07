@@ -1,0 +1,93 @@
+name: Refresh occasion sources
+
+# The Android app no longer ships an occasion database: this job merges the official,
+# unofficial and open-source sources into data/occasions/occasions-live.json.
+on:
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: occasion-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Refresh the feed from the registered sources
+        id: detect
+        run: |
+          set -euo pipefail
+          # Offline consistency must hold before the network is touched.
+          python3 scripts/aggregate_occasions.py --offline --verify
+          python3 scripts/aggregate_occasions.py --write
+          if git diff --quiet -- data/occasions feature/calendar/src/main/assets/calendar/occasions-v6-fa.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No source changed what the app displays." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Source health"
+              echo '```json'
+              cat data/occasions/source-health.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Validate the refreshed feed
+        if: steps.detect.outputs.changed == 'true'
+        run: |
+          python3 scripts/check_calendar.py
+          python3 scripts/aggregate_occasions.py --offline --verify
+          python3 -m unittest discover -s scripts/tests -v
+
+      - name: Open or update the refresh pull request
+        id: pull-request
+        if: steps.detect.outputs.changed == 'true'
+        continue-on-error: true
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/occasion-refresh
+          delete-branch: true
+          add-paths: |
+            data/occasions/occasions-live.json
+            data/occasions/source-health.json
+            data/occasions/conflicts.json
+            feature/calendar/src/main/assets/calendar/occasions-v6-fa.json
+          commit-message: "data: refresh occasions from the registered sources"
+          title: "data: refresh occasions from the registered sources"
+          body: |
+            Automated daily refresh from `calendar_sources/registry.json`
+            (official, unofficial and open-source tiers).
+
+            Every lunar occasion is resolved against the official Iranian month table,
+            so a community calendar that uses the arithmetic Hijri calendar cannot move
+            a date. `data/occasions/conflicts.json` lists every disagreeing source and
+            the delta in days.
+
+      - name: Report the refresh result
+        if: always()
+        env:
+          PR_URL: ${{ steps.pull-request.outputs.pull-request-url }}
+        run: |
+          {
+            echo "### Occasion refresh"
+            echo ""
+            echo "- Changed: ${{ steps.detect.outputs.changed }}"
+            echo "- Pull request: ${PR_URL:-none}"
+          } >> "$GITHUB_STEP_SUMMARY"

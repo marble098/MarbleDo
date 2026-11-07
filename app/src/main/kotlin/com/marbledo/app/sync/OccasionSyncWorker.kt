@@ -15,8 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Periodically refreshes the occasion catalog from the internet. The bundled asset stays the
- * offline baseline, so a failed run never removes occasions from the calendar.
+ * Periodically refreshes the occasion catalog from the internet. The bundled seed and the last
+ * cached feed stay usable offline, so a failed run never removes occasions from the calendar.
  */
 class OccasionSyncWorker(
     appContext: Context,

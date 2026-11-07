@@ -17,15 +17,19 @@ class CatalogIntegrityTest(unittest.TestCase):
         self.assertGreaterEqual(validator.check(self.catalog)["annual_occasions"], 800)
 
     def test_older_clients_keep_their_compatible_feed(self):
-        legacy = json.loads(validator.CATALOG.with_name("holidays-fa.json").read_text())
+        legacy = json.loads(validator.LEGACY.with_name("holidays-fa.json").read_text())
         self.assertLess(legacy["schemaVersion"], 4)
         self.assertEqual("5", legacy["dataVersion"])
         old_student_day = next(row for row in legacy["jalali"] if row["titleEn"] == "Student Day")
         self.assertFalse(old_student_day["holiday"], "The legacy client should receive the corrected holiday flag")
         repository = validator.ROOT / "feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/OccasionRepository.kt"
         self.assertNotIn("calendar/holidays-fa.json", repository.read_text())
-        self.assertIn("calendar/occasions-v5-fa.json", repository.read_text())
-        v4 = json.loads(validator.CATALOG.with_name("occasions-v4-fa.json").read_text())
+        # The app ships only the cold-start seed; the descriptive catalog is online.
+        self.assertIn("calendar/occasions-v6-fa.json", repository.read_text())
+        self.assertIn("data/occasions/occasions-live.json", (
+            validator.ROOT / "feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/OccasionFeeds.kt"
+        ).read_text())
+        v4 = json.loads(validator.LEGACY.with_name("occasions-v4-fa.json").read_text())
         self.assertEqual(4, v4["schemaVersion"])
         v4_student_day = next(row for row in v4["jalali"] if row["titleEn"] == "Student Day")
         self.assertFalse(v4_student_day["holiday"], "The v4 client should receive the corrected holiday flag")

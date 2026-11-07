@@ -2,6 +2,9 @@
     <string name="calendar_category_educational">آموزشی و پرورشی</string>
     <string name="catalog_lunar_caveat">تاریخ قمری با تقویم حسابی اسلامی محاسبه می‌شود؛ ممکن است با اعلام دیدن هلال ماه یکی دو روز فرق داشته باشد. تاریخ‌های مهم دینی را با مرجع خودشان هماهنگ کن.</string>
     <string name="catalog_references">منابع بررسی</string>
+    <string name="catalog_tier_official">رسمی</string>
+    <string name="catalog_tier_unofficial">انتشار مستقل</string>
+    <string name="catalog_tier_open_source">متن‌باز</string>
     <string name="catalog_kind_curated">دادهٔ گردآوری‌شده؛ منبع ثانویه</string>
     <string name="catalog_kind_traditional">سنت فرهنگی یا دینی</string>
     <string name="catalog_kind_institution">انتشار نهاد مرتبط</string>
