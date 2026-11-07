@@ -17,6 +17,10 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_amoled">AMOLED black</string>
     <string name="theme_dynamic">Dynamic color</string>
+    <string name="theme_ocean">Ocean</string>
+    <string name="theme_forest">Forest</string>
+    <string name="theme_sunset">Sunset</string>
+    <string name="theme_rose">Rose</string>
     <string name="settings_language">App language</string>
     <string name="language_persian">فارسی</string>
     <string name="language_english">English</string>

@@ -3671,7 +3671,7 @@
       "titleFa": "روز دانش‌آموز و مبارزه با استکبار",
       "titleEn": "Student Day",
       "category": "national",
-      "holiday": true,
+      "holiday": false,
       "id": "jalali-8-13-Student Day",
       "sourceIds": [
         "pc-1405"

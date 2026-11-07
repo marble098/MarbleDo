@@ -187,7 +187,7 @@ fun SettingsScreen(
             ) {
                 AppThemeMode.entries.filter { it != AppThemeMode.DYNAMIC || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S }.forEach { item ->
                     DropdownMenuItem(
-                        text = { Text(themeLabel(item)) },
+                        text = { ThemeMenuLabel(item) },
                         onClick = { onUpdate(settings.copy(themeMode = item)); themeMenu = false },
                     )
                 }
@@ -1344,6 +1344,27 @@ private fun themeLabel(mode: AppThemeMode): String = when (mode) {
     AppThemeMode.DARK -> stringResource(R.string.theme_dark)
     AppThemeMode.AMOLED -> stringResource(R.string.theme_amoled)
     AppThemeMode.DYNAMIC -> stringResource(R.string.theme_dynamic)
+    AppThemeMode.OCEAN -> stringResource(R.string.theme_ocean)
+    AppThemeMode.FOREST -> stringResource(R.string.theme_forest)
+    AppThemeMode.SUNSET -> stringResource(R.string.theme_sunset)
+    AppThemeMode.ROSE -> stringResource(R.string.theme_rose)
+}
+
+@Composable
+private fun ThemeMenuLabel(mode: AppThemeMode) {
+    val swatch = when (mode) {
+        AppThemeMode.OCEAN -> Color(0xFF006874)
+        AppThemeMode.FOREST -> Color(0xFF35693D)
+        AppThemeMode.SUNSET -> Color(0xFF98440D)
+        AppThemeMode.ROSE -> Color(0xFF9B3F63)
+        AppThemeMode.DARK, AppThemeMode.AMOLED -> Color(0xFF49409B)
+        AppThemeMode.GLASS_LIGHT -> Color(0xFF8F86E8)
+        AppThemeMode.DYNAMIC, AppThemeMode.AUTO -> MaterialTheme.colorScheme.primary
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(Modifier.size(18.dp).background(swatch, CircleShape))
+        Text(themeLabel(mode))
+    }
 }
 
 @Composable

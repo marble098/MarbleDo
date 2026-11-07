@@ -17,6 +17,10 @@
     <string name="theme_dark">تیره</string>
     <string name="theme_amoled">مشکی AMOLED</string>
     <string name="theme_dynamic">رنگ پویا</string>
+    <string name="theme_ocean">اقیانوس</string>
+    <string name="theme_forest">جنگل</string>
+    <string name="theme_sunset">غروب</string>
+    <string name="theme_rose">رز</string>
     <string name="settings_language">زبان برنامه</string>
     <string name="language_persian">فارسی</string>
     <string name="language_english">English</string>

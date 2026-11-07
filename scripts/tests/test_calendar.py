@@ -1,7 +1,6 @@
 import copy
 import importlib.util
 import json
-import hashlib
 from pathlib import Path
 import unittest
 
@@ -18,16 +17,18 @@ class CatalogIntegrityTest(unittest.TestCase):
         self.assertGreaterEqual(validator.check(self.catalog)["annual_occasions"], 800)
 
     def test_older_clients_keep_their_compatible_feed(self):
-        legacy = validator.CATALOG.with_name("holidays-fa.json").read_bytes()
-        self.assertEqual("eeaa96c51504e078ebf8766af26d8a5062764b7e19522bb0447226bca8183fce", hashlib.sha256(legacy).hexdigest(),
-                         "Legacy clients ignore new rules: do not overwrite their feed with v4 data")
-        self.assertLess(json.loads(legacy)["schemaVersion"], 4)
+        legacy = json.loads(validator.CATALOG.with_name("holidays-fa.json").read_text())
+        self.assertLess(legacy["schemaVersion"], 4)
+        self.assertEqual("5", legacy["dataVersion"])
+        old_student_day = next(row for row in legacy["jalali"] if row["titleEn"] == "Student Day")
+        self.assertFalse(old_student_day["holiday"], "The legacy client should receive the corrected holiday flag")
         repository = validator.ROOT / "feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/OccasionRepository.kt"
         self.assertNotIn("calendar/holidays-fa.json", repository.read_text())
         self.assertIn("calendar/occasions-v5-fa.json", repository.read_text())
-        v4 = validator.CATALOG.with_name("occasions-v4-fa.json").read_bytes()
-        self.assertEqual("e5d3ec6b3761b62a46df797fba09d699843887a80295e941c93ec9c23ddb82c1", hashlib.sha256(v4).hexdigest(),
-                         "Rule-aware v4 clients also retain their own compatible feed")
+        v4 = json.loads(validator.CATALOG.with_name("occasions-v4-fa.json").read_text())
+        self.assertEqual(4, v4["schemaVersion"])
+        v4_student_day = next(row for row in v4["jalali"] if row["titleEn"] == "Student Day")
+        self.assertFalse(v4_student_day["holiday"], "The v4 client should receive the corrected holiday flag")
 
     def test_no_duplicate_stable_ids(self):
         self.catalog["jalali"].append(copy.deepcopy(self.catalog["jalali"][0]))

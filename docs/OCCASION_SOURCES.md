@@ -1,6 +1,6 @@
 # Occasion provenance, date rules and update delivery
 
-Review date: **2026-10-15**. Active asset: `feature/calendar/src/main/assets/calendar/occasions-v5-fa.json`.
+Review date: **2026-11-07**. Active asset: `feature/calendar/src/main/assets/calendar/occasions-v5-fa.json` (schema 5, data version 13).
 
 ## What actually updates the app
 
@@ -15,11 +15,13 @@ this repository's manually maintained `main` asset through these fallbacks, in o
 
 These are four **delivery paths for the same data**, not four independent research sources.
 **Compatibility:** older app builds ignore `dateRule` and schema versions. Serving rule anchors
-at their old `holidays-fa.json` URL would make them display e.g. Quds on 1 Ramadan. Therefore that
-legacy endpoint remains byte-for-byte at the pre-migration data version 5. The new app explicitly
-uses `occasions-v5-fa.json` (schema 5) for its bundle and all four download paths. The v4 rule-aware
-endpoint also remains byte-for-byte at schema 4/data version 7 for older v4 clients. The expanded/rule-aware
-catalog requires upgrading the app; an old installed build does not gain it from a data refresh.
+at their old `holidays-fa.json` URL would make them display e.g. Quds on 1 Ramadan. The legacy
+endpoint remains at the pre-migration schema/data version 5; its structure and compatibility contract
+are unchanged. The erroneous 13 Aban Student Day `holiday=true` flag has been corrected there and in
+the v4 and active v5 assets, so existing clients no longer label that observance as a public holiday.
+The new app explicitly uses `occasions-v5-fa.json` (schema 5) for its bundle and all four download
+paths. The expanded/rule-aware catalog requires upgrading the app; an old installed build does not
+gain it from a data refresh.
 
 The downloaded cache is `filesDir/occasions/occasions-catalog.json`; the bundled asset remains the
 offline baseline. Startup and scheduled checks respect a 20-hour freshness interval; a manual
@@ -34,19 +36,21 @@ publication date and not proof that its website will always remain accessible.
 
 ## Inventory and limits
 
-Schema 5 / data version 8 contains **991 recurring entries** (418 Jalali, 108 lunar, 465 Gregorian),
+Schema 5 / data version 13 contains **1,116 recurring entries** (461 Jalali, 126 lunar, 529 Gregorian),
 one explicitly year-specific school-election entry for 1404, and **38 undated school programs**.
-253 recurring entries carry an education-relevance tag; they include ordinary public occasions
-useful for school planning and should not be confused with 253 separate Ministry instructions.
+The recurring-entry evidence counts are 646 sourced, 422 legacy (individual review still pending),
+33 traditional and 15 guidance. 273 recurring entries carry an education-relevance tag; they include
+ordinary public occasions useful for school planning and should not be confused with separate
+Ministry instructions.
 
 Evidence metadata for recurring entries:
 
 | Status | Count | Meaning |
 | --- | ---: | --- |
-| sourced | 519 | Matched to the pinned compilation or a linked institutional/news reference; not a blanket claim of official approval |
+| sourced | 646 | Matched to the pinned compilation or a linked institutional/news reference; not a blanket claim of official approval |
 | traditional | 33 | A traditional/cultural/religious report; disagreements or variants can exist |
 | guidance | 15 | A planning window or customary ceremony; verify this year's circular |
-| legacy | 424 | Preserved from MarbleDo's previous catalog; individual date/source verification remains outstanding |
+| legacy | 422 | Preserved from MarbleDo's previous catalog; individual date/source verification remains outstanding |
 
 Every record has reference IDs. A link to the old MarbleDo catalog is **provenance, not independent
 corroboration**. Reference matching against the compilation used dates and titles; title similarity
@@ -64,10 +68,28 @@ authoritative replacement for the official annual calendar**.
   explanatory notes and preparation checklists are separately written.
 - [University of Tehran calendar PDF](https://calendar.ut.ac.ir/documents/2139738/7092644/Calendar-1405.pdf)
   was located but the fetch returned an interstitial. **The PDF itself was not independently read**;
-  it is not used as a claim that all 991 entries were verified against that official publication.
+  it is not used as a claim that all 1,118 entries were verified against that official publication.
 - Targeted PANA, IQNA, IRIB, university and cultural reporting was checked for school windows and
   disputed recurring dates. Some checks could only use indexed excerpts; full-page review is
   explicitly distinguished below. News reports are not themselves Ministry circulars.
+
+## Data version 12: 13 Aban is not an official public holiday
+
+The Student Day entry (13 Aban) remains in the calendar as a national/educational observance, but its
+`holiday` flag is `false`. The parallel 13 Aban National Day against Global Arrogance entry also
+remains non-holiday. This fixes the legacy, v4 and active v5 JSON assets. Do not interpret an
+observance, school closure or public commemoration as a nationwide statutory day off without a
+checked official annual calendar.
+
+## Data version 13: repair misdated occasions and fill calendar gaps
+
+The recurring Gregorian feed corrects two inherited dates while preserving their favorite IDs:
+World Tuberculosis Day moves from 23 to 24 March and World Malaria Day from 24 to 25 April. It also
+adds World Art Day (15 April) and the International Day of Women in Mathematics (12 May), which were
+missing. All four are `international`, `global`, non-holiday records. Their dates/titles are matched
+to the pinned persian-calendar/events compilation (`pc-1405` reference); these community records are
+useful cross-checks, not a claim of government approval. Regression tests cover the corrections and
+new entries in both the Python catalog validator and Android catalog tests.
 
 ## Western expansion and source boundaries (2026-10-15)
 

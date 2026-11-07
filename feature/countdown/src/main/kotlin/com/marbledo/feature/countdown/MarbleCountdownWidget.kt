@@ -399,7 +399,8 @@ private fun widgetPalette(context: Context, mode: AppThemeMode, themeId: String)
     val isDark = when (mode) {
         AppThemeMode.DARK, AppThemeMode.AMOLED -> true
         AppThemeMode.GLASS_LIGHT -> false
-        AppThemeMode.AUTO, AppThemeMode.DYNAMIC -> systemIsDark
+        AppThemeMode.AUTO, AppThemeMode.DYNAMIC, AppThemeMode.OCEAN,
+        AppThemeMode.FOREST, AppThemeMode.SUNSET, AppThemeMode.ROSE -> systemIsDark
     }
     val accent = when (CountdownTheme.from(themeId)) {
         CountdownTheme.MARBLE_ORB -> Color(0xFF6258C8)
