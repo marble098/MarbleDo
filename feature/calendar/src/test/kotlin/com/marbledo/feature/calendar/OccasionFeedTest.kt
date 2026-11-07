@@ -92,11 +92,11 @@ class OccasionFeedTest {
     fun `a day needs two independent feeds before it is treated as corroborated`() {
         val crossCheck = HolidayCrossChecker.check(
             nationalHolidayDays = setOf(822, 403, 101),
-            feedDays = listOf(setOf(822, 403), setOf(822, 101, 823)),
+            feedDays = listOf(setOf(822, 403, 823), setOf(822, 101, 823)),
         )
         assertEquals(2, crossCheck.feeds)
-        assertEquals(setOf(822), crossCheck.confirmed, "Only 22 Aban is confirmed by two feeds")
-        assertEquals(setOf(823), crossCheck.communityOnly, "23 Aban is only a community-calendar claim")
+        assertEquals(setOf(822), crossCheck.confirmed, "Only 22 Aban is confirmed by both feeds")
+        assertEquals(setOf(823), crossCheck.communityOnly, "23 Aban is claimed by both feeds but is not statutory")
         assertFalse(crossCheck.isEmpty)
         assertTrue(HolidayCrossChecker.check(emptySet(), emptyList()).isEmpty)
     }
