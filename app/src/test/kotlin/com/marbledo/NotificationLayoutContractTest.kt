@@ -71,7 +71,7 @@ class NotificationLayoutContractTest {
                 "CalendarNotificationViews (saw $guards)",
         )
         assertTrue(
-            references.values.any { it.isEmpty() },
+            references.values.any { sites -> sites.any { guards -> guards.isEmpty() } },
             "no unconditional R.id reference was found; the guard parser is out of step",
         )
     }
