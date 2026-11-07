@@ -188,6 +188,43 @@ class HabitAnalyticsTest {
     }
 
     @Test
+    fun `the week overview judges every scheduled habit of a day at once`() {
+        // 2026-10-05 .. 2026-10-11, every day scheduled, one habit.
+        val done = entries("2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10")
+        val week = HabitAnalytics.weekOverview(listOf(habit), done, today)
+        assertEquals(7, week.size)
+        assertEquals(LocalDate.parse("2026-10-05"), week.first().date)
+        assertEquals(LocalDate.parse("2026-10-11"), week.last().date)
+        assertEquals(HabitDayState.DONE, week.first().state)
+        // Yesterday is done, today is planned but still open.
+        assertEquals(HabitDayState.DONE, week[5].state)
+        assertEquals(HabitDayState.TODAY, week[6].state)
+    }
+
+    @Test
+    fun `the week overview splits a partially met day from a missed one`() {
+        val counted = habit.copy(id = 2, name = "Drink water", dailyTarget = 8)
+        val records = listOf(HabitEntry(1, "2026-10-06", 1), HabitEntry(2, "2026-10-06", 4))
+        val week = HabitAnalytics.weekOverview(listOf(habit, counted), records, today)
+        assertEquals(HabitDayState.PARTIAL, week[1].state)
+        // Nothing at all recorded on the day before yesterday.
+        assertEquals(HabitDayState.MISSED, week[4].state)
+    }
+
+    @Test
+    fun `the week overview leaves a day with nothing scheduled alone`() {
+        val weekendOnly = Habit(id = 3, name = "Long walk", schedule = HabitSchedule.weekdays(), startDate = "2026-09-01")
+        val week = HabitAnalytics.weekOverview(listOf(weekendOnly), entries("2026-10-10"), today)
+        // 2026-10-11 is a Sunday, which is off for a weekdays-only habit.
+        assertEquals(HabitDayState.OFF, week[6].state)
+    }
+
+    @Test
+    fun `the week overview of an empty cabinet is empty`() {
+        assertTrue(HabitAnalytics.weekOverview(emptyList(), emptyList(), today).isEmpty())
+    }
+
+    @Test
     fun `habits survive a serialization round trip`() {
         val original = habit.copy(
             schedule = HabitSchedule(type = HabitScheduleType.SPECIFIC_DAYS, weekdays = setOf(6, 7)),

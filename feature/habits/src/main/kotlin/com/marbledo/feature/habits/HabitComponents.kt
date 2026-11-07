@@ -444,6 +444,7 @@ fun HabitDrawer(
     title: String,
     hint: String,
     badge: String,
+    caption: String? = null,
     icon: ImageVector,
     expanded: Boolean,
     reduceMotion: Boolean,
@@ -484,6 +485,15 @@ fun HabitDrawer(
                         color = palette.onCard,
                     )
                     Text(hint, style = MaterialTheme.typography.labelSmall, color = palette.muted, maxLines = 2)
+                    if (caption != null) {
+                        Text(
+                            caption,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = palette.accent,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 Surface(shape = CircleShape, color = palette.accentSoft) {
                     Text(
@@ -716,7 +726,6 @@ fun HabitTodayHeader(
     palette: HabitPalette,
     numeralMode: NumeralMode,
     modifier: Modifier = Modifier,
-    footer: @Composable () -> Unit = {},
 ) {
     val progress = if (scheduled == 0) 0f else done.toFloat() / scheduled.toFloat()
     Surface(
@@ -781,7 +790,6 @@ fun HabitTodayHeader(
                     }
                 }
             }
-            footer()
         }
     }
 }
