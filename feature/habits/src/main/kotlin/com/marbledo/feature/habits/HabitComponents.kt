@@ -713,9 +713,10 @@ private fun RoundIconButton(
 }
 
 /**
- * Today's headline: the ring, the count and the score, on the cabinet's themed surface. [footer]
- * carries the cabinet's secondary controls (theme look, widget) so the screen needs one card
- * instead of two stacked ones.
+ * Today's headline and nothing else: the ring, how far today has come, and the score and best run.
+ *
+ * The appearance controls used to ride along in a footer here, which turned a status card into a
+ * settings card; they live in their own labelled card at the bottom of the page now.
  */
 @Composable
 fun HabitTodayHeader(
