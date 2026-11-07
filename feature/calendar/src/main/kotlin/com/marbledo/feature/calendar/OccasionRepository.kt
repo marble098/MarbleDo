@@ -17,10 +17,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 
-/** The local asset and cache are usable even when every remote mirror is unavailable. */
+/** The bundled seed and the cache are usable even when every remote source is unavailable. */
 enum class OccasionSource { BUNDLED, CACHED, NETWORK }
 
 enum class OccasionRefreshResult { UPDATED, UNCHANGED, SKIPPED, OFFLINE, FAILED }
+
+/** One online endpoint and whether it answered on the last refresh. */
+data class OccasionSourceStatus(
+    val id: String,
+    val tier: String,
+    val isCatalog: Boolean,
+    val ok: Boolean,
+)
 
 data class OccasionState(
     val catalog: OccasionCatalog = OccasionCatalog.EMPTY,
@@ -31,14 +39,24 @@ data class OccasionState(
     val lastError: Boolean = false,
     val lastRefreshWasOffline: Boolean = false,
     val lastDeliveryUrl: String? = null,
+    val sourceStatus: List<OccasionSourceStatus> = emptyList(),
+    val crossCheck: HolidayCrossCheck = HolidayCrossCheck(),
 ) {
     val occasionCount: Int get() = catalog.occasions.size
     val isFromInternet: Boolean get() = source == OccasionSource.NETWORK
+    /** True when the catalog carries the official lunar month table, not just arithmetic dates. */
+    val hasOfficialLunarAnchors: Boolean get() = catalog.lunarAnchors != null
+    val respondingSources: Int get() = sourceStatus.count { it.ok }
 }
 
 /**
- * Keeps the occasion catalog available offline and refreshes it from several mirrors of the
- * versioned catalog in this repository. A bad response never replaces a good cache or bundled copy.
+ * Keeps the occasion catalog available offline and refreshes it online.
+ *
+ * The app ships only a cold-start seed (statutory holidays plus the official lunar month
+ * table); the descriptions come from the aggregated feed that CI builds from the sources in
+ * `calendar_sources/registry.json`. Several delivery paths for that feed are tried in order,
+ * and three independent community holiday lists are fetched directly as a cross-check, so a
+ * single mirror outage or a single wrong calendar never decides what the app shows.
  */
 class OccasionRepository(private val context: Context) {
     private val _state = MutableStateFlow(OccasionState())
@@ -72,7 +90,7 @@ class OccasionRepository(private val context: Context) {
         }
     }
 
-    /** Fetches and validates mirrors in order. Never removes the currently visible catalog. */
+    /** Fetches the aggregated feed from its mirrors and re-checks it against independent lists. */
     suspend fun refresh(): OccasionRefreshResult {
         load()
         if (!refreshMutex.tryLock()) return OccasionRefreshResult.SKIPPED
@@ -91,8 +109,10 @@ class OccasionRepository(private val context: Context) {
                 lastError = false,
                 lastRefreshWasOffline = false,
             )
-            for (source in CATALOG_SOURCES) {
-                val body = download(source) ?: continue
+
+            var result = OccasionRefreshResult.FAILED
+            for (source in OccasionFeeds.catalogMirrors) {
+                val body = download(source.url, source.accept) ?: continue
                 val parsed = withContext(Dispatchers.Default) { OccasionCatalog.parse(body) } ?: continue
                 // Reject short, partial, or accidentally returned error documents before they can
                 // replace the much richer offline catalog.
@@ -104,7 +124,6 @@ class OccasionRepository(private val context: Context) {
                 _state.value = _state.value.copy(
                     catalog = parsed,
                     isLoaded = true,
-                    isRefreshing = false,
                     source = OccasionSource.NETWORK,
                     lastDeliveryUrl = source.url,
                     lastUpdatedEpochMillis = cachedAt,
@@ -112,15 +131,24 @@ class OccasionRepository(private val context: Context) {
                     lastRefreshWasOffline = false,
                 )
                 loaded = true
-                return if (changed) OccasionRefreshResult.UPDATED else OccasionRefreshResult.UNCHANGED
+                result = if (changed) OccasionRefreshResult.UPDATED else OccasionRefreshResult.UNCHANGED
+                break
             }
 
+            val dayFeeds = crossCheck()
+            val statuses = buildList {
+                addAll(OccasionFeeds.catalogMirrors.map { source ->
+                    OccasionSourceStatus(source.id, source.tier.key, true, source.url == _state.value.lastDeliveryUrl)
+                })
+                addAll(dayFeeds.statuses)
+            }
             _state.value = _state.value.copy(
                 isRefreshing = false,
-                lastError = true,
-                lastRefreshWasOffline = false,
+                lastError = result == OccasionRefreshResult.FAILED,
+                sourceStatus = statuses,
+                crossCheck = dayFeeds.check,
             )
-            return OccasionRefreshResult.FAILED
+            return result
         } catch (cancelled: CancellationException) {
             _state.value = _state.value.copy(isRefreshing = false)
             throw cancelled
@@ -151,6 +179,31 @@ class OccasionRepository(private val context: Context) {
         }
         lastAutoRefreshAttemptMillis = now
         return refresh()
+    }
+
+    private data class DayFetch(val check: HolidayCrossCheck, val statuses: List<OccasionSourceStatus>)
+
+    /**
+     * Reads the independent holiday lists for the current Jalali year directly from the internet
+     * and compares them with the catalog's national holidays.
+     */
+    private suspend fun crossCheck(): DayFetch {
+        val year = PersianDateUtils.today().year
+        val parsed = mutableListOf<Set<Int>>()
+        val statuses = mutableListOf<OccasionSourceStatus>()
+        for (source in OccasionFeeds.holidayDayFeeds(year)) {
+            val body = download(source.url, source.accept)
+            val days = body?.let { withContext(Dispatchers.Default) { HolidayDayParser.parse(it) } }.orEmpty()
+            if (days.isNotEmpty()) parsed.add(days)
+            statuses.add(OccasionSourceStatus(source.id, source.tier.key, false, days.isNotEmpty()))
+        }
+        val index = OccasionIndex.build(
+            catalog = _state.value.catalog,
+            jalaliYears = listOf(year),
+            lunarOffsetDays = 0,
+        )
+        val nationalDays = index.forYear(year).filter { it.occasion.isHoliday }.map { it.month * 100 + it.day }.toSet()
+        return DayFetch(HolidayCrossChecker.check(nationalDays, parsed), statuses)
     }
 
     private fun hasInternetConnection(): Boolean {
@@ -211,16 +264,16 @@ class OccasionRepository(private val context: Context) {
 
     private fun cacheFile(): File = File(File(context.filesDir, CACHE_DIRECTORY), CATALOG_FILE_NAME)
 
-    private suspend fun download(source: CatalogSource): String? = withContext(Dispatchers.IO) {
+    private suspend fun download(url: String, accept: String): String? = withContext(Dispatchers.IO) {
         var connection: HttpURLConnection? = null
         try {
-            connection = (URL(source.url).openConnection() as HttpURLConnection).apply {
+            connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = CONNECT_TIMEOUT_MILLIS
                 readTimeout = READ_TIMEOUT_MILLIS
                 instanceFollowRedirects = true
                 useCaches = false
-                setRequestProperty("Accept", source.accept)
+                setRequestProperty("Accept", accept)
                 setRequestProperty("User-Agent", USER_AGENT)
             }
             if (connection.responseCode !in 200..299) return@withContext null
@@ -245,12 +298,10 @@ class OccasionRepository(private val context: Context) {
         return builder.toString()
     }
 
-    private data class CatalogSource(val url: String, val accept: String = "application/json")
-
     companion object {
         const val CACHE_DIRECTORY = "occasions"
         const val CATALOG_FILE_NAME = "occasions-catalog.json"
-        private const val CATALOG_ASSET = "calendar/occasions-v5-fa.json"
+        const val CATALOG_ASSET = "calendar/occasions-v6-fa.json"
         private const val CONNECT_TIMEOUT_MILLIS = 3_000
         private const val READ_TIMEOUT_MILLIS = 4_000
         private const val MAX_CATALOG_CHARS = 3_000_000
@@ -264,20 +315,10 @@ class OccasionRepository(private val context: Context) {
         @Volatile private var cachedDiskCatalog: OccasionCatalog? = null
 
         /**
-         * Independent delivery paths for the same checked-in catalog: GitHub raw, two jsDelivr
-         * edges and the GitHub Contents API raw media type. A mirror outage does not block the rest.
+         * The delivery paths for the aggregated feed. The independent community day lists are
+         * read as a cross-check only and are listed by [OccasionFeeds.holidayDayFeeds].
          */
-        private val CATALOG_SOURCES = listOf(
-            CatalogSource("https://raw.githubusercontent.com/marble098/MarbleDo/main/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json"),
-            CatalogSource("https://cdn.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json"),
-            CatalogSource("https://fastly.jsdelivr.net/gh/marble098/MarbleDo@main/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json"),
-            CatalogSource(
-                url = "https://api.github.com/repos/marble098/MarbleDo/contents/feature/calendar/src/main/assets/calendar/occasions-v5-fa.json?ref=main",
-                accept = "application/vnd.github.raw+json",
-            ),
-        )
-
-        /** Kept visible for diagnostics and tests without exposing the HTTP connection details. */
-        val CATALOG_URLS: List<String> = CATALOG_SOURCES.map(CatalogSource::url)
+        val CATALOG_URLS: List<String>
+            get() = OccasionFeeds.catalogMirrors.map(RemoteOccasionFeed::url)
     }
 }

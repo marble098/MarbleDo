@@ -1,0 +1,168 @@
+{
+ "addedFromSources": 15,
+ "conflicts": 55,
+ "generatedAt": "2026-11-07",
+ "sources": [
+  {
+   "events": 0,
+   "id": "ut-geophysics",
+   "ok": false,
+   "status": "review-only",
+   "tier": "official"
+  },
+  {
+   "events": 0,
+   "id": "dolat",
+   "ok": false,
+   "status": "review-only",
+   "tier": "official"
+  },
+  {
+   "events": 0,
+   "id": "majlis-research",
+   "ok": false,
+   "status": "review-only",
+   "tier": "official"
+  },
+  {
+   "events": 0,
+   "id": "irna",
+   "ok": false,
+   "status": "review-only",
+   "tier": "official"
+  },
+  {
+   "events": 0,
+   "id": "iribnews",
+   "ok": false,
+   "status": "review-only",
+   "tier": "official"
+  },
+  {
+   "events": 0,
+   "id": "behdasht",
+   "ok": false,
+   "status": "review-only",
+   "tier": "official"
+  },
+  {
+   "events": 0,
+   "id": "medu",
+   "ok": false,
+   "status": "review-only",
+   "tier": "official"
+  },
+  {
+   "events": 0,
+   "id": "time-ir",
+   "ok": false,
+   "status": "review-only",
+   "tier": "unofficial"
+  },
+  {
+   "events": 46,
+   "id": "bahesab",
+   "ok": true,
+   "status": "fixture",
+   "tier": "unofficial"
+  },
+  {
+   "events": 4,
+   "id": "pasoon",
+   "ok": true,
+   "status": "fixture",
+   "tier": "unofficial"
+  },
+  {
+   "events": 7,
+   "id": "chetor-calendar",
+   "ok": true,
+   "status": "fixture",
+   "tier": "unofficial"
+  },
+  {
+   "events": 0,
+   "id": "beytote",
+   "ok": false,
+   "status": "review-only",
+   "tier": "unofficial"
+  },
+  {
+   "events": 0,
+   "id": "tasnim",
+   "ok": false,
+   "status": "review-only",
+   "tier": "unofficial"
+  },
+  {
+   "events": 0,
+   "id": "mehrnews",
+   "ok": false,
+   "status": "review-only",
+   "tier": "unofficial"
+  },
+  {
+   "events": 521,
+   "id": "pc-events",
+   "ok": true,
+   "status": "fixture",
+   "tier": "open-source"
+  },
+  {
+   "events": 26,
+   "id": "iran-holidays-npm",
+   "ok": false,
+   "status": "fixture: official lunar month table verified",
+   "tier": "open-source"
+  },
+  {
+   "events": 22,
+   "id": "iran-holidays-json",
+   "ok": true,
+   "status": "fixture",
+   "tier": "open-source"
+  },
+  {
+   "events": 233,
+   "id": "shamsi-holidays",
+   "ok": true,
+   "status": "fixture",
+   "tier": "open-source"
+  },
+  {
+   "events": 800,
+   "id": "jalali-calendar-year",
+   "ok": true,
+   "status": "fixture",
+   "tier": "open-source"
+  },
+  {
+   "events": 47,
+   "id": "pholiday",
+   "ok": true,
+   "status": "fixture",
+   "tier": "open-source"
+  },
+  {
+   "events": 0,
+   "id": "persian-holidays-rules",
+   "ok": false,
+   "status": "review-only",
+   "tier": "open-source"
+  },
+  {
+   "events": 0,
+   "id": "vacanza-holidays",
+   "ok": false,
+   "status": "review-only",
+   "tier": "open-source"
+  },
+  {
+   "events": 0,
+   "id": "un-observances",
+   "ok": false,
+   "status": "review-only",
+   "tier": "open-source"
+  }
+ ]
+}

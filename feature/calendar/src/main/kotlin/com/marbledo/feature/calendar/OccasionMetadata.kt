@@ -8,6 +8,8 @@ data class CatalogReference(
     val url: String,
     val kind: String,
     val checkedAt: String,
+    /** Schema 6: official / unofficial / open-source. Empty for legacy references. */
+    val tier: String = "",
 ) {
     fun title(languageTag: String): String = if (languageTag == "fa") titleFa else titleEn
 }

@@ -10,12 +10,18 @@ import calendar
 import json
 import re
 from collections import Counter
-from datetime import date
+import sys
+from datetime import date, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "feature/calendar/src/main/assets/calendar/occasions-v5-fa.json"
+BOOTSTRAP = ROOT / "feature/calendar/src/main/assets/calendar/occasions-v6-fa.json"
+FEED = ROOT / "data/occasions/occasions-live.json"
+LEGACY = ROOT / "feature/calendar/src/main/assets/calendar/occasions-v5-fa.json"
+# The published feed is what the app downloads; the bootstrap is only the cold-start seed.
+CATALOG = FEED
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 CALENDARS = ("jalali", "lunar", "gregorian")
 CATEGORIES = {"official", "national", "religious", "personal", "international", "educational"}
 EVIDENCE = {"sourced", "traditional", "guidance", "legacy"}
@@ -29,8 +35,8 @@ def require(condition: bool, message: str) -> None:
 
 
 def check(catalog: dict) -> dict:
-    require(catalog["schemaVersion"] == 5, "Unsupported schema")
-    require(int(catalog["dataVersion"]) >= 13, "Catalog must not roll back behind the holiday and completeness corrections")
+    require(catalog["schemaVersion"] == 6, "Unsupported schema")
+    require(int(catalog["dataVersion"]) >= 14, "Catalog must not roll back behind the lunar-anchor correction")
     date.fromisoformat(catalog["updatedAt"])
     references = catalog["sources"]
     source_ids = {s["id"] for s in references}
@@ -40,6 +46,7 @@ def check(catalog: dict) -> dict:
         require(uri.scheme == "https" and bool(uri.hostname) and uri.username is None, "Unsafe source URL")
         require(bool(ref["titleFa"].strip()) and bool(ref["titleEn"].strip()), "Source title missing")
         date.fromisoformat(ref["checkedAt"])
+        require(ref.get("tier", "open-source") in {"official", "unofficial", "open-source"}, "Unknown source tier")
 
     def references_exist(row: dict) -> None:
         require(bool(row["sourceIds"]) and set(row["sourceIds"]) <= source_ids, f"Unknown or missing source: {row['id']}")
@@ -81,6 +88,15 @@ def check(catalog: dict) -> dict:
                 require(1 <= row.get("durationDays", 1) <= 31, "Invalid window duration")
                 result.append(row | {"calendar": system})
         return result
+
+    anchors = catalog["lunarAnchors"]
+    require(anchors["startHijriYear"] >= 1400, "Lunar table start year is implausible")
+    require(1 <= anchors.get("startMonth", 1) <= 12, "Invalid anchor start month")
+    date.fromisoformat(anchors["startDate"])
+    official = anchors["officialLengths"]
+    estimated = anchors.get("estimatedLengths", [])
+    require(len(official) >= 12 and set(official) <= {29, 30}, "Invalid official lunar month table")
+    require(set(estimated) <= {29, 30}, "Invalid estimated lunar month table")
 
     rows = entries(catalog)
     require(len(rows) >= 990, "Unexpectedly depleted annual catalog")
@@ -166,6 +182,37 @@ def check(catalog: dict) -> dict:
         all("iranian" in r["cultures"] or "culture" in r.get("tags", []) for r in rows),
         "Every foreign observance must be reachable from the cultural filter",
     )
+    # --- lunar-anchor regressions (schema 6) -------------------------------------------
+    from occasions.jalali import LunarAnchorTable, gregorian_to_jalali, jalali_to_gregorian
+
+    table = LunarAnchorTable.from_catalog_fields(anchors)
+    fatima = table.to_gregorian(1448, 6, 3)
+    require(
+        gregorian_to_jalali(fatima) == (1405, 8, 22),
+        "3 Jumada al-Thani 1448 must resolve to 22 Aban 1405 (the statutory day off)",
+    )
+    require(fatima == date(2026, 11, 13), "The official Fatima date must be 2026-11-13")
+    require(
+        table.to_gregorian(1448, 6, 2) == fatima - timedelta(days=1),
+        "Lunar days inside a month must advance one day at a time",
+    )
+    require(
+        table.to_gregorian(1448, 1, 10) == date(2026, 6, 25),
+        "Ashura 1448 must resolve to 4 Tir 1405, not the arithmetic 5 Tir",
+    )
+    fatima_rows = [row for row in rows if row["calendar"] == "lunar" and (row["month"], row["day"]) == (6, 3)]
+    require(len(fatima_rows) == 1, "Exactly one lunar row may describe 3 Jumada al-Thani")
+    require(fatima_rows[0]["holiday"] is True, "3 Jumada al-Thani is a statutory day off in Iran")
+    resolved = catalog.get("verification", {}).get("resolvedHolidays", {}).get("1405", [])
+    require(resolved, "The feed must publish the resolved holidays for 1405")
+    require("2026-11-13" in resolved, "22 Aban 1405 must be published as a holiday")
+    require("2026-11-14" not in resolved, "23 Aban 1405 is NOT a holiday; the arithmetic calendar is wrong")
+    require("2026-06-24" in resolved and "2026-06-26" not in resolved, "Tasua must be 3 Tir and 5 Tir must not be a holiday")
+    require(
+        jalali_to_gregorian(1405, 8, 22) == date(2026, 11, 13),
+        "The Jalali converter must agree with the anchor table",
+    )
+
     return {
         "annual_occasions": len(rows),
         "per_calendar": dict(Counter(r["calendar"] for r in rows)),
@@ -174,8 +221,32 @@ def check(catalog: dict) -> dict:
         "school_relevant": sum("education" in r.get("tags", []) for r in rows),
         "variable_school_programs": len(programs),
         "source_references": len(references),
+        "official_lunar_months": len(official),
+        "estimated_lunar_months": len(estimated),
     }
 
 
+def check_bootstrap(catalog: dict) -> dict:
+    """The cold-start asset: public holidays plus the official lunar table, nothing else."""
+    require(catalog["schemaVersion"] == 6, "Unsupported bootstrap schema")
+    require(catalog.get("lunarAnchors"), "The bootstrap must carry the official lunar table")
+    require(catalog["schoolPrograms"] == [], "The bootstrap must not ship school programmes")
+    rows = [dict(row, calendar=system) for system in CALENDARS for row in catalog.get(system, [])]
+    require(20 <= len(rows) <= 200, "The bootstrap must stay a small cold-start seed")
+    require(all(row["holiday"] for row in rows), "The bootstrap may only contain public holidays")
+    source_ids = {ref["id"] for ref in catalog["sources"]}
+    require(all(set(row["sourceIds"]) <= source_ids for row in rows), "Unresolved bootstrap source")
+    fatima = [row for row in rows if row["calendar"] == "lunar" and (row["month"], row["day"]) == (6, 3)]
+    require(len(fatima) == 1 and fatima[0]["holiday"], "The bootstrap must contain the Fatima day off")
+    return {"bootstrap_rows": len(rows), "sources": len(source_ids)}
+
+
 if __name__ == "__main__":
-    print(json.dumps(check(json.loads(CATALOG.read_text())), ensure_ascii=False, indent=2))
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    report = {
+        "feed": check(json.loads(CATALOG.read_text())),
+        "bootstrap": check_bootstrap(json.loads(BOOTSTRAP.read_text())),
+    }
+    print(json.dumps(report, ensure_ascii=False, indent=2))

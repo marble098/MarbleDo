@@ -1,0 +1,1159 @@
+{
+ "calendar": "jalali",
+ "dataVersion": "14",
+ "gregorian": [],
+ "idAliases": {},
+ "jalali": [
+  {
+   "category": "national",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 1,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-1-1-Nowruz",
+   "month": 1,
+   "sourceIds": [
+    "pc-1405",
+    "bahesab",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education"
+   ],
+   "titleEn": "Nowruz",
+   "titleFa": "نوروز"
+  },
+  {
+   "category": "national",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 2,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-1-2-Nowruz holiday",
+   "month": 1,
+   "sourceIds": [
+    "pc-1405",
+    "bahesab",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education"
+   ],
+   "titleEn": "Nowruz holiday",
+   "titleFa": "عید نوروز"
+  },
+  {
+   "category": "national",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 3,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-1-3-Nowruz holiday",
+   "month": 1,
+   "sourceIds": [
+    "pc-1405",
+    "bahesab",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education"
+   ],
+   "titleEn": "Nowruz holiday",
+   "titleFa": "عید نوروز"
+  },
+  {
+   "category": "national",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 4,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-1-4-Nowruz holiday",
+   "month": 1,
+   "sourceIds": [
+    "pc-1405",
+    "bahesab",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education"
+   ],
+   "titleEn": "Nowruz holiday",
+   "titleFa": "عید نوروز"
+  },
+  {
+   "category": "national",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 12,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-1-12-Islamic Republic Day",
+   "month": 1,
+   "sourceIds": [
+    "pc-1405",
+    "bahesab",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "titleEn": "Islamic Republic Day",
+   "titleFa": "روز جمهوری اسلامی ایران"
+  },
+  {
+   "category": "national",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 13,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-1-13-Nature Day",
+   "month": 1,
+   "sourceIds": [
+    "pc-1405",
+    "bahesab",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education"
+   ],
+   "titleEn": "Nature Day",
+   "titleFa": "روز طبیعت (سیزده‌بدر)"
+  },
+  {
+   "category": "national",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 6,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-3-6-Khordadegan Festival",
+   "month": 3,
+   "noteEn": "Legacy traditional date, not independently reviewed or an official holiday. Zoroastrian and solar-Hijri festival conventions may differ.",
+   "noteFa": "تاریخ سنتیِ فهرست پیشین؛ بازبینی مستقل نشده و تعطیل رسمی نیست. تاریخ جشن‌های هم‌نام در گاه‌شماری زرتشتی و هجری شمسی ممکن است متفاوت باشد.",
+   "sourceIds": [
+    "legacy-v5",
+    "bahesab",
+    "chetor-calendar",
+    "jalali-calendar-year",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "culture"
+   ],
+   "titleEn": "Khordadegan Festival",
+   "titleFa": "جشن خردادگان"
+  },
+  {
+   "category": "official",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 14,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-3-14-Anniversary of Imam Khomeini's passing",
+   "month": 3,
+   "sourceIds": [
+    "legacy-v5",
+    "bahesab",
+    "chetor-calendar",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "titleEn": "Anniversary of Imam Khomeini's passing",
+   "titleFa": "رحلت حضرت امام خمینی"
+  },
+  {
+   "category": "official",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 15,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-3-15-Khordad 15 uprising",
+   "month": 3,
+   "sourceIds": [
+    "pc-1405",
+    "bahesab",
+    "chetor-calendar",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "titleEn": "Khordad 15 uprising",
+   "titleFa": "قیام خونین ۱۵ خرداد"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 30,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-5-30-Allama Majlisi Day",
+   "month": 5,
+   "sourceIds": [
+    "pc-1405",
+    "bahesab",
+    "jalali-calendar-year",
+    "pc-events"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Allama Majlisi Day",
+   "titleFa": "روز بزرگداشت علامه مجلسی"
+  },
+  {
+   "category": "national",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 22,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-11-22-Islamic Revolution Day",
+   "month": 11,
+   "sourceIds": [
+    "legacy-v5",
+    "bahesab",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "culture"
+   ],
+   "titleEn": "Islamic Revolution Day",
+   "titleFa": "پیروزی انقلاب اسلامی"
+  },
+  {
+   "category": "national",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 29,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "jalali-12-29-Oil Nationalization Day",
+   "month": 12,
+   "sourceIds": [
+    "pc-1405",
+    "bahesab",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "titleEn": "Oil Nationalization Day",
+   "titleFa": "روز ملی شدن صنعت نفت ایران"
+  }
+ ],
+ "lunar": [
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 9,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-1-9-Tasua",
+   "month": 1,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Tasua",
+   "titleFa": "تاسوعای حسینی"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 10,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-1-10-Ashura",
+   "month": 1,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Ashura",
+   "titleFa": "عاشورای حسینی"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 20,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-2-20-Arbaeen",
+   "month": 2,
+   "sourceIds": [
+    "pc-1405",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Arbaeen",
+   "titleFa": "اربعین حسینی"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 28,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-2-28-Passing of the Prophet",
+   "month": 2,
+   "sourceIds": [
+    "pc-1405",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Passing of Prophet Muhammad and Martyrdom of Imam Hassan",
+   "titleFa": "رحلت پیامبر اکرم و شهادت امام حسن مجتبی"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 28,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-2-28-Martyrdom of Imam Hassan (lunar) — additional",
+   "month": 2,
+   "sourceIds": [
+    "ir-health-tech",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "islamic"
+   ],
+   "titleEn": "Martyrdom of Imam Hassan (lunar) — additional",
+   "titleFa": "شهادت امام حسن مجتبی — یادبود"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "dateRule": "month_end",
+   "day": 30,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-2-30-Martyrdom of Imam Reza (second report)",
+   "month": 2,
+   "sourceIds": [
+    "pc-1405",
+    "jalali-calendar-year",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Martyrdom of Imam Reza (last day of Safar)",
+   "titleFa": "شهادت امام رضا (ع)، آخر ماه صفر"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 8,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-3-8-Martyrdom of Imam Askari",
+   "month": 3,
+   "sourceIds": [
+    "pc-1405",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Martyrdom of Imam Askari",
+   "titleFa": "شهادت امام حسن عسکری"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 17,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-3-17-Prophet's birthday",
+   "month": 3,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Birthdays of Prophet Muhammad and Imam Sadiq",
+   "titleFa": "میلاد پیامبر اکرم و امام جعفر صادق"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 3,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-6-3-Martyrdom of Fatima (first report)",
+   "month": 6,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Martyrdom of Lady Fatima (3 Jumada al-Thani)",
+   "titleFa": "شهادت حضرت فاطمه زهرا (س)، سوم جمادی‌الثانی"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 13,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-7-13-Birthday of Imam Ali",
+   "month": 7,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Birthday of Imam Ali",
+   "titleFa": "ولادت امام علی"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 27,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-7-27-Isra and Mi'raj",
+   "month": 7,
+   "noteEn": "The Iranian Shia observance of the beginning of the Prophet’s mission; not the separate Isra and Mi’raj event.",
+   "noteFa": "بزرگداشت آغاز بعثت پیامبر در تقویم ایران؛ با عنوان اسراء و معراج یکی نیست.",
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Prophet's first revelation (Mab'ath)",
+   "titleFa": "مبعث پیامبر اکرم"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 21,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-9-21-Martyrdom of Imam Ali",
+   "month": 9,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Martyrdom of Imam Ali",
+   "titleFa": "شهادت امام علی"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 1,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-10-1-Eid al-Fitr",
+   "month": 10,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Eid al-Fitr",
+   "titleFa": "عید سعید فطر"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 2,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-10-2-Eid al-Fitr (second day)",
+   "month": 10,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Eid al-Fitr (second day)",
+   "titleFa": "عید سعید فطر (روز دوم)"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 25,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-10-25-Martyrdom of Imam Sadiq",
+   "month": 10,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Martyrdom of Imam Sadiq",
+   "titleFa": "شهادت امام جعفر صادق"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 10,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-12-10-Eid al-Adha",
+   "month": 12,
+   "sourceIds": [
+    "pc-1405",
+    "iran-holidays-json",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Eid al-Adha",
+   "titleFa": "عید سعید قربان"
+  },
+  {
+   "category": "religious",
+   "cultures": [
+    "iranian"
+   ],
+   "day": 18,
+   "evidence": "sourced",
+   "holiday": true,
+   "id": "lunar-12-18-Eid al-Ghadir",
+   "month": 12,
+   "sourceIds": [
+    "pc-1405",
+    "jalali-calendar-year",
+    "pc-events",
+    "pholiday",
+    "shamsi-holidays"
+   ],
+   "tags": [
+    "education",
+    "islamic"
+   ],
+   "titleEn": "Eid al-Ghadir",
+   "titleFa": "عید سعید غدیر خم"
+  }
+ ],
+ "lunarAnchors": {
+  "estimatedLengths": [
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29
+  ],
+  "officialLengths": [
+   29,
+   30,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   29,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   29,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   29,
+   30,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   29,
+   29,
+   29,
+   30,
+   29,
+   30,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29,
+   29,
+   29,
+   30,
+   29,
+   30,
+   29,
+   30,
+   30,
+   30,
+   29,
+   30,
+   29
+  ],
+  "officialThrough": {
+   "hijriYear": 1448,
+   "month": 10
+  },
+  "startDate": "2002-03-16",
+  "startHijriYear": 1423,
+  "startMonth": 1,
+  "tabularDriftDays": 0
+ },
+ "note": "Cold-start seed: statutory public holidays and the official lunar month table. Descriptive occasions are downloaded from the online feed.",
+ "schemaVersion": 6,
+ "schoolPrograms": [],
+ "sources": [
+  {
+   "checkedAt": "2026-10-11",
+   "id": "legacy-v5",
+   "kind": "legacy",
+   "tier": "open-source",
+   "titleEn": "MarbleDo v5; source review pending",
+   "titleFa": "فهرست پیشین ماربل‌دو؛ هنوز بازبینی منبع نشده",
+   "url": "https://github.com/marble098/MarbleDo/blob/28da4f9463bbad4b08e207150de20fe85fde8238/feature/calendar/src/main/assets/calendar/holidays-fa.json"
+  },
+  {
+   "checkedAt": "2026-10-11",
+   "id": "pc-1405",
+   "kind": "curated",
+   "tier": "open-source",
+   "titleEn": "Persian Calendar CC0 dataset, citing the University of Tehran 1405 calendar",
+   "titleFa": "تقویم فارسی؛ دادهٔ CC0 با ارجاع به تقویم ۱۴۰۵ دانشگاه تهران",
+   "url": "https://github.com/persian-calendar/events/blob/3bfbcc5b667765691784b55b58d8a385217d96d9/events.json"
+  },
+  {
+   "checkedAt": "2026-10-18",
+   "id": "ir-health-tech",
+   "kind": "curated",
+   "tier": "open-source",
+   "titleEn": "Iranian health and technology observances",
+   "titleFa": "مناسبت‌های سلامت و فناوری ایران",
+   "url": "https://behdasht.gov.ir/"
+  },
+  {
+   "checkedAt": "2026-11-07",
+   "id": "bahesab",
+   "kind": "report",
+   "tier": "unofficial",
+   "titleEn": "bahesab.ir 1405 calendar",
+   "titleFa": "تقویم ۱۴۰۵ باحساب",
+   "url": "https://www.bahesab.ir/time/1405/"
+  },
+  {
+   "checkedAt": "2026-11-07",
+   "id": "chetor-calendar",
+   "kind": "report",
+   "tier": "unofficial",
+   "titleEn": "chetor.com 1405 calendar",
+   "titleFa": "تقویم ۱۴۰۵ چطور",
+   "url": "https://www.chetor.com/333113-%D8%AA%D9%82%D9%88%DB%8C%D9%85-%D8%B3%D8%A7%D9%84%D8%A7%D9%86%D9%87/"
+  },
+  {
+   "checkedAt": "2026-11-07",
+   "id": "pc-events",
+   "kind": "community-rules",
+   "tier": "open-source",
+   "titleEn": "persian-calendar/events (CC0)",
+   "titleFa": "مجموعه رویدادهای تقویم فارسی (CC0)",
+   "url": "https://api.github.com/repos/persian-calendar/events/contents/events.json?ref=3bfbcc5b667765691784b55b58d8a385217d96d9"
+  },
+  {
+   "checkedAt": "2026-11-07",
+   "id": "iran-holidays-json",
+   "kind": "community-rules",
+   "tier": "open-source",
+   "titleEn": "IranHollidaysJSON (annual JSON)",
+   "titleFa": "تعطیلات رسمی ایران (JSON سالانه)",
+   "url": "https://api.github.com/repos/iyazdanicharati/IranHollidaysJSON/contents/1405.json?ref=main"
+  },
+  {
+   "checkedAt": "2026-11-07",
+   "id": "shamsi-holidays",
+   "kind": "community-rules",
+   "tier": "open-source",
+   "titleEn": "shamsi-holidays - automated daily scrape",
+   "titleFa": "shamsi-holidays ـ گردآوری خودکار روزانه",
+   "url": "https://api.github.com/repos/hasan-ahani/shamsi-holidays/contents/holidays/1405.json?ref=master"
+  },
+  {
+   "checkedAt": "2026-11-07",
+   "id": "jalali-calendar-year",
+   "kind": "community-rules",
+   "tier": "open-source",
+   "titleEn": "jalali_calendar - JSON day data",
+   "titleFa": "jalali_calendar ـ دادهٔ روزانه JSON",
+   "url": "https://api.github.com/repos/alirezadesh/jalali_calendar/contents/1405_data.json?ref=main"
+  },
+  {
+   "checkedAt": "2026-11-07",
+   "id": "pholiday",
+   "kind": "community-rules",
+   "tier": "open-source",
+   "titleEn": "pholiday (MIT)",
+   "titleFa": "pholiday (MIT)",
+   "url": "https://api.github.com/repos/shkarimpour/pholiday/contents/events/lunar.js?ref=master"
+  }
+ ],
+ "updatedAt": "2026-11-07",
+ "yearly": {}
+}

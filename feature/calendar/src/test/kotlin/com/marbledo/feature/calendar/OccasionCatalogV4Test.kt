@@ -32,7 +32,11 @@ class OccasionCatalogV4Test {
         assertEquals("5", old.dataVersion)
         assertEquals(726, old.occasions.size)
         assertFalse(CatalogUpdatePolicy.accepts(old, catalog))
-        assertTrue(OccasionRepository.CATALOG_URLS.all { it.contains("occasions-v5-fa.json") })
+        // The app downloads the aggregated online feed from several mirrors and also reads the
+        // independent community holiday lists directly; the bundle is only a cold-start seed.
+        assertTrue(OccasionRepository.CATALOG_URLS.all { it.contains("data/occasions/occasions-live.json") })
+        assertTrue(OccasionRepository.CATALOG_URLS.size >= 4, "Four independent delivery paths")
+        assertTrue(OccasionFeeds.holidayDayFeeds(1405).size >= 3, "The cross-check reads the community lists directly")
     }
 
     @Test fun `old cache schema remains readable but cannot supersede this richer bundle`() {

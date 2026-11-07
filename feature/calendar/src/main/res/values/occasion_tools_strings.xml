@@ -2,6 +2,9 @@
     <string name="calendar_category_educational">School &amp; education</string>
     <string name="catalog_lunar_caveat">Lunar dates are calculated with the Islamic civil calendar and your ±2-day adjustment. They can differ from moon-sighting announcements; verify important religious dates with the relevant authority.</string>
     <string name="catalog_references">Research references</string>
+    <string name="catalog_tier_official">Official</string>
+    <string name="catalog_tier_unofficial">Independent publication</string>
+    <string name="catalog_tier_open_source">Open source</string>
     <string name="catalog_kind_curated">Curated secondary dataset</string>
     <string name="catalog_kind_traditional">Cultural or religious tradition</string>
     <string name="catalog_kind_institution">Institutional publication</string>

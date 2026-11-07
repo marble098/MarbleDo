@@ -9,7 +9,7 @@ MarbleDo is an offline-first Android task and calendar app. The interface defaul
 ## What is implemented
 
 - **Tasks:** Compose UI, smart Persian/English quick-add parsing, guided multi-step voice task creation (category, title, Persian date, time, and priority), search, filters, pinning, sorting, user-created categories, priorities, checklists, tags, archive/completion, recurring tasks, undo, and task reminders. Quick-add and the task editor share one date and time picker (any date, any time, or all-day; Persian, Gregorian, or Islamic calendar) with one-tap presets. The editor also adds a checklist, a validated link, a file attachment, focus minutes, and a colour. Overdue tasks stay on Today until they are done, and archived tasks can be restored.
-- **Calendar:** Persian/Gregorian/Islamic date display, month/agenda/occasions/year views behind one segmented switch, a browsable occasion list that groups the year into months with jump chips, opens on “from today”, shows ten rows per month before offering the rest, and keeps every filter, the search and the ICS export in one toolbar, plus Saturday-first preference, a source-labelled catalog of 991 recurring national, official, Iranian, Islamic, personal and world occasions across all months (not an exhaustive official calendar), and a user-adjustable lunar offset. Catalog downloads fail over across four GitHub/CDN delivery paths; the bundled and cached catalogs remain available offline. Daily occasion alerts are separate from an optional quiet, ongoing notification (on by default) showing all three dates, today's occasions, and the next dated task, with a smart status-bar icon whose day number is fitted by the ink of the digits themselves and drawn at the exact pixel size the status bar renders, so the number fills the icon without being stretched out of shape. Six looks are available — a plain number, a frame, a rounded tile and a disc with the number punched out of them, the classic calendar page, or the plain vector icon — and in every one the day's mood (holiday, religious occasion, occasion, or tasks due) is a single small mark: a flag, a crescent, a sparkle or three dots.
+- **Calendar:** Persian/Gregorian/Islamic date display, month/agenda/occasions/year views behind one segmented switch, a browsable occasion list that groups the year into months with jump chips, opens on “from today”, shows ten rows per month before offering the rest, and keeps every filter, the search and the ICS export in one toolbar, plus Saturday-first preference, a source-labelled catalog of 991 recurring national, official, Iranian, Islamic, personal and world occasions across all months (not an exhaustive official calendar), and a user-adjustable lunar offset. Lunar dates are resolved from the **official Iranian month table**, not from the arithmetic `islamic-civil` calendar, so 3 Jumada al-Thani 1448 is 22 Aban 1405 (a Friday) and 23 Aban is not a day off. Occasions are fetched online from official, unofficial and open-source sources, fail over across four delivery paths, are cross-checked against independent community lists, and the app ships only a small cold-start seed instead of an occasion database. Daily occasion alerts are separate from an optional quiet, ongoing notification (on by default) showing all three dates, today's occasions, and the next dated task, with a smart status-bar icon whose day number is fitted by the ink of the digits themselves and drawn at the exact pixel size the status bar renders, so the number fills the icon without being stretched out of shape. Six looks are available — a plain number, a frame, a rounded tile and a disc with the number punched out of them, the classic calendar page, or the plain vector icon — and in every one the day's mood (holiday, religious occasion, occasion, or tasks due) is a single small mark: a flag, a crescent, a sparkle or three dots.
 - **Today (dashboard):** greeting, the three dates, today's counters and one progress bar in a single header; the task list directly under it with a compact toolbar (search, category filter and sort open on demand), then the live countdown, one occasions card that switches between today and the occasions ahead, and the seven-day workload card.
 - **Habits:** a habit cabinet with a build drawer and a quit drawer, per-habit themes, emoji icons, tick or counted tracking, daily reminders, a heatmap, streaks, milestones and coaching insights, plus a Glance widget for ticking habits from the home screen. The cabinet shows today's ring and score in one headline card, keeps the look switcher and the widget shortcut there, and lists habits as flat rows inside their drawer.
 - **Occasion planning:** star the occasions that matter and they stay pinned in the year list, appear as “my occasions” on the dashboard with a day counter, and can send a preparation reminder 1–7 days ahead. Every occasion also opens a one-tap plan sheet: a task on the occasion day, a preparation task a few days earlier, or a live countdown.
@@ -23,7 +23,7 @@ MarbleDo is an offline-first Android task and calendar app. The interface defaul
 
 ## Five new smart-planning capabilities
 
-1. **Culture packs:** independently select Iranian/Islamic, international, Western, North American, European and Australian/New Zealand occasions. The new schema-5 feed has **991 recurring entries**, including 131 new Western/regional events, yearly Easter/Advent/Thanksgiving rules, regional variants and corrected floating world days. Old feeds and stable favorites are preserved; foreign occasions are not Iranian public closures.
+1. **Culture packs:** independently select Iranian/Islamic, international, Western, North American, European and Australian/New Zealand occasions. The published schema-6 feed has **1,131 recurring entries**, including yearly Easter/Advent/Thanksgiving rules, regional variants and corrected floating world days. Old feeds and stable favorites are preserved; foreign occasions are not Iranian public closures.
 2. **Occasion radar:** explainable, offline recommendations for the next 7/30/90 days, favorites first, with preparation lead suggestions and recognition of already-planned occasions.
 3. **Preparation timelines:** review and edit four independent stages, optionally move preparation around Iranian non-working days, skip past/duplicate stages, save the selected plan atomically and undo it together.
 4. **Free-time finder:** inspect estimated focus-block overlaps, choose a duration and work window, and open a fitting slot as an editable draft. Saved deadlines are treated as the end of a focus block; nothing is automatically rescheduled.
@@ -41,7 +41,7 @@ Open **Home → Find free time / Weekly review / Occasion radar**, **an occasion
 - Next-working-day suggestions that respect all catalog public holidays and optional Thursday closure.
 - A seven-day due-date workload view with completed/open counts, overdue and unscheduled backlogs.
 
-References, update-delivery details, corrections and limitations: [Occasion sources](docs/OCCASION_SOURCES.md).
+References, the official lunar table, the aggregation pipeline, update delivery and limitations: [Occasion sources](docs/OCCASION_SOURCES.md). Per-occasion research notes from earlier releases: [Occasion data history](docs/OCCASION_DATA_HISTORY.md).
 
 ## Build and test
 
@@ -67,6 +67,27 @@ The repository's `gradlew` bootstraps the Gradle distribution named in `gradle/w
 ```
 
 The debug APK is written to `app/build/outputs/apk/debug/`. Room schema exports are configured under `core/data/schemas/`.
+
+### Occasion data
+
+```bash
+# Rebuild the published feed from the recorded fixtures (deterministic; no network).
+python3 scripts/aggregate_occasions.py --offline --write
+
+# Fail when the committed feed no longer matches what the sources produce (used by CI).
+python3 scripts/aggregate_occasions.py --offline --verify
+
+# Fetch the real sources and publish a new feed.
+python3 scripts/aggregate_occasions.py --write
+
+# Validate schema, the official lunar table and the date regressions.
+python3 scripts/check_calendar.py
+python3 -m unittest discover -s scripts/tests -v
+```
+
+`calendar_sources/registry.json` lists every source with its tier and adapter. See
+[`docs/OCCASION_SOURCES.md`](docs/OCCASION_SOURCES.md) for the consensus rules, the official lunar
+month table and the cross-check reported in Settings.
 
 ### Version catalog
 
@@ -125,7 +146,9 @@ Backups can be exported through Android's Storage Access Framework to a user-sel
 
 ## Known scope limits
 
-- The bundled catalog is the offline baseline with 859 recurring occasions across all three calendars. Evidence labels distinguish referenced, traditional, guidance and individually unverified legacy records; month coverage does not establish completeness. Network refresh downloads the repository-maintained catalog through four failover delivery paths; those mirrors contain the same data and are not independent government feeds. Religious/lunar dates are calculated with Android ICU and can differ by a day from local authority announcements; the ±2-day adjustment is provided for that reason.
+- The app ships only a **cold-start seed** (33 statutory holidays plus the official lunar month table, 24 KB). The descriptive catalog is downloaded: CI merges 22 registered sources (7 official, 7 unofficial, 8 open-source) into `data/occasions/occasions-live.json`, and the app reads it through four failover delivery paths while also reading three independent community day lists directly for cross-checking. Those community lists are frequently one day off for lunar occasions and are never used to move a date.
+- Lunar dates resolve against the official Iranian month table (`lunarAnchors`, 1423–1448 AH). The arithmetic calendar is only a fallback for months the official table does not cover yet, and those months are labelled as estimates. The ±2-day adjustment remains available for users who follow a different local announcement.
+- Closures are published conservatively: an official-basis record, an official-tier source, or two independent sources that agree on the same calendar day. One community calendar never creates a holiday, and every disagreement is listed in `data/occasions/conflicts.json`.
 - Calendar-category preferences control which catalog categories are shown and which may appear in alerts. The catalog is curated, not a real-time official government feed; Drive sync is not included.
 - Exact delivery depends on Android permissions and vendor battery policy. Without exact-alarm access, Android may defer reminders.
 - Snoozed reminders and reminders held by quiet hours are kept as alarms. If the device reboots before they fire, they are not restored.

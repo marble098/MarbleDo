@@ -32,8 +32,15 @@ internal fun ReferenceLink(reference: CatalogReference, languageTag: String) {
             "legacy" -> R.string.catalog_kind_legacy
             else -> R.string.catalog_kind_report
         }
+        val tier = when (reference.tier) {
+            "official" -> R.string.catalog_tier_official
+            "unofficial" -> R.string.catalog_tier_unofficial
+            "open-source" -> R.string.catalog_tier_open_source
+            else -> null
+        }
+        val label = if (tier == null) stringResource(kind) else "${stringResource(tier)} · ${stringResource(kind)}"
         Text(
-            TextNormalizer.formatDigits("${stringResource(kind)} · ${stringResource(R.string.catalog_reference_checked, reference.checkedAt)}", LocalNumeralMode.current),
+            TextNormalizer.formatDigits("$label · ${stringResource(R.string.catalog_reference_checked, reference.checkedAt)}", LocalNumeralMode.current),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
