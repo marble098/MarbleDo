@@ -407,6 +407,56 @@ object HabitAnalytics {
         return days
     }
 
+    /**
+     * The last [days] days of the whole cabinet as one cell per day, oldest first and ending on
+     * today. Each cell judges every habit that was scheduled that day:
+     *
+     *  * every scheduled habit met its target (or the day stayed clean for a quit habit) → DONE
+     *  * some did → PARTIAL
+     *  * none did → MISSED, or TODAY while today is still open
+     *  * nothing was scheduled at all → OFF
+     *
+     * This is what the cabinet shows above the drawers: one glance at the week instead of opening
+     * each habit to see the same seven days again.
+     */
+    fun weekOverview(
+        habits: List<Habit>,
+        entries: List<HabitEntry>,
+        today: LocalDate = LocalDate.now(),
+        days: Int = 7,
+    ): List<HabitDay> {
+        if (habits.isEmpty()) return emptyList()
+        val prepared = habits.map { habit ->
+            val own = entries.filter { it.habitId == habit.id }
+            Triple(habit, entriesByDate(own), trackingStart(habit, own))
+        }
+        return (0 until days).map { index ->
+            val date = today.minusDays((days - 1 - index).toLong())
+            var scheduled = 0
+            var met = 0
+            var started = 0
+            var value = 0
+            prepared.forEach { (habit, values, start) ->
+                if (date.isBefore(start) || !habit.schedule.isScheduled(date)) return@forEach
+                scheduled++
+                val dayValue = valueOn(values, date)
+                value += dayValue
+                when {
+                    isDone(habit, dayValue) -> met++
+                    dayValue > 0 -> started++
+                }
+            }
+            val state = when {
+                scheduled == 0 -> HabitDayState.OFF
+                met == scheduled -> HabitDayState.DONE
+                met > 0 || started > 0 -> HabitDayState.PARTIAL
+                date.isBefore(today) -> HabitDayState.MISSED
+                else -> HabitDayState.TODAY
+            }
+            HabitDay(date, value, state)
+        }
+    }
+
     /** Weekly completion rates, oldest first, for the trend chart. */
     fun weeklySeries(
         habit: Habit,

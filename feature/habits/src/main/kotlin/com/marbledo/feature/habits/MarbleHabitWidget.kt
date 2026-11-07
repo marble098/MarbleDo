@@ -121,7 +121,8 @@ class MarbleHabitWidget : GlanceAppWidget() {
                                 Column(modifier = GlanceModifier.defaultWeight()) {
                                     Text(
                                         text = widgetContext.getString(R.string.habit_widget_name),
-                                        style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                                        modifier = GlanceModifier.fillMaxWidth(),
+                                        style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
                                         maxLines = 1,
                                     )
                                     Text(
@@ -145,7 +146,7 @@ class MarbleHabitWidget : GlanceAppWidget() {
                                                 R.string.habit_widget_streak,
                                                 TextNormalizer.formatDigits(bestStreak.toString(), numeral),
                                             ),
-                                            style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                            style = TextStyle(color = ColorProvider(palette.accent), fontSize = 10.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
                                             maxLines = 1,
                                         )
                                     }
@@ -164,12 +165,14 @@ class MarbleHabitWidget : GlanceAppWidget() {
                         ) {
                             Text(
                                 text = widgetContext.getString(R.string.habit_widget_empty),
+                                modifier = GlanceModifier.fillMaxWidth(),
                                 style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
                                 maxLines = 1,
                             )
                             Spacer(GlanceModifier.height(3.dp))
                             Text(
                                 text = widgetContext.getString(R.string.habit_widget_empty_body),
+                                modifier = GlanceModifier.fillMaxWidth(),
                                 style = TextStyle(color = ColorProvider(palette.muted), fontSize = 11.sp, textAlign = bodyAlignment),
                                 maxLines = 2,
                             )
@@ -190,6 +193,7 @@ class MarbleHabitWidget : GlanceAppWidget() {
                         }
                         if (hidden > 0) {
                             Text(
+                                modifier = GlanceModifier.fillMaxWidth(),
                                 text = widgetContext.getString(
                                     R.string.habit_widget_progress,
                                     TextNormalizer.formatDigits(todays.size.toString(), numeral),
@@ -235,7 +239,10 @@ class MarbleHabitWidget : GlanceAppWidget() {
                             .cornerRadius(11.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(habit.icon, style = TextStyle(fontSize = 14.sp))
+                        Text(
+                            text = habit.icon,
+                            style = TextStyle(fontSize = 14.sp, textAlign = TextAlign.Center),
+                        )
                     }
                 },
                 { Spacer(GlanceModifier.width(8.dp)) },
@@ -243,13 +250,15 @@ class MarbleHabitWidget : GlanceAppWidget() {
                     Column(modifier = GlanceModifier.defaultWeight()) {
                         Text(
                             text = habit.name,
+                            modifier = GlanceModifier.fillMaxWidth(),
                             style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 12.sp, fontWeight = FontWeight.Medium, textAlign = align),
                             maxLines = 1,
                         )
                         if (habit.tracking == com.marbledo.domain.model.HabitTracking.COUNT && !isQuit) {
                             Text(
                                 text = TextNormalizer.formatDigits("$value/${habit.dailyTarget}", numeral),
-                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 9.sp),
+                                modifier = GlanceModifier.fillMaxWidth(),
+                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 9.sp, textAlign = align),
                                 maxLines = 1,
                             )
                         }
@@ -279,6 +288,7 @@ class MarbleHabitWidget : GlanceAppWidget() {
                                 color = ColorProvider(if (done) palette.backgroundTop else palette.onCard),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
                             ),
                         )
                     }

@@ -168,6 +168,16 @@ private enum class TaskGroup(val labelRes: Int) {
 
 private data class GroupedTasks(val group: TaskGroup, val tasks: List<Task>)
 
+/**
+ * The three stops of the home page. The screen used to be one endless stack of eleven cards;
+ * now each stop is short and has one job, so the list the user came for starts immediately.
+ */
+private enum class DashboardTab(val labelRes: Int) {
+    TODAY(R.string.dash_tab_today),
+    WEEK(R.string.dash_tab_week),
+    OCCASIONS(R.string.dash_tab_occasions),
+}
+
 private data class DashboardOccasion(
     val title: String,
     val category: OccasionCategory,
@@ -180,12 +190,19 @@ private const val MAX_DASHBOARD_OCCASIONS = 3
 private const val MAX_DASHBOARD_UPCOMING = 4
 
 /**
- * A glanceable daily planner: the date and the day's workload first, the task list right below it,
- * and the calmer context — live countdown, occasions, weekly load — further down the page.
+ * The home page is three short stops, not one endless stack of cards.
  *
- * Everything the screen could do before is still here; what changed is the order and the weight of
- * each block. Search, category filter and sort moved into one compact toolbar above the task list
- * instead of stacking three full-width controls on top of the tasks.
+ * A compact hero carries the greeting, the three dates and the day's counters, and it stays put
+ * above the stops so the date and the progress ring are always one glance away. Under it, one
+ * segmented row picks the stop:
+ *
+ *  * **Today** — the task toolbar and the task list, then the live countdown. Tasks are the reason
+ *    the screen exists, so they start immediately and they keep the space.
+ *  * **Week** — how the coming days are loaded, plus the day agenda.
+ *  * **Occasions** — today's occasions, the ones ahead, and the occasion radar.
+ *
+ * Nothing was removed. What changed is that the three occasion surfaces no longer sit on top of
+ * each other on one screen, and the weekly load no longer pushes the task list below the fold.
  */
 @Composable
 fun DashboardScreen(
@@ -235,6 +252,10 @@ fun DashboardScreen(
     var showDayAgenda by rememberSaveable { mutableStateOf(false) }
     var showWeeklyReview by rememberSaveable { mutableStateOf(false) }
     var radarPlan by remember { mutableStateOf<OccasionRecommendation?>(null) }
+    // Which stop of the home page is showing. Stored as a name so the value survives process
+    // death without leaning on enum serialisation.
+    var selectedTabName by rememberSaveable { mutableStateOf(DashboardTab.TODAY.name) }
+    val selectedTab = DashboardTab.entries.firstOrNull { it.name == selectedTabName } ?: DashboardTab.TODAY
 
     LaunchedEffect(initialShareText, initialOpenAdd) {
         if (initialOpenAdd || !initialShareText.isNullOrBlank()) {
@@ -388,9 +409,6 @@ fun DashboardScreen(
                     todayOpen = todayOpen,
                     completedCount = state.completedCount,
                     openCount = activeTasks.size,
-                    todayOccasions = todayOccasions.map {
-                        DashboardOccasion(it.title(settings.languageTag), it.category, it.isHoliday)
-                    },
                     todayEpoch = todayEpoch,
                     currentHour = now.hour,
                     settings = settings,
@@ -414,261 +432,385 @@ fun DashboardScreen(
                 )
             }
 
-            // Tasks are the reason the screen exists, so they come first and they keep the space.
+            // Three short stops instead of one endless stack: the tasks the user came for start
+            // right under this row, and the calmer context lives one tap away on its own stop.
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    SectionHeader(stringResource(R.string.dash_tasks), state.visibleTasks.size, Modifier.weight(1f))
-                    DashboardModeSwitcher(
-                        mode = settings.dashboardViewMode,
-                        onSelect = { mode ->
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onViewModeChange(mode)
-                        },
-                    )
-                }
+                DashboardTabRow(
+                    selected = selectedTab,
+                    onSelect = { tab ->
+                        if (tab != selectedTab) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        selectedTabName = tab.name
+                    },
+                )
             }
-            if (searchOpen) {
-                item {
-                    OutlinedTextField(
-                        value = state.query,
-                        onValueChange = viewModel::setQuery,
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.dash_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (state.query.isNotBlank()) {
-                                IconButton(onClick = { viewModel.setQuery("") }) {
-                                    Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.dash_clear_search))
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                    )
-                }
-            }
-            if (categoriesOpen && categoryChoices.isNotEmpty()) {
-                item {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
-                        contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
-                    ) {
-                        item {
-                            FilterChip(
-                                selected = state.selectedCategory == null,
-                                onClick = { viewModel.setCategory(null) },
-                                label = { Text(stringResource(R.string.dash_category_all)) },
-                            )
-                        }
-                        items(categoryChoices) { name ->
-                            FilterChip(
-                                selected = state.selectedCategory == name,
-                                onClick = { viewModel.setCategory(name) },
-                                label = { Text(name, maxLines = 1) },
-                            )
-                        }
-                    }
-                }
-            }
-            // The quick-filter chips share their row with the search/filter/sort toolbar. The title
-            // row above keeps only the section title and the view switch, so all six actions keep
-            // full-size touch targets on narrow screens (docs/UI_COUNCIL_REVIEW.md, D-1/D-2).
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
-                ) {
-                    LazyRow(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
-                        contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
-                    ) {
-                        items(TaskFilter.entries, key = { it.name }) { filter ->
-                            FilterChip(
-                                selected = state.filter == filter,
-                                onClick = { viewModel.setFilter(filter) },
-                                label = { Text(filterLabel(filter)) },
-                            )
-                        }
-                    }
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { searchOpen = !searchOpen; if (!searchOpen) viewModel.setQuery("") }) {
-                                Icon(
-                                    Icons.Outlined.Search,
-                                    contentDescription = stringResource(R.string.dash_search),
-                                    tint = if (searchOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-                            IconButton(onClick = { categoriesOpen = !categoriesOpen }) {
-                                Icon(
-                                    Icons.Outlined.FilterAlt,
-                                    contentDescription = stringResource(R.string.dash_filters),
-                                    tint = if (categoriesOpen || state.selectedCategory != null) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-                            Box {
-                                IconButton(onClick = { sortMenuExpanded = true }) {
-                                    Icon(
-                                        Icons.Outlined.Sort,
-                                        contentDescription = stringResource(R.string.dash_sort_menu),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                }
-                                DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
-                                    TaskSort.entries.forEach { sort ->
-                                        DropdownMenuItem(
-                                            text = { Text(sortLabel(sort)) },
-                                            trailingIcon = {
-                                                if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
-                                            },
-                                            onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if (state.selectedIds.isNotEmpty()) {
-                item {
-                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
+
+            when (selectedTab) {
+                DashboardTab.TODAY -> {
+                    // Tasks are the reason the screen exists, so they come first and they keep the space.
+                    item {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Text(
-                                TextNormalizer.formatDigits(stringResource(R.string.dash_selected_count, state.selectedIds.size), numeralMode),
-                                style = MarbleTextStyles.metaLabel,
-                                modifier = Modifier.weight(1f),
-                            )
-                            TextButton(onClick = { viewModel.completeSelected() }) { Text(stringResource(R.string.dash_complete_selected)) }
-                            TextButton(onClick = { viewModel.clearSelection() }) { Text(stringResource(R.string.dash_clear_selection)) }
-                        }
-                    }
-                }
-            }
-
-            if (groups.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    ) {
-                        Column(
-                            Modifier.fillMaxWidth().padding(MarbleSpacing.xl),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Text(stringResource(R.string.dash_empty_title), style = MarbleTextStyles.itemTitle)
-                            Text(
-                                stringResource(R.string.dash_empty_body),
-                                style = MarbleTextStyles.bodyPrimary,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
+                            SectionHeader(stringResource(R.string.dash_tasks), state.visibleTasks.size, Modifier.weight(1f))
+                            DashboardModeSwitcher(
+                                mode = settings.dashboardViewMode,
+                                onSelect = { mode ->
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onViewModeChange(mode)
+                                },
                             )
                         }
                     }
-                }
-            } else {
-                when (settings.dashboardViewMode) {
-                    DashboardViewMode.GRID -> {
-                        val gridRows = state.visibleTasks.chunked(2)
-                        items(gridRows, key = { row -> row.joinToString("-") { it.id.toString() } }) { row ->
-                            Row(
+                    if (searchOpen) {
+                        item {
+                            OutlinedTextField(
+                                value = state.query,
+                                onValueChange = viewModel::setQuery,
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                placeholder = { Text(stringResource(R.string.dash_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                                trailingIcon = {
+                                    if (state.query.isNotBlank()) {
+                                        IconButton(onClick = { viewModel.setQuery("") }) {
+                                            Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.dash_clear_search))
+                                        }
+                                    }
+                                },
+                                singleLine = true,
+                                shape = MaterialTheme.shapes.large,
+                            )
+                        }
+                    }
+                    if (categoriesOpen && categoryChoices.isNotEmpty()) {
+                        item {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                                contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
                             ) {
-                                row.forEach { task ->
-                                    TaskGridCard(
-                                        task = task,
-                                        selected = task.id in state.selectedIds,
-                                        onToggle = {
-                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            viewModel.toggleCompleted(task)
-                                        },
-                                        onEdit = { editingTask = task },
-                                        onLongPress = { viewModel.toggleSelection(task.id) },
-                                        modifier = Modifier.weight(1f),
+                                item {
+                                    FilterChip(
+                                        selected = state.selectedCategory == null,
+                                        onClick = { viewModel.setCategory(null) },
+                                        label = { Text(stringResource(R.string.dash_category_all)) },
                                     )
                                 }
-                                if (row.size == 1) {
-                                    Spacer(Modifier.weight(1f))
+                                items(categoryChoices) { name ->
+                                    FilterChip(
+                                        selected = state.selectedCategory == name,
+                                        onClick = { viewModel.setCategory(name) },
+                                        label = { Text(name, maxLines = 1) },
+                                    )
                                 }
                             }
                         }
                     }
-                    else -> {
-                        groups.forEach { grouped ->
-                            val isCollapsed = grouped.group.name in collapsedTaskGroups.split(',').filter(String::isNotBlank)
-                            item(key = "header-${grouped.group.name}") {
-                                TaskGroupHeader(
-                                    group = grouped.group,
-                                    count = grouped.tasks.size,
-                                    expanded = !isCollapsed,
-                                    onClick = {
-                                        val next = collapsedTaskGroups.split(',').filter(String::isNotBlank).toMutableSet()
-                                        if (!next.add(grouped.group.name)) next.remove(grouped.group.name)
-                                        collapsedTaskGroups = next.joinToString(",")
-                                    },
-                                )
+                    // The quick-filter chips share their row with the search/filter/sort toolbar. The title
+                    // row above keeps only the section title and the view switch, so all six actions keep
+                    // full-size touch targets on narrow screens (docs/UI_COUNCIL_REVIEW.md, D-1/D-2).
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+                        ) {
+                            LazyRow(
+                                modifier = Modifier.weight(1f),
+                                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                                contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
+                            ) {
+                                items(TaskFilter.entries, key = { it.name }) { filter ->
+                                    FilterChip(
+                                        selected = state.filter == filter,
+                                        onClick = { viewModel.setFilter(filter) },
+                                        label = { Text(filterLabel(filter)) },
+                                    )
+                                }
                             }
-                            if (!isCollapsed) {
-                                if (settings.dashboardViewMode == DashboardViewMode.LIST) {
-                                    items(grouped.tasks, key = { it.id }) { task ->
-                                        TaskRowCard(
-                                            task = task,
-                                            selected = task.id in state.selectedIds,
-                                            onToggle = {
-                                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                viewModel.toggleCompleted(task)
-                                            },
-                                            onOpenCountdown = { onOpenFocus(task) },
-                                            onEdit = { editingTask = task },
-                                            onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
-                                            onDelete = { viewModel.delete(task) },
-                                            onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
-                                            onToggleCountdown = {
-                                                viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
-                                            },
-                                            onLongPress = { viewModel.toggleSelection(task.id) },
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = { searchOpen = !searchOpen; if (!searchOpen) viewModel.setQuery("") }) {
+                                        Icon(
+                                            Icons.Outlined.Search,
+                                            contentDescription = stringResource(R.string.dash_search),
+                                            tint = if (searchOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp),
                                         )
                                     }
-                                } else {
-                                    grouped.tasks.forEachIndexed { index, task ->
-                                        item(key = "timeline-${task.id}") {
-                                            TaskTimelineItem(
+                                    IconButton(onClick = { categoriesOpen = !categoriesOpen }) {
+                                        Icon(
+                                            Icons.Outlined.FilterAlt,
+                                            contentDescription = stringResource(R.string.dash_filters),
+                                            tint = if (categoriesOpen || state.selectedCategory != null) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    }
+                                    Box {
+                                        IconButton(onClick = { sortMenuExpanded = true }) {
+                                            Icon(
+                                                Icons.Outlined.Sort,
+                                                contentDescription = stringResource(R.string.dash_sort_menu),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(20.dp),
+                                            )
+                                        }
+                                        DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                                            TaskSort.entries.forEach { sort ->
+                                                DropdownMenuItem(
+                                                    text = { Text(sortLabel(sort)) },
+                                                    trailingIcon = {
+                                                        if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
+                                                    },
+                                                    onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (state.selectedIds.isNotEmpty()) {
+                        item {
+                            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Text(
+                                        TextNormalizer.formatDigits(stringResource(R.string.dash_selected_count, state.selectedIds.size), numeralMode),
+                                        style = MarbleTextStyles.metaLabel,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    TextButton(onClick = { viewModel.completeSelected() }) { Text(stringResource(R.string.dash_complete_selected)) }
+                                    TextButton(onClick = { viewModel.clearSelection() }) { Text(stringResource(R.string.dash_clear_selection)) }
+                                }
+                            }
+                        }
+                    }
+
+                    if (groups.isEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            ) {
+                                Column(
+                                    Modifier.fillMaxWidth().padding(MarbleSpacing.xl),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Text(stringResource(R.string.dash_empty_title), style = MarbleTextStyles.itemTitle)
+                                    Text(
+                                        stringResource(R.string.dash_empty_body),
+                                        style = MarbleTextStyles.bodyPrimary,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        when (settings.dashboardViewMode) {
+                            DashboardViewMode.GRID -> {
+                                val gridRows = state.visibleTasks.chunked(2)
+                                items(gridRows, key = { row -> row.joinToString("-") { it.id.toString() } }) { row ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        row.forEach { task ->
+                                            TaskGridCard(
                                                 task = task,
-                                                isLast = index == grouped.tasks.lastIndex,
                                                 selected = task.id in state.selectedIds,
                                                 onToggle = {
                                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     viewModel.toggleCompleted(task)
                                                 },
-                                                onOpenCountdown = { onOpenFocus(task) },
                                                 onEdit = { editingTask = task },
-                                                onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
-                                                onDelete = { viewModel.delete(task) },
-                                                onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
-                                                onToggleCountdown = {
-                                                    viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
-                                                },
                                                 onLongPress = { viewModel.toggleSelection(task.id) },
+                                                modifier = Modifier.weight(1f),
+                                            )
+                                        }
+                                        if (row.size == 1) {
+                                            Spacer(Modifier.weight(1f))
+                                        }
+                                    }
+                                }
+                            }
+                            else -> {
+                                groups.forEach { grouped ->
+                                    val isCollapsed = grouped.group.name in collapsedTaskGroups.split(',').filter(String::isNotBlank)
+                                    item(key = "header-${grouped.group.name}") {
+                                        TaskGroupHeader(
+                                            group = grouped.group,
+                                            count = grouped.tasks.size,
+                                            expanded = !isCollapsed,
+                                            onClick = {
+                                                val next = collapsedTaskGroups.split(',').filter(String::isNotBlank).toMutableSet()
+                                                if (!next.add(grouped.group.name)) next.remove(grouped.group.name)
+                                                collapsedTaskGroups = next.joinToString(",")
+                                            },
+                                        )
+                                    }
+                                    if (!isCollapsed) {
+                                        if (settings.dashboardViewMode == DashboardViewMode.LIST) {
+                                            items(grouped.tasks, key = { it.id }) { task ->
+                                                TaskRowCard(
+                                                    task = task,
+                                                    selected = task.id in state.selectedIds,
+                                                    onToggle = {
+                                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                        viewModel.toggleCompleted(task)
+                                                    },
+                                                    onOpenCountdown = { onOpenFocus(task) },
+                                                    onEdit = { editingTask = task },
+                                                    onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
+                                                    onDelete = { viewModel.delete(task) },
+                                                    onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
+                                                    onToggleCountdown = {
+                                                        viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
+                                                    },
+                                                    onLongPress = { viewModel.toggleSelection(task.id) },
+                                                )
+                                            }
+                                        } else {
+                                            grouped.tasks.forEachIndexed { index, task ->
+                                                item(key = "timeline-${task.id}") {
+                                                    TaskTimelineItem(
+                                                        task = task,
+                                                        isLast = index == grouped.tasks.lastIndex,
+                                                        selected = task.id in state.selectedIds,
+                                                        onToggle = {
+                                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                            viewModel.toggleCompleted(task)
+                                                        },
+                                                        onOpenCountdown = { onOpenFocus(task) },
+                                                        onEdit = { editingTask = task },
+                                                        onArchive = { if (task.isArchived) viewModel.unarchive(task) else viewModel.archive(task) },
+                                                        onDelete = { viewModel.delete(task) },
+                                                        onPin = { viewModel.editTask(task.copy(isPinned = !task.isPinned)) },
+                                                        onToggleCountdown = {
+                                                            viewModel.editTask(task.copy(countdownEnabled = !task.countdownEnabled))
+                                                        },
+                                                        onLongPress = { viewModel.toggleSelection(task.id) },
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item { Spacer(Modifier.height(MarbleSpacing.md)) }
+
+                    item {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SectionHeader(stringResource(R.string.dash_countdown_hero), countdowns.size.takeIf { it > 0 }, Modifier.weight(1f))
+                            IconButton(onClick = { showCreateCountdown = true }) {
+                                Icon(
+                                    Icons.Outlined.Add,
+                                    contentDescription = stringResource(R.string.dash_create_countdown),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    }
+
+                    if (heroCountdown == null) {
+                        item {
+                            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Timer,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Text(
+                                        stringResource(R.string.dash_countdown_none_title),
+                                        style = MarbleTextStyles.itemTitle,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    TextButton(onClick = { showCreateCountdown = true }) {
+                                        Text(stringResource(R.string.dash_create_countdown))
+                                    }
+                                }
+                            }
+                        }
+                    } else when (settings.dashboardViewMode) {
+                        DashboardViewMode.GRID -> {
+                            // Every countdown becomes a card; the first one is just the most urgent stop.
+                            item {
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    countdowns.forEach { task ->
+                                        CountdownMiniCard(
+                                            title = task.title,
+                                            dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
+                                            themeId = task.countdownTheme,
+                                            onClick = { editingTask = task },
+                                            onLongPress = { onOpenFocus(task) },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        else -> {
+                            item {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                ) {
+                                    CountdownHero(
+                                        task = heroCountdown,
+                                        themeId = heroCountdown.countdownTheme.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme,
+                                        calendarLabel = { epoch -> localizedTaskDate(epoch) },
+                                        onOpenFocus = { onOpenFocus(heroCountdown) },
+                                        onDisableRequested = {
+                                            viewModel.editTask(heroCountdown.copy(countdownEnabled = false))
+                                        },
+                                        modifier = Modifier.padding(MarbleSpacing.lg),
+                                    )
+                                }
+                            }
+                            if (settings.dashboardViewMode == DashboardViewMode.TIMELINE) {
+                                item {
+                                    CountdownRoad(
+                                        countdowns = countdowns,
+                                        nowEpochMillis = nowEpoch,
+                                        onOpenFocus = onOpenFocus,
+                                        onEdit = { editingTask = it },
+                                    )
+                                }
+                            } else if (countdowns.size > 1) {
+                                item {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        SectionHeader(stringResource(R.string.dash_upcoming_countdowns), countdowns.size - 1)
+                                        countdowns.drop(1).forEach { task ->
+                                            CountdownMiniCard(
+                                                title = task.title,
+                                                dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
+                                                themeId = task.countdownTheme,
+                                                fillWidth = true,
+                                                onClick = { editingTask = task },
+                                                onLongPress = { onOpenFocus(task) },
                                             )
                                         }
                                     }
@@ -676,153 +818,92 @@ fun DashboardScreen(
                             }
                         }
                     }
-                }
-            }
 
-            item { Spacer(Modifier.height(MarbleSpacing.md)) }
-
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SectionHeader(stringResource(R.string.dash_countdown_hero), countdowns.size.takeIf { it > 0 }, Modifier.weight(1f))
-                    IconButton(onClick = { showCreateCountdown = true }) {
-                        Icon(
-                            Icons.Outlined.Add,
-                            contentDescription = stringResource(R.string.dash_create_countdown),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
                 }
-            }
 
-            if (heroCountdown == null) {
-                item {
-                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Icon(
-                                Icons.Outlined.Timer,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                            Text(
-                                stringResource(R.string.dash_countdown_none_title),
-                                style = MarbleTextStyles.itemTitle,
-                                modifier = Modifier.weight(1f),
-                            )
-                            TextButton(onClick = { showCreateCountdown = true }) {
-                                Text(stringResource(R.string.dash_create_countdown))
-                            }
-                        }
-                    }
-                }
-            } else when (settings.dashboardViewMode) {
-                DashboardViewMode.GRID -> {
-                    // Every countdown becomes a card; the first one is just the most urgent stop.
+                DashboardTab.WEEK -> {
+                    // The week is the second stop: how the coming days are loaded, plus the two
+                    // entry points that used to sit above the task list as loose pill buttons.
                     item {
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        WeeklyWorkloadCard(state.allTasks, now.toInstant(), zone, settings.languageTag,
+                            onOpenTask = { editingTask = it },
+                            // The week card owns the weekly-review entry point now; the dashboard
+                            // header no longer stacks two extra action pills on top of the tasks.
+                            onOpenReview = { showWeeklyReview = true },
+                            onAdd = { date ->
+                                sharedText = ""
+                                addDateIso = date.toString()
+                                plannedCountdown = false
+                                showQuickAdd = true
+                            })
+                    }
+                    item { Spacer(Modifier.height(MarbleSpacing.md)) }
+                    // One labelled row instead of a second pill button: the agenda is a place you
+                    // go, so the whole row is the target.
+                    item {
+                        Surface(
+                            shape = MaterialTheme.shapes.large,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(MaterialTheme.shapes.large)
+                                .clickable(
+                                    onClickLabel = stringResource(R.string.agenda_title),
+                                    role = Role.Button,
+                                    onClick = { showDayAgenda = true },
+                                ),
                         ) {
-                            countdowns.forEach { task ->
-                                CountdownMiniCard(
-                                    title = task.title,
-                                    dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
-                                    themeId = task.countdownTheme,
-                                    onClick = { editingTask = task },
-                                    onLongPress = { onOpenFocus(task) },
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+                            ) {
+                                Icon(
+                                    Icons.Outlined.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp),
                                 )
-                            }
-                        }
-                    }
-                }
-                else -> {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        ) {
-                            CountdownHero(
-                                task = heroCountdown,
-                                themeId = heroCountdown.countdownTheme.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme,
-                                calendarLabel = { epoch -> localizedTaskDate(epoch) },
-                                onOpenFocus = { onOpenFocus(heroCountdown) },
-                                onDisableRequested = {
-                                    viewModel.editTask(heroCountdown.copy(countdownEnabled = false))
-                                },
-                                modifier = Modifier.padding(MarbleSpacing.lg),
-                            )
-                        }
-                    }
-                    if (settings.dashboardViewMode == DashboardViewMode.TIMELINE) {
-                        item {
-                            CountdownRoad(
-                                countdowns = countdowns,
-                                nowEpochMillis = nowEpoch,
-                                onOpenFocus = onOpenFocus,
-                                onEdit = { editingTask = it },
-                            )
-                        }
-                    } else if (countdowns.size > 1) {
-                        item {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                SectionHeader(stringResource(R.string.dash_upcoming_countdowns), countdowns.size - 1)
-                                countdowns.drop(1).forEach { task ->
-                                    CountdownMiniCard(
-                                        title = task.title,
-                                        dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
-                                        themeId = task.countdownTheme,
-                                        fillWidth = true,
-                                        onClick = { editingTask = task },
-                                        onLongPress = { onOpenFocus(task) },
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(
+                                        stringResource(R.string.agenda_title),
+                                        style = MarbleTextStyles.itemTitle,
+                                        maxLines = 1,
+                                    )
+                                    Text(
+                                        PersianDateUtils.fullDateWithWeekday(todayEpoch, settings.languageTag, numeralMode),
+                                        style = MarbleTextStyles.microLabel,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            item { Spacer(Modifier.height(MarbleSpacing.md)) }
-
-            item {
-                OccasionsCard(
-                    todayOccasions = todayOccasions.map {
-                        DashboardOccasion(it.title(settings.languageTag), it.category, it.isHoliday)
-                    },
-                    upcoming = upcomingOccasions,
-                    favoritesOnly = favoriteIds.isNotEmpty(),
-                    languageTag = settings.languageTag,
-                    numeralMode = numeralMode,
-                    onOpenCalendar = onOpenCalendar,
-                )
-            }
-
-            item { Spacer(Modifier.height(MarbleSpacing.md)) }
-
-            item {
-                OccasionRadarCard(occasionIndex, listOf(todayPersian.year, todayPersian.year + 1), todayEpoch,
-                    state.allTasks, favoriteIds, settings.languageTag, onOpen = { radarPlan = it })
-            }
-
-            item { Spacer(Modifier.height(MarbleSpacing.md)) }
-
-            item {
-                WeeklyWorkloadCard(state.allTasks, now.toInstant(), zone, settings.languageTag,
-                    onOpenTask = { editingTask = it },
-                    // The week card owns the weekly-review entry point now; the dashboard header
-                    // no longer stacks two extra action pills on top of the task list.
-                    onOpenReview = { showWeeklyReview = true },
-                    onAdd = { date ->
-                        sharedText = ""
-                        addDateIso = date.toString()
-                        plannedCountdown = false
-                        showQuickAdd = true
-                    })
+                DashboardTab.OCCASIONS -> {
+                    // Everything occasion-shaped lives here now. The header no longer repeats
+                    // today's occasion above a card that lists today's occasions.
+                    item {
+                        OccasionsCard(
+                            todayOccasions = todayOccasions.map {
+                                DashboardOccasion(it.title(settings.languageTag), it.category, it.isHoliday)
+                            },
+                            upcoming = upcomingOccasions,
+                            favoritesOnly = favoriteIds.isNotEmpty(),
+                            languageTag = settings.languageTag,
+                            numeralMode = numeralMode,
+                            onOpenCalendar = onOpenCalendar,
+                        )
+                    }
+                    item { Spacer(Modifier.height(MarbleSpacing.md)) }
+                    item {
+                        OccasionRadarCard(occasionIndex, listOf(todayPersian.year, todayPersian.year + 1), todayEpoch,
+                            state.allTasks, favoriteIds, settings.languageTag, onOpen = { radarPlan = it })
+                    }
+                }
             }
         }
 
@@ -926,6 +1007,52 @@ fun DashboardScreen(
 }
 
 /**
+ * The three stops of the home page as one segmented row. The selected stop is a real tab for
+ * accessibility services, and every stop keeps a full-size touch target (docs/UI_COUNCIL_REVIEW.md).
+ */
+@Composable
+private fun DashboardTabRow(
+    selected: DashboardTab,
+    onSelect: (DashboardTab) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.extraLarge)
+            .background(colors.surfaceVariant.copy(alpha = 0.55f))
+            .padding(4.dp)
+            .selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        DashboardTab.entries.forEach { tab ->
+            val isSelected = tab == selected
+            val label = stringResource(tab.labelRes)
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .minimumInteractiveComponentSize()
+                    .clip(MaterialTheme.shapes.large)
+                    .selectable(selected = isSelected, role = Role.Tab) { onSelect(tab) },
+                shape = MaterialTheme.shapes.large,
+                color = if (isSelected) colors.surface else colors.surfaceVariant.copy(alpha = 0f),
+            ) {
+                Text(
+                    text = label,
+                    style = MarbleTextStyles.metaLabel,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) colors.primary else colors.onSurfaceVariant,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
  * Today at a glance: greeting, the three dates, the day's counters and one progress bar. The three
  * counters are plain columns on one row instead of three separate filled cards, and the weekday is
  * part of the date line rather than a chip of its own.
@@ -935,7 +1062,6 @@ private fun DailyHeaderCard(
     todayOpen: Int,
     completedCount: Int,
     openCount: Int,
-    todayOccasions: List<DashboardOccasion>,
     todayEpoch: Long,
     currentHour: Int,
     settings: AppSettings,
@@ -1101,71 +1227,6 @@ private fun DailyHeaderCard(
                                 numeralMode = numeralMode,
                                 modifier = Modifier.weight(1f),
                             )
-                        }
-                    }
-                }
-
-                if (todayOccasions.isNotEmpty()) {
-                    val primaryOccasion = todayOccasions.firstOrNull { it.isHoliday } ?: todayOccasions.first()
-                    val accent = if (primaryOccasion.isHoliday) colors.error else categoryColor(primaryOccasion.category)
-                    Surface(
-                        shape = MaterialTheme.shapes.large,
-                        color = colors.surface.copy(alpha = 0.72f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(MaterialTheme.shapes.large)
-                            .clickable(
-                                onClickLabel = stringResource(R.string.nav_calendar),
-                                role = Role.Button,
-                                onClick = onOpenCalendar,
-                            ),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
-                        ) {
-                            Box(
-                                Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(accent),
-                            )
-                            Text(
-                                text = primaryOccasion.title,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (primaryOccasion.isHoliday) colors.error else colors.onSurface,
-                                maxLines = 2,
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (primaryOccasion.isHoliday) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = colors.errorContainer,
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.dash_holiday_badge),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = colors.onErrorContainer,
-                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                                    )
-                                }
-                            }
-                            if (todayOccasions.size > 1) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = colors.primaryContainer,
-                                ) {
-                                    Text(
-                                        text = TextNormalizer.formatDigits("+${todayOccasions.size - 1}", numeralMode),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = colors.onPrimaryContainer,
-                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                                    )
-                                }
-                            }
                         }
                     }
                 }

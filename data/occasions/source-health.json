@@ -1,6 +1,6 @@
 {
  "addedFromSources": 15,
- "conflicts": 55,
+ "conflicts": 49,
  "generatedAt": "2026-11-07",
  "sources": [
   {
@@ -82,7 +82,7 @@
   },
   {
    "events": 0,
-   "id": "beytote",
+   "id": "time-ir-events",
    "ok": false,
    "status": "review-only",
    "tier": "unofficial"
@@ -111,13 +111,13 @@
   {
    "events": 26,
    "id": "iran-holidays-npm",
-   "ok": false,
+   "ok": true,
    "status": "fixture: official lunar month table verified",
    "tier": "open-source"
   },
   {
-   "events": 22,
-   "id": "iran-holidays-json",
+   "events": 26,
+   "id": "avan-persian-holidays",
    "ok": true,
    "status": "fixture",
    "tier": "open-source"

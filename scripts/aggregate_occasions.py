@@ -52,6 +52,7 @@ TIMEOUT_SECONDS = 25
 FIXTURE_FILES = {
     "pc-events": "pc-events.json",
     "iran-holidays-json": "iran-holidays-1405.json",
+    "avan-persian-holidays": "avan-holidays-1405.json",
     "shamsi-holidays": "shamsi-holidays-1405.json",
     "jalali-calendar-year": "jalali-calendar-1405.json",
     "pholiday": "pholiday-lunar.js",
@@ -84,6 +85,23 @@ def _fetch(url: str) -> bytes:
         return response.read()
 
 
+def probe_health(url: str) -> tuple[bool, str]:
+    """Ask a review-only source whether it still answers.
+
+    Review-only publishers ship scanned PDFs or unstructured pages, so nothing is parsed from
+    them. They are still probed, so the health report can say "reachable" or "unreachable"
+    instead of silently pretending they were never looked at.
+    """
+    try:
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
+        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310 - https only
+            # A few kilobytes are enough to know the host answers; the body is not used.
+            response.read(4096)
+            return response.status == 200, "reachable"
+    except (urllib.error.URLError, OSError, ValueError) as error:
+        return False, f"unreachable ({error})"
+
+
 def read_payload(source: dict, offline: bool) -> tuple[bytes | None, str]:
     fixture = FIXTURES / FIXTURE_FILES.get(source["id"], "")
     if offline:
@@ -104,9 +122,14 @@ def collect_events(registry: dict, offline: bool) -> tuple[list[RawEvent], dict[
     official_lengths: dict[int, list[int]] | None = None
 
     for source in registry["sources"]:
-        detail = {"id": source["id"], "tier": source["tier"], "events": 0, "status": "not-fetched"}
+        detail = {"id": source["id"], "tier": source["tier"], "events": 0, "status": "not-fetched", "ok": False}
         if source["adapter"] == "review-only":
-            detail["status"] = "review-only"
+            if offline:
+                detail["status"] = "review-only"
+            else:
+                reachable, reason = probe_health(source["url"])
+                detail["status"] = reason
+                detail["ok"] = reachable
             status[source["id"]] = detail
             continue
         payload, mode = read_payload(source, offline)
@@ -120,11 +143,14 @@ def collect_events(registry: dict, offline: bool) -> tuple[list[RawEvent], dict[
                 official_lengths = table["lengths"]
                 detail["status"] = f"{mode}: official lunar month table verified"
                 detail["events"] = len(official_lengths)
+                detail["ok"] = True
             else:
                 adapter = adapters.ADAPTERS[source["adapter"]]
                 records = adapter(payload.decode("utf-8", "replace"), source["id"], source["tier"])
                 detail["events"] = len(records)
                 detail["status"] = mode
+                # A source that answered but parsed nothing is a real failure, not a success.
+                detail["ok"] = bool(records)
                 events.extend(records)
         except (KeyError, ValueError, TypeError) as error:
             detail["status"] = f"{mode}: rejected ({error})"
@@ -215,6 +241,7 @@ def main() -> int:
         data_version=DATA_VERSION,
         updated_at=updated_at,
         years=list(LIVE_YEARS),
+        source_status=status,
     )
 
     health = dict(result.health)

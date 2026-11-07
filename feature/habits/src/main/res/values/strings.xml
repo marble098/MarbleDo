@@ -25,6 +25,13 @@
     <string name="habit_add_in_drawer">Add</string>
     <string name="habit_empty_build">Nothing here yet. Start with one small step.</string>
     <string name="habit_empty_quit">Nothing to quit here yet.</string>
+    <string name="habit_archived_hint">Retired habits, kept for the record.</string>
+    <string name="habit_week_title">This week</string>
+    <string name="habit_week_done">%1$s of %2$s days kept</string>
+    <string name="habit_week_none">Nothing scheduled this week.</string>
+    <string name="habit_look_title">Look and widget</string>
+    <string name="habit_look_hint">How progress is drawn, and the home-screen shortcut.</string>
+    <string name="habit_order_hint">What still needs you comes first.</string>
     <string name="habit_archived_section">Archived</string>
     <string name="habit_empty_archived">Nothing is archived.</string>
 

@@ -69,14 +69,14 @@
       "tier": "official",
       "nameFa": "خبرگزاری صدا و سیما",
       "nameEn": "IRIB News Agency",
-      "url": "https://www.iribnews.ir/",
+      "url": "https://www.irib-news.ir/",
       "format": "html",
       "adapter": "review-only",
       "authority": "report",
       "license": "official-publication",
       "refreshHours": 24,
-      "noteFa": "هفته‌های مناسبتی و اعلام تعطیلی.",
-      "noteEn": "Observance weeks and closure announcements."
+      "noteFa": "هفته‌های مناسبتی و اعلام تعطیلی. دامنهٔ iribnews.ir به irib-news.ir منتقل شده است.",
+      "noteEn": "Observance weeks and closure announcements. iribnews.ir now redirects to irib-news.ir."
     },
     {
       "id": "behdasht",
@@ -163,18 +163,18 @@
       "noteEn": "Official-holiday table with weekdays."
     },
     {
-      "id": "beytote",
+      "id": "time-ir-events",
       "tier": "unofficial",
-      "nameFa": "تقویم بیتوته",
-      "nameEn": "beytote.com calendar",
-      "url": "https://www.beytote.com/",
+      "nameFa": "تقویم سالانه تایم‌آی‌آر",
+      "nameEn": "time.ir annual occasion calendar",
+      "url": "https://www.time.ir/event-year",
       "format": "html",
       "adapter": "review-only",
       "authority": "calendar",
       "license": "site-terms",
       "refreshHours": 72,
-      "noteFa": "مناسبت‌های ماهانه.",
-      "noteEn": "Monthly occasion listings."
+      "noteFa": "فهرست مناسبت‌های ماهانهٔ سال، با نشانهٔ قمری. جایگزین بیتوته که دیگر پاسخ نمی‌دهد.",
+      "noteEn": "Month-by-month occasion list with lunar labels. Replaces beytote.com, which no longer answers."
     },
     {
       "id": "tasnim",
@@ -233,18 +233,18 @@
       "noteEn": "Official lunar month lengths for 1423-1448 AH."
     },
     {
-      "id": "iran-holidays-json",
+      "id": "avan-persian-holidays",
       "tier": "open-source",
-      "nameFa": "تعطیلات رسمی ایران (JSON سالانه)",
-      "nameEn": "IranHollidaysJSON (annual JSON)",
-      "url": "https://api.github.com/repos/iyazdanicharati/IranHollidaysJSON/contents/1405.json?ref=main",
+      "nameFa": "avan-persian-date-picker (تقویم و تعطیلات ایران)",
+      "nameEn": "avan-persian-date-picker holiday data",
+      "url": "https://api.github.com/repos/danial-riazati/avan-persian-date-picker/contents/packages/holidays/data/1405.json?ref=main",
       "format": "json",
-      "adapter": "iran-holidays-json",
+      "adapter": "avan-holidays-json",
       "authority": "holiday",
-      "license": "unlicensed-public-data",
-      "refreshHours": 24,
-      "noteFa": "فهرست روزانه با پرچم تعطیلی؛ تاریخ قمری آن با تقویم جدولی محاسبه شده و اصلاح می‌شود.",
-      "noteEn": "Day-by-day list with a holiday flag; its lunar dates are tabular and are corrected against the official table."
+      "license": "MIT",
+      "refreshHours": 168,
+      "noteFa": "یک ردیف برای هر مناسبت سال با نشانهٔ public/religious. جایگزین IranHollidiesJSON که مخزنش حذف شده و دیگر پاسخ نمی‌دهد.",
+      "noteEn": "One row per occasion of the year with a public/religious marker. Replaces IranHollidiesJSON, whose repository was deleted and no longer answers."
     },
     {
       "id": "shamsi-holidays",
@@ -321,14 +321,14 @@
       "tier": "open-source",
       "nameFa": "روزهای جهانی سازمان ملل",
       "nameEn": "UN international days",
-      "url": "https://www.un.org/en/observances/list",
+      "url": "https://www.un.org/en/observances/list-days-weeks",
       "format": "html",
       "adapter": "review-only",
       "authority": "observance",
       "license": "un-terms",
       "refreshHours": 168,
-      "noteFa": "فهرست روزهای جهانی.",
-      "noteEn": "List of international observance days."
+      "noteFa": "فهرست روزها و هفته‌های جهانی؛ نشانی قدیمی (/observances/list) دیگر ۴۰۴ است.",
+      "noteEn": "Days and weeks list; the old /observances/list path now returns 404."
     }
   ]
 }

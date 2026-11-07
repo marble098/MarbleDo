@@ -28,7 +28,21 @@ data class OccasionSourceStatus(
     val tier: String,
     val isCatalog: Boolean,
     val ok: Boolean,
-)
+    /**
+     * How this endpoint was used on the last refresh.
+     *
+     * The four catalog mirrors carry *one* document, so the first that answers delivers it and
+     * the rest are never contacted. Reporting those as failures would describe an outage that
+     * never happened, which is why they are [ROLE_STANDBY] instead.
+     */
+    val role: String = ROLE_DELIVERED,
+) {
+    companion object {
+        const val ROLE_DELIVERED = "delivered"
+        const val ROLE_STANDBY = "standby"
+        const val ROLE_FAILED = "failed"
+    }
+}
 
 data class OccasionState(
     val catalog: OccasionCatalog = OccasionCatalog.EMPTY,
@@ -111,8 +125,15 @@ class OccasionRepository(private val context: Context) {
             )
 
             var result = OccasionRefreshResult.FAILED
+            // Mirrors that were contacted and did not answer. A mirror that was never contacted
+            // is standby, not a failure, so the two are tracked separately.
+            val unreachableMirrors = mutableSetOf<String>()
             for (source in OccasionFeeds.catalogMirrors) {
-                val body = download(source.url, source.accept) ?: continue
+                val body = download(source.url, source.accept)
+                if (body == null) {
+                    unreachableMirrors += source.id
+                    continue
+                }
                 val parsed = withContext(Dispatchers.Default) { OccasionCatalog.parse(body) } ?: continue
                 // Reject short, partial, or accidentally returned error documents before they can
                 // replace the much richer offline catalog.
@@ -137,9 +158,22 @@ class OccasionRepository(private val context: Context) {
 
             val dayFeeds = crossCheck()
             val statuses = buildList {
-                addAll(OccasionFeeds.catalogMirrors.map { source ->
-                    OccasionSourceStatus(source.id, source.tier.key, true, source.url == _state.value.lastDeliveryUrl)
-                })
+                addAll(
+                    OccasionFeeds.catalogMirrors.map { source ->
+                        val delivered = source.url == _state.value.lastDeliveryUrl
+                        OccasionSourceStatus(
+                            id = source.id,
+                            tier = source.tier.key,
+                            isCatalog = true,
+                            ok = delivered || source.id !in unreachableMirrors,
+                            role = when {
+                                delivered -> OccasionSourceStatus.ROLE_DELIVERED
+                                source.id in unreachableMirrors -> OccasionSourceStatus.ROLE_FAILED
+                                else -> OccasionSourceStatus.ROLE_STANDBY
+                            },
+                        )
+                    },
+                )
                 addAll(dayFeeds.statuses)
             }
             _state.value = _state.value.copy(
@@ -184,14 +218,14 @@ class OccasionRepository(private val context: Context) {
     private data class DayFetch(val check: HolidayCrossCheck, val statuses: List<OccasionSourceStatus>)
 
     /**
-     * Reads the independent holiday lists for the current Jalali year directly from the internet
-     * and compares them with the catalog's national holidays.
+     * Reads the independent holiday lists for the current and the next Jalali year directly from
+     * the internet and compares them with the catalog's national holidays.
      */
     private suspend fun crossCheck(): DayFetch {
         val year = PersianDateUtils.today().year
         val parsed = mutableListOf<Set<Int>>()
         val statuses = mutableListOf<OccasionSourceStatus>()
-        for (source in OccasionFeeds.holidayDayFeeds(year)) {
+        for (source in OccasionFeeds.holidayDayFeeds(year) + OccasionFeeds.holidayDayFeeds(year + 1)) {
             val body = download(source.url, source.accept)
             val days = body?.let { withContext(Dispatchers.Default) { HolidayDayParser.parse(it) } }.orEmpty()
             if (days.isNotEmpty()) parsed.add(days)

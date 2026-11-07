@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Banner theme: the hero header is one tinted block instead of a badge floating on the shade, and
+  the sections below it are flat rows separated by hairlines instead of filled cards.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/notification_card_section" />
+    <corners android:radius="14dp" />
+</shape>

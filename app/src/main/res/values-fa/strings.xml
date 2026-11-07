@@ -126,6 +126,9 @@
     <string name="dash_upcoming_countdowns">لحظه‌های پیش رو</string>
     <string name="dash_occasions_today">مناسبت‌های امروز</string>
     <string name="dash_no_occasion">امروز مناسبت خاصی نیست.</string>
+    <string name="dash_tab_today">امروز</string>
+    <string name="dash_tab_week">هفته</string>
+    <string name="dash_tab_occasions">مناسبت‌ها</string>
     <string name="dash_search_hint">جست‌وجو در کارها</string>
     <string name="dash_tasks">کارها</string>
     <string name="dash_group_overdue">گذشته</string>
@@ -150,7 +153,10 @@
     <string name="settings_occasion_anchors_estimated">ماه‌های قمری بیرون از جدول منتشرشده تخمینی‌اند؛ با انتشار تقویم رسمی تازه‌سازی کن.</string>
     <string name="settings_occasion_crosscheck">%1$d تعطیلی با فهرست‌های مستقل تأیید شد · %2$d روز فقط در تقویم‌های اجتماعی تعطیل است</string>
     <string name="settings_source_ok">پاسخ داد</string>
+    <string name="settings_source_delivered">رساند</string>
+    <string name="settings_source_standby">آینهٔ آماده</string>
     <string name="settings_source_failed">پاسخی نداد</string>
+    <string name="settings_occasion_sources_hint">چهار مسیر تحویل، یک فهرست واحد را می‌آورند؛ نخستین که پاسخ بدهد آن را می‌رساند و بقیه روی آمادگی می‌مانند. فهرست‌های روزِ پایین، تقویم‌های مستقل‌اند و فقط برای بازبینی به کار می‌روند.</string>
     <string name="settings_tier_official">رسمی</string>
     <string name="settings_tier_unofficial">غیررسمی</string>
     <string name="settings_tier_open_source">متن‌باز</string>
@@ -262,6 +268,7 @@
     <string name="notification_design_classic">کلاسیک · کارت متعادل</string>
     <string name="notification_design_minimal">مینیمال · نوشتار ساده</string>
     <string name="notification_design_editorial">مجله‌ای · تاریخ برجسته و کادر برنامه</string>
+    <string name="notification_design_banner">بنر · سربرگ برجسته و ردیف‌های خط‌کش</string>
     <string name="dash_state_expanded">باز شده</string>
     <string name="dash_state_collapsed">بسته شده</string>
     <string name="settings_decrease">کاهش</string>

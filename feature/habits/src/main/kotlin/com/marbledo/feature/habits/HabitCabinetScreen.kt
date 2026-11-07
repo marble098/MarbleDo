@@ -1,7 +1,6 @@
 package com.marbledo.feature.habits
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,11 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Widgets
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,14 +30,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -51,15 +51,22 @@ import com.marbledo.domain.model.Habit
 import com.marbledo.domain.model.HabitKind
 import com.marbledo.domain.model.HabitTheme
 import com.marbledo.domain.model.NumeralMode
+import com.marbledo.domain.util.HabitAnalytics
+import com.marbledo.domain.util.HabitDay
+import com.marbledo.domain.util.HabitDayState
 import com.marbledo.domain.util.HabitStats
 
 /**
- * The habit cabinet: two drawers, one for the habits the user is building and one for the habits
- * they are leaving behind, with an archives line at the bottom for the ones they retired.
+ * The habit cabinet, in five zones that each do one job:
  *
- * The screen is three blocks — a headline card, the two drawers, and the archive — because that is
- * all it needs. The theme look and the widget shortcut live inside the headline card, and the
- * folders inside a drawer are flat rows separated by hairlines instead of cards inside cards.
+ *  1. **Today** — the ring, how far today has come, and the two headline numbers. Nothing else:
+ *     the appearance controls used to sit in here, which turned a status card into a settings card.
+ *  2. **This week** — one cell per day for the whole cabinet, so the week's rhythm is visible
+ *     without opening a single habit.
+ *  3. **Two drawers** — *Building* and *Letting go*. Inside a drawer the habits that still need
+ *     the user come first, then the ones already done, each a flat row with a hairline.
+ *  4. **Archive** — the same drawer component, so a retired habit is not a different animal.
+ *  5. **Look and widget** — the progress look and the home-screen shortcut, together and labelled.
  */
 @Composable
 fun HabitsScreen(
@@ -98,6 +105,17 @@ fun HabitsScreen(
     val buildHabits = active.filter { it.kind == HabitKind.BUILD }
     val quitHabits = active.filter { it.kind == HabitKind.QUIT }
     val archived = state.habits.filter { it.isArchived }
+    // Inside a drawer, what still needs the user comes first and what is already done sinks to the
+    // bottom: the list answers "what is left today" before it answers "what did I do".
+    val orderedBuild = remember(buildHabits, state) { byAttention(buildHabits, state) }
+    val orderedQuit = remember(quitHabits, state) { byAttention(quitHabits, state) }
+    val weekOverview = remember(state.habits, state.entries, state.today) {
+        HabitAnalytics.weekOverview(state.habits.filter { !it.isArchived }, state.entries, state.today)
+    }
+    val weekPlanned = remember(weekOverview) { weekOverview.count { it.state != HabitDayState.OFF } }
+    val weekDone = remember(weekOverview) {
+        weekOverview.count { it.state == HabitDayState.DONE || it.state == HabitDayState.PARTIAL }
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -112,35 +130,22 @@ fun HabitsScreen(
                 bestStreak = state.summary.bestStreak,
                 palette = cabinet,
                 numeralMode = numeralMode,
-            ) {
-                Box(Modifier.fillMaxWidth().height(1.dp).background(cabinet.track.copy(alpha = 0.7f)))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                        Text(
-                            stringResource(R.string.habit_field_theme),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = cabinet.muted,
-                        )
-                        Text(
-                            habitThemeLabel(HabitTheme.from(settings.habitTheme)),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = cabinet.onCard,
-                        )
-                    }
-                    TextButton(onClick = onAddWidget) {
-                        Icon(Icons.Outlined.Widgets, contentDescription = null, tint = cabinet.accent, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.habit_add_widget), color = cabinet.accent)
-                    }
-                }
-                HabitThemeDotRow(
-                    selected = HabitTheme.from(settings.habitTheme),
-                    onSelect = onThemeChange,
-                    dark = dark,
-                )
-            }
+            )
         }
+
+        // The week before the drawers: one glance at seven days beats opening every habit to see
+        // the same seven days again.
+        item {
+            HabitWeekOverview(
+                week = weekOverview,
+                done = weekDone,
+                planned = weekPlanned,
+                palette = cabinet,
+                numeralMode = numeralMode,
+                languageTag = languageTag,
+            )
+        }
+
         item {
             HabitDrawer(
                 title = stringResource(R.string.habit_drawer_build),
@@ -151,11 +156,12 @@ fun HabitsScreen(
                 reduceMotion = settings.reduceMotion,
                 palette = cabinet,
                 onToggle = { buildOpen = !buildOpen },
+                caption = stringResource(R.string.habit_order_hint),
             ) {
                 if (buildHabits.isEmpty()) {
                     EmptyDrawerText(stringResource(R.string.habit_empty_build), cabinet)
                 } else {
-                    buildHabits.forEachIndexed { index, habit ->
+                    orderedBuild.forEachIndexed { index, habit ->
                         if (index > 0) HabitRowDivider(cabinet)
                         HabitFolder(habit, state, viewModel, numeralMode) { detailId = it }
                     }
@@ -175,11 +181,12 @@ fun HabitsScreen(
                 reduceMotion = settings.reduceMotion,
                 palette = cabinet,
                 onToggle = { quitOpen = !quitOpen },
+                caption = stringResource(R.string.habit_order_hint),
             ) {
                 if (quitHabits.isEmpty()) {
                     EmptyDrawerText(stringResource(R.string.habit_empty_quit), cabinet)
                 } else {
-                    quitHabits.forEachIndexed { index, habit ->
+                    orderedQuit.forEachIndexed { index, habit ->
                         if (index > 0) HabitRowDivider(cabinet)
                         HabitFolder(habit, state, viewModel, numeralMode) { detailId = it }
                     }
@@ -195,56 +202,37 @@ fun HabitsScreen(
             }
         }
         if (archived.isNotEmpty()) {
+            // The archive is a drawer like any other, so a retired habit looks and behaves the same.
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                HabitDrawer(
+                    title = stringResource(R.string.habit_archived_section),
+                    hint = stringResource(R.string.habit_archived_hint),
+                    badge = habitNumber(archived.size, numeralMode),
+                    icon = Icons.Outlined.Inventory2,
+                    expanded = archivedOpen,
+                    reduceMotion = settings.reduceMotion,
+                    palette = cabinet,
+                    onToggle = { archivedOpen = !archivedOpen },
                 ) {
-                    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { archivedOpen = !archivedOpen }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                stringResource(R.string.habit_archived_section),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                habitNumber(archived.size, numeralMode),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Icon(
-                                if (archivedOpen) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 6.dp).size(20.dp),
-                            )
-                        }
-                        if (archivedOpen) {
-                            archived.forEachIndexed { index, habit ->
-                                if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(habit.icon, modifier = Modifier.padding(end = 10.dp))
-                                    Text(
-                                        habit.name,
-                                        modifier = Modifier.weight(1f),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    TextButton(onClick = { viewModel.setArchived(habit, false) }) {
-                                        Text(stringResource(R.string.habit_unarchive))
-                                    }
+                    if (archived.isEmpty()) {
+                        EmptyDrawerText(stringResource(R.string.habit_empty_archived), cabinet)
+                    } else {
+                        archived.forEachIndexed { index, habit ->
+                            if (index > 0) HabitRowDivider(cabinet)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(habit.icon, modifier = Modifier.padding(end = 10.dp))
+                                Text(
+                                    habit.name,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                TextButton(onClick = { viewModel.setArchived(habit, false) }) {
+                                    Text(stringResource(R.string.habit_unarchive))
                                 }
                             }
                         }
@@ -252,6 +240,85 @@ fun HabitsScreen(
                 }
             }
         }
+
+        // Appearance and the widget shortcut, together and labelled, instead of hiding the theme
+        // picker inside the "today" card.
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = cabinet.card,
+                shadowElevation = 2.dp,
+            ) {
+                Column(
+                    Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(cabinet.accentSoft),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Outlined.Palette,
+                                contentDescription = null,
+                                tint = cabinet.accent,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(11.dp))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text(
+                                stringResource(R.string.habit_look_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = cabinet.onCard,
+                            )
+                            Text(
+                                stringResource(R.string.habit_look_hint),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cabinet.muted,
+                                maxLines = 2,
+                            )
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text(
+                                stringResource(R.string.habit_field_theme),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cabinet.muted,
+                            )
+                            Text(
+                                habitThemeLabel(HabitTheme.from(settings.habitTheme)),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = cabinet.onCard,
+                            )
+                        }
+                        TextButton(onClick = onAddWidget) {
+                            Icon(
+                                Icons.Outlined.Widgets,
+                                contentDescription = null,
+                                tint = cabinet.accent,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.habit_add_widget), color = cabinet.accent)
+                        }
+                    }
+                    HabitThemeDotRow(
+                        selected = HabitTheme.from(settings.habitTheme),
+                        onSelect = onThemeChange,
+                        dark = dark,
+                    )
+                }
+            }
+        }
+
         item { Spacer(Modifier.height(24.dp)) }
     }
 
@@ -325,6 +392,93 @@ private fun HabitFolder(
         },
         onAdjust = { delta -> viewModel.adjustToday(habit, delta) },
     )
+}
+
+/**
+ * What still needs the user first: open days at the top, finished ones at the bottom, and a longer
+ * run above a shorter one inside each of those two groups so the habit worth protecting is the one
+ * that is easiest to reach.
+ */
+private fun byAttention(habits: List<Habit>, state: HabitsUiState): List<Habit> =
+    habits.sortedWith(
+        compareByDescending<Habit> { isDoneToday(it, state) }
+            .thenByDescending { (state.stats[it.id] ?: HabitStats()).currentStreak }
+            .thenBy { it.name },
+    )
+
+/**
+ * The week above the drawers: one cell per day for the whole cabinet, with the run of kept days
+ * spelled out underneath. The cells reuse [HabitWeekStrip], so a day looks the same here and in a
+ * habit's own history.
+ */
+@Composable
+private fun HabitWeekOverview(
+    week: List<HabitDay>,
+    done: Int,
+    planned: Int,
+    palette: HabitPalette,
+    numeralMode: NumeralMode,
+    languageTag: String,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = palette.card,
+        shadowElevation = 2.dp,
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(palette.accentSoft),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Outlined.CalendarMonth,
+                        contentDescription = null,
+                        tint = palette.accent,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                Spacer(Modifier.width(11.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(
+                        stringResource(R.string.habit_week_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.onCard,
+                    )
+                    Text(
+                        if (planned == 0) {
+                            stringResource(R.string.habit_week_none)
+                        } else {
+                            stringResource(
+                                R.string.habit_week_done,
+                                habitNumber(done, numeralMode),
+                                habitNumber(planned, numeralMode),
+                            )
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = palette.muted,
+                    )
+                }
+            }
+            if (week.isEmpty()) {
+                Text(
+                    stringResource(R.string.habit_week_none),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.muted,
+                )
+            } else {
+                HabitWeekStrip(week, palette, languageTag)
+            }
+        }
+    }
 }
 
 @Composable

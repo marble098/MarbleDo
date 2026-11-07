@@ -104,6 +104,7 @@ import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionCultureSelector
 import com.marbledo.feature.calendar.OccasionPlanner
+import com.marbledo.feature.calendar.OccasionSourceStatus
 import com.marbledo.feature.calendar.OccasionState
 import com.marbledo.feature.calendar.PersianDateUtils
 import com.marbledo.feature.calendar.SchedulePickerDialog
@@ -372,6 +373,12 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.settings_occasion_sources_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             if (occasionState.crossCheck.feeds > 0) {
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -396,11 +403,13 @@ fun SettingsScreen(
                     ) {
                         Text(source.id, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
                         Text(
-                            "${stringResource(tierLabelRes(source.tier))} · ${
-                                stringResource(if (source.ok) R.string.settings_source_ok else R.string.settings_source_failed)
-                            }",
+                            "${stringResource(tierLabelRes(source.tier))} · ${stringResource(sourceRoleLabelRes(source))}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (source.ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                            color = when {
+                                !source.ok -> MaterialTheme.colorScheme.error
+                                source.role == OccasionSourceStatus.ROLE_STANDBY -> MaterialTheme.colorScheme.onSurfaceVariant
+                                else -> MaterialTheme.colorScheme.primary
+                            },
                         )
                     }
                 }
@@ -844,96 +853,117 @@ private fun NotificationDesignSelector(
         "classic" to R.string.notification_design_classic,
         "minimal" to R.string.notification_design_minimal,
         "editorial" to R.string.notification_design_editorial,
+        "banner" to R.string.notification_design_banner,
     )
-    Row(
+    // Four designs no longer fit one row on a phone, so the selector is a two-by-two grid: each
+    // tile keeps a full-size touch target instead of being squeezed into a third of the width.
+    Column(
         modifier = Modifier.fillMaxWidth().selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        options.forEach { (design, labelRes) ->
-            val selected = selectedDesign == design
-            val shape = MaterialTheme.shapes.medium
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(shape)
-                    .background(
-                        if (selected) colors.primaryContainer.copy(alpha = 0.65f)
-                        else colors.surfaceVariant.copy(alpha = 0.45f),
-                    )
-                    .border(
-                        width = if (selected) 2.dp else 1.dp,
-                        color = if (selected) colors.primary else colors.outline.copy(alpha = 0.16f),
-                        shape = shape,
-                    )
-                    .selectable(selected = selected, role = Role.RadioButton) { onSelectDesign(design) }
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+        options.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        stringResource(labelRes),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (selected) colors.primary else colors.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (selected) {
-                        Icon(
-                            Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            tint = colors.primary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                }
-                // Mini schematic preview of the notification layout
-                Surface(
-                    shape = RoundedCornerShape(if (design == "editorial") 5.dp else 8.dp),
-                    color = colors.surface.copy(alpha = 0.88f),
-                    modifier = Modifier.fillMaxWidth().height(34.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                row.forEach { (design, labelRes) ->
+                    val selected = selectedDesign == design
+                    val shape = MaterialTheme.shapes.medium
+                    val isEditorial = design == "editorial"
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(shape)
+                            .background(
+                                if (selected) colors.primaryContainer.copy(alpha = 0.65f)
+                                else colors.surfaceVariant.copy(alpha = 0.45f),
+                            )
+                            .border(
+                                width = if (selected) 2.dp else 1.dp,
+                                color = if (selected) colors.primary else colors.outline.copy(alpha = 0.16f),
+                                shape = shape,
+                            )
+                            .selectable(selected = selected, role = Role.RadioButton) { onSelectDesign(design) }
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        if (design != "minimal") {
-                            Box(
-                                Modifier
-                                    .size(18.dp)
-                                    .clip(RoundedCornerShape(if (design == "editorial") 4.dp else 6.dp))
-                                    .background(colors.primary.copy(alpha = 0.85f)),
-                            )
-                        }
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(3.dp),
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth(0.85f)
-                                    .height(4.dp)
-                                    .clip(CircleShape)
-                                    .background(colors.onSurface.copy(alpha = 0.65f)),
+                            Text(
+                                stringResource(labelRes),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (selected) colors.primary else colors.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
-                            Box(
-                                Modifier
-                                    .fillMaxWidth(0.58f)
-                                    .height(4.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        when (design) {
-                                            "classic" -> colors.primary.copy(alpha = 0.45f)
-                                            "editorial" -> colors.tertiary.copy(alpha = 0.55f)
-                                            else -> colors.onSurfaceVariant.copy(alpha = 0.40f)
-                                        },
-                                    ),
-                            )
+                            if (selected) {
+                                Icon(
+                                    Icons.Outlined.CheckCircle,
+                                    contentDescription = null,
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        }
+                        // Mini schematic preview of the notification layout.
+                        Surface(
+                            shape = RoundedCornerShape(if (isEditorial) 5.dp else 8.dp),
+                            color = colors.surface.copy(alpha = 0.88f),
+                            modifier = Modifier.fillMaxWidth().height(34.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            ) {
+                                if (design == "banner") {
+                                    // The banner theme leads with a thin accent rule instead of a card.
+                                    Box(
+                                        Modifier
+                                            .width(2.dp)
+                                            .height(22.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.primary.copy(alpha = 0.95f)),
+                                    )
+                                }
+                                if (design != "minimal") {
+                                    Box(
+                                        Modifier
+                                            .size(if (design == "banner") 16.dp else 18.dp)
+                                            .clip(RoundedCornerShape(if (isEditorial) 4.dp else 6.dp))
+                                            .background(colors.primary.copy(alpha = 0.85f)),
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                                ) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxWidth(0.85f)
+                                            .height(4.dp)
+                                            .clip(CircleShape)
+                                            .background(colors.onSurface.copy(alpha = 0.65f)),
+                                    )
+                                    Box(
+                                        Modifier
+                                            .fillMaxWidth(0.58f)
+                                            .height(4.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                when (design) {
+                                                    "classic" -> colors.primary.copy(alpha = 0.45f)
+                                                    "editorial" -> colors.tertiary.copy(alpha = 0.55f)
+                                                    else -> colors.onSurfaceVariant.copy(alpha = 0.40f)
+                                                },
+                                            ),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -966,13 +996,16 @@ private fun MinimalNotificationPreviewBox(
     val design = settings.notificationDesign
     val isMinimal = design == "minimal"
     val isEditorial = design == "editorial"
+    val isBanner = design == "banner"
     val previewDirection = if (settings.languageTag == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr
     val outerShape = RoundedCornerShape(if (isEditorial) 12.dp else 20.dp)
     val progressHeight = when (design) {
         "minimal" -> 2.dp
         "editorial" -> 3.dp
+        "banner" -> 3.dp
         else -> 4.dp
     }
+    val hairline = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
     CompositionLocalProvider(LocalLayoutDirection provides previewDirection) {
         Surface(
             shape = outerShape,
@@ -982,14 +1015,34 @@ private fun MinimalNotificationPreviewBox(
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), outerShape),
         ) {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = if (isBanner) {
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                    } else {
+                        Modifier
+                    },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     if (!isMinimal && badgeBitmap != null) {
                         Image(
                             bitmap = badgeBitmap.asImageBitmap(),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(46.dp)
-                                .clip(RoundedCornerShape(if (isEditorial) 8.dp else 13.dp)),
+                                .size(if (isBanner) 40.dp else 46.dp)
+                                .clip(
+                                    RoundedCornerShape(
+                                        when {
+                                            isBanner -> 10.dp
+                                            isEditorial -> 8.dp
+                                            else -> 13.dp
+                                        },
+                                    ),
+                                ),
                         )
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1045,6 +1098,7 @@ private fun MinimalNotificationPreviewBox(
                 val sectionShape = RoundedCornerShape(if (isEditorial) 8.dp else 14.dp)
                 val sectionModifier = when {
                     isMinimal -> Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                    isBanner -> Modifier.fillMaxWidth().padding(vertical = 2.dp)
                     isEditorial -> Modifier
                         .fillMaxWidth()
                         .clip(sectionShape)
@@ -1056,6 +1110,14 @@ private fun MinimalNotificationPreviewBox(
                         .clip(sectionShape)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f))
                         .padding(horizontal = 10.dp, vertical = 8.dp)
+                }
+                if (isBanner) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(hairline),
+                    )
                 }
                 if (content.hasNextTask || !content.hasOccasions) {
                     Column(modifier = sectionModifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -1084,9 +1146,21 @@ private fun MinimalNotificationPreviewBox(
                         }
                     }
                 }
+                if (isBanner) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(hairline),
+                    )
+                }
                 if (content.hasOccasions) {
                     Column(
-                        modifier = if (isMinimal) Modifier.fillMaxWidth().padding(vertical = 2.dp) else sectionModifier,
+                        modifier = if (isMinimal || isBanner) {
+                            Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                        } else {
+                            sectionModifier
+                        },
                         verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
                         Text(
@@ -1247,6 +1321,17 @@ private fun tierLabelRes(tier: String): Int = when (tier) {
     "official" -> R.string.settings_tier_official
     "unofficial" -> R.string.settings_tier_unofficial
     else -> R.string.settings_tier_open_source
+}
+
+/**
+ * How one endpoint behaved on the last refresh. A catalog mirror that was never contacted is
+ * standby, not a failure: the mirrors carry one document, so the first that answers wins.
+ */
+private fun sourceRoleLabelRes(source: OccasionSourceStatus): Int = when {
+    !source.ok -> R.string.settings_source_failed
+    source.role == OccasionSourceStatus.ROLE_STANDBY -> R.string.settings_source_standby
+    source.isCatalog -> R.string.settings_source_delivered
+    else -> R.string.settings_source_ok
 }
 
 @Composable

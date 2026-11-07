@@ -92,6 +92,7 @@ def build(
     data_version: int,
     updated_at: date,
     years: list[int] | None = None,
+    source_status: dict[str, dict] | None = None,
 ) -> FeedBuild:
     merged = collect_votes(events, anchors)
     votes = merged.votes
@@ -241,7 +242,10 @@ def build(
                 "id": source["id"],
                 "tier": source["tier"],
                 "events": status.get(source["id"], 0),
-                "ok": status.get(source["id"], 0) > 0,
+                # "ok" means *the source answered*, not "it produced events": the lunar
+                # month table and the review-only pages are fetched successfully while
+                # deliberately contributing zero occasion rows.
+                "ok": bool((source_status or {}).get(source["id"], {}).get("ok", status.get(source["id"], 0) > 0)),
             }
             for source in registry["sources"]
         ],

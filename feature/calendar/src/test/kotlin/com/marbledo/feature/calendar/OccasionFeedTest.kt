@@ -55,11 +55,24 @@ class OccasionFeedTest {
     @Test
     fun `direct community feeds are year aware and never served as the catalog`() {
         val feeds = OccasionFeeds.holidayDayFeeds(1405)
-        assertTrue(feeds.size >= 3)
+        assertTrue(feeds.size >= 4)
         assertTrue(feeds.all { !it.catalog })
         assertTrue(feeds.all { it.url.startsWith("https://") })
-        assertTrue(feeds.all { it.url.contains("1405") })
-        assertTrue(OccasionFeeds.holidayDayFeeds(1406).all { it.url.contains("1406") || it.url.contains("/1406") })
+        // The year-keyed lists carry the year; pc-events is pinned to a commit and is not.
+        assertTrue(feeds.filter { it.id != "pc-events" }.all { it.url.contains("1405") })
+        assertTrue(OccasionFeeds.holidayDayFeeds(1406).filter { it.id != "pc-events" }.all { it.url.contains("1406") || it.url.contains("/1406") })
+    }
+
+    @Test
+    fun `the pc-events shape is read from calendar month and day`() {
+        val payload = """
+            {"data":[{"holiday":true,"month":1,"day":1,"type":"Iran","title":"آغاز نوروز","calendar":"Persian"},
+                     {"holiday":true,"month":7,"day":3,"type":"Iran","title":"تاسوعا","calendar":"Hijri"},
+                     {"holiday":false,"month":1,"day":5,"type":"Iran","title":"روز سلامتی","calendar":"Persian"},
+                     {"holiday":true,"month":12,"day":29,"type":"International","title":"New Year","calendar":"Gregorian"}]}
+        """.trimIndent()
+        // A Hijri or Gregorian row cannot be compared with a Jalali day, so only Persian rows count.
+        assertEquals(setOf(101), HolidayDayParser.parse(payload))
     }
 
     @Test
@@ -79,6 +92,18 @@ class OccasionFeedTest {
                      {"date":"1405/01/05","isHoliday":false,"holidayDesription":null}]}
         """.trimIndent()
         assertEquals(setOf(101), HolidayDayParser.parse(payload))
+    }
+
+    @Test
+    fun `the avan-persian-date-picker shape is read per occasion`() {
+        // One row per occasion, statutory ones marked "public"; replaces the deleted
+        // IranHollidiesJSON repository.
+        val payload = """
+            [{"date":"1405-01-01","title":"عید سعید فطر / عید نوروز","titleEn":"Eid al-Fitr / Nowruz","type":"public"},
+             {"date":"1405-01-05","title":"روز سلامتی","type":"religious"},
+             {"date":"۱۴۰۵/۰۱/۱۲","title":"روز جمهوری اسلامی","type":"public"}]
+        """.trimIndent()
+        assertEquals(setOf(101, 112), HolidayDayParser.parse(payload))
     }
 
     @Test

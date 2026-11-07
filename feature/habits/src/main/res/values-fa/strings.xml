@@ -25,6 +25,13 @@
     <string name="habit_add_in_drawer">افزودن</string>
     <string name="habit_empty_build">هنوز عادتی اینجا نیست. با یک قدم کوچک شروع کن.</string>
     <string name="habit_empty_quit">هنوز چیزی برای ترک‌کردن اینجا نیست.</string>
+    <string name="habit_archived_hint">عادت‌های بازنشسته، برای سابقه نگه داشته می‌شوند.</string>
+    <string name="habit_week_title">این هفته</string>
+    <string name="habit_week_done">%1$s روز از %2$s روز نگه داشته شد</string>
+    <string name="habit_week_none">این هفته چیزی برنامه‌ریزی نشده.</string>
+    <string name="habit_look_title">ظاهر و ویجت</string>
+    <string name="habit_look_hint">پیشرفت چطور کشیده می‌شود، و میان‌بر صفحهٔ اصلی.</string>
+    <string name="habit_order_hint">آنچه هنوز منتظر توست اول می‌آید.</string>
     <string name="habit_archived_section">بایگانی</string>
     <string name="habit_empty_archived">چیزی بایگانی نشده.</string>
 
