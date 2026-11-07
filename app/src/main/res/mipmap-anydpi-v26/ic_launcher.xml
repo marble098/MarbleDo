@@ -1,5 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive launcher icon: three layers, masked by the launcher into whatever shape it
+  uses. The background is a drawable rather than a flat colour so the tile keeps its
+  sheen; the monochrome layer is what themed icons tint on Android 13 and later.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/marble_launcher_bg" />
+    <background android:drawable="@drawable/ic_launcher_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
     <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>

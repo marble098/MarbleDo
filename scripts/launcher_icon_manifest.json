@@ -1,0 +1,21 @@
+{
+  "canvas": 108.0,
+  "safe_zone": [
+    21.0,
+    87.0
+  ],
+  "ink_bounds": {
+    "left": 21.5,
+    "top": 22.5,
+    "right": 86.5,
+    "bottom": 86.5
+  },
+  "safe": true,
+  "densities": {
+    "mdpi": 48,
+    "hdpi": 72,
+    "xhdpi": 96,
+    "xxhdpi": 128,
+    "xxxhdpi": 192
+  }
+}

@@ -11167,8 +11167,8 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -11191,8 +11191,8 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -11212,8 +11212,8 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -11236,8 +11236,8 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -11257,8 +11257,8 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -11281,8 +11281,8 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -11497,8 +11497,8 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -11518,8 +11518,8 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -11756,6 +11756,7 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "jalali-calendar-year",
     "pc-events",
@@ -12952,6 +12953,7 @@
    "noteFa": "تاریخ سنتیِ فهرست پیشین؛ بازبینی مستقل نشده و تعطیل رسمی نیست. تاریخ جشن‌های هم‌نام در گاه‌شماری زرتشتی و هجری شمسی ممکن است متفاوت باشد.",
    "sourceIds": [
     "legacy-v5",
+    "avan-persian-holidays",
     "bahesab",
     "chetor-calendar",
     "jalali-calendar-year",
@@ -13090,9 +13092,9 @@
    "month": 3,
    "sourceIds": [
     "legacy-v5",
+    "avan-persian-holidays",
     "bahesab",
     "chetor-calendar",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -13112,9 +13114,9 @@
    "month": 3,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "chetor-calendar",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -13134,9 +13136,9 @@
    "month": 3,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "chetor-calendar",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -13156,9 +13158,9 @@
    "month": 3,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "chetor-calendar",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -14859,6 +14861,7 @@
    "month": 5,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "jalali-calendar-year",
     "pc-events"
@@ -14878,6 +14881,7 @@
    "month": 5,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "jalali-calendar-year",
     "pc-events",
@@ -15011,6 +15015,7 @@
    "month": 5,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "jalali-calendar-year",
     "pc-events"
@@ -15286,6 +15291,7 @@
    "month": 6,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -15305,6 +15311,7 @@
    "month": 6,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -18937,6 +18944,7 @@
    "month": 10,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "jalali-calendar-year",
     "pc-events",
@@ -18961,6 +18969,7 @@
    "month": 10,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "jalali-calendar-year",
     "pc-events",
@@ -19824,8 +19833,8 @@
    "month": 11,
    "sourceIds": [
     "legacy-v5",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -20308,6 +20317,7 @@
    "month": 12,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "jalali-calendar-year",
     "pc-events"
    ],
@@ -20604,6 +20614,7 @@
    "month": 12,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
     "jalali-calendar-year",
     "pc-events"
@@ -20763,8 +20774,8 @@
    "month": 12,
    "sourceIds": [
     "pc-1405",
+    "avan-persian-holidays",
     "bahesab",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -20933,7 +20944,6 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -20957,7 +20967,6 @@
    "month": 1,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -21434,7 +21443,6 @@
    "month": 3,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -21458,7 +21466,6 @@
    "month": 3,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -21478,7 +21485,6 @@
    "month": 3,
    "sourceIds": [
     "ir-health-tech",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -21809,7 +21815,6 @@
    "month": 6,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -22055,7 +22060,6 @@
    "month": 7,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -22080,7 +22084,6 @@
    "month": 7,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -22105,7 +22108,6 @@
    "month": 7,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -22223,7 +22225,6 @@
    "noteFa": "بزرگداشت آغاز بعثت پیامبر در تقویم ایران؛ با عنوان اسراء و معراج یکی نیست.",
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -22428,7 +22429,6 @@
    "month": 8,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -22453,7 +22453,6 @@
    "month": 8,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -22478,7 +22477,6 @@
    "month": 8,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -22722,7 +22720,6 @@
    "month": 9,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -22793,7 +22790,6 @@
    "month": 10,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -22817,7 +22813,6 @@
    "month": 10,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -22960,7 +22955,6 @@
    "month": 10,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "shamsi-holidays"
@@ -23320,7 +23314,6 @@
    "month": 12,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -23345,7 +23338,6 @@
    "month": 12,
    "sourceIds": [
     "pc-1405",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -23370,7 +23362,6 @@
    "month": 12,
    "sourceIds": [
     "lunar-extended",
-    "iran-holidays-json",
     "jalali-calendar-year",
     "pc-events",
     "pholiday",
@@ -25119,7 +25110,7 @@
    "tier": "official",
    "titleEn": "IRIB News Agency",
    "titleFa": "خبرگزاری صدا و سیما",
-   "url": "https://www.iribnews.ir/"
+   "url": "https://www.irib-news.ir/"
   },
   {
    "checkedAt": "2026-11-07",
@@ -25177,12 +25168,12 @@
   },
   {
    "checkedAt": "2026-11-07",
-   "id": "beytote",
+   "id": "time-ir-events",
    "kind": "report",
    "tier": "unofficial",
-   "titleEn": "beytote.com calendar",
-   "titleFa": "تقویم بیتوته",
-   "url": "https://www.beytote.com/"
+   "titleEn": "time.ir annual occasion calendar",
+   "titleFa": "تقویم سالانه تایم‌آی‌آر",
+   "url": "https://www.time.ir/event-year"
   },
   {
    "checkedAt": "2026-11-07",
@@ -25222,12 +25213,12 @@
   },
   {
    "checkedAt": "2026-11-07",
-   "id": "iran-holidays-json",
+   "id": "avan-persian-holidays",
    "kind": "community-rules",
    "tier": "open-source",
-   "titleEn": "IranHollidaysJSON (annual JSON)",
-   "titleFa": "تعطیلات رسمی ایران (JSON سالانه)",
-   "url": "https://api.github.com/repos/iyazdanicharati/IranHollidaysJSON/contents/1405.json?ref=main"
+   "titleEn": "avan-persian-date-picker holiday data",
+   "titleFa": "avan-persian-date-picker (تقویم و تعطیلات ایران)",
+   "url": "https://api.github.com/repos/danial-riazati/avan-persian-date-picker/contents/packages/holidays/data/1405.json?ref=main"
   },
   {
    "checkedAt": "2026-11-07",
@@ -25281,13 +25272,13 @@
    "tier": "open-source",
    "titleEn": "UN international days",
    "titleFa": "روزهای جهانی سازمان ملل",
-   "url": "https://www.un.org/en/observances/list"
+   "url": "https://www.un.org/en/observances/list-days-weeks"
   }
  ],
  "updatedAt": "2026-11-07",
  "verification": {
   "addedFromSources": 15,
-  "conflictingReports": 55,
+  "conflictingReports": 49,
   "generatedAt": "2026-11-07",
   "lunarDaysCorroborated": 533,
   "participatingSources": 8,

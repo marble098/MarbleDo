@@ -130,6 +130,32 @@ def iran_holidays_json(payload: str, source_id: str, tier: str) -> list[RawEvent
     return records
 
 
+def avan_holidays_json(payload: str, source_id: str, tier: str) -> list[RawEvent]:
+    """danial-riazati/avan-persian-date-picker: one row per occasion with a ``type`` marker.
+
+    Replaces IranHollidiesJSON, whose repository was deleted. ``public`` rows are the statutory
+    days off; ``religious`` rows carry the occasion but never close a day.
+    """
+    rows = json.loads(payload)
+    records: list[RawEvent] = []
+    for row in rows if isinstance(rows, list) else []:
+        solar = parse_jalali_digits(str(row.get("date", "")))
+        title = (row.get("title") or row.get("titleEn") or "").strip()
+        if solar is None or not title:
+            continue
+        records.append(
+            RawEvent(
+                source_id=source_id,
+                tier=tier,
+                title=title,
+                calendar=JALALI,
+                holiday=str(row.get("type") or "") == "public",
+                solar=solar,
+            )
+        )
+    return records
+
+
 def shamsi_holidays_json(payload: str, source_id: str, tier: str) -> list[RawEvent]:
     """hasan-ahani/shamsi-holidays: list of days, each with its events."""
     rows = json.loads(payload)
@@ -346,6 +372,7 @@ def _solar(year: int, month: int, day: int) -> date | None:
 ADAPTERS = {
     "pc-events-json": pc_events_json,
     "iran-holidays-json": iran_holidays_json,
+    "avan-holidays-json": avan_holidays_json,
     "shamsi-holidays-json": shamsi_holidays_json,
     "jalali-calendar-year-json": jalali_calendar_year_json,
     "pholiday-lunar-js": pholiday_lunar_js,

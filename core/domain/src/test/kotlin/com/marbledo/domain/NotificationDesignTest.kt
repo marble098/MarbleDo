@@ -14,7 +14,7 @@ class NotificationDesignTest {
 
     @Test
     fun `all designs survive backup round trip`() {
-        listOf("classic", "minimal", "editorial").forEach { design ->
+        listOf("classic", "minimal", "editorial", "banner").forEach { design ->
             val settings = AppSettings(notificationDesign = design)
             assertEquals(settings, Json.decodeFromString<AppSettings>(Json.encodeToString(settings)))
         }

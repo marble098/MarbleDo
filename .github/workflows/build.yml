@@ -26,6 +26,7 @@ jobs:
           python3 scripts/aggregate_occasions.py --offline --verify
           python3 scripts/check_calendar.py
           python3 scripts/check_migrations.py
+          python3 scripts/generate_launcher_icons.py --check
           python3 -m unittest discover -s scripts/tests -v
 
       - name: Set up JDK 17

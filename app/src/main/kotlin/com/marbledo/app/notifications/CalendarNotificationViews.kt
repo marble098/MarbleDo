@@ -8,6 +8,11 @@ import com.marble098.marbledo.R
 
 /** Framework-decorated layouts: Android retains its trusted header, expand affordance and actions. */
 internal object CalendarNotificationViews {
+
+    /** The mood colour the banner theme paints its accent rule with. */
+    private fun moodAccent(context: Context, mood: NotificationMood): Int =
+        NotificationArtwork.accentColor(context, mood)
+
     private fun layout(design: String, expanded: Boolean, rtl: Boolean): Int = when (design) {
         "minimal" -> if (expanded) {
             if (rtl) R.layout.notification_minimal_expanded_rtl else R.layout.notification_minimal_expanded_ltr
@@ -18,6 +23,11 @@ internal object CalendarNotificationViews {
             if (rtl) R.layout.notification_editorial_expanded_rtl else R.layout.notification_editorial_expanded_ltr
         } else {
             if (rtl) R.layout.notification_editorial_compact_rtl else R.layout.notification_editorial_compact_ltr
+        }
+        "banner" -> if (expanded) {
+            if (rtl) R.layout.notification_banner_expanded_rtl else R.layout.notification_banner_expanded_ltr
+        } else {
+            if (rtl) R.layout.notification_banner_compact_rtl else R.layout.notification_banner_compact_ltr
         }
         else -> if (expanded) {
             if (rtl) R.layout.notification_classic_expanded_rtl else R.layout.notification_classic_expanded_ltr
@@ -39,6 +49,10 @@ internal object CalendarNotificationViews {
         setTextViewText(R.id.notification_mood_pill, content.moodSubtitle)
         if (badge != null && design != "minimal") setImageViewBitmap(R.id.notification_badge, badge)
         else setViewVisibility(R.id.notification_badge, View.GONE)
+        // The banner theme tints its leading accent rule with the day's mood colour.
+        if (design == "banner") {
+            setInt(R.id.notification_accent_rule, "setBackgroundColor", moodAccent(context, content.mood))
+        }
         setContentDescription(R.id.notification_root, if (expanded) content.expandedText else "${content.title}. ${content.collapsedLine}")
         if (!expanded) {
             setTextViewText(R.id.notification_compact_summary, content.collapsedLine)

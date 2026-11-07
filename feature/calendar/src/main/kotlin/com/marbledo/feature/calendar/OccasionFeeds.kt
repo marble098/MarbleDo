@@ -77,10 +77,12 @@ object OccasionFeeds {
      * occasion that they place one day late is reported, never copied.
      */
     fun holidayDayFeeds(jalaliYear: Int): List<RemoteOccasionFeed> = listOf(
+        // IranHollidiesJSON (iyazdanicharati) was deleted and now answers 404, so this
+        // repository publishes the same per-year Iranian holiday list in its place.
         RemoteOccasionFeed(
-            id = "iran-holidays-json",
+            id = "avan-persian-holidays",
             tier = OccasionSourceTier.OPEN_SOURCE,
-            url = "https://api.github.com/repos/iyazdanicharati/IranHollidaysJSON/contents/$jalaliYear.json?ref=main",
+            url = "https://api.github.com/repos/danial-riazati/avan-persian-date-picker/contents/packages/holidays/data/$jalaliYear.json?ref=main",
             catalog = false,
             accept = "application/vnd.github.raw",
         ),
@@ -98,6 +100,16 @@ object OccasionFeeds {
             catalog = false,
             accept = "application/vnd.github.raw",
         ),
+        // persian-calendar/events is the dataset the aggregation pipeline already trusts for Iran:
+        // its Iran entries cite the official University of Tehran calendar and the file is pinned
+        // to a commit, so it is a stable fourth opinion for the cross-check.
+        RemoteOccasionFeed(
+            id = "pc-events",
+            tier = OccasionSourceTier.OPEN_SOURCE,
+            url = "https://api.github.com/repos/persian-calendar/events/contents/events.json?ref=3bfbcc5b667765691784b55b58d8a385217d96d9",
+            catalog = false,
+            accept = "application/vnd.github.raw",
+        ),
     )
 
     val urls: List<String> get() = catalogMirrors.map(RemoteOccasionFeed::url)
@@ -110,7 +122,7 @@ object OccasionFeeds {
 object HolidayDayParser {
     /**
      * Returns the set of Jalali days (month * 100 + day) the payload marks as a public holiday.
-     * Three published shapes are supported; anything unrecognised yields an empty set instead of
+     * Five published shapes are supported; anything unrecognised yields an empty set instead of
      * a wrong day.
      */
     fun parse(payload: String): Set<Int> = runCatching {
@@ -124,6 +136,9 @@ object HolidayDayParser {
             val row = array.optJSONObject(index) ?: continue
             val events = row.optJSONArray("events")
             var holiday = row.optBoolean("is_holiday", false) || row.optBoolean("isHoliday", false)
+            // avan-persian-date-picker publishes one row per occasion and marks the statutory
+            // ones with `"type": "public"` instead of one row per day with a holiday flag.
+            if (!holiday && row.optString("type") == "public") holiday = true
             if (events != null) {
                 for (eventIndex in 0 until events.length()) {
                     val event = events.optJSONObject(eventIndex) ?: continue
@@ -142,9 +157,19 @@ object HolidayDayParser {
         val days = mutableSetOf<Int>()
         for (index in 0 until rows.length()) {
             val row = rows.optJSONObject(index) ?: continue
-            if (row.optBoolean("isHoliday", false) || row.optBoolean("is_holiday", false)) {
-                dayKey(row.optString("date"))?.let(days::add)
+            val holiday = row.optBoolean("isHoliday", false) ||
+                row.optBoolean("is_holiday", false) ||
+                row.optBoolean("holiday", false)
+            if (!holiday) continue
+            // persian-calendar/events keys a row by calendar/month/day instead of a date string,
+            // and only its Persian-calendar rows are comparable with a Jalali day.
+            val month = row.optInt("month", -1)
+            val day = row.optInt("day", -1)
+            if (month in 1..12 && day in 1..31) {
+                if (row.optString("calendar", "Persian") == "Persian") days.add(month * 100 + day)
+                continue
             }
+            dayKey(row.optString("date"))?.let(days::add)
         }
         return days
     }

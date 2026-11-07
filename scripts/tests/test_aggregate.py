@@ -107,6 +107,22 @@ class AdapterTest(unittest.TestCase):
         self.assertTrue(iran and shamsi and jalali_calendar)
         self.assertTrue(all(record.solar is not None for record in iran))
 
+    def test_avan_holidays_marks_public_rows_as_closures(self):
+        # avan-persian-date-picker replaced IranHollidiesJSON, whose repository was deleted.
+        records = adapters.avan_holidays_json(
+            (FIXTURES / "avan-holidays-1405.json").read_text(), "avan-persian-holidays", "open-source"
+        )
+        self.assertEqual(26, len(records))
+        self.assertTrue(all(record.calendar == "jalali" for record in records))
+        self.assertTrue(all(record.solar is not None for record in records))
+        self.assertEqual(10, sum(1 for record in records if record.holiday))
+        # 1 Farvardin 1405 is both Eid al-Fitr and Nowruz, so it must be a closure.
+        nowruz = [record for record in records if record.solar == date(2026, 3, 21)]
+        self.assertTrue(nowruz and all(record.holiday for record in nowruz))
+        # A religious observance carries the occasion without closing the day.
+        religious = [record for record in records if not record.holiday]
+        self.assertTrue(religious, "religious rows are occasions, not closures")
+
     def test_hijri_labels_are_read_in_both_scripts(self):
         self.assertEqual((6, 3), adapters.parse_hijri_label("شهادت حضرت فاطمه [ ٣ جمادي الثانيه ]"))
         self.assertEqual((1, 10), adapters.parse_hijri_label("عاشورا [ 10 محرم ]"))
@@ -201,6 +217,23 @@ class FeedBuildTest(unittest.TestCase):
         self.assertGreaterEqual(len(by_tier["open-source"]), 5)
         fetched = {source_id for source_id, entry in self.status.items() if entry["events"] > 0}
         self.assertGreaterEqual(len(fetched), 5, "Machine-readable sources must actually be parsed")
+
+    def test_every_registry_adapter_exists_and_is_wired_to_a_fixture(self):
+        """A source that cannot be parsed offline is a source the pipeline silently loses."""
+        for source in self.registry["sources"]:
+            adapter = source["adapter"]
+            if adapter in ("review-only", "npm-official-hijri-months"):
+                continue  # probed for health / supplies the lunar table, not occasion rows
+            self.assertIn(adapter, adapters.ADAPTERS, source["id"])
+            self.assertIn(source["id"], aggregate.FIXTURE_FILES, source["id"])
+            self.assertTrue((FIXTURES / aggregate.FIXTURE_FILES[source["id"]]).is_file(), source["id"])
+
+    def test_no_registered_source_points_at_a_host_that_no_longer_exists(self):
+        """Regression guard: iyazdanicharati/IranHollidiesJSON was deleted (404)."""
+        dead = ("iyazdanicharati", "beytote.com", "un.org/en/observances/list\"")
+        for source in self.registry["sources"]:
+            for marker in dead:
+                self.assertNotIn(marker, source["url"], source["id"])
 
     def test_only_official_calendar_days_are_published_as_holidays(self):
         resolved = self.catalog["verification"]["resolvedHolidays"]["1405"]

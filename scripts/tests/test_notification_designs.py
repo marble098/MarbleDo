@@ -9,7 +9,7 @@ ANDROID = '{http://schemas.android.com/apk/res/android}'
 
 class NotificationDesignTests(unittest.TestCase):
     def test_every_design_has_explicit_direction_and_bounded_text(self):
-        for design in ('classic', 'minimal', 'editorial'):
+        for design in ('classic', 'minimal', 'editorial', 'banner'):
             for size in ('compact', 'expanded'):
                 for direction in ('rtl', 'ltr'):
                     with self.subTest(design=design, size=size, direction=direction):
@@ -20,6 +20,23 @@ class NotificationDesignTests(unittest.TestCase):
                             self.assertEqual(direction, text.get(ANDROID + 'textDirection'))
                             self.assertEqual('viewStart', text.get(ANDROID + 'textAlignment'))
                             self.assertIsNotNone(text.get(ANDROID + 'maxLines'))
+
+    def test_every_selectable_design_is_wired_to_a_layout_pair_and_strings(self):
+        views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
+        settings = (ROOT / 'app/src/main/kotlin/com/marbledo/SettingsScreen.kt').read_text()
+        for design in ('classic', 'minimal', 'editorial', 'banner'):
+            with self.subTest(design=design):
+                if design == 'classic':
+                    # Classic is the documented fallback of the view factory.
+                    self.assertIn('else ->', views)
+                else:
+                    self.assertIn(f'"{design}" ->', views)
+                self.assertIn(f'"{design}" to R.string.notification_design_{design}', settings)
+                self.assertIn(f'R.layout.notification_{design}_compact_ltr', views)
+                self.assertIn(f'R.layout.notification_{design}_expanded_ltr', views)
+                for values in ('values', 'values-fa'):
+                    strings = (ROOT / f'app/src/main/res/{values}/strings.xml').read_text()
+                    self.assertIn(f'name="notification_design_{design}"', strings)
 
     def test_shadowed_headers_have_opaque_backing(self):
         for path in (
@@ -52,7 +69,7 @@ class NotificationDesignTests(unittest.TestCase):
         self.assertNotIn('takeIf { it.isOpen }', db)
 
     def test_expanded_notifications_have_smart_section_containers_and_mood_pill(self):
-        for design in ('classic', 'minimal', 'editorial'):
+        for design in ('classic', 'minimal', 'editorial', 'banner'):
             for direction in ('rtl', 'ltr'):
                 compact = (ROOT / f'app/src/main/res/layout/notification_{design}_compact_{direction}.xml').read_text()
                 expanded = (ROOT / f'app/src/main/res/layout/notification_{design}_expanded_{direction}.xml').read_text()

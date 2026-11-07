@@ -126,6 +126,9 @@
     <string name="dash_upcoming_countdowns">Upcoming moments</string>
     <string name="dash_occasions_today">Today’s occasions</string>
     <string name="dash_no_occasion">Nothing special today.</string>
+    <string name="dash_tab_today">Today</string>
+    <string name="dash_tab_week">Week</string>
+    <string name="dash_tab_occasions">Occasions</string>
     <string name="dash_search_hint">Search tasks</string>
     <string name="dash_tasks">Tasks</string>
     <string name="dash_group_overdue">Overdue</string>
@@ -150,7 +153,10 @@
     <string name="settings_occasion_anchors_estimated">Lunar dates outside the published table are estimated; refresh when the official calendar extends it.</string>
     <string name="settings_occasion_crosscheck">%1$d holidays confirmed by independent feeds · %2$d days only community calendars mark</string>
     <string name="settings_source_ok">reached</string>
+    <string name="settings_source_delivered">delivered</string>
+    <string name="settings_source_standby">standby mirror</string>
     <string name="settings_source_failed">no answer</string>
+    <string name="settings_occasion_sources_hint">The four delivery paths carry one catalog, so the first that answers delivers it and the rest stay on standby. The day lists below are independent calendars used only as a cross-check.</string>
     <string name="settings_tier_official">official</string>
     <string name="settings_tier_unofficial">unofficial</string>
     <string name="settings_tier_open_source">open source</string>
@@ -262,6 +268,7 @@
     <string name="notification_design_classic">Classic · balanced card</string>
     <string name="notification_design_minimal">Minimal · quiet typography</string>
     <string name="notification_design_editorial">Editorial · bold date and outlined agenda</string>
+    <string name="notification_design_banner">Banner · hero header and ruled rows</string>
     <string name="dash_state_expanded">Expanded</string>
     <string name="dash_state_collapsed">Collapsed</string>
     <string name="settings_decrease">Decrease</string>

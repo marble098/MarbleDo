@@ -170,7 +170,12 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                                 ) {
                                     Text(
                                         text = "◷",
-                                        style = TextStyle(color = ColorProvider(palette.accent), fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                                        style = TextStyle(
+                                            color = ColorProvider(palette.accent),
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center,
+                                        ),
                                     )
                                 }
                             },
@@ -179,11 +184,13 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                                 Column(modifier = GlanceModifier.defaultWeight()) {
                                     Text(
                                         text = widgetContext.getString(R.string.widget_today_label),
-                                        style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                                        modifier = GlanceModifier.fillMaxWidth(),
+                                        style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
                                         maxLines = 1,
                                     )
                                     Text(
                                         text = dateSummary,
+                                        modifier = GlanceModifier.fillMaxWidth(),
                                         style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 10.sp, textAlign = bodyAlignment),
                                         maxLines = 2,
                                     )
@@ -224,6 +231,7 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                             Spacer(GlanceModifier.height(3.dp))
                             Text(
                                 text = widgetContext.getString(R.string.widget_no_countdown),
+                                modifier = GlanceModifier.fillMaxWidth(),
                                 style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 11.sp, textAlign = bodyAlignment),
                                 maxLines = 2,
                             )
@@ -257,9 +265,9 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                                     .padding(horizontal = 7.dp, vertical = 7.dp),
                                 items = listOf(
                                     { WidgetTimeUnit(dayValue.orEmpty(), widgetContext.getString(R.string.widget_unit_days), palette, GlanceModifier.defaultWeight()) },
-                                    { Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp)) },
+                                    { Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp, textAlign = TextAlign.Center)) },
                                     { WidgetTimeUnit(hourValue.orEmpty(), widgetContext.getString(R.string.widget_unit_hours), palette, GlanceModifier.defaultWeight()) },
-                                    { Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp)) },
+                                    { Text("·", style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 16.sp, textAlign = TextAlign.Center)) },
                                     { WidgetTimeUnit(minuteValue.orEmpty(), widgetContext.getString(R.string.widget_unit_minutes), palette, GlanceModifier.defaultWeight()) },
                                 ),
                             )
@@ -292,12 +300,14 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         ) {
             Text(
                 text = title,
+                modifier = GlanceModifier.fillMaxWidth(),
                 style = TextStyle(color = ColorProvider(palette.accent), fontSize = 9.sp, fontWeight = FontWeight.Bold, textAlign = align),
                 maxLines = 1,
             )
             Spacer(GlanceModifier.height(2.dp))
             Text(
                 text = body,
+                modifier = GlanceModifier.fillMaxWidth(),
                 style = TextStyle(color = ColorProvider(palette.onBackground), fontSize = 12.sp, fontWeight = FontWeight.Medium, textAlign = align),
                 maxLines = 2,
             )
@@ -334,12 +344,14 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         ) {
             Text(
                 text = value,
-                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 19.sp, fontWeight = FontWeight.Bold),
+                modifier = GlanceModifier.fillMaxWidth(),
+                style = TextStyle(color = ColorProvider(palette.accent), fontSize = 19.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
                 maxLines = 1,
             )
             Text(
                 text = label,
-                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 8.sp, fontWeight = FontWeight.Medium),
+                modifier = GlanceModifier.fillMaxWidth(),
+                style = TextStyle(color = ColorProvider(palette.secondaryText), fontSize = 8.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center),
                 maxLines = 1,
             )
         }

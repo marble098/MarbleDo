@@ -56,9 +56,20 @@ and the Kotlin engine place an occasion on the same day. Both are covered by tes
 
 ## Source tiers
 
-`calendar_sources/registry.json` is the single list of sources. Twenty-two sources are registered in
-three tiers. `adapter` says how a source is consumed; `review-only` sources are fetched for health
-and human review because they publish PDFs or unstructured pages.
+`calendar_sources/registry.json` is the single list of sources. Twenty-three sources are registered in
+three tiers. `adapter` says how a source is consumed; `review-only` sources are probed for health
+and read by a human because they publish PDFs or unstructured pages.
+
+Every machine-readable source was re-checked on **2026-11-07**. Three of them were dead and have
+been replaced:
+
+| Was | Now | Why |
+| --- | --- | --- |
+| `iyazdanicharati/IranHollidiesJSON` | `danial-riazati/avan-persian-date-picker` | the old repository was deleted and answers 404 |
+| `beytote.com` | `time.ir/event-year` | the old host no longer answers |
+| `un.org/en/observances/list` | `un.org/en/observances/list-days-weeks` | the old path returns 404 |
+
+`www.iribnews.ir` moved to `www.irib-news.ir`; the registry follows the new host.
 
 ### Official (7)
 
@@ -68,7 +79,7 @@ and human review because they publish PDFs or unstructured pages.
 | `dolat` | Government portal | cabinet holiday decisions | review-only |
 | `majlis-research` | Parliament Research Center | holiday legislation reports | review-only |
 | `irna` | IRNA (state news agency) | closure announcements | review-only |
-| `iribnews` | IRIB News | observance weeks, closures | review-only |
+| `iribnews` | IRIB News (irib-news.ir) | observance weeks, closures | review-only |
 | `behdasht` | Ministry of Health | health weeks and days | review-only |
 | `medu` | Ministry of Education | school circulars and closures | review-only |
 
@@ -80,23 +91,23 @@ and human review because they publish PDFs or unstructured pages.
 | `bahesab` | bahesab.ir 1405 calendar | month listing with explicit «تعطیل» markers | `persian-calendar-text` |
 | `pasoon` | pasoon.ir 1405 | month listing | `persian-calendar-text` |
 | `chetor-calendar` | chetor.com 1405 | holiday table with weekdays | `persian-calendar-text` |
-| `beytote` | beytote.com | monthly listings | review-only |
+| `time-ir-events` | time.ir annual occasion calendar | month-by-month listings with lunar labels | review-only |
 | `tasnim` | Tasnim News | occasion reporting | review-only |
 | `mehrnews` | Mehr News | observance weeks | review-only |
 
-### Open source (8)
+### Open source (9)
 
 | id | Project | Licence | What is taken | Adapter |
 | --- | --- | --- | --- | --- |
 | `pc-events` | persian-calendar/events | CC0 | Hijri/Persian/Gregorian keyed events; its Iran entries cite the official University of Tehran calendar | `pc-events-json` |
 | `iran-holidays-npm` | iran-holidays | ISC | the official lunar month lengths | `npm-official-hijri-months` |
-| `iran-holidays-json` | IranHollidaysJSON | public data | per-day holiday flags + Hijri labels | `iran-holidays-json` |
+| `avan-persian-holidays` | avan-persian-date-picker | MIT | one row per occasion with a public/religious marker | `avan-holidays-json` |
 | `shamsi-holidays` | hasan-ahani/shamsi-holidays (daily scrape) | public data | per-day events + holiday flags | `shamsi-holidays-json` |
 | `jalali-calendar-year` | alirezadesh/jalali_calendar | public data | per-day events + lunar labels | `jalali-calendar-year-json` |
 | `pholiday` | shkarimpour/pholiday | MIT | lunar month/day occasion list | `pholiday-lunar-js` |
 | `persian-holidays-rules` | karfekr/persian-holidays | MIT | floating-date rules (Quds Day, …) | review-only |
 | `vacanza-holidays` | vacanza/holidays | MIT | Easter/Orthodox rules, Western holidays | review-only |
-| `un-observances` | United Nations | UN terms | international observance days | review-only |
+| `un-observances` | United Nations | UN terms | international observance days and weeks | review-only |
 
 Each adapter is a pure function tested against a recorded fixture in
 `scripts/occasions/fixtures/`. Fixtures are real payload excerpts; the recording date is in the
@@ -162,6 +173,12 @@ conflict list and the diff of the resolved holidays.
   follow a different local announcement. It is a user preference, not evidence.
 * `dataVersion` must increase when the feed changes shape; the app rejects a rollback, a schema
   downgrade, a truncated document, a lost category, a lost culture pack, and a >15% record drop.
+* A source that answers but yields no rows is a failure, not a success. The lunar month table and
+  the review-only pages are *fetched* while deliberately contributing zero rows, so
+  `source-health.json` separates "answered" from "produced events".
+* `scripts/tests/test_aggregate.py` fails when a registered adapter has no fixture, and when a
+  registered URL still points at a host that no longer exists — that is how the three dead sources
+  above were caught.
 
 ## Maintenance
 

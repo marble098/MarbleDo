@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Banner theme: the leading accent rule. CalendarNotificationViews tints it with the day's mood
+  colour at runtime, so the shape only has to supply the hairline geometry and a sensible default.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/notification_card_accent" />
+    <corners android:radius="1dp" />
+</shape>
