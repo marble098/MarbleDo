@@ -131,6 +131,7 @@ def check(catalog: dict) -> dict:
         ("World Malaria Day", 4, 25),
         ("International Day of Women in Mathematics", 5, 12),
     ]:
+        require(sum(item["titleEn"] == title for item in rows) == 1, f"Duplicate/missing observance: {title}")
         row = by_title[title]
         require((row["calendar"], row["month"], row["day"]) == ("gregorian", month, day), f"Missing sourced observance: {title}")
         require(row["evidence"] == "sourced" and not row["holiday"], f"Bad evidence/holiday status: {title}")

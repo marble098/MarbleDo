@@ -36,9 +36,9 @@ publication date and not proof that its website will always remain accessible.
 
 ## Inventory and limits
 
-Schema 5 / data version 13 contains **1,118 recurring entries** (461 Jalali, 126 lunar, 531 Gregorian),
+Schema 5 / data version 13 contains **1,116 recurring entries** (461 Jalali, 126 lunar, 529 Gregorian),
 one explicitly year-specific school-election entry for 1404, and **38 undated school programs**.
-The recurring-entry evidence counts are 646 sourced, 424 legacy (individual review still pending),
+The recurring-entry evidence counts are 646 sourced, 422 legacy (individual review still pending),
 33 traditional and 15 guidance. 273 recurring entries carry an education-relevance tag; they include
 ordinary public occasions useful for school planning and should not be confused with separate
 Ministry instructions.
@@ -50,7 +50,7 @@ Evidence metadata for recurring entries:
 | sourced | 646 | Matched to the pinned compilation or a linked institutional/news reference; not a blanket claim of official approval |
 | traditional | 33 | A traditional/cultural/religious report; disagreements or variants can exist |
 | guidance | 15 | A planning window or customary ceremony; verify this year's circular |
-| legacy | 424 | Preserved from MarbleDo's previous catalog; individual date/source verification remains outstanding |
+| legacy | 422 | Preserved from MarbleDo's previous catalog; individual date/source verification remains outstanding |
 
 Every record has reference IDs. A link to the old MarbleDo catalog is **provenance, not independent
 corroboration**. Reference matching against the compilation used dates and titles; title similarity
@@ -81,14 +81,15 @@ remains non-holiday. This fixes the legacy, v4 and active v5 JSON assets. Do not
 observance, school closure or public commemoration as a nationwide statutory day off without a
 checked official annual calendar.
 
-## Data version 13: fill four gaps in the global observance calendar
+## Data version 13: repair misdated occasions and fill calendar gaps
 
-The recurring Gregorian feed adds World Tuberculosis Day (24 March), World Art Day (15 April), World
-Malaria Day (25 April), and the International Day of Women in Mathematics (12 May). These are
-`international`, `global`, non-holiday records. Their dates/titles are matched to the pinned
-persian-calendar/events compilation (`pc-1405` reference); these community records are useful
-cross-checks, not a claim of government approval. The four additions carry stable IDs and regression
-tests in both the Python catalog validator and Android catalog tests.
+The recurring Gregorian feed corrects two inherited dates while preserving their favorite IDs:
+World Tuberculosis Day moves from 23 to 24 March and World Malaria Day from 24 to 25 April. It also
+adds World Art Day (15 April) and the International Day of Women in Mathematics (12 May), which were
+missing. All four are `international`, `global`, non-holiday records. Their dates/titles are matched
+to the pinned persian-calendar/events compilation (`pc-1405` reference); these community records are
+useful cross-checks, not a claim of government approval. Regression tests cover the corrections and
+new entries in both the Python catalog validator and Android catalog tests.
 
 ## Western expansion and source boundaries (2026-10-15)
 
