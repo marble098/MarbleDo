@@ -46,11 +46,12 @@ import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.WorkOutline
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedTextField
@@ -1107,6 +1108,7 @@ private fun CalendarViewSwitch(selected: CalendarViewMode, onSelect: (CalendarVi
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun OccasionBrowseToolbar(
     year: Int,
@@ -1174,9 +1176,11 @@ private fun OccasionBrowseToolbar(
             }
         }
         IconButton(enabled = canExport && !exportInProgress, onClick = onExport) {
-            if (exportInProgress) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            } else {
+                if (exportInProgress) {
+                    // Material 3 Expressive replaces the indeterminate spinner with a loading
+                    // indicator that morphs between rounded polygons.
+                    LoadingIndicator(modifier = Modifier.size(20.dp))
+                } else {
                 Icon(Icons.Outlined.Download, contentDescription = stringResource(R.string.calendar_export_ics))
             }
         }

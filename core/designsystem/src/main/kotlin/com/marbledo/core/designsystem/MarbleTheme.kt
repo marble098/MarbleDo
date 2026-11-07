@@ -1,9 +1,12 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.marbledo.core.designsystem
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -275,8 +278,14 @@ fun MarbleTheme(
         LocalAppFontScale provides fontScale.coerceIn(0.8f, 1.5f),
         LocalNumeralMode provides numeralMode,
     ) {
-        MaterialTheme(
+        // Material 3 Expressive (material3 1.5.0-beta01): the same colour and type identity, but
+        // every stock component now animates on the scheme's springs instead of fixed easing
+        // curves — chips, switches, FAB, sheets, the navigation-bar indicator, ripples and state
+        // layers all pick it up without touching their call sites. Reduced-motion users get the
+        // utilitarian standard scheme so nothing bounces at them.
+        MaterialExpressiveTheme(
             colorScheme = scheme,
+            motionScheme = if (reduceMotion) MotionScheme.standard() else MotionScheme.expressive(),
             typography = marbleTypography(languageTag),
             // Council review (docs/UI_COUNCIL_REVIEW.md, DS-1): the old 12/16/22/30/36 scale was
             // roughly double the Material 3 scale and made every card and field look inflated.
@@ -428,6 +437,55 @@ object MarbleTextStyles {
 
 private val defaultTypography = Typography()
 
+/**
+ * The nine Vazirmatn weights in ascending order, used to step a style one weight up.
+ *
+ * `FontWeight`'s constructor is not public, so the ladder is spelled out with the named constants
+ * rather than computed from `weight + 100`.
+ */
+private val weightLadder = listOf(
+    FontWeight.Thin,
+    FontWeight.ExtraLight,
+    FontWeight.Light,
+    FontWeight.Normal,
+    FontWeight.Medium,
+    FontWeight.SemiBold,
+    FontWeight.Bold,
+    FontWeight.ExtraBold,
+    FontWeight.Black,
+)
+
+private fun TextStyle.oneWeightUp(): TextStyle {
+    val current = weightLadder.indexOf(fontWeight ?: FontWeight.Normal).coerceAtLeast(0)
+    return copy(fontWeight = weightLadder[(current + 1).coerceAtMost(weightLadder.lastIndex)])
+}
+
+/**
+ * Fills the emphasized half of the Material 3 Expressive type scale.
+ *
+ * Expressive components ask for the `…Emphasized` slot when they want more weight; left at the
+ * library default that slot resolves to the platform's Roboto emphasized token, which would break
+ * the nine-weight Vazirmatn ladder mid-screen. Material's own rule is applied instead: same face
+ * and same size, one weight step up.
+ */
+private fun Typography.emphasized(): Typography = copy(
+    displayLargeEmphasized = displayLarge.oneWeightUp(),
+    displayMediumEmphasized = displayMedium.oneWeightUp(),
+    displaySmallEmphasized = displaySmall.oneWeightUp(),
+    headlineLargeEmphasized = headlineLarge.oneWeightUp(),
+    headlineMediumEmphasized = headlineMedium.oneWeightUp(),
+    headlineSmallEmphasized = headlineSmall.oneWeightUp(),
+    titleLargeEmphasized = titleLarge.oneWeightUp(),
+    titleMediumEmphasized = titleMedium.oneWeightUp(),
+    titleSmallEmphasized = titleSmall.oneWeightUp(),
+    bodyLargeEmphasized = bodyLarge.oneWeightUp(),
+    bodyMediumEmphasized = bodyMedium.oneWeightUp(),
+    bodySmallEmphasized = bodySmall.oneWeightUp(),
+    labelLargeEmphasized = labelLarge.oneWeightUp(),
+    labelMediumEmphasized = labelMedium.oneWeightUp(),
+    labelSmallEmphasized = labelSmall.oneWeightUp(),
+)
+
 /** Full M3 scale in which every one of the nine Vazirmatn weights has a dedicated slot. */
 val PersianTypography: Typography = defaultTypography.copy(
     // Oversized display numerals run lightest so big digits stay elegant instead of heavy.
@@ -449,8 +507,8 @@ val PersianTypography: Typography = defaultTypography.copy(
     labelLarge = defaultTypography.labelLarge.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.SemiBold),
     labelMedium = defaultTypography.labelMedium.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
     labelSmall = defaultTypography.labelSmall.copy(fontFamily = MarbleFontFamily, fontWeight = FontWeight.Medium),
-)
+).emphasized()
 
 /** Vazirmatn backs the whole Persian scale; English keeps the platform family at the same weights. */
 fun marbleTypography(languageTag: String): Typography =
-    if (languageTag == "fa") PersianTypography else defaultTypography
+    if (languageTag == "fa") PersianTypography else defaultTypography.emphasized()

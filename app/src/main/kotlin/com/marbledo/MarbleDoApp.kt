@@ -20,7 +20,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -40,6 +39,7 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TrendingUp
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -142,6 +142,9 @@ private fun destinationForRoute(route: String): String = when (route) {
     else -> "home"
 }
 
+// Material 3 Expressive: MarbleDoApp reads MaterialTheme.motionScheme for the screen
+// transitions below, so it opts into the expressive API set once, at the root composable.
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MarbleDoApp(
     initialShareText: String?,
@@ -385,6 +388,9 @@ fun MarbleDoApp(
         ) {
             Surface(Modifier.fillMaxSize()) {
                 val enabledOccasionCategories = settings.enabledOccasionCategories()
+                // Material 3 Expressive motion: the screen transition rides the theme's springs
+                // instead of a hard-coded tween, so it matches every component's timing.
+                val motion = MaterialTheme.motionScheme
                 val content: @Composable (Modifier) -> Unit = { contentModifier ->
                     NavDisplay(
                         backStack = backStack,
@@ -392,15 +398,15 @@ fun MarbleDoApp(
                         modifier = contentModifier,
                         transitionSpec = {
                             if (settings.reduceMotion) EnterTransition.None togetherWith ExitTransition.None
-                            else (fadeIn(tween(230)) + slideInHorizontally(animationSpec = tween(230)) { if (settings.languageTag == "fa") -it / 14 else it / 14 }) togetherWith fadeOut(tween(150))
+                            else (fadeIn(motion.defaultEffectsSpec()) + slideInHorizontally(animationSpec = motion.defaultSpatialSpec()) { if (settings.languageTag == "fa") -it / 14 else it / 14 }) togetherWith fadeOut(motion.fastEffectsSpec())
                         },
                         popTransitionSpec = {
                             if (settings.reduceMotion) EnterTransition.None togetherWith ExitTransition.None
-                            else fadeIn(tween(180)) togetherWith fadeOut(tween(150))
+                            else fadeIn(motion.fastEffectsSpec()) togetherWith fadeOut(motion.fastEffectsSpec())
                         },
                         predictivePopTransitionSpec = {
                             if (settings.reduceMotion) EnterTransition.None togetherWith ExitTransition.None
-                            else fadeIn(tween(180)) togetherWith fadeOut(tween(150))
+                            else fadeIn(motion.fastEffectsSpec()) togetherWith fadeOut(motion.fastEffectsSpec())
                         },
                         entryProvider = entryProvider {
                             entry<HomeDestination> {

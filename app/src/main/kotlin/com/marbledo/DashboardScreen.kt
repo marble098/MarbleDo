@@ -65,10 +65,12 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material.icons.outlined.ViewList
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -1011,12 +1013,16 @@ fun DashboardScreen(
  * accessibility services, and every stop keeps a full-size touch target (docs/UI_COUNCIL_REVIEW.md).
  */
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun DashboardTabRow(
     selected: DashboardTab,
     onSelect: (DashboardTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
+    // Material 3 Expressive: the selected pill springs to its new home on the theme's own
+    // timing instead of snapping, so the control moves like every other component does.
+    val motion = MaterialTheme.motionScheme
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -1029,6 +1035,16 @@ private fun DashboardTabRow(
         DashboardTab.entries.forEach { tab ->
             val isSelected = tab == selected
             val label = stringResource(tab.labelRes)
+            val pill by animateColorAsState(
+                targetValue = if (isSelected) colors.surface else colors.surfaceVariant.copy(alpha = 0f),
+                animationSpec = motion.defaultEffectsSpec(),
+                label = "dashboardTabPill",
+            )
+            val labelColor by animateColorAsState(
+                targetValue = if (isSelected) colors.primary else colors.onSurfaceVariant,
+                animationSpec = motion.defaultEffectsSpec(),
+                label = "dashboardTabLabel",
+            )
             Surface(
                 modifier = Modifier
                     .weight(1f)
@@ -1036,13 +1052,13 @@ private fun DashboardTabRow(
                     .clip(MaterialTheme.shapes.large)
                     .selectable(selected = isSelected, role = Role.Tab) { onSelect(tab) },
                 shape = MaterialTheme.shapes.large,
-                color = if (isSelected) colors.surface else colors.surfaceVariant.copy(alpha = 0f),
+                color = pill,
             ) {
                 Text(
                     text = label,
                     style = MarbleTextStyles.metaLabel,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) colors.primary else colors.onSurfaceVariant,
+                    color = labelColor,
                     maxLines = 1,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
@@ -1454,6 +1470,7 @@ private fun OccasionLine(
  * (docs/UI_COUNCIL_REVIEW.md, D-4).
  */
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun SegmentedSwitch(
     options: List<Pair<String, Int>>,
     selectedIndex: Int,
@@ -1461,12 +1478,24 @@ private fun SegmentedSwitch(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Material 3 Expressive: the active segment fills and empties on the theme's spring.
+    val motion = MaterialTheme.motionScheme
     Row(modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         options.forEachIndexed { index, (label, count) ->
             val selected = index == selectedIndex
+            val active by animateColorAsState(
+                targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                animationSpec = motion.defaultEffectsSpec(),
+                label = "segmentedSwitchFill",
+            )
+            val contentColor by animateColorAsState(
+                targetValue = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                animationSpec = motion.defaultEffectsSpec(),
+                label = "segmentedSwitchLabel",
+            )
             Surface(
                 shape = CircleShape,
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                color = active,
                 modifier = Modifier
                     .weight(1f)
                     .minimumInteractiveComponentSize()
@@ -1476,7 +1505,7 @@ private fun SegmentedSwitch(
                 Text(
                     TextNormalizer.formatDigits("$label $count", numeralMode),
                     style = MarbleTextStyles.metaLabel,
-                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = contentColor,
                     maxLines = 1,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
