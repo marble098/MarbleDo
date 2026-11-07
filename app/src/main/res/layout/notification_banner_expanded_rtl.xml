@@ -24,6 +24,18 @@
         android:paddingTop="10dp"
         android:paddingEnd="12dp"
         android:paddingBottom="10dp">
+        <!--
+          The day's mood rule, mirrored with the rest of this layout. CalendarNotificationViews
+          tints this id for every banner layout it builds, collapsed or expanded; a missing id
+          makes the whole RemoteViews fail to apply and the notification disappears.
+        -->
+        <View
+            android:id="@+id/notification_accent_rule"
+            android:layout_width="4dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/notification_banner_bar"
+            android:importantForAccessibility="no" />
         <ImageView
             android:id="@+id/notification_badge"
             android:layout_width="46dp"
