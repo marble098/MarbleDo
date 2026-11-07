@@ -30,7 +30,7 @@ def require(condition: bool, message: str) -> None:
 
 def check(catalog: dict) -> dict:
     require(catalog["schemaVersion"] == 5, "Unsupported schema")
-    require(int(catalog["dataVersion"]) >= 8, "Catalog must not roll back to pre-review data")
+    require(int(catalog["dataVersion"]) >= 13, "Catalog must not roll back behind the holiday and completeness corrections")
     date.fromisoformat(catalog["updatedAt"])
     references = catalog["sources"]
     source_ids = {s["id"] for s in references}
@@ -121,6 +121,19 @@ def check(catalog: dict) -> dict:
     for title in ["Martyrdom of Imam Reza (last day of Safar)", "Martyrdom of Imam Jawad"]:
         require(by_title[title].get("dateRule") == "month_end", f"Lost month-end rule: {title}")
     require(by_title["International Quds Day"].get("weekday") == 5, "Quds must remain Friday")
+    aban13_student_day = by_title["Student Day"]
+    require((aban13_student_day["calendar"], aban13_student_day["month"], aban13_student_day["day"]) == ("jalali", 8, 13), "Student Day must remain on 13 Aban")
+    require(not aban13_student_day["holiday"], "13 Aban Student Day is an observance, not an official public holiday")
+    require(not by_title["National Day against Global Arrogance"]["holiday"], "13 Aban commemoration must not be labelled a public holiday")
+    for title, month, day in [
+        ("World Tuberculosis Day", 3, 24),
+        ("World Art Day", 4, 15),
+        ("World Malaria Day", 4, 25),
+        ("International Day of Women in Mathematics", 5, 12),
+    ]:
+        row = by_title[title]
+        require((row["calendar"], row["month"], row["day"]) == ("gregorian", month, day), f"Missing sourced observance: {title}")
+        require(row["evidence"] == "sourced" and not row["holiday"], f"Bad evidence/holiday status: {title}")
     require(by_title["Chaharshanbe Suri"].get("dayOffset") == -1, "Chaharshanbe Suri is an evening before Wednesday")
     require(not any(r["calendar"] == "jalali" and r["titleEn"] in {
         "Family and Retirees Day", "Endowment (Waqf) Day", "Girls' Day", "Mother and Women's Day",

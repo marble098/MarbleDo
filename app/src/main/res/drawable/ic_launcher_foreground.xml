@@ -3,8 +3,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#6258C8" android:pathData="M54,15a39,39 0,1 0,0 78a39,39 0,1 0,0 -78" />
-    <path android:fillColor="#8F86E8" android:pathData="M35,29c8,-9 21,-12 32,-6c-10,0 -18,5 -23,14c-6,11 -5,28 2,39c-17,-8 -23,-31 -11,-47z" android:fillAlpha="0.72" />
-    <path android:fillColor="#FFFFFF" android:pathData="M43,55l7,7l17,-19l7,7l-24,26l-14,-14z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M75,29h5v12h-5z" />
+    <!-- A crisp calendar tile with generous adaptive-icon safe-area margins. -->
+    <path android:fillColor="#F7FAF8" android:pathData="M34,23h40c7,0 11,4 11,11v39c0,7 -4,11 -11,11H34c-7,0 -11,-4 -11,-11V34c0,-7 4,-11 11,-11z" />
+    <path android:fillColor="#007C83" android:pathData="M23,37V34c0,-7 4,-11 11,-11h40c7,0 11,4 11,11v3z" />
+    <!-- Binding rings -->
+    <path android:fillColor="#D9FFF1" android:pathData="M36,19h5v17h-5zM67,19h5v17h-5z" />
+    <!-- A clear date rhythm; the highlighted day doubles as a quiet completion check. -->
+    <path android:fillColor="#A8B7B6" android:pathData="M34,47h7v7h-7zM48,47h7v7h-7zM62,47h7v7h-7zM34,61h7v7h-7zM48,61h7v7h-7z" />
+    <path android:fillColor="#27B894" android:pathData="M63,60l4,4l8,-9l4,4l-12,13l-8,-8z" />
 </vector>

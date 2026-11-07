@@ -1,8 +1,8 @@
 {
   "schemaVersion": 5,
   "calendar": "persian",
-  "dataVersion": "11",
-  "updatedAt": "2026-10-19",
+  "dataVersion": "13",
+  "updatedAt": "2026-11-07",
   "note": "Versioned, curated offline catalog, not a live government feed. Sourced entries cite reviewed references; legacy entries remain explicitly unreviewed. Rules are resolved in their own calendar. Islamic dates use ICU civil arithmetic with user adjustment and may differ from announced dates. Guidance windows and school programs are not official holidays or nationwide execution deadlines. School-occasion weeks are recorded with their published or customary start day and length; guidance weeks must still be confirmed against the current year's circular.",
   "jalali": [
     {
@@ -4711,7 +4711,7 @@
       "titleFa": "روز دانش‌آموز و مبارزه با استکبار",
       "titleEn": "Student Day",
       "category": "national",
-      "holiday": true,
+      "holiday": false,
       "id": "jalali-8-13-Student Day",
       "sourceIds": [
         "pc-1405"
@@ -12887,6 +12887,26 @@
     },
     {
       "month": 3,
+      "day": 24,
+      "titleFa": "روز جهانی سل",
+      "titleEn": "World Tuberculosis Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-3-24-World Tuberculosis Day",
+      "sourceIds": [
+        "pc-1405"
+      ],
+      "evidence": "sourced",
+      "tags": [
+        "education",
+        "culture"
+      ],
+      "cultures": [
+        "global"
+      ]
+    },
+    {
+      "month": 3,
       "day": 25,
       "titleFa": "روز یادبود قربانیان تجارت برده‌داری",
       "titleEn": "International Day of Remembrance of the Victims of Slavery and the Transatlantic Slave Trade",
@@ -13212,6 +13232,25 @@
       ],
       "tags": [
         "culture"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 15,
+      "titleFa": "روز جهانی هنر",
+      "titleEn": "World Art Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-4-15-World Art Day",
+      "sourceIds": [
+        "pc-1405"
+      ],
+      "evidence": "sourced",
+      "tags": [
+        "culture"
+      ],
+      "cultures": [
+        "global"
       ]
     },
     {
@@ -13597,6 +13636,26 @@
       ],
       "tags": [
         "culture"
+      ]
+    },
+    {
+      "month": 4,
+      "day": 25,
+      "titleFa": "روز جهانی مالاریا",
+      "titleEn": "World Malaria Day",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-4-25-World Malaria Day",
+      "sourceIds": [
+        "pc-1405"
+      ],
+      "evidence": "sourced",
+      "tags": [
+        "education",
+        "culture"
+      ],
+      "cultures": [
+        "global"
       ]
     },
     {
@@ -14226,6 +14285,26 @@
         "legacy-v5"
       ],
       "evidence": "legacy",
+      "tags": [
+        "education",
+        "culture"
+      ],
+      "cultures": [
+        "global"
+      ]
+    },
+    {
+      "month": 5,
+      "day": 12,
+      "titleFa": "روز جهانی زنان در ریاضیات",
+      "titleEn": "International Day of Women in Mathematics",
+      "category": "international",
+      "holiday": false,
+      "id": "gregorian-5-12-International Day of Women in Mathematics",
+      "sourceIds": [
+        "pc-1405"
+      ],
+      "evidence": "sourced",
       "tags": [
         "education",
         "culture"

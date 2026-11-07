@@ -3,7 +3,7 @@ package com.marbledo.domain.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class AppThemeMode { AUTO, GLASS_LIGHT, DARK, AMOLED, DYNAMIC }
+enum class AppThemeMode { AUTO, GLASS_LIGHT, DARK, AMOLED, DYNAMIC, OCEAN, FOREST, SUNSET, ROSE }
 
 @Serializable
 enum class NumeralMode { PERSIAN, LATIN, ARABIC }

@@ -40,6 +40,31 @@ class OccasionCatalogV5Test {
         assertTrue(catalog.occasions.filter { OccasionCulture.IRANIAN !in it.cultures }.none { it.isHoliday })
     }
 
+    @Test fun `13 Aban commemorations are not marked as official public holidays`() {
+        val studentDay = catalog.occasions.single { it.titleEn == "Student Day" }
+        val resistanceDay = catalog.occasions.single { it.titleEn == "National Day against Global Arrogance" }
+        assertEquals(OccasionCalendar.JALALI, studentDay.calendar)
+        assertEquals(8 to 13, studentDay.month to studentDay.day)
+        assertFalse(studentDay.isHoliday)
+        assertFalse(resistanceDay.isHoliday)
+    }
+
+    @Test fun `expanded global occasions have stable dates and never create public holidays`() {
+        val expected = mapOf(
+            "World Tuberculosis Day" to (3 to 24),
+            "World Art Day" to (4 to 15),
+            "World Malaria Day" to (4 to 25),
+            "International Day of Women in Mathematics" to (5 to 12),
+        )
+        expected.forEach { (title, date) ->
+            val occasion = catalog.occasions.single { it.titleEn == title }
+            assertEquals(OccasionCalendar.GREGORIAN, occasion.calendar)
+            assertEquals(date, occasion.month to occasion.day)
+            assertFalse(occasion.isHoliday)
+            assertEquals(OccasionEvidence.SOURCED, occasion.evidence)
+        }
+    }
+
     @Test fun `culture and category gates intersect and empty selection is intentionally empty`() {
         assertEquals(OccasionCulture.all, AppSettings().enabledOccasionCultures())
         val defaults = AppSettings()
