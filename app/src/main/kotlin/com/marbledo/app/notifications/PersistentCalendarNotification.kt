@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -72,6 +73,13 @@ object PersistentCalendarNotification {
     )
 
     @Volatile private var lastPostedSignature: Int = 0
+
+    /**
+     * When the current signature was last posted. A notification that SystemUI could not expand
+     * stays "active" in [NotificationManager] while nothing is drawn, so freshness is the only
+     * signal the app has that a re-post can heal a vanished row.
+     */
+    @Volatile private var lastPostedAtMillis: Long = 0L
 
     fun update(context: Context, settings: AppSettings, tasks: List<Task>, catalog: OccasionCatalog,
         nowMillis: Long = System.currentTimeMillis()) {
@@ -174,7 +182,12 @@ object PersistentCalendarNotification {
             notificationContext.resources.displayMetrics.densityDpi, notificationContext.resources.configuration.fontScale).hashCode()
         val isVisible = notificationContext.getSystemService(NotificationManager::class.java)?.activeNotifications
             ?.any { it.id == NOTIFICATION_ID } == true
-        if (signature == lastPostedSignature && isVisible) return
+        // "Active" is not "rendered": if SystemUI failed to expand the custom view it keeps the
+        // notification registered while drawing nothing, and a signature-only guard would then
+        // never post it again. Re-posting after [REPOST_AFTER_MILLIS] makes the icon heal itself
+        // on the next refresh (hourly, at midnight, or when the app comes back to the foreground).
+        val freshlyPosted = nowMillis - lastPostedAtMillis in 0..REPOST_AFTER_MILLIS
+        if (signature == lastPostedSignature && isVisible && freshlyPosted) return
         fun destination(request: Int, uri: String, route: String) = PendingIntent.getActivity(notificationContext, request,
             Intent(notificationContext, MainActivity::class.java).apply {
                 action = Intent.ACTION_VIEW; data = Uri.parse(uri)
@@ -189,14 +202,27 @@ object PersistentCalendarNotification {
         val publicVersion = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
             .setSmallIcon(smallIcon).setContentTitle(content.title)
             .setContentText(notificationContext.getString(R.string.notification_private)).setShowWhen(false).build()
+        // A RemoteViews that SystemUI cannot inflate takes the whole row down with it, so the
+        // custom views are optional: if either one cannot even be built here, the notification is
+        // posted from its title/text/actions instead of not being posted at all. The status-bar
+        // icon is part of the notification, so "no custom view" still looks far better than
+        // "no notification".
+        val collapsedView = runCatching {
+            CalendarNotificationViews.create(notificationContext, content, largeIcon, false, settings.notificationDesign, settings.languageTag == "fa")
+        }.onFailure { Log.w(TAG, "collapsed ${settings.notificationDesign} view failed; falling back to text", it) }.getOrNull()
+        val expandedView = runCatching {
+            CalendarNotificationViews.create(notificationContext, content, largeIcon, true, settings.notificationDesign, settings.languageTag == "fa")
+        }.onFailure { Log.w(TAG, "expanded ${settings.notificationDesign} view failed; falling back to text", it) }.getOrNull()
         val builder = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
             .setSmallIcon(smallIcon)
             .setColor(NotificationArtwork.accentColor(notificationContext, content.mood))
             .setContentTitle(content.title).setContentText(content.collapsedLine).setSubText(content.moodSubtitle)
-            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            .setCustomContentView(CalendarNotificationViews.create(notificationContext, content, largeIcon, false, settings.notificationDesign, settings.languageTag == "fa"))
-            .setCustomBigContentView(CalendarNotificationViews.create(notificationContext, content, largeIcon, true, settings.notificationDesign, settings.languageTag == "fa"))
-            .setContentIntent(calendarIntent).setCategory(NotificationCompat.CATEGORY_STATUS)
+        if (collapsedView != null && expandedView != null) {
+            builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(collapsedView)
+                .setCustomBigContentView(expandedView)
+        }
+        builder.setContentIntent(calendarIntent).setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(publicVersion).setShowWhen(false).setLocalOnly(true).setSilent(true)
             .setOnlyAlertOnce(true).setOngoing(true).setAutoCancel(false)
@@ -214,10 +240,12 @@ object PersistentCalendarNotification {
                 Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         NotificationManagerCompat.from(notificationContext).notify(NOTIFICATION_ID, builder.build())
         lastPostedSignature = signature
+        lastPostedAtMillis = nowMillis
     }
 
     fun cancel(context: Context) {
         lastPostedSignature = 0
+        lastPostedAtMillis = 0L
         runCatching { NotificationManagerCompat.from(context.applicationContext).cancel(NOTIFICATION_ID) }
     }
 
@@ -262,4 +290,8 @@ object PersistentCalendarNotification {
     }
 
     private const val MAX_VISIBLE_EVENTS = 2
+
+    /** How long a posted notification is trusted as "already on screen" before it is re-sent. */
+    internal const val REPOST_AFTER_MILLIS = 30 * 60 * 1000L
+    private const val TAG = "MarbleDateIcon"
 }

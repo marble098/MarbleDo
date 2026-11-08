@@ -1,4 +1,5 @@
 """Static guards for SystemUI layouts (which use the app language, not the host locale)."""
+import re
 import unittest
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -48,11 +49,67 @@ class NotificationDesignTests(unittest.TestCase):
     def test_compact_badge_fits_android_12_collapsed_height(self):
         for path in (ROOT / 'app/src/main/res/layout').glob('notification_*_compact_*.xml'):
             root = ET.parse(path).getroot()
-            badge = next(root.iter('ImageView'))
+            # Identify the badge by id: the banner theme also leading with an ImageView (the
+            # accent rule) would otherwise be mistaken for it.
+            badge = next(view for view in root.iter() if view.get(ANDROID + 'id', '').endswith('/notification_badge'))
             height = sum(int(v.removesuffix('dp')) for v in (
                 badge.get(ANDROID + 'layout_height'),
                 root.get(ANDROID + 'paddingTop'), root.get(ANDROID + 'paddingBottom')))
             self.assertLessEqual(height, 48, str(path))
+
+    def test_notification_layouts_only_use_widgets_remoteviews_can_inflate(self):
+        """A class outside RemoteViews' allowlist takes the whole notification off the screen.
+
+        This is the banner bug in its second form: every banner layout was built from bare
+        `<View>` elements (the accent rule and the two hairlines). RemoteViews documents a fixed
+        widget list that does not include `View`; a SystemUI build that enforces it fails to
+        expand the custom view, the row is dropped, and the notification leaves the shade and
+        the status bar together. The layouts therefore stick to ImageView/FrameLayout.
+        """
+        allowlist = {
+            'LinearLayout', 'FrameLayout', 'RelativeLayout', 'GridLayout', 'AbsoluteLayout',
+            'TextView', 'Button', 'ImageButton', 'ImageView', 'ProgressBar', 'Chronometer',
+            'AnalogClock', 'TextClock', 'ViewFlipper', 'AdapterViewFlipper', 'ListView',
+            'GridView', 'StackView', 'Space',
+        }
+        layouts = sorted((ROOT / 'app/src/main/res/layout').glob('notification_*.xml'))
+        self.assertGreaterEqual(len(layouts), 16)
+        for path in layouts:
+            for element in ET.parse(path).getroot().iter():
+                self.assertIn(
+                    element.tag,
+                    allowlist,
+                    f'{path.name}: <{element.tag}> is not a RemoteViews-inflatable widget, so '
+                    'SystemUI drops the notification instead of drawing it',
+                )
+
+    def test_banner_accent_rule_stays_an_imageview(self):
+        """`setImageViewResource` targets this id, so it has to be an ImageView everywhere."""
+        for size in ('compact', 'expanded'):
+            for direction in ('rtl', 'ltr'):
+                path = ROOT / f'app/src/main/res/layout/notification_banner_{size}_{direction}.xml'
+                root = ET.parse(path).getroot()
+                owners = [
+                    parent for parent in root.iter()
+                    if any(child.get(ANDROID + 'id', '').endswith('/notification_accent_rule') for child in parent)
+                ]
+                self.assertEqual(1, len(owners), str(path))
+                # The rule is a direct child of a layout; check the element that carries the id.
+                rules = [child for parent in owners for child in parent
+                         if child.get(ANDROID + 'id', '').endswith('/notification_accent_rule')]
+                self.assertEqual('ImageView', rules[0].tag, str(path))
+                self.assertEqual('fitXY', rules[0].get(ANDROID + 'scaleType'), str(path))
+
+    def test_notification_tint_is_not_reflective(self):
+        """The banner tint must be a first-class RemoteViews call, not a setInt method lookup."""
+        views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
+        code = re.sub(r'/\*.*?\*/', '', views, flags=re.S)
+        code = '\n'.join(line.split('//')[0] for line in code.splitlines())
+        self.assertNotIn('setInt(', code, 'the reflective RemoteViews action came back')
+        self.assertIn('setImageViewResource(R.id.notification_accent_rule', code)
+        for mood in ('holiday', 'religious', 'occasion', 'tasks', 'quiet'):
+            drawable = ROOT / f'app/src/main/res/drawable/notification_banner_bar_{mood}.xml'
+            self.assertTrue(drawable.exists(), f'missing mood drawable {drawable.name}')
 
     def test_settings_preview_uses_compose_without_android_view_interop(self):
         settings = (ROOT / 'app/src/main/kotlin/com/marbledo/SettingsScreen.kt').read_text()

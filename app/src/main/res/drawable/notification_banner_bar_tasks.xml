@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Banner theme: the leading accent rule, pre-tinted for the "tasks" mood.
+
+  The rule is a real drawable per mood instead of a reflective
+  RemoteViews.setInt(…, "setBackgroundColor", …) call. A RemoteViews apply is all or nothing: one
+  action that cannot run (an unknown id, a view class SystemUI will not inflate, a method that is
+  not @RemotableViewMethod) aborts the whole custom view, the row is dropped and the notification
+  and its status-bar icon vanish together. A plain setImageViewResource() has no such failure
+  mode, and keeping the shape as a drawable also preserves the rounded corner that a flat
+  background colour used to wipe out.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/notification_tasks" />
+    <corners android:radius="2dp" />
+</shape>

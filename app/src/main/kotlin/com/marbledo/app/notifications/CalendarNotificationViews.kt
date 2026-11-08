@@ -9,9 +9,24 @@ import com.marble098.marbledo.R
 /** Framework-decorated layouts: Android retains its trusted header, expand affordance and actions. */
 internal object CalendarNotificationViews {
 
-    /** The mood colour the banner theme paints its accent rule with. */
-    private fun moodAccent(context: Context, mood: NotificationMood): Int =
-        NotificationArtwork.accentColor(context, mood)
+    /**
+     * The banner theme's accent rule, already tinted for the day's mood.
+     *
+     * The rule used to be tinted reflectively, by name, with a "setBackgroundColor" method call —
+     * the only reflective action in the whole builder. Reflection is the fragile half of
+     * RemoteViews: the method must exist on the target class *and* carry `@RemotableViewMethod`,
+     * and a single action that cannot run aborts the entire apply, so the row — and with it the
+     * status-bar icon — never renders. A drawable per mood turns that into a first-class
+     * `setImageViewResource()`, which has no lookup to fail. It also keeps the rule's rounded
+     * corner, which a flat background colour used to erase.
+     */
+    private fun accentRuleRes(mood: NotificationMood): Int = when (mood) {
+        NotificationMood.HOLIDAY -> R.drawable.notification_banner_bar_holiday
+        NotificationMood.RELIGIOUS -> R.drawable.notification_banner_bar_religious
+        NotificationMood.OCCASION -> R.drawable.notification_banner_bar_occasion
+        NotificationMood.TASKS_DUE -> R.drawable.notification_banner_bar_tasks
+        NotificationMood.QUIET -> R.drawable.notification_banner_bar_quiet
+    }
 
     private fun layout(design: String, expanded: Boolean, rtl: Boolean): Int = when (design) {
         "minimal" -> if (expanded) {
@@ -49,9 +64,10 @@ internal object CalendarNotificationViews {
         setTextViewText(R.id.notification_mood_pill, content.moodSubtitle)
         if (badge != null && design != "minimal") setImageViewBitmap(R.id.notification_badge, badge)
         else setViewVisibility(R.id.notification_badge, View.GONE)
-        // The banner theme tints its leading accent rule with the day's mood colour.
+        // The banner theme tints its leading accent rule with the day's mood colour, through a
+        // first-class RemoteViews action on an ImageView.
         if (design == "banner") {
-            setInt(R.id.notification_accent_rule, "setBackgroundColor", moodAccent(context, content.mood))
+            setImageViewResource(R.id.notification_accent_rule, accentRuleRes(content.mood))
         }
         setContentDescription(R.id.notification_root, if (expanded) content.expandedText else "${content.title}. ${content.collapsedLine}")
         if (!expanded) {

@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.core.designsystem.LocalReduceMotion
+import com.marbledo.core.designsystem.MarbleMotion
 import com.marbledo.domain.model.Habit
 import com.marbledo.domain.model.HabitKind
 import com.marbledo.domain.model.HabitTheme
@@ -111,9 +112,11 @@ fun HabitRing(
 ) {
     val stroke = with(LocalDensity.current) { strokeWidth.toPx() }
     val clamped = progress.coerceIn(0f, 1f)
+    // Springy, on the theme's spatial spec: the ring changes size, and it should arrive the same
+    // way the surrounding Material components do.
     val animatedValue by animateFloatAsState(
         targetValue = clamped,
-        animationSpec = tween(durationMillis = 700),
+        animationSpec = MarbleMotion.spatial(),
         label = "habitRing",
     )
     val animated = if (LocalReduceMotion.current) clamped else animatedValue

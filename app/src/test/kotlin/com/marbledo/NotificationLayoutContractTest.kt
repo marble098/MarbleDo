@@ -8,15 +8,24 @@ import org.junit.jupiter.api.Test
 /**
  * Guards the contract between `CalendarNotificationViews` and the notification layouts it builds.
  *
- * `RemoteViews` resolves every `R.id` it targets when SystemUI *applies* the layout, not when the
- * notification is posted, so a view id one design's layout does not declare fails silently: the
- * apply throws, the notification never renders, and it vanishes from the status bar. That is
- * exactly what happened to the fourth design ("banner"), whose collapsed layout declared
- * `notification_accent_rule` but whose expanded layouts did not.
+ * A custom notification view fails **all or nothing**: `RemoteViews` resolves every `R.id` and every
+ * widget class when SystemUI *applies* the layout, not when the notification is posted, and one
+ * action that cannot run aborts the whole apply. The row is then dropped, and because the status-bar
+ * icon belongs to the same notification, the icon disappears too — the exact symptom of the fourth
+ * design ("banner").
  *
- * The test therefore parses the builder source itself — so a newly added `R.id` is covered without
+ * Two independent defects produced it, so there are two guards:
+ *
+ *  1. **Missing ids.** The banner's collapsed layout declared `notification_accent_rule` but its
+ *     expanded layouts did not, while the builder tinted that id in both states.
+ *  2. **Widget classes outside the RemoteViews allowlist.** Every banner layout was built from bare
+ *     `<View>` elements (one accent rule, two hairlines) — the only design that was. RemoteViews
+ *     documents a fixed widget list that does not contain `View`.
+ *
+ * The first test parses the builder source itself — so a newly added `R.id` is covered without
  * anyone remembering to update a list here — works out which branch guards each reference, and
- * asserts that every layout a design can be rendered from declares all of them.
+ * asserts that every layout a design can be rendered from declares all of them. The remaining tests
+ * check the widget classes, and that the banner's accent rule is the ImageView the builder paints.
  */
 class NotificationLayoutContractTest {
 
@@ -89,9 +98,10 @@ class NotificationLayoutContractTest {
             references.getOrPut(id) { mutableListOf() }.add(openGuards.values.toSet())
         }
 
-        for (rawLine in source.lineSequence()) {
+        for (rawLine in source.lineCommentAndBlockCommentFree().lineSequence()) {
             // Guards and ids are matched before strings are removed, because the guard itself
             // contains a string literal ("banner"); only brace counting needs the strings gone.
+            // Block comments carry prose, not actions, so a documented id must not count.
             val code = rawLine.substringBefore("//")
             ID.findAll(code).forEach { record(it.groupValues[1]) }
             when {
@@ -125,6 +135,13 @@ class NotificationLayoutContractTest {
         return references
     }
 
+    /**
+     * Strips block comments (the slash-star … star-slash form) so documentation that mentions a
+     * view id cannot be mistaken for a reference the builder actually makes.
+     */
+    private fun String.lineCommentAndBlockCommentFree(): String =
+        BLOCK_COMMENT.replace(this, "")
+
     /** An id is required when at least one of its reference sites is reachable. */
     private fun requiredIds(
         references: Map<String, List<Set<String>>>,
@@ -143,6 +160,60 @@ class NotificationLayoutContractTest {
             }
         }
     }.keys
+
+    /**
+     * The second half of the same failure: RemoteViews may only inflate the widget classes the
+     * documented allowlist names. A plain `<View>` is outside it, and on a SystemUI build that
+     * enforces the allowlist the custom view throws while it is being inflated — the row is
+     * dropped and the notification leaves the shade *and* the status bar. The banner design was
+     * the only one built from `<View>` elements (one accent rule, two hairlines), which is exactly
+     * why only the banner vanished; every widget a notification layout uses must be on the list.
+     */
+    @Test
+    fun `every notification layout only uses widgets RemoteViews can inflate`() {
+        val layouts = layoutDirectory().listFiles { file -> file.name.startsWith("notification_") && file.extension == "xml" }
+            .orEmpty()
+            .sortedBy { it.name }
+        assertTrue(layouts.size >= 16, "expected the notification layouts, found ${layouts.size}")
+
+        val unsupported = LinkedHashMap<String, MutableSet<String>>()
+        for (file in layouts) {
+            for (element in ELEMENT.findAll(file.readText(Charsets.UTF_8)).map { it.groupValues[1] }) {
+                if (element !in REMOTEVIEWS_WIDGETS) unsupported.getOrPut(file.name) { linkedSetOf() }.add(element)
+            }
+        }
+        assertTrue(
+            unsupported.isEmpty(),
+            "these layouts use widget classes RemoteViews will not inflate, which makes the whole " +
+                "notification disappear: $unsupported",
+        )
+    }
+
+    /**
+     * `CalendarNotificationViews` tints the banner rule with `setImageViewResource`, so the id has
+     * to be an ImageView. A `setImageViewResource` on a plain View is the same all-or-nothing
+     * apply failure the widget allowlist above guards against.
+     */
+    @Test
+    fun `the banner accent rule is an ImageView in every banner layout`() {
+        for (expanded in listOf(false, true)) {
+            for (file in layouts("banner", expanded)) {
+                val source = file.readText(Charsets.UTF_8)
+                val rule = source.substringAfter("@+id/notification_accent_rule", "")
+                val owner = source.substring(0, source.indexOf("@+id/notification_accent_rule"))
+                    .substringAfterLast('<')
+                    .substringBefore('\n')
+                    .trim()
+                assertEquals("ImageView", owner, "${file.name}: the accent rule must stay an ImageView")
+                assertTrue(rule.isNotBlank(), "${file.name}: the accent rule is missing")
+            }
+        }
+    }
+
+    private fun layoutDirectory(): File = resolve(
+        "src/main/res/layout",
+        "../app/src/main/res/layout",
+    )
 
     private fun layouts(design: String, expanded: Boolean): List<File> {
         val kind = layoutKind(expanded)
@@ -171,6 +242,18 @@ class NotificationLayoutContractTest {
         ?: File(candidates.first())
 
     private companion object {
+        /**
+         * The widget classes RemoteViews documents as inflatable. A bare `View` is deliberately
+         * absent: it is the class that took the banner design off the status bar.
+         */
+        val REMOTEVIEWS_WIDGETS = setOf(
+            "LinearLayout", "FrameLayout", "RelativeLayout", "GridLayout", "AbsoluteLayout",
+            "TextView", "Button", "ImageButton", "ImageView", "ProgressBar", "Chronometer",
+            "AnalogClock", "TextClock", "ViewFlipper", "AdapterViewFlipper", "ListView",
+            "GridView", "StackView",
+        )
+        val ELEMENT = Regex("""<([A-Za-z][A-Za-z0-9_]*)""")
+        val BLOCK_COMMENT = Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL)
         val ID = Regex("""R\.id\.([A-Za-z_][A-Za-z0-9_]*)""")
         val LAYOUT_ID = Regex("""@\+id/([A-Za-z_][A-Za-z0-9_]*)""")
         val STRING = Regex("\"(?:[^\"\\\\]|\\\\.)*\"")

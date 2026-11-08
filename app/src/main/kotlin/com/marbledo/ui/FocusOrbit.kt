@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.marble098.marbledo.R
 import com.marbledo.core.designsystem.LocalReduceMotion
+import com.marbledo.core.designsystem.MarbleMotion
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.util.TextNormalizer
@@ -53,9 +54,11 @@ fun FocusOrbit(
 ) {
     val reduceMotion = LocalReduceMotion.current
     val progress = if (total <= 0) 0f else (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+    // The ring is a spatial change (it grows into a new size), so it rides the theme's spatial
+    // spring like every Material component around it instead of a hand-written tween.
     val animatedProgressValue by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(900),
+        animationSpec = MarbleMotion.spatial(),
         label = "orbitProgress",
     )
     val animatedProgress = if (reduceMotion) progress else animatedProgressValue

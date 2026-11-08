@@ -12,11 +12,18 @@
     android:orientation="horizontal"
     android:paddingTop="4dp"
     android:paddingBottom="4dp">
-    <View
+    <!--
+      The accent rule is an ImageView, not a plain View. RemoteViews only documents a fixed set of
+      widget classes; a bare View is outside it and a SystemUI build that validates the class fails
+      to expand the custom view, which drops the whole row (and the status-bar icon with it). It is
+      also what makes the per-mood tint a plain setImageViewResource() call instead of reflection.
+    -->
+    <ImageView
         android:id="@+id/notification_accent_rule"
         android:layout_width="4dp"
         android:layout_height="34dp"
-        android:background="@drawable/notification_banner_bar"
+        android:scaleType="fitXY"
+        android:src="@drawable/notification_banner_bar"
         android:importantForAccessibility="no" />
     <ImageView
         android:id="@+id/notification_badge"

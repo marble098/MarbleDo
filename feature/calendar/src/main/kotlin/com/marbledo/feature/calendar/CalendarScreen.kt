@@ -91,6 +91,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.core.designsystem.LocalReduceMotion
 import com.marbledo.core.designsystem.MarbleSpacing
+import com.marbledo.core.designsystem.MarbleMotion
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.NumeralMode
@@ -980,7 +981,7 @@ private fun CalendarCommandCard(
                     ) {
                         Crossfade(
                             targetState = monthLabel,
-                            animationSpec = tween(220),
+                            animationSpec = MarbleMotion.effects(),
                             label = "calendarMonthLabel",
                         ) { label ->
                             Text(
@@ -1245,8 +1246,8 @@ private fun DayCellView(
         isWeekend -> colors.error.copy(alpha = 0.82f)
         else -> colors.onSurface
     }
-    val animatedBackground by animateColorAsState(targetBackground, tween(180), label = "dayCellBackground")
-    val animatedForeground by animateColorAsState(targetForeground, tween(180), label = "dayCellForeground")
+    val animatedBackground by animateColorAsState(targetBackground, MarbleMotion.fastEffects(), label = "dayCellBackground")
+    val animatedForeground by animateColorAsState(targetForeground, MarbleMotion.fastEffects(), label = "dayCellForeground")
     val background = if (reduceMotion) targetBackground else animatedBackground
     val foreground = if (reduceMotion) targetForeground else animatedForeground
     val shape = MaterialTheme.shapes.small
