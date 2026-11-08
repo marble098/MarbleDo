@@ -276,7 +276,7 @@
     <string name="dash_occasions_upcoming_short">Upcoming</string>
     <string name="dash_occasions_mine_short">Starred</string>
     <string name="dash_categories">Categories</string>
-    <string name="dash_plan_title">Today's plan</string>
+    <string name="dash_plan_title">Today\'s plan</string>
     <string name="dash_plan_collapsed">%1$s ready · %2$s free</string>
     <string name="dash_plan_expand">Open the plan</string>
     <string name="dash_plan_collapse">Close the plan</string>
