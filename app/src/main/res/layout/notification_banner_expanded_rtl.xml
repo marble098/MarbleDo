@@ -29,12 +29,13 @@
           tints this id for every banner layout it builds, collapsed or expanded; a missing id
           makes the whole RemoteViews fail to apply and the notification disappears.
         -->
-        <View
+        <ImageView
             android:id="@+id/notification_accent_rule"
             android:layout_width="4dp"
             android:layout_height="34dp"
             android:layout_marginEnd="10dp"
-            android:background="@drawable/notification_banner_bar"
+            android:scaleType="fitXY"
+            android:src="@drawable/notification_banner_bar"
             android:importantForAccessibility="no" />
         <ImageView
             android:id="@+id/notification_badge"
@@ -119,7 +120,8 @@
             android:progressBackgroundTint="@color/notification_card_track"
             android:progressTint="@color/notification_card_accent" />
     </LinearLayout>
-    <View
+    <!-- A FrameLayout, not a bare View: FrameLayout is one of the classes RemoteViews supports. -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="10dp"
@@ -172,7 +174,8 @@
             android:textDirection="rtl"
             android:textSize="11sp" />
     </LinearLayout>
-    <View
+    <!-- A FrameLayout, not a bare View: FrameLayout is one of the classes RemoteViews supports. -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="10dp"

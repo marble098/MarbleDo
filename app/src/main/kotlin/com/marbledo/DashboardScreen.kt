@@ -52,7 +52,6 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.Flag
@@ -62,10 +61,18 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material.icons.outlined.ViewList
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -97,6 +104,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -118,6 +126,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleMotion
 import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.AppSettings
@@ -241,6 +250,7 @@ fun DashboardScreen(
     )) { mutableStateOf<Task?>(null) }
     var showCreateCountdown by rememberSaveable { mutableStateOf(false) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
+    var filterMenuExpanded by remember { mutableStateOf(false) }
     var addDateIso by rememberSaveable { mutableStateOf<String?>(null) }
     var plannedCountdown by rememberSaveable { mutableStateOf(true) }
     val snackbarHost = remember { SnackbarHostState() }
@@ -448,6 +458,19 @@ fun DashboardScreen(
 
             when (selectedTab) {
                 DashboardTab.TODAY -> {
+                    // The day's plan comes first as one calm line: three picks, the time budget, the
+                    // next free gap and anything waiting too long. Collapsed it costs one row, so the
+                    // task list below still starts on the first screen.
+                    item {
+                        DailyPlanCard(
+                            tasks = state.allTasks,
+                            now = now.toInstant(),
+                            zone = zone,
+                            numeralMode = numeralMode,
+                            onStart = onOpenFocus,
+                            onEdit = { editingTask = it },
+                        )
+                    }
                     // Tasks are the reason the screen exists, so they come first and they keep the space.
                     item {
                         Row(
@@ -508,28 +531,31 @@ fun DashboardScreen(
                             }
                         }
                     }
-                    // The quick-filter chips share their row with the search/filter/sort toolbar. The title
-                    // row above keeps only the section title and the view switch, so all six actions keep
-                    // full-size touch targets on narrow screens (docs/UI_COUNCIL_REVIEW.md, D-1/D-2).
+                    // One calm row of controls instead of a chip row plus an icon pill. The scope chips
+                    // (Today / Upcoming / …) were permanently visible and pushed the list down; the
+                    // current scope is now a quiet label that opens the same choice as a menu, and the
+                    // three icon buttons keep their full-size touch targets (docs/UI_COUNCIL_REVIEW.md).
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                         ) {
-                            LazyRow(
-                                modifier = Modifier.weight(1f),
-                                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
-                                contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
-                            ) {
-                                items(TaskFilter.entries, key = { it.name }) { filter ->
-                                    FilterChip(
-                                        selected = state.filter == filter,
-                                        onClick = { viewModel.setFilter(filter) },
-                                        label = { Text(filterLabel(filter)) },
+                            if (state.filter != TaskFilter.TODAY) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                                ) {
+                                    Text(
+                                        filterLabel(state.filter),
+                                        style = MarbleTextStyles.metaLabel,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        maxLines = 1,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                     )
                                 }
                             }
+                            Box(Modifier.weight(1f))
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
@@ -543,10 +569,32 @@ fun DashboardScreen(
                                             modifier = Modifier.size(20.dp),
                                         )
                                     }
+                                    Box {
+                                        IconButton(onClick = { filterMenuExpanded = true }) {
+                                            Icon(
+                                                Icons.Outlined.Tune,
+                                                contentDescription = stringResource(R.string.dash_filters),
+                                                tint = if (state.filter != TaskFilter.TODAY) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(20.dp),
+                                            )
+                                        }
+                                        DropdownMenu(expanded = filterMenuExpanded, onDismissRequest = { filterMenuExpanded = false }) {
+                                            TaskFilter.entries.forEach { filter ->
+                                                DropdownMenuItem(
+                                                    text = { Text(filterLabel(filter)) },
+                                                    trailingIcon = {
+                                                        if (state.filter == filter) Icon(Icons.Outlined.Check, contentDescription = null)
+                                                    },
+                                                    onClick = { viewModel.setFilter(filter); filterMenuExpanded = false },
+                                                )
+                                            }
+                                        }
+                                    }
                                     IconButton(onClick = { categoriesOpen = !categoriesOpen }) {
                                         Icon(
                                             Icons.Outlined.FilterAlt,
-                                            contentDescription = stringResource(R.string.dash_filters),
+                                            contentDescription = stringResource(R.string.dash_categories),
                                             tint = if (categoriesOpen || state.selectedCategory != null) MaterialTheme.colorScheme.primary
                                             else MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(20.dp),
@@ -577,8 +625,14 @@ fun DashboardScreen(
                             }
                         }
                     }
-                    if (state.selectedIds.isNotEmpty()) {
-                        item {
+                    item {
+                        AnimatedVisibility(
+                            visible = state.selectedIds.isNotEmpty(),
+                            enter = fadeIn(animationSpec = MarbleMotion.effects()) +
+                                expandVertically(animationSpec = MarbleMotion.spatial()),
+                            exit = fadeOut(animationSpec = MarbleMotion.effects()) +
+                                shrinkVertically(animationSpec = MarbleMotion.spatial()),
+                        ) {
                             Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
@@ -666,6 +720,13 @@ fun DashboardScreen(
                                         if (settings.dashboardViewMode == DashboardViewMode.LIST) {
                                             items(grouped.tasks, key = { it.id }) { task ->
                                                 TaskRowCard(
+                                                    // Reordering a list (change of filter, sort or group) is a
+                                                    // spatial change, so the rows move to their new place.
+                                                    modifier = Modifier.animateItem(
+                                                        fadeInSpec = MarbleMotion.effects(),
+                                                        placementSpec = MarbleMotion.spatial(),
+                                                        fadeOutSpec = MarbleMotion.effects(),
+                                                    ),
                                                     task = task,
                                                     selected = task.id in state.selectedIds,
                                                     onToggle = {
@@ -826,6 +887,17 @@ fun DashboardScreen(
                 DashboardTab.WEEK -> {
                     // The week is the second stop: how the coming days are loaded, plus the two
                     // entry points that used to sit above the task list as loose pill buttons.
+                    // The balance line answers the first question the workload card raises — "is one
+                    // day carrying all of this?" — before the user has to count the bars.
+                    item {
+                        WeekBalanceRow(
+                            tasks = state.allTasks,
+                            now = now.toInstant(),
+                            zone = zone,
+                            languageTag = settings.languageTag,
+                            numeralMode = numeralMode,
+                        )
+                    }
                     item {
                         WeeklyWorkloadCard(state.allTasks, now.toInstant(), zone, settings.languageTag,
                             onOpenTask = { editingTask = it },
@@ -1260,9 +1332,15 @@ private fun HeaderMetric(
     numeralMode: NumeralMode,
     modifier: Modifier = Modifier,
 ) {
+    // A counter that changes when a task is ticked should move to its new value, not blink.
+    val animated by animateIntAsState(
+        targetValue = value,
+        animationSpec = MarbleMotion.spatial(),
+        label = "headerMetric",
+    )
     Column(modifier, verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
         Text(
-            TextNormalizer.formatDigits(value.toString(), numeralMode),
+            TextNormalizer.formatDigits(animated.toString(), numeralMode),
             style = MarbleTextStyles.cardTitle,
             color = accent,
             maxLines = 1,
@@ -1574,11 +1652,18 @@ private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onC
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                 )
             }
+            // One glyph that turns: swapping ExpandMore for ExpandLess was a hard cut in a row
+            // that otherwise animates (Material's rule is that a change of state is a transition).
+            val chevron by animateFloatAsState(
+                targetValue = if (expanded) 180f else 0f,
+                animationSpec = MarbleMotion.spatial(),
+                label = "taskGroupChevron",
+            )
             Icon(
-                if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                Icons.Outlined.ExpandMore,
                 contentDescription = null,
                 tint = colors.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(18.dp).rotate(chevron),
             )
         }
     }
