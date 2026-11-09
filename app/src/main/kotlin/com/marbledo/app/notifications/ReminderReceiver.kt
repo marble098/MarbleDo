@@ -154,7 +154,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val builder = NotificationCompat.Builder(context, NotificationChannels.TASKS)
             .setSmallIcon(R.drawable.ic_stat_marble)
             .setLargeIcon(largeIcon)
-            .setColor(ContextCompat.getColor(context, R.color.marble_accent))
+            .setColor(notificationAccent(context.applicationContext, settings))
             .setContentTitle(task.title)
             .setContentText(detail)
             .setSubText(listOf(priority, task.category).filter { it.isNotBlank() }.joinToString(" · "))

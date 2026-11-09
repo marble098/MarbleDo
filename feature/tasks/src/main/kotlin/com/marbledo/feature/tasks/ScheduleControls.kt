@@ -29,6 +29,9 @@ internal val schedulePresetTimes: List<LocalTime> = listOf(
 internal val schedulePresetDays: List<Pair<Int, Long>> = listOf(
     R.string.tasks_today to 0L,
     R.string.tasks_tomorrow to 1L,
+    // "Ten days from now" is the phrase the smart parser understands, so the chip speaks the same
+    // language as the text field.
+    R.string.tasks_date_in_ten_days to 10L,
     R.string.tasks_date_next_week to 7L,
     R.string.tasks_date_next_month to 30L,
 )
@@ -45,6 +48,8 @@ internal fun ScheduleQuickChips(
     onPickDate: (LocalDate) -> Unit,
     onPickTime: (LocalTime?) -> Unit,
     onClear: () -> Unit,
+    /** "فردا همین زمان": tomorrow, keeping the clock it is now. */
+    onPickTomorrowSameTime: (() -> Unit)? = null,
 ) {
     val hasSchedule = !schedule.isEmpty
     LazyRow(
@@ -58,6 +63,16 @@ internal fun ScheduleQuickChips(
                 onClick = onClear,
                 label = { Text(stringResource(R.string.tasks_date_none)) },
             )
+        }
+        if (onPickTomorrowSameTime != null) {
+            item {
+                val sameTime = LocalTime.now(zone).withSecond(0).withNano(0)
+                FilterChip(
+                    selected = schedule.date == LocalDate.now(zone).plusDays(1) && schedule.time == sameTime,
+                    onClick = onPickTomorrowSameTime,
+                    label = { Text(stringResource(R.string.tasks_tomorrow_same_time)) },
+                )
+            }
         }
         items(schedulePresetDays) { (labelRes, dayOffset) ->
             val target = LocalDate.now(zone).plusDays(dayOffset)

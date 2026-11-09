@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,6 +64,7 @@ import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.TaskPriority
 import com.marbledo.domain.util.TextNormalizer
+import com.marbledo.feature.tasks.SmartTaskParser
 import com.marbledo.feature.calendar.SchedulePickerDialog
 import com.marbledo.feature.calendar.SchedulePickerField
 import com.marbledo.feature.calendar.SchedulePickerMode
@@ -104,14 +106,15 @@ fun CountdownFocusDialog(
                     )
                     task.dueAtEpochMillis?.let { due ->
                         CountdownFace(task.title, due, theme, Modifier.fillMaxWidth(), compact = false)
+                        // The target is the one line kept under the digits; the face itself now prints
+                        // nothing but the remaining time.
                         Text(
-                            stringResource(R.string.countdown_target_date, countdownDateLabel(due, calendarDisplay)),
+                            countdownDateLabel(due, calendarDisplay),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                         )
                     }
-                    Text(stringResource(R.string.countdown_focus_mode), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -181,12 +184,6 @@ fun CountdownThemeGallerySheet(
                             }
                         }
                         CountdownFace(previewTitle, previewDueAtEpochMillis, theme, Modifier.fillMaxWidth(), compact = true)
-                        Text(
-                            countdownThemeCaption(theme),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                        )
                     }
                 }
             }
@@ -232,11 +229,6 @@ fun CountdownMiniCard(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                countdownThemeLabel(theme),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -264,6 +256,11 @@ fun CountdownCreateSheet(
     var selectedCalendar by rememberSaveable { mutableStateOf(calendarDisplay) }
     var targetMillis by rememberSaveable { mutableStateOf(defaultCountdownTarget(zone)) }
     var showPicker by rememberSaveable { mutableStateOf(false) }
+    // A target read out of what the user typed, so "ده روز بعد" fills the date instead of becoming
+    // part of the name.
+    var detectedMillis by rememberSaveable { mutableStateOf<Long?>(null) }
+    val parsedTitle = remember(title) { SmartTaskParser.parseSchedule(title) }
+    val cleanTitle = parsedTitle?.title.orEmpty().ifBlank { title.trim() }
     val target = remember(targetMillis, zone) { Instant.ofEpochMilli(targetMillis).atZone(zone) }
     val isFuture = targetMillis > System.currentTimeMillis()
     val summary = formatScheduleSummary(
@@ -277,6 +274,7 @@ fun CountdownCreateSheet(
 
     fun presetAt(moment: ZonedDateTime) {
         targetMillis = moment.withSecond(0).withNano(0).toInstant().toEpochMilli()
+        detectedMillis = null
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
@@ -288,11 +286,28 @@ fun CountdownCreateSheet(
             Text(stringResource(R.string.countdown_create_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             OutlinedTextField(
                 value = title,
-                onValueChange = { title = it },
+                onValueChange = { value ->
+                    title = value
+                    val due = SmartTaskParser.parseSchedule(value)?.dueAtEpochMillis
+                    val detected = due?.takeIf { it > System.currentTimeMillis() }
+                    if (detected != null) targetMillis = detected
+                    detectedMillis = detected
+                },
                 label = { Text(stringResource(R.string.countdown_title_field)) },
+                placeholder = { Text(stringResource(R.string.countdown_title_hint)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            if (detectedMillis != null && detectedMillis == targetMillis) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
+                    Text(
+                        stringResource(R.string.countdown_detected_hint, summary),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
             SchedulePickerField(
                 label = stringResource(R.string.countdown_date_field),
                 value = summary,
@@ -305,9 +320,12 @@ fun CountdownCreateSheet(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
+            // "فردا همین زمان" and "ده روز بعد" are the two phrases people actually say; they sit at
+            // the head of the row, before the week, month and year jumps.
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusHours(1)) }, label = { Text(stringResource(R.string.countdown_preset_hour)) }) }
-                item { FilterChip(selected = false, onClick = { presetAt(defaultCountdownPreset(zone)) }, label = { Text(stringResource(R.string.countdown_preset_tomorrow)) }) }
+                item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusDays(1)) }, label = { Text(stringResource(R.string.countdown_preset_tomorrow_same_time)) }) }
+                item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusDays(10)) }, label = { Text(stringResource(R.string.countdown_preset_ten_days)) }) }
                 item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusWeeks(1)) }, label = { Text(stringResource(R.string.countdown_preset_week)) }) }
                 item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusMonths(1)) }, label = { Text(stringResource(R.string.countdown_preset_month)) }) }
                 item { FilterChip(selected = false, onClick = { presetAt(ZonedDateTime.now(zone).plusYears(1)) }, label = { Text(stringResource(R.string.countdown_preset_year)) }) }
@@ -330,7 +348,7 @@ fun CountdownCreateSheet(
                     onClick = {
                         onCreate(
                             Task(
-                                title = title.trim(),
+                                title = cleanTitle,
                                 dueAtEpochMillis = targetMillis,
                                 isAllDay = false,
                                 priority = TaskPriority.NORMAL,
@@ -339,7 +357,7 @@ fun CountdownCreateSheet(
                             ),
                         )
                     },
-                    enabled = title.isNotBlank() && isFuture,
+                    enabled = cleanTitle.isNotBlank() && isFuture,
                     modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.countdown_create_action)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.countdown_cancel)) }

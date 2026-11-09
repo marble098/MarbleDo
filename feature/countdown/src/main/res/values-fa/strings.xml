@@ -7,14 +7,11 @@
     <string name="countdown_remaining">%1$s مانده</string>
     <string name="countdown_focus">تمرکز</string>
     <string name="countdown_close">بستن حالت تمرکز</string>
-    <string name="countdown_focus_mode">حالت تمرکز</string>
     <string name="countdown_quick_theme">زود ظاهرش را عوض کن</string>
     <string name="countdown_days">روز</string>
-    <string name="countdown_days_hours_minutes_seconds">روز · ساعت · دقیقه · ثانیه</string>
+    <string name="countdown_unit_day_one">روز</string>
+    <string name="countdown_unit_days_inline">روز</string>
     <string name="countdown_unit_days">روز</string>
-    <string name="countdown_unit_hours">ساعت</string>
-    <string name="countdown_unit_minutes">دقیقه</string>
-    <string name="countdown_unit_seconds">ثانیه</string>
     <string name="countdown_finished">رسیدیم! 🎉</string>
     <string name="countdown_disable">خاموش کردن این شمارش</string>
     <string name="countdown_theme_marble_orb">گوی مرمر</string>
@@ -62,13 +59,16 @@
     <string name="countdown_time_hint">نمونه: ۱۴:۳۰</string>
     <string name="countdown_quick_presets">انتخاب سریع</string>
     <string name="countdown_preset_hour">یک ساعت دیگر</string>
+    <string name="countdown_preset_tomorrow_same_time">فردا همین زمان</string>
+    <string name="countdown_preset_ten_days">ده روز بعد</string>
+    <string name="countdown_detected_hint">از متن خوانده شد · %1$s</string>
+    <string name="countdown_title_hint">مثلاً: سفر، ده روز بعد</string>
     <string name="countdown_preset_tomorrow">فردا</string>
     <string name="countdown_preset_week">یک هفته</string>
     <string name="countdown_preset_month">یک ماه</string>
     <string name="countdown_preset_year">یک سال</string>
     <string name="countdown_create_action">ذخیرهٔ شمارش</string>
     <string name="countdown_cancel">انصراف</string>
-    <string name="countdown_target_date">موعد: %1$s</string>
     <string name="countdown_past_error">زمانی در آینده انتخاب کن.</string>
     <string name="countdown_picker_title">انتخاب تاریخ و ساعت</string>
 </resources>

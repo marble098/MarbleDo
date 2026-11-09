@@ -125,6 +125,7 @@ class CalendarOccurrenceWorker(
             leadDays = leadDays,
             languageTag = settings.languageTag,
             numeralMode = settings.numeralMode,
+            accent = notificationAccent(notificationContext, settings),
         )
     }
 
@@ -134,6 +135,7 @@ class CalendarOccurrenceWorker(
         leadDays: Int,
         languageTag: String,
         numeralMode: NumeralMode,
+        accent: Int,
     ) {
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
@@ -169,7 +171,7 @@ class CalendarOccurrenceWorker(
             })
             .setSmallIcon(R.drawable.ic_stat_calendar)
             .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
-            .setColor(ContextCompat.getColor(context, R.color.marble_accent))
+            .setColor(accent)
             .setContentTitle(title)
             .setContentText(collapsedUpcoming)
             .setSubText(days)

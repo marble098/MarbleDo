@@ -147,3 +147,60 @@ class NotificationDesignTests(unittest.TestCase):
         self.assertIn('val cells = if (allCells.subList(35, 42).none { it.inDisplayedMonth }) allCells.take(35) else allCells', cal_kt)
 
 
+
+
+class NotificationThemeTests(unittest.TestCase):
+    """The shade follows the app theme, not a hard-coded indigo."""
+
+    def test_accent_text_ids_match_the_layouts(self):
+        """The ids the builder tints are exactly the ones the XML paints in the accent colour."""
+        views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
+        for compact_list, expanded_list in (
+            ('accentTextIds', 'expandedAccentTextIds'),
+        ):
+            compact = set(re.findall(r'R\.id\.(\w+)', views.split(compact_list + ' = listOf(')[1].split(')')[0]))
+            expanded = set(re.findall(r'R\.id\.(\w+)', views.split(expanded_list + ' = listOf(')[1].split(')\n')[0]))
+            self.assertTrue(compact, 'no compact accent ids declared')
+            self.assertTrue(expanded, 'no expanded accent ids declared')
+            for design in ('classic', 'minimal', 'editorial', 'banner'):
+                for direction in ('rtl', 'ltr'):
+                    for size, declared in (('compact', compact), ('expanded', expanded)):
+                        path = ROOT / f'app/src/main/res/layout/notification_{design}_{size}_{direction}.xml'
+                        tree = ET.parse(path)
+                        actual = {
+                            view.get(ANDROID + 'id').split('/')[-1]
+                            for view in tree.iter()
+                            if view.get(ANDROID + 'textColor') == '@color/notification_card_accent'
+                        }
+                        self.assertEqual(declared, actual, str(path))
+
+    def test_the_ongoing_notification_is_tinted_from_the_app_palette(self):
+        source = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/PersistentCalendarNotification.kt').read_text()
+        self.assertIn('MarblePalettes.resolve(', source)
+        self.assertIn('settings.themeMode', source)
+        # A theme switch has to change the signature, otherwise the posted row is never updated.
+        signature = source.split('val signature = listOf(')[1].split(')')[0]
+        self.assertIn('settings.themeMode', signature)
+        # Both the collapsed and the expanded card are handed the theme accent.
+        self.assertGreaterEqual(source.count(', accent)'), 2, 'a card view is built without the theme accent')
+
+    def test_every_plain_notification_uses_the_theme_accent(self):
+        for name in ('ReminderReceiver.kt', 'CalendarOccurrenceWorker.kt'):
+            with self.subTest(name=name):
+                source = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications' / name).read_text()
+                self.assertNotIn('R.color.marble_accent', source)
+                self.assertIn('notificationAccent(', source)
+
+    def test_both_widgets_paint_themselves_from_the_app_theme(self):
+        widgets = {
+            'countdown': ROOT / 'feature/countdown/src/main/kotlin/com/marbledo/feature/countdown/MarbleCountdownWidget.kt',
+            'habits': ROOT / 'feature/habits/src/main/kotlin/com/marbledo/feature/habits/MarbleHabitWidget.kt',
+        }
+        for name, path in widgets.items():
+            with self.subTest(widget=name):
+                source = path.read_text(encoding='utf-8')
+                self.assertIn('MarblePalettes.resolve(', source)
+                self.assertIn('settings.themeMode', source)
+        app = (ROOT / 'app/src/main/kotlin/com/marbledo/MarbleDoApp.kt').read_text()
+        habit_effect = app.split('updateMarbleHabitWidgets(context)')[0].rsplit('LaunchedEffect(', 1)[1]
+        self.assertIn('settings.themeMode', habit_effect)

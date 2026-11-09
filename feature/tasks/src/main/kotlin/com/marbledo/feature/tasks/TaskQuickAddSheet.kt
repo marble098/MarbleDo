@@ -384,8 +384,10 @@ fun TaskQuickAddSheet(
             if (hasTextSchedule && scheduleMode == SCHEDULE_AUTO) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs)) {
                     Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                    // The hint used to say "a date was read"; it now says which one, so the user sees
+                    // "ده روز بعد" turn into an actual date while typing.
                     Text(
-                        TextNormalizer.formatDigits(stringResource(R.string.tasks_parsed_hint), numeralMode),
+                        stringResource(R.string.tasks_parsed_hint_format, scheduleText),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -406,6 +408,9 @@ fun TaskQuickAddSheet(
                 onPickDate = { pickDate(it) },
                 onPickTime = { pickTime(it) },
                 onClear = { clearSchedule() },
+                onPickTomorrowSameTime = {
+                    applySchedule(LocalDate.now(zone).plusDays(1), LocalTime.now(zone).withSecond(0).withNano(0))
+                },
             )
 
             // ---- priority -----------------------------------------------------------------

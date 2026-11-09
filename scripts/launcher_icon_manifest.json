@@ -4,13 +4,42 @@
     21.0,
     87.0
   ],
+  "ink_radius": 27.4,
   "ink_bounds": {
-    "left": 21.5,
-    "top": 22.5,
-    "right": 86.5,
-    "bottom": 86.5
+    "left": 26.6,
+    "top": 26.6,
+    "right": 81.4,
+    "bottom": 81.4
   },
   "safe": true,
+  "masks": {
+    "circle": {
+      "clearance": 8.6,
+      "clear": true
+    },
+    "squircle": {
+      "clearance": 8.6,
+      "clear": true
+    },
+    "rounded_square": {
+      "clearance": 8.6,
+      "clear": true
+    },
+    "square": {
+      "clearance": 8.6,
+      "clear": true
+    },
+    "oval": {
+      "clearance": 2.6,
+      "clear": true
+    },
+    "teardrop": {
+      "clearance": 8.6,
+      "clear": true
+    },
+    "all_clear": true
+  },
+  "all_masks_clear": true,
   "densities": {
     "mdpi": 48,
     "hdpi": 72,

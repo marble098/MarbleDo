@@ -7,14 +7,11 @@
     <string name="countdown_remaining">%1$s remaining</string>
     <string name="countdown_focus">Focus</string>
     <string name="countdown_close">Close focus mode</string>
-    <string name="countdown_focus_mode">Focus mode</string>
     <string name="countdown_quick_theme">Change the look in a tap</string>
     <string name="countdown_days">days</string>
-    <string name="countdown_days_hours_minutes_seconds">Days · Hours · Minutes · Seconds</string>
+    <string name="countdown_unit_day_one">day</string>
+    <string name="countdown_unit_days_inline">days</string>
     <string name="countdown_unit_days">Days</string>
-    <string name="countdown_unit_hours">Hours</string>
-    <string name="countdown_unit_minutes">Minutes</string>
-    <string name="countdown_unit_seconds">Seconds</string>
     <string name="countdown_finished">It is here! 🎉</string>
     <string name="countdown_disable">Turn this countdown off</string>
     <string name="countdown_theme_marble_orb">Marble orb</string>
@@ -62,13 +59,16 @@
     <string name="countdown_time_hint">Example: 14:30</string>
     <string name="countdown_quick_presets">Quick pick</string>
     <string name="countdown_preset_hour">In one hour</string>
+    <string name="countdown_preset_tomorrow_same_time">Tomorrow, same time</string>
+    <string name="countdown_preset_ten_days">In ten days</string>
+    <string name="countdown_detected_hint">Read from your text · %1$s</string>
+    <string name="countdown_title_hint">For example: trip, ten days from now</string>
     <string name="countdown_preset_tomorrow">Tomorrow</string>
     <string name="countdown_preset_week">One week</string>
     <string name="countdown_preset_month">One month</string>
     <string name="countdown_preset_year">One year</string>
     <string name="countdown_create_action">Save countdown</string>
     <string name="countdown_cancel">Cancel</string>
-    <string name="countdown_target_date">Target: %1$s</string>
     <string name="countdown_past_error">Pick a time in the future.</string>
     <string name="countdown_picker_title">Choose date and time</string>
 </resources>

@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
 """Generate the complete MarbleDo launcher icon set.
 
-One geometry table drives three things, so the adaptive icon, the themed icon and the
-legacy bitmaps can never drift apart:
+The mark is a **glass marble with a tick inside an orbit**: one polished sphere for "Marble",
+one check for "Do", and an open ring that reads as a day turning. It replaces the flat calendar
+page, which was the icon's third generation of the same idea and read as a copy of a stock
+calendar app at 48 px: five pale day cells, a teal header and a tick all fighting for the same
+twenty pixels.
 
-  * ``drawable/ic_launcher_background.xml``   - theme colour plus a soft sheen
-  * ``drawable/ic_launcher_foreground.xml``   - the coloured calendar mark
+One geometry table drives everything, so the adaptive icon, the themed icon and the legacy
+bitmaps can never drift apart:
+
+  * ``drawable/ic_launcher_background.xml``   - theme colour, a lit corner and a vignette
+  * ``drawable/ic_launcher_foreground.xml``   - the marble, its tick and the orbit
   * ``drawable/ic_launcher_monochrome.xml``   - the single-colour silhouette
   * ``mipmap-*/ic_launcher{,_round}.png``     - legacy bitmaps at every density
 
-Everything is drawn inside the 66x66 safe zone of the 108x108 adaptive canvas, so every
-launcher mask (circle, squircle, rounded square, square, teardrop) shows the whole mark.
+The whole mark lives inside a **27.4 dp radius** around the centre of the 108x108 canvas. That is
+the number that matters: a launcher may mask the 72 dp visible area into a circle (36 dp radius),
+a squircle, a rounded square, a square, an oval (36 x 30) or a teardrop, and the mark has to be
+complete under every one of them. ``--check`` and the mask table in ``launcher_icon_manifest.json``
+prove it, mask by mask, instead of trusting a single bounding box.
 
 Usage::
 
@@ -33,36 +42,55 @@ DRAWABLE = RES / 'drawable'
 
 # --- adaptive icon canvas -------------------------------------------------------
 CANVAS = 108.0
-# The inner 66dp of the 108dp canvas is the only area every launcher mask is guaranteed
-# to keep, so all artwork (strokes included) has to stay inside it.
+# The inner 66dp of the 108dp canvas is the area the adaptive-icon contract guarantees, and the
+# visible 72dp circle reaches 36dp from the centre. Both are checked below; the mark is smaller
+# than either so that even an oval (36 x 30) mask keeps it whole.
 SAFE_LO, SAFE_HI = 21.0, 87.0
 
 # --- the mark -------------------------------------------------------------------
-TILE = (24.0, 28.0, 84.0, 84.0)          # x0, y0, x1, y1
-TILE_RADIUS = 10.0
-HEADER = (24.0, 28.0, 84.0, 44.0)        # rounded on the top corners only
-RINGS = ((38.0, 25.0, 44.0, 37.0), (64.0, 25.0, 70.0, 37.0))
-RING_RADIUS = 2.0
-CELLS = (
-    (38.0, 48.0, 46.0, 56.0),
-    (50.0, 48.0, 58.0, 56.0),
-    (62.0, 48.0, 70.0, 56.0),
-    (38.0, 64.0, 46.0, 72.0),
-    (50.0, 64.0, 58.0, 72.0),
-)
-CELL_RADIUS = 2.0
-CHECK_POINTS = ((63.0, 68.0), (68.0, 73.0), (77.0, 59.0))
-CHECK_WIDTH = 6.0
+CENTER = 54.0
+MARBLE_RADIUS = 19.5
+ORBIT_RADIUS = 25.2
+ORBIT_WIDTH = 4.4
+ORBIT_START_DEG = -56.0
+ORBIT_SWEEP_DEG = 300.0
+CHECK_POINTS = ((45.0, 55.5), (51.0, 61.5), (63.5, 46.5))
+CHECK_WIDTH = 6.6
+HIGHLIGHT_CENTER = (45.4, 44.6)
+HIGHLIGHT_RADIUS = 3.0
 
 # --- palette --------------------------------------------------------------------
-TILE_COLOR = '#F7FAF8'
-HEADER_COLOR = '#007C83'
-RING_COLOR = '#D9FFF1'
-CELL_COLOR = '#A8B7B6'
-CHECK_COLOR = '#27B894'
+MARBLE_GRADIENT = (
+    ('#FFE9FFF9', 0.0),
+    ('#FF6BE8C6', 0.42),
+    ('#FF12A08F', 0.78),
+    ('#FF0A4F52', 1.0),
+)
+CHECK_COLOR = '#FFFFFF'
+ORBIT_COLOR = '#D9FFF4'
+HIGHLIGHT_COLOR = '#73FFFFFF'
 # Both stops use Android's #AARRGGBB order, exactly as the vector gradients do.
-SHEEN = (('#33FFFFFF', 0.0), ('#0FFFFFFF', 0.5), ('#00000000', 1.0))
-VIGNETTE = (('#00000000', 0.0), ('#00000000', 0.45), ('#14000000', 1.0))
+SHEEN = (('#1FFFFFFF', 0.0), ('#08FFFFFF', 0.5), ('#00000000', 1.0))
+GLOW = (('#5538E6C4', 0.0), ('#2238E6C4', 0.45), ('#00000000', 1.0))
+VIGNETTE = (('#00000000', 0.0), ('#00000000', 0.45), ('#22000000', 1.0))
+GLOW_CENTER = (26.0, 22.0)
+GLOW_RADIUS = 78.0
+
+# --- launcher masks -------------------------------------------------------------
+# Every shape a launcher is known to use. The value is what the mask keeps around the centre;
+# the distances are true signed distances (negative inside), so "clearance" is measurable.
+MASKS = {
+    'circle': 36.0,
+    'squircle': 36.0,
+    'rounded_square': 36.0,
+    'square': 36.0,
+    'oval': 36.0,
+    'teardrop': 36.0,
+}
+# An oval is the tightest vertical mask in common use: 72 dp wide, 60 dp tall.
+OVAL_HALF_HEIGHT = 30.0
+# Clearance the mark must keep from any mask edge, in dp.
+MASK_CLEARANCE = 1.5
 
 # --- legacy bitmap densities ----------------------------------------------------
 # mdpi is the 1x bucket, so every other bucket is a whole multiple of it.
@@ -79,31 +107,80 @@ LEGACY_NAMES = ('ic_launcher.png', 'ic_launcher_round.png')
 # =============================================================================
 # geometry helpers
 # =============================================================================
-def rounded_rect_path(x0: float, y0: float, x1: float, y1: float, r: float) -> str:
-    """SVG-style path data for a rounded rectangle."""
-    if r <= 0:
-        return f'M{x0:g},{y0:g} H{x1:g} V{y1:g} H{x0:g} Z'
+def circle_path(cx: float, cy: float, r: float) -> str:
+    """A circle as four cubic segments, so its outer points are real path points."""
+    k = 0.5522847498 * r
     return (
-        f'M{x0 + r:g},{y0:g} '
-        f'H{x1 - r:g} A{r:g},{r:g} 0 0 1 {x1:g},{y0 + r:g} '
-        f'V{y1 - r:g} A{r:g},{r:g} 0 0 1 {x1 - r:g},{y1:g} '
-        f'H{x0 + r:g} A{r:g},{r:g} 0 0 1 {x0:g},{y1 - r:g} '
-        f'V{y0 + r:g} A{r:g},{r:g} 0 0 1 {x0 + r:g},{y0:g} Z'
+        f'M{cx - r:g},{cy:g} '
+        f'C{cx - r:g},{cy - k:g} {cx - k:g},{cy - r:g} {cx:g},{cy - r:g} '
+        f'C{cx + k:g},{cy - r:g} {cx + r:g},{cy - k:g} {cx + r:g},{cy:g} '
+        f'C{cx + r:g},{cy + k:g} {cx + k:g},{cy + r:g} {cx:g},{cy + r:g} '
+        f'C{cx - k:g},{cy + r:g} {cx - r:g},{cy + k:g} {cx - r:g},{cy:g} Z'
     )
 
 
-def top_rounded_rect_path(x0: float, y0: float, x1: float, y1: float, r: float) -> str:
-    """Path data for a rectangle whose top corners are rounded."""
-    return (
-        f'M{x0 + r:g},{y0:g} '
-        f'H{x1 - r:g} A{r:g},{r:g} 0 0 1 {x1:g},{y0 + r:g} '
-        f'V{y1:g} H{x0:g} '
-        f'V{y0 + r:g} A{r:g},{r:g} 0 0 1 {x0 + r:g},{y0:g} Z'
-    )
+def arc_path(cx: float, cy: float, r: float, start_deg: float, sweep_deg: float) -> str:
+    """A circular arc, split into <= 90 degree cubic segments.
+
+    A single ``A`` command would be shorter, but its bulge is invisible to a bounding-box reader;
+    cubics keep every extreme of the arc as a real anchor point, which is what the safe-zone tests
+    measure.
+    """
+    steps = max(1, int(math.ceil(abs(sweep_deg) / 90.0)))
+    step = sweep_deg / steps
+    alpha = 4.0 / 3.0 * math.tan(math.radians(step) / 4.0)
+    x0 = cx + r * math.cos(math.radians(start_deg))
+    y0 = cy + r * math.sin(math.radians(start_deg))
+    parts = [f'M{x0:g},{y0:g}']
+    angle = start_deg
+    for _ in range(steps):
+        a0 = math.radians(angle)
+        a1 = math.radians(angle + step)
+        p0 = (cx + r * math.cos(a0), cy + r * math.sin(a0))
+        p1 = (cx + r * math.cos(a1), cy + r * math.sin(a1))
+        c0 = (p0[0] - alpha * r * math.sin(a0), p0[1] + alpha * r * math.cos(a0))
+        c1 = (p1[0] + alpha * r * math.sin(a1), p1[1] - alpha * r * math.cos(a1))
+        parts.append(
+            f'C{c0[0]:g},{c0[1]:g} {c1[0]:g},{c1[1]:g} {p1[0]:g},{p1[1]:g}'
+        )
+        angle += step
+    return ' '.join(parts)
 
 
 def polyline_path(points) -> str:
     return 'M' + ' L'.join(f'{x:g},{y:g}' for x, y in points)
+
+
+def tick_polygon(points, half: float):
+    """The outline of a stroked polyline, as a closed polygon.
+
+    The themed icon punches the tick out of a solid marble, and a punched hole has to be a
+    *fill*: a stroked path cannot be subtracted with ``fillType="evenOdd"``. The outline is built
+    by offsetting the two legs and mitring their join, which is exactly what the stroked
+    foreground draws with round joins, minus the rounding.
+    """
+    (ax, ay), (bx, by), (cx, cy) = points
+    d1 = _normalize((bx - ax, by - ay))
+    d2 = _normalize((cx - bx, cy - by))
+    n1 = (-d1[1], d1[0])
+    n2 = (-d2[1], d2[0])
+    miter = _normalize((n1[0] + n2[0], n1[1] + n2[1]))
+    cos_half = max(0.5, miter[0] * n1[0] + miter[1] * n1[1])
+    miter_len = half / cos_half
+    outer = []
+    outer.append((ax + n1[0] * half, ay + n1[1] * half))
+    outer.append((bx + miter[0] * miter_len, by + miter[1] * miter_len))
+    outer.append((cx + n2[0] * half, cy + n2[1] * half))
+    inner = []
+    inner.append((cx - n2[0] * half, cy - n2[1] * half))
+    inner.append((bx - miter[0] * miter_len, by - miter[1] * miter_len))
+    inner.append((ax - n1[0] * half, ay - n1[1] * half))
+    return outer + inner
+
+
+def _normalize(vector) -> tuple[float, float]:
+    length = math.hypot(*vector) or 1.0
+    return vector[0] / length, vector[1] / length
 
 
 def sd_rounded_rect(px: float, py: float, box, radius: float) -> float:
@@ -117,15 +194,6 @@ def sd_rounded_rect(px: float, py: float, box, radius: float) -> float:
     qy = abs(py - cy) - hy
     ax, ay = max(qx, 0.0), max(qy, 0.0)
     return math.hypot(ax, ay) + min(max(qx, qy), 0.0) - radius
-
-
-def sd_top_rounded_rect(px: float, py: float, box, radius: float) -> float:
-    """Signed distance to a rectangle with rounded top corners."""
-    d = sd_rounded_rect(px, py, box, radius)
-    if py > box[3]:
-        dx = max(box[0] - px, px - box[2], 0.0)
-        d = min(d, math.hypot(dx, py - box[3]))
-    return d
 
 
 def sd_segment(px: float, py: float, ax: float, ay: float, bx: float, by: float) -> float:
@@ -148,31 +216,66 @@ def coverage(distance: float, feather: float = 0.8) -> float:
     return max(0.0, min(1.0, 0.5 - distance / (2.0 * feather)))
 
 
-def ink_bounds() -> dict:
-    """The bounding box of the mark, grown by half of each stroke width it carries.
+# =============================================================================
+# mask table
+# =============================================================================
+def mask_distance(mask: str, px: float, py: float) -> float:
+    """Signed distance to a launcher mask; negative means the mask keeps this point."""
+    dx, dy = px - CENTER, py - CENTER
+    if mask == 'oval':
+        return (math.hypot(dx / 36.0, dy / OVAL_HALF_HEIGHT) - 1.0) * OVAL_HALF_HEIGHT
+    if mask == 'squircle':
+        norm = (abs(dx / 36.0) ** 4 + abs(dy / 36.0) ** 4) ** 0.25
+        return (norm - 1.0) * 36.0
+    if mask == 'rounded_square':
+        return sd_rounded_rect(px, py, (18.0, 18.0, 90.0, 90.0), 18.0)
+    if mask == 'square':
+        return max(18.0 - px, px - 90.0, 18.0 - py, py - 90.0)
+    if mask == 'teardrop':
+        # One circle plus a rounded square: the tightest of the two shapes wins, which is what a
+        # teardrop mask is (a circle that keeps one squarer corner).
+        return max(math.hypot(dx, dy) - 36.0, sd_rounded_rect(px, py, (18.0, 18.0, 90.0, 90.0), 26.0))
+    return math.hypot(dx, dy) - 36.0
 
-    The monochrome layer strokes the tile outline, and both layers stroke the completion
-    check, so the union has to account for those before it can be compared with the safe
-    zone.
-    """
-    boxes = [TILE, HEADER, *RINGS, *CELLS]
-    xs = [value for box in boxes for value in (box[0], box[2])]
-    ys = [value for box in boxes for value in (box[1], box[3])]
-    left, top, right, bottom = min(xs), min(ys), max(xs), max(ys)
-    # The tile is stroked 5 wide in the monochrome layer.
-    outline = 5.0 / 2.0
-    left, top = left - outline, top - outline
-    right, bottom = right + outline, bottom + outline
-    # The completion check is stroked on both layers.
+
+def ink_outline():
+    """Points on the outline of the mark, used for the mask and safe-zone measurements."""
+    points = []
+    for index in range(720):
+        angle = math.radians(index * 0.5)
+        points.append((CENTER + math.cos(angle) * (ORBIT_RADIUS + ORBIT_WIDTH / 2.0),
+                       CENTER + math.sin(angle) * (ORBIT_RADIUS + ORBIT_WIDTH / 2.0)))
+    for index in range(360):
+        angle = math.radians(index)
+        for radius in (MARBLE_RADIUS,):
+            points.append((CENTER + math.cos(angle) * radius, CENTER + math.sin(angle) * radius))
+    return points
+
+
+def ink_bounds() -> dict:
+    """The bounding box of everything the mark draws, strokes included."""
+    reach = ORBIT_RADIUS + ORBIT_WIDTH / 2.0
     check = CHECK_WIDTH / 2.0
-    cx = [point[0] for point in CHECK_POINTS]
-    cy = [point[1] for point in CHECK_POINTS]
-    return {
-        'left': min(left, min(cx) - check),
-        'top': min(top, min(cy) - check),
-        'right': max(right, max(cx) + check),
-        'bottom': max(bottom, max(cy) + check),
-    }
+    xs = [CENTER - reach, CENTER + reach]
+    ys = [CENTER - reach, CENTER + reach]
+    for x, y in CHECK_POINTS:
+        xs.extend((x - check, x + check))
+        ys.extend((y - check, y + check))
+    return {'left': min(xs), 'top': min(ys), 'right': max(xs), 'bottom': max(ys)}
+
+
+def mask_report() -> dict:
+    """How much room the mark keeps inside each launcher mask."""
+    outline = ink_outline()
+    report = {}
+    for mask in MASKS:
+        worst = max(mask_distance(mask, px, py) for px, py in outline)
+        report[mask] = {
+            'clearance': round(-worst, 3),
+            'clear': -worst >= MASK_CLEARANCE,
+        }
+    report['all_clear'] = all(entry['clear'] for key, entry in report.items() if isinstance(entry, dict))
+    return report
 
 
 # =============================================================================
@@ -239,38 +342,50 @@ def render(size: int, circular: bool, base_color: str) -> bytearray:
     layer(lambda px, py: (*base[:3], base[3]))
     # 2. a soft diagonal sheen, lit from the top-left corner.
     layer(lambda px, py: gradient_color(SHEEN, (px + py) / diagonal))
-    # 3. a quiet corner vignette in the opposite corner.
+    # 3. the teal glow behind the marble.
+    def glow_paint(px, py):
+        distance = math.hypot(px - GLOW_CENTER[0], py - GLOW_CENTER[1]) / GLOW_RADIUS
+        return gradient_color(GLOW, distance)
+
+    layer(glow_paint)
+    # 4. a quiet corner vignette in the opposite corner.
     layer(lambda px, py: gradient_color(VIGNETTE, (px + py) / diagonal))
 
-    tile = hex_rgba(TILE_COLOR)
-    header = hex_rgba(HEADER_COLOR)
-    ring = hex_rgba(RING_COLOR)
-    cell = hex_rgba(CELL_COLOR)
+    # 5. the marble, lit from its upper left.
+    light_center = (CENTER - MARBLE_RADIUS * 0.45, CENTER - MARBLE_RADIUS * 0.5)
+
+    def marble_paint(px, py):
+        distance = math.dist((px, py), (CENTER, CENTER))
+        if distance > MARBLE_RADIUS:
+            return 0.0, 0.0, 0.0, 0.0
+        t = math.dist((px, py), light_center) / (MARBLE_RADIUS * 2.1)
+        color = gradient_color(MARBLE_GRADIENT, t)
+        return (*color[:3], color[3] * coverage(distance - MARBLE_RADIUS))
+
+    layer(marble_paint)
+    # 6. the tick.
     check = hex_rgba(CHECK_COLOR)
-
-    # 4. the calendar tile.
-    layer(lambda px, py: (*tile[:3], tile[3] * coverage(sd_rounded_rect(px, py, TILE, TILE_RADIUS))))
-    # 5. the header band, rounded only where the tile is rounded.
-    layer(lambda px, py: (*header[:3], header[3] * coverage(sd_top_rounded_rect(px, py, HEADER, TILE_RADIUS))))
-    # 6. the binding rings.
-    def ring_paint(px, py):
-        alpha = 0.0
-        for box in RINGS:
-            alpha = max(alpha, coverage(sd_rounded_rect(px, py, box, RING_RADIUS)))
-        return (*ring[:3], ring[3] * alpha)
-
-    layer(ring_paint)
-    # 7. the day cells.
-
-    def cell_paint(px, py):
-        alpha = 0.0
-        for box in CELLS:
-            alpha = max(alpha, coverage(sd_rounded_rect(px, py, box, CELL_RADIUS)))
-        return (*cell[:3], cell[3] * alpha)
-
-    layer(cell_paint)
-    # 8. the completion check.
     layer(lambda px, py: (*check[:3], check[3] * coverage(sd_polyline(px, py, CHECK_POINTS) - CHECK_WIDTH / 2.0)))
+    # 7. the orbit, with an open gap at the top right.
+    orbit = hex_rgba(ORBIT_COLOR)
+
+    def orbit_paint(px, py):
+        distance = abs(math.hypot(px - CENTER, py - CENTER) - ORBIT_RADIUS) - ORBIT_WIDTH / 2.0
+        if distance > 0:
+            return 0.0, 0.0, 0.0, 0.0
+        angle = math.degrees(math.atan2(py - CENTER, px - CENTER))
+        rel = (angle - ORBIT_START_DEG) % 360.0
+        if rel > ORBIT_SWEEP_DEG:
+            return 0.0, 0.0, 0.0, 0.0
+        return (*orbit[:3], orbit[3] * coverage(distance))
+
+    layer(orbit_paint)
+    # 8. the specular highlight on the glass.
+    highlight = hex_rgba(HIGHLIGHT_COLOR)
+    layer(lambda px, py: (
+        *highlight[:3],
+        highlight[3] * coverage(math.dist((px, py), HIGHLIGHT_CENTER) - HIGHLIGHT_RADIUS),
+    ))
     return buf
 
 
@@ -294,14 +409,12 @@ def write_png(path: Path, size: int, rgba: bytearray) -> None:
 # =============================================================================
 # resource files
 # =============================================================================
-VECTOR_HEADER = '''<?xml version="1.0" encoding="utf-8"?>
-<!--
-  Generated by scripts/generate_launcher_icons.py - edit the script, not this file.
-'''
-
 def background_xml() -> str:
     sheen = '\n'.join(
         f'                <item android:offset="{offset:g}" android:color="{color}" />' for color, offset in SHEEN
+    )
+    glow = '\n'.join(
+        f'                <item android:offset="{offset:g}" android:color="{color}" />' for color, offset in GLOW
     )
     vignette = '\n'.join(
         f'                <item android:offset="{offset:g}" android:color="{color}" />' for color, offset in VIGNETTE
@@ -311,9 +424,9 @@ def background_xml() -> str:
   Launcher icon background. Generated by scripts/generate_launcher_icons.py - edit the
   script, not this file.
 
-  The base colour is the same one the splash window uses, so the launch animation never
-  changes colour underneath the user. The sheen and the vignette give the tile a lit edge
-  under every launcher mask instead of reading as a flat swatch.
+  The base colour is the same one the splash window uses, so the launch animation never changes
+  colour underneath the user. The teal glow sits behind the marble and the vignette darkens the
+  opposite corner, which is what makes the flat square read as a lit surface under any mask.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
@@ -324,6 +437,17 @@ def background_xml() -> str:
     <path
         android:fillColor="@color/marble_launcher_bg"
         android:pathData="M0,0h108v108h-108z" />
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="{GLOW_CENTER[0]:g}"
+                android:centerY="{GLOW_CENTER[1]:g}"
+                android:gradientRadius="{GLOW_RADIUS:g}"
+                android:type="radial">
+{glow}
+            </gradient>
+        </aapt:attr>
+    </path>
     <path android:pathData="M0,0h108v108h-108z">
         <aapt:attr name="android:fillColor">
             <gradient
@@ -353,67 +477,75 @@ def background_xml() -> str:
 
 
 def foreground_xml() -> str:
-    tile = rounded_rect_path(*TILE, TILE_RADIUS)
-    header = top_rounded_rect_path(*HEADER, TILE_RADIUS)
-    rings = ' '.join(rounded_rect_path(*box, RING_RADIUS) for box in RINGS)
-    cells = ' '.join(rounded_rect_path(*box, CELL_RADIUS) for box in CELLS)
+    marble = circle_path(CENTER, CENTER, MARBLE_RADIUS)
     check = polyline_path(CHECK_POINTS)
+    orbit = arc_path(CENTER, CENTER, ORBIT_RADIUS, ORBIT_START_DEG, ORBIT_SWEEP_DEG)
+    highlight = circle_path(HIGHLIGHT_CENTER[0], HIGHLIGHT_CENTER[1], HIGHLIGHT_RADIUS)
+    gradient = '\n'.join(
+        f'                    <item android:offset="{offset:g}" android:color="{color}" />'
+        for color, offset in MARBLE_GRADIENT
+    )
     return f'''<?xml version="1.0" encoding="utf-8"?>
 <!--
   Launcher icon foreground. Generated by scripts/generate_launcher_icons.py - edit the
   script, not this file.
 
-  The whole mark lives inside the 66dp safe zone of the 108dp canvas, so a circle, a
-  squircle, a rounded square, a square and a teardrop mask all reveal the same calendar.
-  The rings are the only elements allowed above the tile, and they stop at the safe zone.
+  A glass marble with a tick and an open orbit around it. The whole mark fits inside a 27.4dp
+  radius around the centre of the 108dp canvas, so a circle, an oval, a squircle, a rounded
+  square, a square and a teardrop mask all show it whole.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <path android:pathData="{marble}">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="{CENTER - MARBLE_RADIUS * 0.45:g}"
+                android:centerY="{CENTER - MARBLE_RADIUS * 0.5:g}"
+                android:gradientRadius="{MARBLE_RADIUS * 2.1:g}"
+                android:type="radial">
+{gradient}
+            </gradient>
+        </aapt:attr>
+    </path>
     <path
-        android:fillColor="{TILE_COLOR}"
-        android:pathData="{tile}" />
-    <path
-        android:fillColor="{HEADER_COLOR}"
-        android:pathData="{header}" />
-    <path
-        android:fillColor="{RING_COLOR}"
-        android:pathData="{rings}" />
-    <path
-        android:fillColor="{CELL_COLOR}"
-        android:pathData="{cells}" />
-    <path
-        android:fillColor="#00000000"
+        android:fillColor="{CHECK_COLOR}"
         android:pathData="{check}"
         android:strokeColor="{CHECK_COLOR}"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:strokeWidth="{CHECK_WIDTH:g}" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="{orbit}"
+        android:strokeColor="{ORBIT_COLOR}"
+        android:strokeLineCap="round"
+        android:strokeWidth="{ORBIT_WIDTH:g}" />
+    <path
+        android:fillColor="{HIGHLIGHT_COLOR}"
+        android:pathData="{highlight}" />
 </vector>
 '''
 
 
 def monochrome_xml() -> str:
-    tile = rounded_rect_path(*TILE, TILE_RADIUS)
-    # The header band has to hug the inner edge of the 5-wide outline, which is the tile
-    # inset by half a stroke on every side.
-    inset = 5.0 / 2.0
-    header = top_rounded_rect_path(
-        TILE[0] + inset, TILE[1] + inset, TILE[2] - inset, HEADER[3], TILE_RADIUS - inset,
-    )
-    rings = ' '.join(rounded_rect_path(*box, RING_RADIUS) for box in RINGS)
-    cells = ' '.join(rounded_rect_path(*box, CELL_RADIUS) for box in CELLS)
-    check = polyline_path(CHECK_POINTS)
+    marble = circle_path(CENTER, CENTER, MARBLE_RADIUS)
+    tick = 'M' + ' L'.join(
+        f'{x:g},{y:g}' for x, y in tick_polygon(CHECK_POINTS, CHECK_WIDTH / 2.0)
+    ) + ' Z'
+    orbit = arc_path(CENTER, CENTER, ORBIT_RADIUS, ORBIT_START_DEG, ORBIT_SWEEP_DEG)
     return f'''<?xml version="1.0" encoding="utf-8"?>
 <!--
   Themed (monochrome) launcher icon. Generated by scripts/generate_launcher_icons.py -
   edit the script, not this file.
 
-  The system replaces every colour with one tint, so the mark is drawn as a silhouette:
-  an outlined page, a solid header band, two binding rings and the day cells plus the
-  completion check inside it. Same safe zone as the foreground.
+  The system replaces every colour with one tint, so the mark becomes a silhouette: a solid
+  marble with the tick punched out of it (one path, fillType evenOdd — a stroked tick cannot be
+  subtracted from a fill) and the orbit around it. Same 27.4dp radius as the foreground, so the
+  themed icon never clips either.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -421,27 +553,15 @@ def monochrome_xml() -> str:
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#00000000"
-        android:pathData="{tile}"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineJoin="round"
-        android:strokeWidth="5" />
-    <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="{header}" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="{rings}" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="{cells}" />
+        android:fillType="evenOdd"
+        android:pathData="{marble} {tick}" />
     <path
         android:fillColor="#00000000"
-        android:pathData="{check}"
+        android:pathData="{orbit}"
         android:strokeColor="#FFFFFFFF"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="{CHECK_WIDTH:g}" />
+        android:strokeWidth="{ORBIT_WIDTH:g}" />
 </vector>
 '''
 
@@ -449,9 +569,9 @@ def monochrome_xml() -> str:
 def adaptive_xml() -> str:
     return '''<?xml version="1.0" encoding="utf-8"?>
 <!--
-  Adaptive launcher icon: three layers, masked by the launcher into whatever shape it
-  uses. The background is a drawable rather than a flat colour so the tile keeps its
-  sheen; the monochrome layer is what themed icons tint on Android 13 and later.
+  Adaptive launcher icon: three layers, masked by the launcher into whatever shape it uses. The
+  background is a drawable rather than a flat colour so the lit corner survives; the monochrome
+  layer is what themed icons tint on Android 13 and later.
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
@@ -472,12 +592,16 @@ def read_launcher_bg() -> str:
 
 def manifest() -> dict:
     bounds = ink_bounds()
+    masks = mask_report()
     return {
         'canvas': CANVAS,
         'safe_zone': [SAFE_LO, SAFE_HI],
+        'ink_radius': ORBIT_RADIUS + ORBIT_WIDTH / 2.0,
         'ink_bounds': bounds,
         'safe': bounds['left'] >= SAFE_LO and bounds['top'] >= SAFE_LO
         and bounds['right'] <= SAFE_HI and bounds['bottom'] <= SAFE_HI,
+        'masks': masks,
+        'all_masks_clear': masks['all_clear'],
         'densities': DENSITIES,
     }
 
@@ -513,15 +637,26 @@ def generate() -> int:
     if not manifest()['safe']:
         print('ERROR: the mark leaves the 66dp safe zone', file=sys.stderr)
         return 1
+    if not manifest()['all_masks_clear']:
+        print('ERROR: the mark is clipped by at least one launcher mask', file=sys.stderr)
+        return 1
     return 0
 
 
 def check() -> int:
     problems = []
-    for name in ('ic_launcher_background.xml', 'ic_launcher_foreground.xml', 'ic_launcher_monochrome.xml'):
-        path = DRAWABLE / name
+    vectors = {
+        DRAWABLE / 'ic_launcher_background.xml': background_xml,
+        DRAWABLE / 'ic_launcher_foreground.xml': foreground_xml,
+        DRAWABLE / 'ic_launcher_monochrome.xml': monochrome_xml,
+        RES / 'mipmap-anydpi-v26/ic_launcher.xml': adaptive_xml,
+        RES / 'mipmap-anydpi-v26/ic_launcher_round.xml': adaptive_xml,
+    }
+    for path, renderer in vectors.items():
         if not path.exists():
             problems.append(f'missing {path.relative_to(ROOT)}')
+        elif path.read_text(encoding='utf-8') != renderer():
+            problems.append(f'{path.relative_to(ROOT)} is stale, re-run the generator')
     for density, size in DENSITIES.items():
         for name in LEGACY_NAMES:
             path = RES / f'mipmap-{density}' / name
@@ -535,6 +670,10 @@ def check() -> int:
             width, height = struct.unpack('>II', data[16:24])
             if (width, height) != (size, size):
                 problems.append(f'{path.relative_to(ROOT)} is {width}x{height}, expected {size}x{size}')
+    if not manifest()['safe']:
+        problems.append('the mark leaves the 66dp safe zone')
+    if not manifest()['all_masks_clear']:
+        problems.append(f'the mark is clipped by a launcher mask: {manifest()["masks"]}')
     for problem in problems:
         print(problem, file=sys.stderr)
     return 1 if problems else 0
