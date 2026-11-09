@@ -43,9 +43,32 @@ class MarblePalettesTest {
     }
 
     @Test
-    fun theNamedThemesAreDistinguishable() {
-        val accents = namedThemes.map { MarblePalettes.resolve(it, dark = false, context = null).primary }
-        assertEquals(accents.size, accents.toSet().size, "two themes share an accent: $accents")
+    fun everySelectablePaletteHasItsOwnAccent() {
+        // AUTO is the indigo base; the four named palettes must be visibly different from it and
+        // from each other, otherwise the settings row promises a theme it does not deliver.
+        val selectable = listOf(
+            AppThemeMode.AUTO,
+            AppThemeMode.OCEAN,
+            AppThemeMode.FOREST,
+            AppThemeMode.SUNSET,
+            AppThemeMode.ROSE,
+        )
+        val accents = selectable.map { MarblePalettes.resolve(it, dark = false, context = null).primary }
+        assertEquals(selectable.size, accents.toSet().size, "two palettes share an accent: $accents")
+    }
+
+    @Test
+    fun theDarkVariantsOfTheSamePaletteAreDifferent() {
+        // GLASS_LIGHT and AMOLED are variants of the base schemes, so their accents do match the
+        // light/dark pair on purpose; what matters is that the pair itself is distinguishable.
+        for (mode in listOf(AppThemeMode.AUTO, AppThemeMode.OCEAN, AppThemeMode.FOREST, AppThemeMode.SUNSET, AppThemeMode.ROSE)) {
+            withClue("$mode") {
+                assertNotEquals(
+                    MarblePalettes.resolve(mode.name, dark = false, null).primary,
+                    MarblePalettes.resolve(mode.name, dark = true, null).primary,
+                )
+            }
+        }
     }
 
     @Test
@@ -61,13 +84,25 @@ class MarblePalettesTest {
     }
 
     @Test
-    fun darkAndLightVariantsActuallyDiffer() {
-        for (mode in namedThemes - AppThemeMode.AMOLED - AppThemeMode.GLASS_LIGHT) {
+    fun systemFollowingThemesChangeTheirBackgroundWithTheSystem() {
+        for (mode in listOf(AppThemeMode.AUTO, AppThemeMode.OCEAN, AppThemeMode.FOREST, AppThemeMode.SUNSET, AppThemeMode.ROSE)) {
             withClue("$mode") {
                 assertNotEquals(
                     MarblePalettes.resolve(mode.name, dark = false, null).background,
                     MarblePalettes.resolve(mode.name, dark = true, null).background,
                 )
+            }
+        }
+    }
+
+    @Test
+    fun pinnedThemesPaintTheSameWhateverTheSystemSays() {
+        for (mode in listOf(AppThemeMode.DARK, AppThemeMode.AMOLED, AppThemeMode.GLASS_LIGHT)) {
+            withClue("$mode") {
+                val pinned = MarblePalettes.resolve(mode.name, dark = true, null)
+                val same = MarblePalettes.resolve(mode.name, dark = false, null)
+                assertEquals(pinned.background, same.background)
+                assertEquals(pinned.primary, same.primary)
             }
         }
     }
