@@ -78,7 +78,7 @@
     <string name="settings_change">تغییر</string>
     <string name="settings_close">بستن</string>
     <string name="settings_backup_exported">پشتیبانت آماده است؛ در جای امن نگهش دار.</string>
-    <string name="settings_backup_imported">اطلاعاتت با موفقیت بازیابی شد ✓</string>
+    <string name="settings_backup_imported">اطلاعاتت برگردانده شد ✓</string>
     <string name="settings_backup_failed">پشتیبان پردازش نشد.</string>
     <string name="settings_notifications_denied">اعلان‌ها خاموش‌اند؛ از تنظیمات اندروید روشنشان کن.</string>
     <string name="settings_exact_alarm_unavailable">اجازهٔ آلارم دقیق هنوز نداده‌ای؛ روش جایگزینِ سیستم فعال است.</string>
@@ -140,7 +140,7 @@
     <string name="dash_empty_title">هنوز کاری نیست</string>
     <string name="dash_empty_body">اولین کارت را اضافه کن؛ همین یک قدم کافی است.</string>
     <string name="dash_new_task">یک کار تازه</string>
-    <string name="dash_undo">واگرد آخرین تغییر</string>
+    <string name="dash_undo">برگرداندن آخرین تغییر</string>
     <string name="dash_sort_menu">مرتب‌سازی</string>
     <string name="dash_selected_count">%1$d کار انتخاب کردی</string>
     <string name="dash_complete_selected">انجام همه</string>
@@ -156,7 +156,7 @@
     <string name="settings_source_delivered">رساند</string>
     <string name="settings_source_standby">آینهٔ آماده</string>
     <string name="settings_source_failed">پاسخی نداد</string>
-    <string name="settings_occasion_sources_hint">چهار مسیر تحویل، یک فهرست واحد را می‌آورند؛ نخستین که پاسخ بدهد آن را می‌رساند و بقیه روی آمادگی می‌مانند. فهرست‌های روزِ پایین، تقویم‌های مستقل‌اند و فقط برای بازبینی به کار می‌روند.</string>
+    <string name="settings_occasion_sources_hint">این چهار مسیر یک فهرست مشترک را دریافت می‌کنند؛ هر کدام زودتر پاسخ بدهد استفاده می‌شود. فهرست‌های پایین جدا هستند و فقط برای بررسی نمایش داده می‌شوند.</string>
     <string name="settings_tier_official">رسمی</string>
     <string name="settings_tier_unofficial">غیررسمی</string>
     <string name="settings_tier_open_source">متن‌باز</string>

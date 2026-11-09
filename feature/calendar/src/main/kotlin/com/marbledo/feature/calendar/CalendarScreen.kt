@@ -998,19 +998,19 @@ private fun CalendarCommandCard(
                         description = stringResource(if (yearScope) R.string.calendar_next_year else R.string.calendar_next_month),
                         onClick = onNext,
                     )
-                    Surface(
-                        onClick = onToday,
-                        modifier = Modifier.minimumInteractiveComponentSize(),
-                        shape = CircleShape,
-                        color = if (isAwayFromToday) colors.primary else colors.primaryContainer,
-                        shadowElevation = if (isAwayFromToday) 2.dp else 0.dp,
-                    ) {
-                        Text(
-                            stringResource(R.string.calendar_today),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            color = if (isAwayFromToday) colors.onPrimary else colors.onPrimaryContainer,
-                            style = MarbleTextStyles.metaLabel,
-                        )
+
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(onClick = onOpenGoToDate) {
+                        Text(stringResource(R.string.calendar_go_to_date))
+                    }
+                    TextButton(onClick = onToday) {
+                        Text(stringResource(R.string.calendar_today), color = if (isAwayFromToday) colors.primary else colors.onSurfaceVariant)
                     }
                 }
 
@@ -1086,6 +1086,7 @@ private fun CalendarViewSwitch(selected: CalendarViewMode, onSelect: (CalendarVi
                     shadowElevation = if (isSelected) 2.dp else 0.dp,
                     modifier = Modifier
                         .weight(1f)
+                        .minimumInteractiveComponentSize()
                         .clip(MaterialTheme.shapes.medium)
                         .selectable(selected = isSelected, role = Role.Tab) { onSelect(mode) },
                 ) {
