@@ -5,43 +5,52 @@
     <string name="calendar_next_month">Next month</string>
     <string name="calendar_today">Today</string>
     <string name="calendar_view_month">Month</string>
-    <string name="calendar_view_agenda">Agenda</string>
+    <string name="calendar_view_agenda">Days</string>
     <string name="calendar_view_occasions">Occasions</string>
     <string name="calendar_view_year">Year</string>
     <string name="calendar_tasks_count">%1$d task(s)</string>
-    <string name="calendar_no_events">Nothing scheduled or celebrated in this range.</string>
-    <string name="calendar_no_occasions">No occasion is recorded for this day.</string>
-    <string name="calendar_no_month_occasions">No occasion is recorded for this month.</string>
+    <string name="calendar_no_events">No tasks or occasions this month.</string>
+    <string name="calendar_no_occasions">No occasion on this day.</string>
+    <string name="calendar_no_month_occasions">No occasion this month.</string>
     <string name="calendar_month_occasions_count">%1$d occasions this month</string>
-    <string name="calendar_occasions_available">%1$d occasions available</string>
+    <string name="calendar_occasions_available">%1$d occasions</string>
     <string name="calendar_occasions_short">%1$d occasions</string>
     <string name="calendar_holiday_badge">Public holiday</string>
     <string name="calendar_category_official">Official</string>
     <string name="calendar_category_national">National</string>
     <string name="calendar_category_religious">Religious</string>
-    <string name="calendar_category_personal">Informal &amp; personal</string>
+    <string name="calendar_category_personal">Personal and community</string>
     <string name="calendar_category_international">World days</string>
-    <string name="calendar_sync_now">Update occasions</string>
-    <string name="calendar_sync_refreshing">Updating occasions…</string>
-    <string name="calendar_sync_error">Update failed; the saved copy is still shown.</string>
-    <string name="calendar_sync_last">Updated %1$s</string>
-    <string name="calendar_sync_bundled">Bundled data; connect to the internet to update</string>
-    <string name="calendar_sat">Sat</string><string name="calendar_sun">Sun</string>
-    <string name="calendar_mon">Mon</string><string name="calendar_tue">Tue</string>
-    <string name="calendar_wed">Wed</string><string name="calendar_thu">Thu</string>
+    <string name="calendar_sync_now">Refresh occasions</string>
+    <string name="calendar_sync_refreshing">Refreshing…</string>
+    <string name="calendar_sync_error">It did not work. You still see the saved copy.</string>
+    <string name="calendar_sync_last">Last time %1$s</string>
+    <string name="calendar_sync_bundled">This list ships with the app. Go online for a newer one.</string>
+    <string name="calendar_sat">Sat</string>
+    <string name="calendar_sun">Sun</string>
+    <string name="calendar_mon">Mon</string>
+    <string name="calendar_tue">Tue</string>
+    <string name="calendar_wed">Wed</string>
+    <string name="calendar_thu">Thu</string>
     <string name="calendar_fri">Fri</string>
-    <string name="calendar_month_1">Farvardin</string><string name="calendar_month_2">Ordibehesht</string>
-    <string name="calendar_month_3">Khordad</string><string name="calendar_month_4">Tir</string>
-    <string name="calendar_month_5">Mordad</string><string name="calendar_month_6">Shahrivar</string>
-    <string name="calendar_month_7">Mehr</string><string name="calendar_month_8">Aban</string>
-    <string name="calendar_month_9">Azar</string><string name="calendar_month_10">Dey</string>
-    <string name="calendar_month_11">Bahman</string><string name="calendar_month_12">Esfand</string>
-    <string name="calendar_sync_offline">Offline; your saved occasions are still shown.</string>
-    <string name="calendar_all_year_occasions">All occasions in %1$d</string>
+    <string name="calendar_month_1">Farvardin</string>
+    <string name="calendar_month_2">Ordibehesht</string>
+    <string name="calendar_month_3">Khordad</string>
+    <string name="calendar_month_4">Tir</string>
+    <string name="calendar_month_5">Mordad</string>
+    <string name="calendar_month_6">Shahrivar</string>
+    <string name="calendar_month_7">Mehr</string>
+    <string name="calendar_month_8">Aban</string>
+    <string name="calendar_month_9">Azar</string>
+    <string name="calendar_month_10">Dey</string>
+    <string name="calendar_month_11">Bahman</string>
+    <string name="calendar_month_12">Esfand</string>
+    <string name="calendar_sync_offline">No internet. You see the saved list.</string>
+    <string name="calendar_all_year_occasions">Occasions in %1$d</string>
     <string name="calendar_search_occasions">Search occasions</string>
-    <string name="calendar_no_matching_occasions">No occasions match this search.</string>
+    <string name="calendar_no_matching_occasions">Nothing matched that search.</string>
     <string name="calendar_year_occasions_count">%1$d occasions this year</string>
-    <string name="calendar_no_year_occasions">No occasions are recorded for this year.</string>
+    <string name="calendar_no_year_occasions">No occasion is listed for this year.</string>
     <string name="calendar_go_to_date">Go to date</string>
     <string name="calendar_previous_year">Previous year</string>
     <string name="calendar_next_year">Next year</string>
@@ -66,28 +75,32 @@
     <string name="calendar_filter_favorites">My occasions · %1$d</string>
     <string name="calendar_favorite_add">Add to my occasions</string>
     <string name="calendar_favorite_remove">Remove from my occasions</string>
-    <string name="calendar_favorite_hint">Starred occasions are pinned first and can trigger the reminder.</string>
+    <string name="calendar_favorite_hint">Starred occasions sit at the top and can send a reminder.</string>
     <string name="calendar_plan_action">Plan this occasion</string>
-    <string name="calendar_plan_hint">Turn this occasion into a task, a preparation step or a live countdown.</string>
+    <string name="calendar_plan_hint">Make a task, a preparation step or a countdown for this occasion.</string>
     <string name="calendar_plan_task_on_day">Task on the occasion day</string>
-    <string name="calendar_plan_prepare">Prepare %1$d day(s) earlier</string>
-    <string name="calendar_plan_prepare_hint">A shopping or planning task before the occasion.</string>
+    <string name="calendar_plan_prepare">Get ready %1$d days early</string>
+    <string name="calendar_plan_prepare_hint">A task for shopping or planning before the day.</string>
     <string name="calendar_plan_countdown">Create a countdown</string>
-    <string name="calendar_plan_countdown_hint">Watch the remaining time on the dashboard and widget.</string>
+    <string name="calendar_plan_countdown_hint">See the time left on Home and in the widget.</string>
     <string name="calendar_days_today">Today</string>
     <string name="calendar_days_tomorrow">Tomorrow</string>
     <string name="calendar_days_left">in %1$d days</string>
     <string name="calendar_filter_upcoming_only">From today</string>
     <string name="calendar_month_all">All months</string>
     <string name="calendar_show_more_occasions">%1$d more</string>
-    <string name="calendar_show_less">Show fewer</string>
+    <string name="calendar_show_less">Close the list</string>
     <string name="calendar_search_clear">Clear search</string>
     <string name="calendar_more_occasions">+%1$d more occasions</string>
-    <string name="calendar_lunar_note">Calculated lunar date; check the official announcement.</string>
+    <string name="calendar_lunar_note">This lunar date is calculated. Compare it with the official calendar.</string>
     <string name="calendar_bloom_title">%1$d this month</string>
     <string name="calendar_today_marker">Today</string>
     <string name="calendar_weekend_marker">Weekend</string>
-    <string name="calendar_month_summary">%1$d days with events</string>
+    <string name="calendar_month_summary">%1$d days with something</string>
     <string name="calendar_state_expanded">Expanded</string>
     <string name="calendar_state_collapsed">Collapsed</string>
+    <string name="calendar_day_no_tasks">No tasks on this day.</string>
+    <string name="calendar_day_tasks_label">Tasks on this day</string>
+    <string name="calendar_day_occasions_label">Occasions on this day</string>
+    <string name="calendar_quick_add">New task</string>
 </resources>

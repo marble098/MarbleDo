@@ -1,19 +1,19 @@
 <resources>
-    <string name="widget_countdown_label">NEXT MOMENT</string>
-    <string name="widget_empty_title">Your next moment awaits</string>
-    <string name="widget_empty">Add a dated task to see a live countdown here.</string>
+    <string name="widget_countdown_label">Next moment</string>
+    <string name="widget_empty_title">No moment yet</string>
+    <string name="widget_empty">Give a task a time and its countdown shows here.</string>
     <string name="widget_time_left">%1$s days · %2$s hr · %3$s min</string>
     <string name="widget_target_date">Target · %1$s</string>
     <string name="widget_unit_days">DAYS</string>
     <string name="widget_unit_hours">HRS</string>
     <string name="widget_unit_minutes">MIN</string>
-    <string name="widget_due">The moment is here</string>
+    <string name="widget_due">It is here</string>
     <string name="widget_open_app">Open MarbleDo</string>
     <string name="widget_today_label">YOUR DAY AT A GLANCE</string>
     <string name="widget_occasions_label">TODAY’S OCCASIONS</string>
     <string name="widget_no_occasions">No occasion is recorded today</string>
     <string name="widget_more_occasions">and %1$s more</string>
     <string name="widget_next_task_label">NEXT TASK</string>
-    <string name="widget_no_next_task">No dated task is coming up</string>
-    <string name="widget_no_countdown">Turn on a countdown for a dated task to see the time remaining.</string>
+    <string name="widget_no_next_task">No task is close</string>
+    <string name="widget_no_countdown">Turn the countdown on for a task with a time to see it here.</string>
 </resources>

@@ -1,23 +1,22 @@
 <resources>
     <string name="countdown_title">Countdowns</string>
-    <string name="countdown_subtitle">Keep the moments you care about in view.</string>
-    <string name="countdown_empty">Add a task with a date and switch on its countdown to see it live here.</string>
-    <string name="countdown_themes">Choose a look</string>
+    <string name="countdown_subtitle">Keep the moments that matter in sight.</string>
+    <string name="countdown_empty">Give a task a date and turn on its countdown to see how long is left.</string>
+    <string name="countdown_themes">Your look</string>
     <string name="countdown_upcoming">Upcoming moments</string>
     <string name="countdown_remaining">%1$s remaining</string>
     <string name="countdown_focus">Focus</string>
     <string name="countdown_close">Close focus mode</string>
     <string name="countdown_focus_mode">Focus mode</string>
-    <string name="countdown_quick_theme">Switch the look instantly</string>
+    <string name="countdown_quick_theme">Change the look in a tap</string>
     <string name="countdown_days">days</string>
     <string name="countdown_days_hours_minutes_seconds">Days · Hours · Minutes · Seconds</string>
     <string name="countdown_unit_days">Days</string>
     <string name="countdown_unit_hours">Hours</string>
     <string name="countdown_unit_minutes">Minutes</string>
     <string name="countdown_unit_seconds">Seconds</string>
-    <string name="countdown_finished">The moment has arrived</string>
+    <string name="countdown_finished">It is here! 🎉</string>
     <string name="countdown_disable">Turn this countdown off</string>
-
     <string name="countdown_theme_marble_orb">Marble orb</string>
     <string name="countdown_theme_aurora_veil">Aurora veil</string>
     <string name="countdown_theme_neon_grid">Neon horizon</string>
@@ -30,41 +29,38 @@
     <string name="countdown_theme_stellar_night">Stellar night</string>
     <string name="countdown_theme_moment_blocks">Moment blocks</string>
     <string name="countdown_theme_dial_gauge">Precision dial</string>
-
-    <string name="countdown_caption_marble_orb">A polished stone turning with time</string>
+    <string name="countdown_caption_marble_orb">A polished stone that turns with time</string>
     <string name="countdown_caption_aurora_veil">Northern lights over a quiet night</string>
-    <string name="countdown_caption_neon_grid">Retro horizon with glowing digits</string>
-    <string name="countdown_caption_flip_studio">Split-flap cards on a bright desk</string>
-    <string name="countdown_caption_glass_layers">Frosted panels over floating light</string>
+    <string name="countdown_caption_neon_grid">An old horizon with glowing numbers</string>
+    <string name="countdown_caption_flip_studio">Flip cards on a bright desk</string>
+    <string name="countdown_caption_glass_layers">Frosted layers over light</string>
     <string name="countdown_caption_orbital_rings">Four orbits, one destination</string>
-    <string name="countdown_caption_terminal_matrix">Command-line countdown, phosphor glow</string>
-    <string name="countdown_caption_liquid_tide">Waves rising toward the moment</string>
-    <string name="countdown_caption_paper_type">Editorial poster with a huge day number</string>
-    <string name="countdown_caption_stellar_night">Stars and a constellation path</string>
-    <string name="countdown_caption_moment_blocks">One block for every unit of time</string>
-    <string name="countdown_caption_dial_gauge">Instrument dial with tick marks</string>
-
+    <string name="countdown_caption_terminal_matrix">A terminal count in green light</string>
+    <string name="countdown_caption_liquid_tide">A wave rising to the moment</string>
+    <string name="countdown_caption_paper_type">A paper poster with a big number</string>
+    <string name="countdown_caption_stellar_night">Stars along a constellation</string>
+    <string name="countdown_caption_moment_blocks">One block for each unit</string>
+    <string name="countdown_caption_dial_gauge">A gauge with fine marks</string>
     <string name="countdown_gallery_title">Theme gallery</string>
-    <string name="countdown_gallery_hint">Each theme has its own layout, palette and motion. Your choice becomes the default for new countdowns; existing tasks keep their own style.</string>
+    <string name="countdown_gallery_hint">Each look has its own colours and layout. Your pick becomes the default for new countdowns.</string>
     <string name="countdown_theme_active">Active</string>
-
     <string name="countdown_widget_name">MarbleDo daily planner</string>
-    <string name="countdown_widget_description">A resizable daily view of dates, occasions, your next task and countdown</string>
+    <string name="countdown_widget_description">Dates, occasions, your next task and a countdown at a glance</string>
     <string name="countdown_add">New countdown</string>
     <string name="countdown_add_first">Create your first countdown</string>
-    <string name="countdown_calendar_display">Calendar for display and date entry</string>
+    <string name="countdown_calendar_display">Calendar for showing and picking dates</string>
     <string name="countdown_calendar_persian">Persian</string>
     <string name="countdown_calendar_gregorian">Gregorian</string>
     <string name="countdown_calendar_lunar">Islamic lunar</string>
     <string name="countdown_create_title">Create a countdown</string>
-    <string name="countdown_create_hint">Name your moment, pick a calendar, then tap a preset or fine-tune the date and time.</string>
-    <string name="countdown_title_field">Important moment</string>
+    <string name="countdown_create_hint">Write a title and pick a date and time.</string>
+    <string name="countdown_title_field">Name the moment</string>
     <string name="countdown_date_field">Date</string>
     <string name="countdown_date_hint">Example: 1405/08/25</string>
     <string name="countdown_date_preview">Target: %1$s</string>
     <string name="countdown_time_field">Time</string>
     <string name="countdown_time_hint">Example: 14:30</string>
-    <string name="countdown_quick_presets">Quick time presets</string>
+    <string name="countdown_quick_presets">Quick pick</string>
     <string name="countdown_preset_hour">In one hour</string>
     <string name="countdown_preset_tomorrow">Tomorrow</string>
     <string name="countdown_preset_week">One week</string>
@@ -73,6 +69,6 @@
     <string name="countdown_create_action">Save countdown</string>
     <string name="countdown_cancel">Cancel</string>
     <string name="countdown_target_date">Target: %1$s</string>
-    <string name="countdown_past_error">Pick a moment in the future.</string>
+    <string name="countdown_past_error">Pick a time in the future.</string>
     <string name="countdown_picker_title">Choose date and time</string>
 </resources>

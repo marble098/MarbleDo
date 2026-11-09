@@ -13,14 +13,14 @@ object OccasionTemplates {
     fun checklist(template: PreparationTemplate, languageTag: String): List<String> {
         val fa = languageTag == "fa"
         return when (template) {
-            PreparationTemplate.SIMPLE -> if (fa) listOf("بررسی تاریخ و جزئیات مناسبت", "آماده‌کردن وسایل موردنیاز", "هماهنگی با افراد مرتبط")
-                else listOf("Check the occasion date and details", "Prepare materials", "Coordinate with participants")
-            PreparationTemplate.FAMILY -> if (fa) listOf("هماهنگی زمان با خانواده", "تعیین بودجه و فهرست خرید", "آماده‌کردن هدیه یا پیام", "ثبت خاطره و قدردانی")
-                else listOf("Agree on a time with family", "Set a budget and shopping list", "Prepare a gift or message", "Record a memory and say thanks")
-            PreparationTemplate.CULTURAL -> if (fa) listOf("انتخاب متن یا اثر فرهنگی معتبر", "برنامه‌ریزی مطالعه یا بازدید", "تهیهٔ ابزار و منابع", "اشتراک آموخته‌ها")
-                else listOf("Choose a reliable cultural text or work", "Plan a reading session or visit", "Gather materials and references", "Share what you learned")
-            PreparationTemplate.SCHOOL -> if (fa) listOf("تطبیق تاریخ با بخشنامهٔ منطقه", "تعیین هدف تربیتی و گروه سنی", "تقسیم مسئولیت با دانش‌آموزان", "هماهنگی ایمنی، دسترس‌پذیری و رضایت اولیا", "آماده‌سازی محتوا و امکانات", "ارزیابی و ثبت گزارش کوتاه")
-                else listOf("Confirm the date with the district circular", "Set the educational aim and age group", "Assign roles with students", "Arrange safety, accessibility and parental consent", "Prepare content and equipment", "Evaluate and write a brief report")
+            PreparationTemplate.SIMPLE -> if (fa) listOf("تاریخ مناسبت را چک کن", "وسایل لازم را آماده کن", "با بقیه هماهنگ کن")
+                else listOf("Check the date and details", "Get what you need ready", "Coordinate with the others")
+            PreparationTemplate.FAMILY -> if (fa) listOf("با خانواده وقت هماهنگ کن", "بودجه و فهرست خرید را بنویس", "هدیه یا پیام آماده کن", "یادش را گرامی بدار")
+                else listOf("Agree on a time with family", "Write a budget and shopping list", "Prepare a gift or message", "Mark the memory")
+            PreparationTemplate.CULTURAL -> if (fa) listOf("یک متن یا اثر خوب انتخاب کن", "برای خواندن یا بازدید برنامه بگذار", "منابع را جمع کن", "چیزی که یاد گرفتی را بگو")
+                else listOf("Pick a good text or work", "Plan a reading or a visit", "Collect the sources", "Share what you learned")
+            PreparationTemplate.SCHOOL -> if (fa) listOf("تاریخ را با اطلاعیهٔ مدرسه چک کن", "هدف و گروه سنی را مشخص کن", "کارها را بین دانش‌آموزان تقسیم کن", "ایمنی و اجازهٔ والدین را هماهنگ کن", "محتوا و وسایل را آماده کن", "یک گزارش کوتاه بنویس")
+                else listOf("Check the date with the school notice", "Pick the aim and age group", "Split the jobs with students", "Arrange safety and parent consent", "Prepare content and equipment", "Write a short report")
         }
     }
 

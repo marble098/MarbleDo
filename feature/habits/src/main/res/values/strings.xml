@@ -1,17 +1,15 @@
 <resources>
     <string name="habit_widget_name">MarbleDo habits</string>
-    <string name="habit_widget_description">Today’s habits, your streak and one-tap check-in</string>
-
+    <string name="habit_widget_description">Today habits, your streak, and ticking from the widget</string>
     <string name="habit_nav_title">Habits</string>
     <string name="habit_cabinet_title">Habits</string>
     <string name="habit_cabinet_hint">Build a habit or put one aside.</string>
-    <string name="habit_score_label">Growth score</string>
+    <string name="habit_score_label">Score</string>
     <string name="habit_today_progress">%1$s of %2$s done today</string>
     <string name="habit_best_streak">Best run · %1$s days</string>
     <string name="habit_best_streak_label">Best run</string>
     <string name="habit_all_done">All done for today</string>
-    <string name="habit_summary_empty">No habit is planned for today.</string>
-
+    <string name="habit_summary_empty">No habit for today yet. Add one?</string>
     <string name="habit_drawer_build">Building</string>
     <string name="habit_drawer_build_hint">Small things you repeat.</string>
     <string name="habit_drawer_quit">Letting go</string>
@@ -19,35 +17,33 @@
     <string name="habit_drawer_open">Expand</string>
     <string name="habit_drawer_close">Collapse</string>
     <string name="habit_drawer_count">%1$d habit</string>
-    <string name="habit_drawer_done">%1$d done today</string>
+    <string name="habit_drawer_done">%1$d habits done today 🌱</string>
     <string name="habit_add_widget">Add habits widget</string>
     <string name="habit_new">New habit</string>
     <string name="habit_add_in_drawer">Add</string>
     <string name="habit_empty_build">Nothing here yet. Start with one small step.</string>
     <string name="habit_empty_quit">Nothing to quit here yet.</string>
-    <string name="habit_archived_hint">Retired habits, kept for the record.</string>
+    <string name="habit_archived_hint">Archived habits stay here so you keep the history.</string>
     <string name="habit_week_title">This week</string>
-    <string name="habit_week_done">%1$s of %2$s days kept</string>
+    <string name="habit_week_done">%1$s of %2$s days</string>
     <string name="habit_week_none">Nothing scheduled this week.</string>
     <string name="habit_look_title">Look and widget</string>
-    <string name="habit_look_hint">How progress is drawn, and the home-screen shortcut.</string>
-    <string name="habit_order_hint">What still needs you comes first.</string>
+    <string name="habit_look_hint">Pick how progress looks and add the widget.</string>
+    <string name="habit_order_hint">Habits you have not done come first.</string>
     <string name="habit_archived_section">Archived</string>
     <string name="habit_empty_archived">Nothing is archived.</string>
-
     <string name="habit_done">Done</string>
     <string name="habit_not_done">Not yet</string>
     <string name="habit_undo">Undo</string>
     <string name="habit_slip_today">I slipped today</string>
-    <string name="habit_slip_recorded">Slip recorded. Tomorrow starts clean.</string>
+    <string name="habit_slip_recorded">Saved. Tomorrow you start clean again.</string>
     <string name="habit_clean_today">Clean today</string>
     <string name="habit_mark_done">Mark as done</string>
     <string name="habit_increase">Add one</string>
     <string name="habit_decrease">Remove one</string>
     <string name="habit_target_progress">%1$s of %2$s</string>
     <string name="habit_target_reached">Target reached</string>
-    <string name="habit_quit_hint">Tap only on the days you slipped; every other day stays clean on its own.</string>
-
+    <string name="habit_quit_hint">Tap only the days you slipped. Every other day counts as clean.</string>
     <string name="habit_editor_new">New habit</string>
     <string name="habit_editor_edit">Edit habit</string>
     <string name="habit_field_name">Habit name</string>
@@ -72,7 +68,7 @@
     <string name="habit_difficulty_medium">Medium</string>
     <string name="habit_difficulty_hard">Hard</string>
     <string name="habit_field_cue">Right after…</string>
-    <string name="habit_cue_hint">…brushing my teeth, …my morning coffee</string>
+    <string name="habit_cue_hint">After brushing my teeth, after morning coffee</string>
     <string name="habit_field_identity">The kind of person you are becoming</string>
     <string name="habit_identity_hint">I am someone who…</string>
     <string name="habit_field_why">Why it matters to you</string>
@@ -87,29 +83,26 @@
     <string name="habit_unarchive">Bring back</string>
     <string name="habit_delete_confirm_title">Delete this habit?</string>
     <string name="habit_delete_confirm_body">“%1$s” and every recorded day go away. This cannot be undone.</string>
-
     <string name="habit_theme_aurora">Aurora</string>
     <string name="habit_theme_ember">Ember</string>
     <string name="habit_theme_garden">Garden</string>
     <string name="habit_theme_midnight">Midnight</string>
     <string name="habit_theme_bloom">Bloom</string>
     <string name="habit_theme_glass">Glass</string>
-    <string name="habit_theme_caption_aurora">Violet aurora over a calm night</string>
-    <string name="habit_theme_caption_ember">Warm coals for a streak on fire</string>
-    <string name="habit_theme_caption_garden">Mint and moss, slow and patient</string>
-    <string name="habit_theme_caption_midnight">Deep blue with a cold silver ring</string>
-    <string name="habit_theme_caption_bloom">Soft sakura pinks, gentle on a bad day</string>
-    <string name="habit_theme_caption_glass">Frosted neutrals, numbers first</string>
-
+    <string name="habit_theme_caption_aurora">Purple lights over a quiet night</string>
+    <string name="habit_theme_caption_ember">Warm coals for bright days</string>
+    <string name="habit_theme_caption_garden">Green and mint, calm and patient</string>
+    <string name="habit_theme_caption_midnight">Deep blue with a silver ring</string>
+    <string name="habit_theme_caption_bloom">Soft pink, kind on hard days</string>
+    <string name="habit_theme_caption_glass">Plain and frosted; numbers first</string>
     <string name="habit_phase_starting">Starting</string>
     <string name="habit_phase_repeating">Repeating</string>
     <string name="habit_phase_settling">Settling in</string>
     <string name="habit_phase_automatic">Running on its own</string>
-    <string name="habit_phase_hint_starting">The goal right now is showing up, not being perfect.</string>
-    <string name="habit_phase_hint_repeating">The loop is forming. Keep the time and place steady.</string>
-    <string name="habit_phase_hint_settling">It is starting to feel normal. Protect it on busy days.</string>
-    <string name="habit_phase_hint_automatic">This one mostly runs without negotiating. Watch the busy weeks.</string>
-
+    <string name="habit_phase_hint_starting">Right now the only goal is showing up, not being perfect.</string>
+    <string name="habit_phase_hint_repeating">It is becoming a habit. Keep the time and place fixed.</string>
+    <string name="habit_phase_hint_settling">It feels normal now. Do not drop it on busy days.</string>
+    <string name="habit_phase_hint_automatic">It happens on its own now. Keep an eye on busy weeks.</string>
     <string name="habit_stat_streak">Current run</string>
     <string name="habit_stat_longest">Best run</string>
     <string name="habit_stat_rate">Last 30 days</string>
@@ -118,7 +111,6 @@
     <string name="habit_stat_clean">Clean days</string>
     <string name="habit_stat_score">Score</string>
     <string name="habit_stat_days">days</string>
-
     <string name="habit_heatmap_title">Your days</string>
     <string name="habit_heatmap_legend_less">Less</string>
     <string name="habit_heatmap_legend_more">More</string>
@@ -132,33 +124,30 @@
     <string name="habit_day_state_missed">Missed</string>
     <string name="habit_day_state_off">Off</string>
     <string name="habit_day_state_today">Today</string>
-
-    <string name="habit_insight_start_small">Find a two-minute version of this habit. Early on the job is to build the behaviour, not to make it big.</string>
-    <string name="habit_insight_relapse_kind">%1$s slip is on the record. A slip is data, not a verdict: come back on the very next day and note what triggered it.</string>
-    <string name="habit_insight_never_miss_twice">You are %1$s days in. The rule is never miss twice — even the two-minute version keeps the chain alive.</string>
-    <string name="habit_insight_milestone_close">Only %1$s day to the next milestone. Today is the one that gets you there.</string>
-    <string name="habit_insight_weekly_behind">%1$s day of this week’s target is still open. Today is the easiest day to close it.</string>
-    <string name="habit_insight_shrink_step">Consistency is low and the step is big. Halve the target: small habits survive, big ones get dropped.</string>
-    <string name="habit_insight_slip_free">%1$s clean days behind you. Now write down your triggers, so a hard day cannot ambush you.</string>
-    <string name="habit_insight_strong_week">Last week beat the week before. Whatever you changed, keep it.</string>
-    <string name="habit_insight_weak_weekday">%1$s is your weakest day. Plan that day in advance instead of relying on willpower.</string>
+    <string name="habit_insight_start_small">Find a two minute version of this habit. In the first days it only needs to happen.</string>
+    <string name="habit_insight_relapse_kind">%1$s slips recorded. A slip is information, not failure. Come back tomorrow and note what caused it.</string>
+    <string name="habit_insight_never_miss_twice">%1$s days in a row. If a day slips, start again the next day. Two minutes is enough.</string>
+    <string name="habit_insight_milestone_close">%1$s days to the next mark. Today is the day that gets you there.</string>
+    <string name="habit_insight_weekly_behind">%1$s days left in this week target. Today is the easiest day to catch up.</string>
+    <string name="habit_insight_shrink_step">The step is big and hard to keep. Halve it; small habits stay.</string>
+    <string name="habit_insight_slip_free">%1$s clean days behind you. Now write down what makes it hard.</string>
+    <string name="habit_insight_strong_week">This week was better than the last. Keep doing what you changed.</string>
+    <string name="habit_insight_weak_weekday">%1$s are your harder days. Plan for them in advance.</string>
     <string name="habit_insight_identity">You wrote this about yourself: “%1$s”.</string>
-    <string name="habit_insight_stack">You tied this habit to “%1$s”. That moment is your trigger today.</string>
-
+    <string name="habit_insight_stack">You tied this habit to “%1$s”. That moment is your cue.</string>
     <string name="habit_widget_empty">No habit yet</string>
-    <string name="habit_widget_empty_body">Create a habit in MarbleDo and tick it off from here.</string>
+    <string name="habit_widget_empty_body">Make a habit and tick it from here.</string>
     <string name="habit_widget_progress">%1$s / %2$s today</string>
     <string name="habit_widget_all_done">Everything is done today</string>
     <string name="habit_widget_streak">%1$s day run</string>
     <string name="habit_widget_slip">Slip today</string>
     <string name="habit_widget_clean">Clean</string>
     <string name="habit_widget_open">Open habits</string>
-
     <string name="channel_habits">Habit nudges</string>
     <string name="channel_habits_description">One quiet reminder per habit, at the time you chose</string>
     <string name="habit_notification_title">%1$s · time for your habit</string>
-    <string name="habit_notification_body_build">A few minutes is enough today.</string>
-    <string name="habit_notification_body_quit">Stay clean today — one more day on the chain.</string>
+    <string name="habit_notification_body_build">A few minutes today is enough.</string>
+    <string name="habit_notification_body_quit">Stay clean today; one more day joins the streak.</string>
     <string name="habit_notification_done">Mark as done</string>
     <string name="habit_notification_slipped">I slipped today</string>
 </resources>

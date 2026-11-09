@@ -398,20 +398,20 @@ fun CalendarScreen(
                 // 42 fixed cells do not need a lazy grid, so the month is plain rows now.
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentPadding = PaddingValues(bottom = MarbleSpacing.md),
-                    verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs),
+                    contentPadding = PaddingValues(bottom = MarbleSpacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                 ) {
                     item { WeekdayHeader(weekStartsSaturday, thursdayWeekendEnabled) }
                     item {
                         Surface(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
-                            shape = MaterialTheme.shapes.large,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                            shape = MaterialTheme.shapes.extraLarge,
                             color = MaterialTheme.colorScheme.surface,
-                            shadowElevation = 1.dp,
-                            tonalElevation = 0.5.dp,
+                            shadowElevation = 2.dp,
+                            tonalElevation = 1.dp,
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
                                 monthData.cells.chunked(7).forEach { week ->
@@ -937,24 +937,26 @@ private fun CalendarCommandCard(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
         shape = shape,
         color = colors.surface,
-        shadowElevation = 2.dp,
+        shadowElevation = 3.dp,
     ) {
         Box(
             Modifier.background(
                 Brush.linearGradient(
                     listOf(
-                        colors.primaryContainer.copy(alpha = 0.65f),
+                        colors.primaryContainer.copy(alpha = 0.60f),
                         colors.surface,
-                        colors.secondaryContainer.copy(alpha = 0.55f),
+                        colors.secondaryContainer.copy(alpha = 0.45f),
                     ),
                 ),
                 shape,
             ),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // One title row: [previous] [month + the three dates] [next]. The triple date used to
+                // have a line of its own far below the month it belongs to.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -978,6 +980,7 @@ private fun CalendarCommandCard(
                             )
                             .padding(horizontal = 4.dp, vertical = 2.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Crossfade(
                             targetState = monthLabel,
@@ -986,45 +989,77 @@ private fun CalendarCommandCard(
                         ) { label ->
                             Text(
                                 label,
-                                style = MarbleTextStyles.cardTitle,
+                                style = MarbleTextStyles.sectionTitle,
                                 textAlign = TextAlign.Center,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
+                        Text(
+                            PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
+                            style = MarbleTextStyles.microLabel,
+                            color = colors.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                        )
                     }
                     CalendarStepButton(
                         icon = if (rtl) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,
                         description = stringResource(if (yearScope) R.string.calendar_next_year else R.string.calendar_next_month),
                         onClick = onNext,
                     )
-
                 }
 
+                // Two labelled shortcuts instead of two bare text buttons with no hierarchy.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    TextButton(onClick = onOpenGoToDate) {
-                        Text(stringResource(R.string.calendar_go_to_date))
+                    Surface(
+                        onClick = onToday,
+                        shape = CircleShape,
+                        color = if (isAwayFromToday) colors.primary else colors.surface.copy(alpha = 0.85f),
+                        contentColor = if (isAwayFromToday) colors.onPrimary else colors.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(Icons.Outlined.CalendarMonth, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                stringResource(R.string.calendar_today),
+                                style = MarbleTextStyles.metaLabel,
+                                maxLines = 1,
+                            )
+                        }
                     }
-                    TextButton(onClick = onToday) {
-                        Text(stringResource(R.string.calendar_today), color = if (isAwayFromToday) colors.primary else colors.onSurfaceVariant)
+                    Surface(
+                        onClick = onOpenGoToDate,
+                        shape = CircleShape,
+                        color = colors.surface.copy(alpha = 0.85f),
+                        contentColor = colors.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                stringResource(R.string.calendar_go_to_date),
+                                style = MarbleTextStyles.metaLabel,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
-
-                // The triple date used to share the month row with two step buttons and the
-                // "today" chip, so the lunar part was always cut with an ellipsis. It now has the
-                // whole card width and may wrap to a second line.
-                Text(
-                    PersianDateUtils.tripleDate(todayEpoch, languageTag, numeralMode, lunarOffsetDays),
-                    style = MarbleTextStyles.microLabel,
-                    color = colors.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    modifier = Modifier.fillMaxWidth(),
-                )
 
                 CalendarViewSwitch(
                     selected = selectedViewMode,
@@ -1196,27 +1231,24 @@ private fun WeekdayHeader(weekStartsSaturday: Boolean, thursdayWeekendEnabled: B
         R.string.calendar_sat, R.string.calendar_sun, R.string.calendar_mon, R.string.calendar_tue,
         R.string.calendar_wed, R.string.calendar_thu, R.string.calendar_fri,
     )
-    Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+    // No card around the letters: the grid below is the only panel, and these labels simply sit on
+    // top of their own columns (3dp inset + 8dp grid padding keeps them exactly aligned).
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        // Same insets and column gaps as the day grid below, so each label sits over its column.
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            order.forEach { weekdayIndex ->
-                val isWeekend = weekdayIndex == 6 || (thursdayWeekendEnabled && weekdayIndex == 5)
-                Text(
-                    stringResource(labels[weekdayIndex]),
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    color = if (isWeekend) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = if (isWeekend) FontWeight.SemiBold else FontWeight.Medium,
-                )
-            }
+        order.forEach { weekdayIndex ->
+            val isWeekend = weekdayIndex == 6 || (thursdayWeekendEnabled && weekdayIndex == 5)
+            Text(
+                stringResource(labels[weekdayIndex]),
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                color = if (isWeekend) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MarbleTextStyles.metaLabel,
+                fontWeight = if (isWeekend) FontWeight.SemiBold else FontWeight.Medium,
+            )
         }
     }
 }
@@ -1234,32 +1266,33 @@ private fun DayCellView(
     val reduceMotion = LocalReduceMotion.current
     val isHoliday = occasions.any(Occasion::isHoliday)
     val colors = MaterialTheme.colorScheme
-    val targetBackground = when {
+    val numeralMode = LocalNumeralMode.current
+    // The day number sits in its own circle. Filling the whole cell made every selected day read as
+    // a big block and made today and the selection fight over the same colour.
+    val numberBackground = when {
         selected -> colors.primary
         cell.isToday -> colors.primaryContainer
-        cell.inDisplayedMonth && isHoliday -> colors.errorContainer.copy(alpha = 0.28f)
         else -> Color.Transparent
     }
     val targetForeground = when {
         selected -> colors.onPrimary
-        !cell.inDisplayedMonth -> colors.onSurface.copy(alpha = 0.30f)
+        cell.isToday -> colors.onPrimaryContainer
+        !cell.inDisplayedMonth -> colors.onSurface.copy(alpha = 0.32f)
         isHoliday -> colors.error
-        isWeekend -> colors.error.copy(alpha = 0.82f)
+        isWeekend -> colors.error.copy(alpha = 0.86f)
         else -> colors.onSurface
     }
-    val animatedBackground by animateColorAsState(targetBackground, MarbleMotion.fastEffects(), label = "dayCellBackground")
+    val animatedBackground by animateColorAsState(numberBackground, MarbleMotion.fastEffects(), label = "dayCellBackground")
     val animatedForeground by animateColorAsState(targetForeground, MarbleMotion.fastEffects(), label = "dayCellForeground")
-    val background = if (reduceMotion) targetBackground else animatedBackground
+    val background = if (reduceMotion) numberBackground else animatedBackground
     val foreground = if (reduceMotion) targetForeground else animatedForeground
-    val shape = MaterialTheme.shapes.small
     val holidayLabel = stringResource(R.string.calendar_holiday_badge)
     val tasksLabel = stringResource(R.string.calendar_cell_tasks, cell.taskCount)
     val todayLabel = stringResource(R.string.calendar_today_marker)
     val monthLabel = PersianDateUtils.monthName(cell.month, languageTag)
-    val isSelected = selected
     // Full spoken date ("12 Farvardin, today, official holiday, 2 tasks"), not a bare number (C-6).
     val cellDescription = listOfNotNull(
-        TextNormalizer.formatDigits("${cell.day} $monthLabel", LocalNumeralMode.current),
+        TextNormalizer.formatDigits("${cell.day} $monthLabel", numeralMode),
         todayLabel.takeIf { cell.isToday },
         holidayLabel.takeIf { isHoliday },
         tasksLabel.takeIf { cell.taskCount > 0 },
@@ -1267,41 +1300,38 @@ private fun DayCellView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .defaultMinSize(minHeight = MarbleSpacing.touchTarget)
-            .clip(shape)
-            .background(background)
-            .then(
-                if (cell.isToday) {
-                    Modifier.border(
-                        width = 1.5.dp,
-                        color = if (selected) colors.onPrimary.copy(alpha = 0.85f)
-                        else colors.primary.copy(alpha = 0.65f),
-                        shape = shape,
-                    )
-                } else if (hasFavorite && cell.inDisplayedMonth && !selected) {
-                    Modifier.border(
-                        width = 1.dp,
-                        color = colors.primary.copy(alpha = 0.35f),
-                        shape = shape,
-                    )
-                } else {
-                    Modifier
-                },
-            )
-            .semantics(mergeDescendants = true) { contentDescription = cellDescription; this.selected = isSelected }
+            .defaultMinSize(minHeight = 52.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .semantics(mergeDescendants = true) { contentDescription = cellDescription; this.selected = selected }
             .clickable(onClick = onClick)
-            .padding(horizontal = 1.dp, vertical = 4.dp),
+            .padding(vertical = 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        Text(
-            TextNormalizer.formatDigits(cell.day.toString(), LocalNumeralMode.current),
-            color = foreground,
-            style = MarbleTextStyles.cellNumber,
-            fontWeight = if (cell.isToday || isHoliday || selected) FontWeight.SemiBold else FontWeight.Light,
-        )
-        // One tidy strip: at most three dots, one per distinct category, plus a task dot. The old
-        // two-source dot row could stack four marks and looked like an ellipsis (V-6).
+        Box(
+            Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(background)
+                .then(
+                    if (cell.isToday && !selected) {
+                        Modifier.border(1.5.dp, colors.primary.copy(alpha = 0.75f), CircleShape)
+                    } else if (hasFavorite && cell.inDisplayedMonth && !selected) {
+                        Modifier.border(1.dp, colors.primary.copy(alpha = 0.35f), CircleShape)
+                    } else {
+                        Modifier
+                    },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                TextNormalizer.formatDigits(cell.day.toString(), numeralMode),
+                color = foreground,
+                style = MarbleTextStyles.cellNumber,
+                fontWeight = if (cell.isToday || isHoliday || selected) FontWeight.SemiBold else FontWeight.Normal,
+            )
+        }
+        // One tidy strip: at most three dots, one per distinct category, plus a task dot (V-6).
         if (cell.inDisplayedMonth) {
             EnhancedDayBloomDot(occasions = occasions, selected = selected, taskCount = cell.taskCount)
         } else {
@@ -1347,7 +1377,7 @@ private fun SelectedDayCard(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         color = colors.surfaceContainer,
-        shadowElevation = 1.dp,
+        shadowElevation = 2.dp,
         tonalElevation = 1.dp,
     ) {
         // No nested scroll and no height cap: the month view's single LazyColumn scrolls this
@@ -1355,19 +1385,51 @@ private fun SelectedDayCard(
         Column(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // The day opens with its own number tile: the eye lands on "which day is this?" before
+            // it starts reading the two other calendars underneath.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            PersianDateUtils.fullDateWithWeekday(epoch, languageTag, numeralMode),
-                            style = MarbleTextStyles.itemTitle,
-                        )
+                Column(
+                    Modifier
+                        .width(58.dp)
+                        .clip(MaterialTheme.shapes.large)
+                        .background(colors.primary)
+                        .padding(vertical = 9.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                ) {
+                    Text(
+                        TextNormalizer.formatDigits(persian.day.toString(), numeralMode),
+                        style = MarbleTextStyles.sectionTitle,
+                        color = colors.onPrimary,
+                        maxLines = 1,
+                    )
+                    Text(
+                        PersianDateUtils.monthName(persian.month, languageTag),
+                        style = MarbleTextStyles.microLabel,
+                        color = colors.onPrimary.copy(alpha = 0.88f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        PersianDateUtils.fullDateWithWeekday(epoch, languageTag, numeralMode),
+                        style = MarbleTextStyles.itemTitle,
+                        maxLines = 2,
+                    )
+                    Text(
+                        secondaryDates,
+                        style = MarbleTextStyles.metaLabel,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (daysDelta >= 0L) {
                             Surface(
                                 shape = CircleShape,
@@ -1376,7 +1438,7 @@ private fun SelectedDayCard(
                                 Text(
                                     TextNormalizer.formatDigits(daysLeftLabel(daysDelta), numeralMode),
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = MarbleTextStyles.microLabel,
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (daysDelta == 0L) colors.primary else colors.onSecondaryContainer,
                                 )
@@ -1386,51 +1448,66 @@ private fun SelectedDayCard(
                             Surface(shape = CircleShape, color = colors.errorContainer) {
                                 Text(
                                     stringResource(R.string.calendar_holiday_badge),
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    style = MarbleTextStyles.microLabel,
                                     color = colors.onErrorContainer,
                                 )
                             }
                         }
                     }
-                    Text(
-                        secondaryDates,
-                        style = MarbleTextStyles.metaLabel,
-                        color = colors.onSurfaceVariant,
-                        maxLines = 2,
-                    )
+                }
+            }
+            // The two things a day card is for, said in words: add a task, or jump to the next
+            // working day. Two bare round icons used to sit here with no label at all.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Surface(
+                    onClick = onAddTask,
+                    shape = CircleShape,
+                    color = colors.primary,
+                    contentColor = colors.onPrimary,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            stringResource(R.string.calendar_quick_add),
+                            style = MarbleTextStyles.metaLabel,
+                            maxLines = 1,
+                        )
+                    }
                 }
                 Surface(
                     onClick = onOpenWorkday,
                     shape = CircleShape,
                     color = colors.secondaryContainer,
-                    modifier = Modifier.minimumInteractiveComponentSize(),
+                    contentColor = colors.onSecondaryContainer,
+                    modifier = Modifier.weight(1.25f),
                 ) {
-                    Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Outlined.WorkOutline,
-                            contentDescription = stringResource(R.string.calendar_workday_title),
-                            tint = colors.onSecondaryContainer,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                }
-                Surface(
-                    onClick = onAddTask,
-                    shape = CircleShape,
-                    color = colors.primary,
-                    modifier = Modifier.minimumInteractiveComponentSize(),
-                ) {
-                    Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Outlined.Add,
-                            contentDescription = stringResource(R.string.calendar_add_task),
-                            tint = colors.onPrimary,
-                            modifier = Modifier.size(20.dp),
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(Icons.Outlined.WorkOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            stringResource(R.string.calendar_workday_title),
+                            style = MarbleTextStyles.metaLabel,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
             }
+            HorizontalDivider(color = colors.outline.copy(alpha = 0.16f))
             if (occasions.isEmpty()) {
                 Text(
                     stringResource(R.string.calendar_no_occasions),
@@ -1438,6 +1515,11 @@ private fun SelectedDayCard(
                     color = colors.onSurfaceVariant,
                 )
             } else {
+                Text(
+                    stringResource(R.string.calendar_day_occasions_label),
+                    style = MarbleTextStyles.metaLabel,
+                    color = colors.primary,
+                )
                 occasions.forEach { occasion ->
                     val isFavorite = occasion.id in favoriteOccasionIds
                     val accent = categoryColor(occasion.category)
@@ -1513,12 +1595,21 @@ private fun SelectedDayCard(
             }
             if (tasks.isNotEmpty()) {
                 HorizontalDivider(color = colors.outline.copy(alpha = 0.15f))
-                Text(
-                    TextNormalizer.formatDigits(stringResource(R.string.calendar_tasks_count, tasks.size), numeralMode),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.primary,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.calendar_day_tasks_label),
+                        style = MarbleTextStyles.metaLabel,
+                        color = colors.primary,
+                    )
+                    Text(
+                        TextNormalizer.formatDigits(stringResource(R.string.calendar_tasks_count, tasks.size), numeralMode),
+                        style = MarbleTextStyles.microLabel,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
                 val sortedTasks = remember(tasks) { tasks.sortedBy { it.dueAtEpochMillis ?: Long.MAX_VALUE } }
                 val allDayLabel = stringResource(R.string.calendar_all_day)
                 sortedTasks.take(MAX_DAY_CARD_TASKS).forEach { task ->
@@ -1564,6 +1655,24 @@ private fun SelectedDayCard(
                     Text(
                         TextNormalizer.formatDigits(stringResource(R.string.calendar_more_tasks, sortedTasks.size - MAX_DAY_CARD_TASKS), numeralMode),
                         style = MaterialTheme.typography.labelSmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+            }
+            if (occasions.isEmpty() && tasks.isEmpty()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        Icons.Outlined.CalendarMonth,
+                        contentDescription = null,
+                        tint = colors.primary.copy(alpha = 0.7f),
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        stringResource(R.string.calendar_day_no_tasks),
+                        style = MarbleTextStyles.metaLabel,
                         color = colors.onSurfaceVariant,
                     )
                 }

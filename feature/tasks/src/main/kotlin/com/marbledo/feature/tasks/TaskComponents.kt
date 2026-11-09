@@ -292,12 +292,12 @@ fun TaskRowCard(
                 modifier = Modifier.align(Alignment.CenterVertically).semantics { contentDescription = task.title },
             )
             Column(
-                Modifier.weight(1f).align(Alignment.CenterVertically).padding(vertical = 10.dp, horizontal = 4.dp),
+                Modifier.weight(1f).align(Alignment.CenterVertically).padding(vertical = 12.dp, horizontal = 6.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         task.title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MarbleTextStyles.itemTitle,
                         textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                         color = if (task.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
@@ -321,15 +321,29 @@ fun TaskRowCard(
                         )
                     }
                 }
-                Text(
-                    text = dueLabel?.let { stringResource(R.string.tasks_due_at, it) }
-                        ?: stringResource(R.string.tasks_no_due_date),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 3.dp),
-                )
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // A quiet mark instead of a second 48dp button: the row had three trailing
+                    // controls, which left the title about half the width it deserved.
+                    if (hasCountdown) {
+                        Icon(
+                            Icons.Outlined.Timer,
+                            contentDescription = stringResource(R.string.tasks_countdown_on),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 4.dp).size(13.dp),
+                        )
+                    }
+                    Text(
+                        text = dueLabel?.let { stringResource(R.string.tasks_due_at, it) }
+                            ?: stringResource(R.string.tasks_no_due_date),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 val checklistTotal = task.checklist.count { it.text.isNotBlank() }
                 val checklistDone = task.checklist.count { it.isDone && it.text.isNotBlank() }
                 if (task.category.isNotBlank() || task.tags.isNotEmpty() || checklistTotal > 0 || task.focusMinutes > 0) {
@@ -353,16 +367,6 @@ fun TaskRowCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-            IconButton(onClick = onToggleCountdown, enabled = task.dueAtEpochMillis != null) {
-                Icon(
-                    Icons.Outlined.Timer,
-                    contentDescription = stringResource(if (hasCountdown) R.string.tasks_countdown_off else R.string.tasks_countdown_on),
-                    tint = when {
-                        !hasCountdown -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                        else -> MaterialTheme.colorScheme.primary
-                    },
-                )
             }
             Box(Modifier.align(Alignment.CenterVertically)) {
                 IconButton(onClick = { menuExpanded = true }) {
