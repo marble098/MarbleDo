@@ -73,6 +73,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -107,12 +108,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.LayoutDirection
@@ -461,20 +464,21 @@ fun DashboardScreen(
                 DashboardTab.TODAY -> {
                     // Tasks are the reason the screen exists, so they come first and they keep the space.
                     item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            SectionHeader(stringResource(R.string.dash_tasks), state.visibleTasks.size, Modifier.weight(1f))
-                            DashboardModeSwitcher(
-                                mode = settings.dashboardViewMode,
-                                onSelect = { mode ->
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onViewModeChange(mode)
-                                },
-                            )
-                        }
+                        TaskListHeader(
+                            title = stringResource(R.string.dash_tasks),
+                            count = state.visibleTasks.size,
+                            doneCount = state.completedCount,
+                            totalCount = state.allTasks.count { !it.isArchived },
+                            mode = settings.dashboardViewMode,
+                            onSelectMode = { mode ->
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onViewModeChange(mode)
+                            },
+                            onAdd = {
+                                sharedText = ""
+                                showQuickAdd = true
+                            },
+                        )
                     }
                     if (searchOpen) {
                         item {
@@ -519,94 +523,71 @@ fun DashboardScreen(
                             }
                         }
                     }
-                    // One calm row of controls instead of a chip row plus an icon pill. The scope chips
-                    // (Today / Upcoming / …) were permanently visible and pushed the list down; the
-                    // current scope is now a quiet label that opens the same choice as a menu, and the
-                    // three icon buttons keep their full-size touch targets (docs/UI_COUNCIL_REVIEW.md).
+                    // A labelled tool row. The four glyphs of the old pill row each needed the
+                    // user to guess; the chips say what they do, and the current scope is spelled
+                    // out on the filter chip instead of a floating label somewhere else.
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                         ) {
-                            if (state.filter != TaskFilter.TODAY) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                                ) {
-                                    Text(
-                                        filterLabel(state.filter),
-                                        style = MarbleTextStyles.metaLabel,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        maxLines = 1,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    )
-                                }
-                            }
-                            Box(Modifier.weight(1f))
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    IconButton(onClick = { searchOpen = !searchOpen; if (!searchOpen) viewModel.setQuery("") }) {
-                                        Icon(
-                                            Icons.Outlined.Search,
-                                            contentDescription = stringResource(R.string.dash_search),
-                                            tint = if (searchOpen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp),
-                                        )
-                                    }
-                                    Box {
-                                        IconButton(onClick = { filterMenuExpanded = true }) {
-                                            Icon(
-                                                Icons.Outlined.Tune,
-                                                contentDescription = stringResource(R.string.dash_filters),
-                                                tint = if (state.filter != TaskFilter.TODAY) MaterialTheme.colorScheme.primary
-                                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(20.dp),
+                                ToolChip(
+                                    icon = Icons.Outlined.Search,
+                                    label = stringResource(R.string.dash_search),
+                                    active = searchOpen,
+                                    onClick = {
+                                        searchOpen = !searchOpen
+                                        if (!searchOpen) viewModel.setQuery("")
+                                    },
+                                )
+                                Box {
+                                    ToolChip(
+                                        icon = Icons.Outlined.Tune,
+                                        label = filterLabel(state.filter),
+                                        active = state.filter != TaskFilter.TODAY,
+                                        onClick = { filterMenuExpanded = true },
+                                    )
+                                    DropdownMenu(expanded = filterMenuExpanded, onDismissRequest = { filterMenuExpanded = false }) {
+                                        TaskFilter.entries.forEach { filter ->
+                                            DropdownMenuItem(
+                                                text = { Text(filterLabel(filter)) },
+                                                trailingIcon = {
+                                                    if (state.filter == filter) Icon(Icons.Outlined.Check, contentDescription = null)
+                                                },
+                                                onClick = { viewModel.setFilter(filter); filterMenuExpanded = false },
                                             )
                                         }
-                                        DropdownMenu(expanded = filterMenuExpanded, onDismissRequest = { filterMenuExpanded = false }) {
-                                            TaskFilter.entries.forEach { filter ->
-                                                DropdownMenuItem(
-                                                    text = { Text(filterLabel(filter)) },
-                                                    trailingIcon = {
-                                                        if (state.filter == filter) Icon(Icons.Outlined.Check, contentDescription = null)
-                                                    },
-                                                    onClick = { viewModel.setFilter(filter); filterMenuExpanded = false },
-                                                )
-                                            }
-                                        }
                                     }
-                                    IconButton(onClick = { categoriesOpen = !categoriesOpen }) {
-                                        Icon(
-                                            Icons.Outlined.FilterAlt,
-                                            contentDescription = stringResource(R.string.dash_categories),
-                                            tint = if (categoriesOpen || state.selectedCategory != null) MaterialTheme.colorScheme.primary
-                                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp),
-                                        )
-                                    }
-                                    Box {
-                                        IconButton(onClick = { sortMenuExpanded = true }) {
-                                            Icon(
-                                                Icons.Outlined.Sort,
-                                                contentDescription = stringResource(R.string.dash_sort_menu),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(20.dp),
+                                }
+                                ToolChip(
+                                    icon = Icons.Outlined.FilterAlt,
+                                    label = stringResource(R.string.dash_categories),
+                                    active = categoriesOpen || state.selectedCategory != null,
+                                    onClick = { categoriesOpen = !categoriesOpen },
+                                )
+                                Box {
+                                    ToolChip(
+                                        icon = Icons.Outlined.Sort,
+                                        label = stringResource(R.string.dash_sort_menu),
+                                        active = false,
+                                        onClick = { sortMenuExpanded = true },
+                                    )
+                                    DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                                        TaskSort.entries.forEach { sort ->
+                                            DropdownMenuItem(
+                                                text = { Text(sortLabel(sort)) },
+                                                trailingIcon = {
+                                                    if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
+                                                },
+                                                onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
                                             )
-                                        }
-                                        DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
-                                            TaskSort.entries.forEach { sort ->
-                                                DropdownMenuItem(
-                                                    text = { Text(sortLabel(sort)) },
-                                                    trailingIcon = {
-                                                        if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
-                                                    },
-                                                    onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
-                                                )
-                                            }
                                         }
                                     }
                                 }
@@ -641,23 +622,48 @@ fun DashboardScreen(
 
                     if (groups.isEmpty()) {
                         item {
-                            Card(
+                            Surface(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                shape = MaterialTheme.shapes.extraLarge,
+                                color = MaterialTheme.colorScheme.surface,
+                                shadowElevation = 1.dp,
+                                tonalElevation = 1.dp,
                             ) {
                                 Column(
                                     Modifier.fillMaxWidth().padding(MarbleSpacing.xl),
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
                                 ) {
-                                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    Text(stringResource(R.string.dash_empty_title), style = MarbleTextStyles.itemTitle)
+                                    Box(
+                                        Modifier
+                                            .size(64.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primaryContainer),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(30.dp),
+                                        )
+                                    }
+                                    Text(
+                                        stringResource(R.string.dash_empty_title),
+                                        style = MarbleTextStyles.itemTitle,
+                                        textAlign = TextAlign.Center,
+                                    )
                                     Text(
                                         stringResource(R.string.dash_empty_body),
                                         style = MarbleTextStyles.bodyPrimary,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = TextAlign.Center,
                                     )
+                                    Button(onClick = { sharedText = ""; showQuickAdd = true }) {
+                                        Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(MarbleSpacing.sm))
+                                        Text(stringResource(R.string.dash_add_first_task))
+                                    }
                                 }
                             }
                         }
@@ -980,16 +986,28 @@ fun DashboardScreen(
             }
         }
 
-        // A compact, clearly floating FAB: the old extended pill stretched over the last card
-        // and read as part of the bottom navigation.
-        FloatingActionButton(
+        // A labelled add button: one word on the button beats a bare plus that sat on top of the
+        // last card. It stays short enough not to read as part of the bottom navigation.
+        Surface(
             onClick = { sharedText = ""; showQuickAdd = true },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(MarbleSpacing.lg),
             shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            shadowElevation = 6.dp,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(MarbleSpacing.lg),
         ) {
-            Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.dash_new_task))
+            Row(
+                Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+            ) {
+                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+                Text(
+                    stringResource(R.string.dash_new_task),
+                    style = MarbleTextStyles.metaLabel,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
 
         SnackbarHost(
@@ -1107,6 +1125,13 @@ private fun DashboardTabRow(
         DashboardTab.entries.forEach { tab ->
             val isSelected = tab == selected
             val label = stringResource(tab.labelRes)
+            // An icon next to the word: the three stops used to be text only, so the row read as
+            // a segmented filter rather than the three places of the app.
+            val icon = when (tab) {
+                DashboardTab.TODAY -> Icons.Outlined.AccessTime
+                DashboardTab.WEEK -> Icons.Outlined.CalendarMonth
+                DashboardTab.OCCASIONS -> Icons.Outlined.StarBorder
+            }
             val pill by animateColorAsState(
                 targetValue = if (isSelected) colors.primary else Color.Transparent,
                 animationSpec = if (reduceMotion) androidx.compose.animation.core.snap() else motion.defaultEffectsSpec(),
@@ -1125,16 +1150,148 @@ private fun DashboardTabRow(
                     .selectable(selected = isSelected, role = Role.Tab) { onSelect(tab) },
                 shape = MaterialTheme.shapes.large,
                 color = pill,
+                shadowElevation = if (isSelected) 2.dp else 0.dp,
             ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 11.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = labelColor,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = label,
+                        style = MarbleTextStyles.metaLabel,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = labelColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** A labelled tool button: icon plus its word, because four unlabelled glyphs were a guessing game. */
+@Composable
+private fun ToolChip(
+    icon: ImageVector,
+    label: String,
+    active: Boolean,
+    onClick: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val background by animateColorAsState(
+        targetValue = if (active) colors.primaryContainer else colors.surfaceVariant.copy(alpha = 0.60f),
+        animationSpec = MarbleMotion.fastEffects(),
+        label = "toolChipBackground",
+    )
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = background,
+        contentColor = if (active) colors.onPrimaryContainer else colors.onSurfaceVariant,
+        modifier = Modifier.minimumInteractiveComponentSize(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(label, style = MarbleTextStyles.metaLabel, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * The task list headline: name, count, how much of the list is done and the view switcher, with the
+ * primary "new task" action next to it. One labelled action replaced the floating guesswork.
+ */
+@Composable
+private fun TaskListHeader(
+    title: String,
+    count: Int,
+    doneCount: Int,
+    totalCount: Int,
+    mode: DashboardViewMode,
+    onSelectMode: (DashboardViewMode) -> Unit,
+    onAdd: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val numeralMode = LocalNumeralMode.current
+    val fraction = if (totalCount > 0) (doneCount.toFloat() / totalCount).coerceIn(0f, 1f) else 0f
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+        ) {
+            Text(
+                title,
+                style = MarbleTextStyles.sectionTitle,
+                modifier = Modifier.semantics { heading() },
+            )
+            Surface(shape = CircleShape, color = colors.secondaryContainer) {
                 Text(
-                    text = label,
+                    TextNormalizer.formatDigits(count.toString(), numeralMode),
                     style = MarbleTextStyles.metaLabel,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = labelColor,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                    color = colors.onSecondaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 1.dp),
                 )
+            }
+            Spacer(Modifier.weight(1f))
+            DashboardModeSwitcher(mode = mode, onSelect = onSelectMode)
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+        ) {
+            // A plain bar instead of a Material indicator: it keeps the row 6dp tall and reads at
+            // a glance without a second line of text.
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(6.dp)
+                    .clip(CircleShape)
+                    .background(colors.surfaceVariant),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(fraction)
+                        .fillMaxHeight()
+                        .clip(CircleShape)
+                        .background(colors.primary),
+                )
+            }
+            Text(
+                TextNormalizer.formatDigits(stringResource(R.string.dash_progress_done_total, doneCount, totalCount), numeralMode),
+                style = MarbleTextStyles.microLabel,
+                color = colors.onSurfaceVariant,
+                maxLines = 1,
+            )
+            Surface(
+                onClick = onAdd,
+                shape = CircleShape,
+                color = colors.primary,
+                contentColor = colors.onPrimary,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.dash_new_task), style = MarbleTextStyles.metaLabel, maxLines = 1)
+                }
             }
         }
     }
@@ -1168,39 +1325,47 @@ private fun DailyHeaderCard(
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val aurora = auroraBrush(currentHour, isRtl)
     val colors = MaterialTheme.colorScheme
+    val shape = MaterialTheme.shapes.extraLarge
+    val calendarLabel = stringResource(R.string.nav_calendar)
+    // One plain sentence answers "how is today going?" before the counters are read.
+    val headline = if (todayOpen == 0 && completedCount > 0) {
+        stringResource(R.string.dash_hero_all_done)
+    } else {
+        stringResource(R.string.dash_hero_open_count, todayOpen)
+    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = shape,
         color = colors.surface,
-        shadowElevation = 2.dp,
+        shadowElevation = 3.dp,
         tonalElevation = 1.dp,
     ) {
         Box(
             Modifier
-                .background(aurora, MaterialTheme.shapes.extraLarge)
+                .background(aurora, shape)
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            colors.surface.copy(alpha = 0.40f),
-                            colors.surface.copy(alpha = 0.18f),
+                            colors.surface.copy(alpha = 0.46f),
+                            colors.surface.copy(alpha = 0.14f),
                         ),
                     ),
-                    MaterialTheme.shapes.extraLarge,
+                    shape,
                 ),
         ) {
             GreetingSky(hour = currentHour, modifier = Modifier.matchParentSize())
-            // Compacted by the UI council (D-3): tighter padding and gaps so the task list starts
-            // above the fold on short phones instead of below a ~300dp header.
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = MarbleSpacing.lg, vertical = MarbleSpacing.md),
                 verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
             ) {
+                // Zone one: who you are and when. Greeting, the full date and the other two
+                // calendars share one column; the triple date moved here so it no longer needs a
+                // line of its own under a divider.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                 ) {
-                    val calendarLabel = stringResource(R.string.nav_calendar)
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -1215,33 +1380,26 @@ private fun DailyHeaderCard(
                             color = colors.onSurface,
                             maxLines = 2,
                         )
+                        Text(
+                            PersianDateUtils.tripleDate(todayEpoch, settings.languageTag, numeralMode, settings.lunarOffsetDays),
+                            style = MarbleTextStyles.microLabel,
+                            color = colors.onSurfaceVariant,
+                            maxLines = 2,
+                        )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
-                        Surface(shape = CircleShape, color = colors.surface.copy(alpha = 0.78f)) {
-                            IconButton(onClick = onShare) {
-                                Icon(
-                                    Icons.Outlined.Share,
-                                    contentDescription = stringResource(R.string.dash_share_today),
-                                    tint = colors.primary,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
+                    Surface(shape = CircleShape, color = colors.surface.copy(alpha = 0.78f)) {
+                        IconButton(onClick = onShare) {
+                            Icon(
+                                Icons.Outlined.Share,
+                                contentDescription = stringResource(R.string.dash_share_today),
+                                tint = colors.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
                         }
                     }
                 }
-                // The triple date gets its own full-width line. Inside the greeting column it had
-                // to share the row with two 48dp buttons, so the lunar date was cut with an
-                // ellipsis while the width below it stayed empty.
-                Text(
-                    PersianDateUtils.tripleDate(todayEpoch, settings.languageTag, numeralMode, settings.lunarOffsetDays),
-                    style = MarbleTextStyles.microLabel,
-                    color = colors.onSurfaceVariant,
-                    maxLines = 2,
-                )
-                HorizontalDivider(color = colors.outline.copy(alpha = 0.16f))
-                // Flat counters next to the single FocusOrbit ring: the three nested stat cards
-                // are gone, and the whole row opens the day's agenda, so the header no longer
-                // needs a second row of pill buttons (docs/UI_REFRESH.md, V-2/V-3).
+                // Zone two: how today is going. The ring, one sentence and three flat counters —
+                // the whole zone is the target for the day agenda.
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1253,7 +1411,7 @@ private fun DailyHeaderCard(
                         )
                         .padding(vertical = MarbleSpacing.xxs),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
+                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.lg),
                 ) {
                     FocusOrbit(
                         completed = completedCount,
@@ -1261,26 +1419,21 @@ private fun DailyHeaderCard(
                         open = todayOpen,
                         numeralMode = numeralMode,
                         isRtl = isRtl,
-                        orbitSize = 72.dp,
+                        orbitSize = 80.dp,
                     )
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xs)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
-                        ) {
-                            Icon(
-                                Icons.Outlined.AccessTime,
-                                contentDescription = null,
-                                tint = colors.primary,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Text(
-                                stringResource(R.string.agenda_title),
-                                style = MarbleTextStyles.metaLabel,
-                                color = colors.primary,
-                                maxLines = 2,
-                            )
-                        }
+                        Text(
+                            stringResource(R.string.dash_hero_today_label),
+                            style = MarbleTextStyles.metaLabel,
+                            color = colors.primary,
+                            maxLines = 1,
+                        )
+                        Text(
+                            headline,
+                            style = MarbleTextStyles.itemTitle,
+                            color = colors.onSurface,
+                            maxLines = 2,
+                        )
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             HeaderMetric(
                                 label = stringResource(R.string.dash_stat_today),
@@ -1602,6 +1755,9 @@ private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onC
         TaskGroup.LATER, TaskGroup.NO_DATE -> colors.outline
     }
     val stateLabel = stringResource(if (expanded) R.string.dash_state_expanded else R.string.dash_state_collapsed)
+    // A quiet divider row, not a fifth button: five tinted pills in a short list read as five
+    // actions. The dot carries the group's colour, the label speaks at row level, and only the
+    // overdue group still raises its voice.
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -1610,36 +1766,35 @@ private fun TaskGroupHeader(group: TaskGroup, count: Int, expanded: Boolean, onC
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { stateDescription = stateLabel },
         shape = MaterialTheme.shapes.large,
-        color = if (group == TaskGroup.OVERDUE) colors.errorContainer.copy(alpha = 0.35f)
-        else colors.surfaceVariant.copy(alpha = 0.45f),
+        color = Color.Transparent,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Box(
                 Modifier
-                    .size(8.dp)
+                    .size(7.dp)
                     .clip(CircleShape)
                     .background(accent),
             )
             Text(
                 stringResource(group.labelRes),
-                style = MarbleTextStyles.sectionTitle,
-                color = if (group == TaskGroup.OVERDUE) colors.error else colors.onSurface,
+                style = MarbleTextStyles.itemTitle,
+                color = if (group == TaskGroup.OVERDUE) colors.error else colors.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             Surface(
                 shape = CircleShape,
-                color = accent.copy(alpha = 0.14f),
+                color = accent.copy(alpha = 0.10f),
             ) {
                 Text(
                     TextNormalizer.formatDigits(count.toString(), LocalNumeralMode.current),
-                    style = MarbleTextStyles.metaLabel,
+                    style = MarbleTextStyles.microLabel,
                     fontWeight = FontWeight.Bold,
                     color = accent,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 1.dp),
                 )
             }
             // One glyph that turns: swapping ExpandMore for ExpandLess was a hard cut in a row

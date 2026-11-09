@@ -5,49 +5,58 @@
     <string name="calendar_next_month">ماه بعد</string>
     <string name="calendar_today">امروز</string>
     <string name="calendar_view_month">ماه</string>
-    <string name="calendar_view_agenda">برنامه</string>
+    <string name="calendar_view_agenda">روزها</string>
     <string name="calendar_view_occasions">مناسبت‌ها</string>
     <string name="calendar_view_year">سال</string>
     <string name="calendar_tasks_count">%1$d کار</string>
-    <string name="calendar_no_events">در این بازه کار یا مناسبتی نداری.</string>
-    <string name="calendar_no_occasions">برای این روز مناسبتی نیست.</string>
-    <string name="calendar_no_month_occasions">برای این ماه مناسبتی نیست.</string>
-    <string name="calendar_month_occasions_count">%1$d مناسبت در این ماه</string>
-    <string name="calendar_occasions_available">%1$d مناسبت در دسترس</string>
+    <string name="calendar_no_events">این ماه کاری و مناسبتی ندارد.</string>
+    <string name="calendar_no_occasions">این روز مناسبت ندارد.</string>
+    <string name="calendar_no_month_occasions">این ماه مناسبت ندارد.</string>
+    <string name="calendar_month_occasions_count">%1$d مناسبت این ماه</string>
+    <string name="calendar_occasions_available">%1$d مناسبت</string>
     <string name="calendar_occasions_short">%1$d مناسبت</string>
     <string name="calendar_holiday_badge">تعطیل رسمی</string>
     <string name="calendar_category_official">رسمی</string>
     <string name="calendar_category_national">ملی</string>
-    <string name="calendar_category_religious">دینی</string>
-    <string name="calendar_category_personal">غیررسمی و شخصی</string>
+    <string name="calendar_category_religious">مذهبی</string>
+    <string name="calendar_category_personal">شخصی و مردمی</string>
     <string name="calendar_category_international">روزهای جهانی</string>
-    <string name="calendar_sync_now">به‌روزرسانی مناسبت‌ها</string>
-    <string name="calendar_sync_refreshing">در حال به‌روزرسانی مناسبت‌ها…</string>
-    <string name="calendar_sync_error">به‌روزرسانی نشد؛ همان نسخهٔ ذخیره‌شده را می‌بینی.</string>
-    <string name="calendar_sync_last">به‌روزرسانی %1$s</string>
-    <string name="calendar_sync_bundled">فهرست همراه برنامه است؛ برای دریافت نسخهٔ تازه به اینترنت وصل شو.</string>
-    <string name="calendar_sat">ش</string><string name="calendar_sun">ی</string>
-    <string name="calendar_mon">د</string><string name="calendar_tue">س</string>
-    <string name="calendar_wed">چ</string><string name="calendar_thu">پ</string>
+    <string name="calendar_sync_now">تازه‌سازی مناسبت‌ها</string>
+    <string name="calendar_sync_refreshing">دارم تازه می‌کنم…</string>
+    <string name="calendar_sync_error">نشد. نسخهٔ ذخیره‌شده را می‌بینی.</string>
+    <string name="calendar_sync_last">آخرین بار %1$s</string>
+    <string name="calendar_sync_bundled">این فهرست همراه برنامه است. برای نسخهٔ تازه به اینترنت وصل شو.</string>
+    <string name="calendar_sat">ش</string>
+    <string name="calendar_sun">ی</string>
+    <string name="calendar_mon">د</string>
+    <string name="calendar_tue">س</string>
+    <string name="calendar_wed">چ</string>
+    <string name="calendar_thu">پ</string>
     <string name="calendar_fri">ج</string>
-    <string name="calendar_month_1">فروردین</string><string name="calendar_month_2">اردیبهشت</string>
-    <string name="calendar_month_3">خرداد</string><string name="calendar_month_4">تیر</string>
-    <string name="calendar_month_5">مرداد</string><string name="calendar_month_6">شهریور</string>
-    <string name="calendar_month_7">مهر</string><string name="calendar_month_8">آبان</string>
-    <string name="calendar_month_9">آذر</string><string name="calendar_month_10">دی</string>
-    <string name="calendar_month_11">بهمن</string><string name="calendar_month_12">اسفند</string>
-    <string name="calendar_sync_offline">اینترنت وصل نیست؛ فعلاً فهرست ذخیره‌شده را می‌بینی.</string>
-    <string name="calendar_all_year_occasions">همهٔ مناسبت‌های سال %1$d</string>
+    <string name="calendar_month_1">فروردین</string>
+    <string name="calendar_month_2">اردیبهشت</string>
+    <string name="calendar_month_3">خرداد</string>
+    <string name="calendar_month_4">تیر</string>
+    <string name="calendar_month_5">مرداد</string>
+    <string name="calendar_month_6">شهریور</string>
+    <string name="calendar_month_7">مهر</string>
+    <string name="calendar_month_8">آبان</string>
+    <string name="calendar_month_9">آذر</string>
+    <string name="calendar_month_10">دی</string>
+    <string name="calendar_month_11">بهمن</string>
+    <string name="calendar_month_12">اسفند</string>
+    <string name="calendar_sync_offline">اینترنت نیست. فهرست ذخیره‌شده را می‌بینی.</string>
+    <string name="calendar_all_year_occasions">مناسبت‌های سال %1$d</string>
     <string name="calendar_search_occasions">جست‌وجوی مناسبت</string>
-    <string name="calendar_no_matching_occasions">مناسبتی با این عبارت پیدا نشد.</string>
-    <string name="calendar_year_occasions_count">%1$d مناسبت در این سال</string>
-    <string name="calendar_no_year_occasions">برای این سال مناسبتی در فهرست نیست.</string>
+    <string name="calendar_no_matching_occasions">چیزی با این عبارت پیدا نشد.</string>
+    <string name="calendar_year_occasions_count">%1$d مناسبت امسال</string>
+    <string name="calendar_no_year_occasions">امسال مناسبتی در فهرست نیست.</string>
     <string name="calendar_go_to_date">رفتن به تاریخ</string>
     <string name="calendar_previous_year">سال قبل</string>
     <string name="calendar_next_year">سال بعد</string>
     <string name="calendar_add_task">افزودن کار برای این روز</string>
     <string name="calendar_all_day">تمام روز</string>
-    <string name="calendar_more_tasks">+%1$d بیشتر</string>
+    <string name="calendar_more_tasks">+%1$d کار دیگر</string>
     <string name="calendar_cell_tasks">%1$d کار</string>
     <string name="picker_today">امروز</string>
     <string name="picker_time">ساعت</string>
@@ -66,14 +75,14 @@
     <string name="calendar_filter_favorites">مناسبت‌های من · %1$d</string>
     <string name="calendar_favorite_add">افزودن به مناسبت‌های من</string>
     <string name="calendar_favorite_remove">حذف از مناسبت‌های من</string>
-    <string name="calendar_favorite_hint">مناسبت‌های برگزیده بالای فهرست می‌آیند و می‌توانند یادآوری بگیرند.</string>
-    <string name="calendar_plan_action">برنامه‌ریزی این مناسبت</string>
-    <string name="calendar_plan_hint">برای این مناسبت کار، کار آماده‌سازی یا شمارش معکوس بساز.</string>
+    <string name="calendar_favorite_hint">مناسبت‌های ستاره‌دار بالای فهرست می‌آیند و می‌توانند یادآوری بگیرند.</string>
+    <string name="calendar_plan_action">برنامه‌ریزی برای این مناسبت</string>
+    <string name="calendar_plan_hint">برای این مناسبت کار، کار آماده‌سازی یا شمارش بساز.</string>
     <string name="calendar_plan_task_on_day">کار در روز مناسبت</string>
-    <string name="calendar_plan_prepare">آماده‌سازی %1$d روز قبل</string>
-    <string name="calendar_plan_prepare_hint">کاری برای خرید یا هماهنگی پیش از مناسبت.</string>
-    <string name="calendar_plan_countdown">ساخت شمارش معکوس</string>
-    <string name="calendar_plan_countdown_hint">زمان باقی‌مانده را در خانه و ویجت ببین.</string>
+    <string name="calendar_plan_prepare">آماده‌سازی از %1$d روز قبل</string>
+    <string name="calendar_plan_prepare_hint">کاری برای خرید یا هماهنگی قبل از مناسبت.</string>
+    <string name="calendar_plan_countdown">ساختن شمارش معکوس</string>
+    <string name="calendar_plan_countdown_hint">زمان مانده را در خانه و ویجت ببین.</string>
     <string name="calendar_days_today">امروز</string>
     <string name="calendar_days_tomorrow">فردا</string>
     <string name="calendar_days_left">%1$d روز دیگر</string>
@@ -83,11 +92,15 @@
     <string name="calendar_show_less">بستن فهرست</string>
     <string name="calendar_search_clear">پاک‌کردن جست‌وجو</string>
     <string name="calendar_more_occasions">+%1$d مناسبت دیگر</string>
-    <string name="calendar_lunar_note">تاریخ قمری محاسباتی است؛ با تقویم رسمی تطبیق دهید.</string>
-    <string name="calendar_bloom_title">%1$d مناسبت در ماه</string>
+    <string name="calendar_lunar_note">تاریخ قمری حساب‌شده است. با تقویم رسمی مقایسه کن.</string>
+    <string name="calendar_bloom_title">%1$d مناسبت این ماه</string>
     <string name="calendar_today_marker">امروز</string>
     <string name="calendar_weekend_marker">تعطیل</string>
-    <string name="calendar_month_summary">%1$d روز با رویداد</string>
+    <string name="calendar_month_summary">%1$d روز رویداد دارد</string>
     <string name="calendar_state_expanded">باز شده</string>
     <string name="calendar_state_collapsed">بسته شده</string>
+    <string name="calendar_day_no_tasks">برای این روز کاری نیست.</string>
+    <string name="calendar_day_tasks_label">کارهای این روز</string>
+    <string name="calendar_day_occasions_label">مناسبت‌های این روز</string>
+    <string name="calendar_quick_add">کار تازه</string>
 </resources>

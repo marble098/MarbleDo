@@ -2,7 +2,7 @@
     <string name="tasks_more">گزینه‌های بیشتر</string>
     <string name="tasks_today">امروز</string>
     <string name="tasks_tomorrow">فردا</string>
-    <string name="tasks_quick_add_hint">مثلاً «فردا ساعت ۸ صبح، جلسهٔ تیم»</string>
+    <string name="tasks_quick_add_hint">مثلاً «فردا ۸ صبح جلسهٔ تیم»</string>
     <string name="tasks_add">اضافه‌کردن کار</string>
     <string name="tasks_due_at">موعد %1$s</string>
     <string name="tasks_no_due_date">بدون تاریخ</string>
@@ -18,7 +18,7 @@
     <string name="tasks_notes_hint">یادداشت (اختیاری)</string>
     <string name="tasks_save">ذخیره</string>
     <string name="tasks_cancel">انصراف</string>
-    <string name="tasks_speech_unavailable">ورودی صوتی روی این دستگاه در دسترس نیست.</string>
+    <string name="tasks_speech_unavailable">ورودی صوتی روی این گوشی کار نمی‌کند.</string>
     <string name="tasks_voice_input">ورودی صوتی</string>
     <string name="tasks_tag_hint">برچسب‌ها را با ویرگول جدا کن</string>
     <string name="tasks_project_hint">پروژه یا فهرست</string>
@@ -35,20 +35,20 @@
     <string name="tasks_pin">سنجاق‌کردن</string>
     <string name="tasks_unpin">برداشتن سنجاق</string>
     <string name="tasks_voice_guide_title">ساخت کار با صدا</string>
-    <string name="tasks_voice_guide_body">هر مرحله را جدا بگو: ۱) دسته، ۲) عنوان کار، ۳) تاریخ، ۴) ساعت، ۵) اولویت. اگر دسته نداری بگو «بدون دسته». برای گذشتن از تاریخ یا ساعت بگو «رد کن». می‌توانی هر مرحله را دوباره بگویی.</string>
-    <string name="tasks_voice_guide_example">نمونه: «کارهای خانه» ← «خرید هدیه» ← «۲۵ آبان ۱۴۰۵» ← «ساعت ۱۴ و ۳۰ دقیقه» ← «زیاد»</string>
-    <string name="tasks_voice_guide_privacy">گفتار روی دستگاه خودت با سرویس گفتار اندروید بررسی می‌شود؛ ماربل‌دو صدایت را ذخیره نمی‌کند.</string>
+    <string name="tasks_voice_guide_body">هر مرحله را جدا بگو: دسته، عنوان، تاریخ، ساعت و اولویت. اگر دسته نداری بگو «بدون دسته». برای رد کردن تاریخ یا ساعت بگو «رد کن».</string>
+    <string name="tasks_voice_guide_example">نمونه: «کارهای خانه» ← «خرید هدیه» ← «۲۵ آبان ۱۴۰۵» ← «۱۴ و ۳۰ دقیقه» ← «زیاد»</string>
+    <string name="tasks_voice_guide_privacy">صدا روی گوشی خودت بررسی می‌شود. ماربل‌دو صدایت را ذخیره نمی‌کند.</string>
     <string name="tasks_voice_start">شروع راهنمای صوتی</string>
-    <string name="tasks_voice_prompt_category">اول نام دسته را بگو؛ اگر نداری بگو «بدون دسته».</string>
-    <string name="tasks_voice_prompt_title">حالا عنوان کار را کامل بگو.</string>
-    <string name="tasks_voice_prompt_date">تاریخ شمسی را بگو، مثل ۲۵ آبان ۱۴۰۵ یا فردا؛ برای بدون تاریخ بگو «رد کن».</string>
-    <string name="tasks_voice_prompt_time">ساعت و دقیقه را بگو، مثل ساعت ۱۴ و ۳۰ دقیقه؛ برای بدون ساعت بگو «رد کن».</string>
+    <string name="tasks_voice_prompt_category">نام دسته را بگو؛ اگر نداری بگو «بدون دسته».</string>
+    <string name="tasks_voice_prompt_title">حالا عنوان کار را بگو.</string>
+    <string name="tasks_voice_prompt_date">تاریخ را بگو، مثل ۲۵ آبان ۱۴۰۵ یا فردا. برای بدون تاریخ بگو «رد کن».</string>
+    <string name="tasks_voice_prompt_time">ساعت را بگو، مثل ۱۴ و ۳۰ دقیقه. برای بدون ساعت بگو «رد کن».</string>
     <string name="tasks_voice_prompt_priority">اولویت را بگو: کم، معمولی، زیاد یا فوری.</string>
-    <string name="tasks_voice_title_required">برای ثبت کار، یک عنوان کوتاه هم بگو.</string>
-    <string name="tasks_voice_task_created">کارت با صدایت ثبت شد؛ عالیه!</string>
-    <string name="tasks_voice_date_retry">تاریخ را نفهمیدم؛ دوباره بگو یا این مرحله را رد کن.</string>
-    <string name="tasks_voice_time_retry">ساعت را نفهمیدم؛ دوباره بگو یا این مرحله را رد کن.</string>
-    <string name="tasks_voice_try_again">صدایت دریافت نشد؛ دوباره امتحان کن یا از این مرحله بگذر.</string>
+    <string name="tasks_voice_title_required">برای ثبت، یک عنوان کوتاه هم بگو.</string>
+    <string name="tasks_voice_task_created">با صدایت ثبت شد. عالیه!</string>
+    <string name="tasks_voice_date_retry">تاریخ را نفهمیدم. دوباره بگو یا رد کن.</string>
+    <string name="tasks_voice_time_retry">ساعت را نفهمیدم. دوباره بگو یا رد کن.</string>
+    <string name="tasks_voice_try_again">صدایی نشنیدم. دوباره بگو یا رد کن.</string>
     <string name="tasks_voice_progress_title">راهنمای صوتی کار</string>
     <string name="tasks_voice_step_count">مرحلهٔ %1$d از %2$d</string>
     <string name="tasks_voice_current_category">دسته: %1$s</string>
@@ -57,7 +57,6 @@
     <string name="tasks_voice_current_time">ساعت: %1$s</string>
     <string name="tasks_voice_repeat">گفتن دوباره</string>
     <string name="tasks_voice_skip">ردکردن</string>
-
     <string name="tasks_quick_add_title">کار تازه</string>
     <string name="tasks_quick_add_subtitle">بنویس، زمان بگذار یا با صدا بگو.</string>
     <string name="tasks_clear_input">پاک کردن متن</string>
@@ -71,16 +70,15 @@
     <string name="tasks_repeat">تکرار</string>
     <string name="tasks_countdown_toggle_title">شمارش معکوس زنده</string>
     <string name="tasks_countdown_toggle_body">شمارش را در خانه و ویجت ببین.</string>
-    <string name="tasks_countdown_needs_date">برای شروع روزشمار، اول یک تاریخ یا ساعت انتخاب کن.</string>
+    <string name="tasks_countdown_needs_date">برای شمارش، اول تاریخ یا ساعت انتخاب کن.</string>
     <string name="tasks_countdown_theme">تم: %1$s</string>
     <string name="tasks_countdown_on">روشن کردن شمارش معکوس</string>
     <string name="tasks_countdown_off">خاموش کردن شمارش معکوس</string>
-
-    <string name="tasks_anytime">هر زمانی</string>
+    <string name="tasks_anytime">هر وقت</string>
     <string name="tasks_schedule_field">تاریخ و ساعت</string>
     <string name="tasks_schedule_title">انتخاب تاریخ و ساعت</string>
     <string name="tasks_unarchive">بازگردانی از بایگانی</string>
-    <string name="tasks_swipe_complete">کارت را بکش تا انجامش بدهی</string>
+    <string name="tasks_swipe_complete">کارت را بکش تا انجام شود</string>
     <string name="tasks_checklist_progress">چک‌لیست %1$d از %2$d</string>
     <string name="tasks_checklist">چک‌لیست</string>
     <string name="tasks_checklist_add">افزودن مورد</string>
@@ -97,9 +95,9 @@
     <string name="tasks_attachment_default">فایل پیوست</string>
     <string name="tasks_attachment_unavailable">برنامه‌ای برای باز کردن این فایل نیست.</string>
     <string name="tasks_focus_minutes">دقیقه تمرکز</string>
-    <string name="tasks_focus_help">زمان تمرکزِ برنامه‌ریزی‌شده برای این کار. صفر یعنی بدون زمان.</string>
+    <string name="tasks_focus_help">چقدر برای این کار وقت می‌گذاری. صفر یعنی بدون زمان.</string>
     <string name="tasks_focus_badge">تمرکز %1$d دقیقه</string>
-    <string name="tasks_repeat_needs_date">کار تکراری تاریخ می‌خواهد.</string>
+    <string name="tasks_repeat_needs_date">کار تکراری به تاریخ نیاز دارد.</string>
     <string name="tasks_color">رنگ</string>
     <string name="tasks_submit_hint">برای ثبت، عنوان کار را بنویس.</string>
 </resources>

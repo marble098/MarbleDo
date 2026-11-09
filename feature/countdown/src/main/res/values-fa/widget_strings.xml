@@ -1,19 +1,19 @@
 <resources>
     <string name="widget_countdown_label">لحظهٔ بعدی</string>
     <string name="widget_empty_title">هنوز لحظه‌ای نیست</string>
-    <string name="widget_empty">یک کار زمان‌دار بساز تا شمارش معکوسش اینجا نمایش داده شود.</string>
+    <string name="widget_empty">به یک کار زمان بده تا شمارشش اینجا دیده شود.</string>
     <string name="widget_time_left">%1$s روز · %2$s ساعت · %3$s دقیقه</string>
     <string name="widget_target_date">موعد · %1$s</string>
     <string name="widget_unit_days">روز</string>
     <string name="widget_unit_hours">ساعت</string>
     <string name="widget_unit_minutes">دقیقه</string>
-    <string name="widget_due">لحظهٔ تو همین‌جاست</string>
+    <string name="widget_due">رسیدیم</string>
     <string name="widget_open_app">باز کردن ماربل‌دو</string>
     <string name="widget_today_label">نمای امروز</string>
     <string name="widget_occasions_label">مناسبت‌های امروز</string>
     <string name="widget_no_occasions">امروز مناسبتی نیست</string>
     <string name="widget_more_occasions">و %1$s مورد دیگر</string>
     <string name="widget_next_task_label">کار بعدی</string>
-    <string name="widget_no_next_task">کاری با موعد نزدیک نیست</string>
+    <string name="widget_no_next_task">کار نزدیکی نداری</string>
     <string name="widget_no_countdown">برای دیدن شمارش، آن را روی یک کار زمان‌دار روشن کن.</string>
 </resources>

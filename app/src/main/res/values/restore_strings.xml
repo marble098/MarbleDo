@@ -1,3 +1,3 @@
 <resources>
-    <string name="settings_import_confirmation">Merge %1$d tasks from this backup with current tasks?</string>
+    <string name="settings_import_confirmation">Add %1$d tasks from this backup to your current tasks?</string>
 </resources>

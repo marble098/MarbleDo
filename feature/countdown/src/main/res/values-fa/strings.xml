@@ -1,23 +1,22 @@
 <resources>
     <string name="countdown_title">شمارش‌های معکوس</string>
-    <string name="countdown_subtitle">لحظه‌های مهمت همیشه جلوی چشمت باشند.</string>
-    <string name="countdown_empty">یک کار تاریخ‌دار بساز و شمارش معکوسش را روشن کن تا اینجا ببینی چقدر مانده.</string>
+    <string name="countdown_subtitle">لحظه‌های مهمت همیشه جلوی چشمت.</string>
+    <string name="countdown_empty">به یک کار تاریخ بده و شمارشش را روشن کن تا ببینی چقدر مانده.</string>
     <string name="countdown_themes">ظاهر دلخواه</string>
     <string name="countdown_upcoming">لحظه‌های پیش رو</string>
     <string name="countdown_remaining">%1$s مانده</string>
     <string name="countdown_focus">تمرکز</string>
     <string name="countdown_close">بستن حالت تمرکز</string>
     <string name="countdown_focus_mode">حالت تمرکز</string>
-    <string name="countdown_quick_theme">لحظه‌ای ظاهر را عوض کن</string>
+    <string name="countdown_quick_theme">زود ظاهرش را عوض کن</string>
     <string name="countdown_days">روز</string>
     <string name="countdown_days_hours_minutes_seconds">روز · ساعت · دقیقه · ثانیه</string>
     <string name="countdown_unit_days">روز</string>
     <string name="countdown_unit_hours">ساعت</string>
     <string name="countdown_unit_minutes">دقیقه</string>
     <string name="countdown_unit_seconds">ثانیه</string>
-    <string name="countdown_finished">رسیدیم به لحظه! 🎉</string>
+    <string name="countdown_finished">رسیدیم! 🎉</string>
     <string name="countdown_disable">خاموش کردن این شمارش</string>
-
     <string name="countdown_theme_marble_orb">گوی مرمر</string>
     <string name="countdown_theme_aurora_veil">شفق قطبی</string>
     <string name="countdown_theme_neon_grid">افق نئونی</string>
@@ -30,29 +29,26 @@
     <string name="countdown_theme_stellar_night">شب پرستاره</string>
     <string name="countdown_theme_moment_blocks">بلوک‌های زمان</string>
     <string name="countdown_theme_dial_gauge">صفحهٔ دقیق</string>
-
     <string name="countdown_caption_marble_orb">سنگی صیقلی که با زمان می‌چرخد</string>
-    <string name="countdown_caption_aurora_veil">شفق شمالی بر شب آرام</string>
-    <string name="countdown_caption_neon_grid">افق نوستالژیک با رقم‌های درخشان</string>
-    <string name="countdown_caption_flip_studio">کارت‌های ورقی روی میزی روشن</string>
-    <string name="countdown_caption_glass_layers">پنل‌های مات روی نور شناور</string>
+    <string name="countdown_caption_aurora_veil">شفق شمالی روی شب آرام</string>
+    <string name="countdown_caption_neon_grid">افق قدیمی با عددهای درخشان</string>
+    <string name="countdown_caption_flip_studio">کارت‌های ورقی روی میز روشن</string>
+    <string name="countdown_caption_glass_layers">لایه‌های مات روی نور</string>
     <string name="countdown_caption_orbital_rings">چهار مدار، یک مقصد</string>
-    <string name="countdown_caption_terminal_matrix">شمارش خط فرمان با نور فسفری</string>
+    <string name="countdown_caption_terminal_matrix">شمارش با نور سبز خط فرمان</string>
     <string name="countdown_caption_liquid_tide">موجی که به سمت لحظه بالا می‌آید</string>
-    <string name="countdown_caption_paper_type">پوستر کاغذی با عدد بزرگ روز</string>
+    <string name="countdown_caption_paper_type">پوستر کاغذی با عدد بزرگ</string>
     <string name="countdown_caption_stellar_night">ستاره‌ها و مسیر صورت فلکی</string>
-    <string name="countdown_caption_moment_blocks">یک بلوک برای هر واحد زمان</string>
-    <string name="countdown_caption_dial_gauge">صفحهٔ اندازه‌گیری با خط‌های مدرج</string>
-
+    <string name="countdown_caption_moment_blocks">یک بلوک برای هر واحد</string>
+    <string name="countdown_caption_dial_gauge">صفحهٔ اندازه‌گیری با خط‌های ریز</string>
     <string name="countdown_gallery_title">گالری تم‌ها</string>
-    <string name="countdown_gallery_hint">هر تم چیدمان، رنگ و حرکت خودش را دارد. انتخابت پیش‌فرض شمارش‌های تازه می‌شود.</string>
+    <string name="countdown_gallery_hint">هر ظاهر رنگ و چیدمان خودش را دارد. انتخاب تو پیش‌فرض شمارش‌های تازه می‌شود.</string>
     <string name="countdown_theme_active">فعال</string>
-
     <string name="countdown_widget_name">برنامه‌ریز روز ماربل‌دو</string>
-    <string name="countdown_widget_description">نمای روزانهٔ تاریخ‌ها، مناسبت‌ها، کار بعدی و شمارش معکوس</string>
+    <string name="countdown_widget_description">تاریخ‌ها، مناسبت‌ها، کار بعدی و شمارش، در یک نگاه</string>
     <string name="countdown_add">شمارش تازه</string>
     <string name="countdown_add_first">ساخت اولین شمارش</string>
-    <string name="countdown_calendar_display">تقویم نمایش و ورود تاریخ</string>
+    <string name="countdown_calendar_display">تقویم نمایش و انتخاب تاریخ</string>
     <string name="countdown_calendar_persian">شمسی</string>
     <string name="countdown_calendar_gregorian">میلادی</string>
     <string name="countdown_calendar_lunar">قمری</string>
@@ -64,7 +60,7 @@
     <string name="countdown_date_preview">موعد: %1$s</string>
     <string name="countdown_time_field">ساعت</string>
     <string name="countdown_time_hint">نمونه: ۱۴:۳۰</string>
-    <string name="countdown_quick_presets">تنظیم سریع زمان</string>
+    <string name="countdown_quick_presets">انتخاب سریع</string>
     <string name="countdown_preset_hour">یک ساعت دیگر</string>
     <string name="countdown_preset_tomorrow">فردا</string>
     <string name="countdown_preset_week">یک هفته</string>
@@ -73,6 +69,6 @@
     <string name="countdown_create_action">ذخیرهٔ شمارش</string>
     <string name="countdown_cancel">انصراف</string>
     <string name="countdown_target_date">موعد: %1$s</string>
-    <string name="countdown_past_error">یک زمان در آینده انتخاب کن.</string>
+    <string name="countdown_past_error">زمانی در آینده انتخاب کن.</string>
     <string name="countdown_picker_title">انتخاب تاریخ و ساعت</string>
 </resources>
