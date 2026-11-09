@@ -1,6 +1,7 @@
 <resources>
     <string name="tasks_more">گزینه‌های بیشتر</string>
     <string name="tasks_today">امروز</string>
+    <string name="tasks_tomorrow_same_time">فردا همین زمان</string>
     <string name="tasks_tomorrow">فردا</string>
     <string name="tasks_quick_add_hint">مثلاً «فردا ۸ صبح جلسهٔ تیم»</string>
     <string name="tasks_add">اضافه‌کردن کار</string>
@@ -60,9 +61,10 @@
     <string name="tasks_quick_add_title">کار تازه</string>
     <string name="tasks_quick_add_subtitle">بنویس، زمان بگذار یا با صدا بگو.</string>
     <string name="tasks_clear_input">پاک کردن متن</string>
-    <string name="tasks_parsed_hint">تاریخ و ساعت از متنت خوانده شد</string>
+    <string name="tasks_parsed_hint_format">از متن خوانده شد · %1$s</string>
     <string name="tasks_when">چه زمانی؟</string>
     <string name="tasks_date_none">بدون تاریخ</string>
+    <string name="tasks_date_in_ten_days">ده روز بعد</string>
     <string name="tasks_date_next_week">هفتهٔ بعد</string>
     <string name="tasks_date_next_month">ماه بعد</string>
     <string name="tasks_priority">اولویت</string>

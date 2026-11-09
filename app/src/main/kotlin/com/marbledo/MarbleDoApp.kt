@@ -357,6 +357,8 @@ fun MarbleDoApp(
         settings.languageTag,
         settings.numeralMode,
         settings.habitTheme,
+        // The habit widget now paints itself from the app theme, so a theme switch has to redraw it.
+        settings.themeMode,
     ) {
         updateMarbleHabitWidgets(context)
     }

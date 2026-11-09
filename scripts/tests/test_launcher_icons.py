@@ -1,9 +1,10 @@
 """Static guards for the launcher icon set.
 
-The set has to stay complete and the mark has to stay inside the adaptive-icon safe
-zone, otherwise a launcher with an aggressive mask (a teardrop, a tight squircle)
-silently clips the calendar.
+The set has to stay complete and the mark has to stay whole under every launcher mask, otherwise
+a launcher with an aggressive mask (an oval, a teardrop, a tight squircle) silently clips it.
 """
+import importlib.util
+import json
 import re
 import struct
 import unittest
@@ -18,7 +19,11 @@ ANDROID = '{http://schemas.android.com/apk/res/android}'
 CANVAS = 108.0
 SAFE_LO, SAFE_HI = 21.0, 87.0
 OUTLINE_STROKE = 5.0
-CHECK_STROKE = 6.0
+CHECK_STROKE = 6.6
+ORBIT_STROKE = 4.4
+# The mark is a marble inside an orbit; nothing may reach further than this from the centre.
+MAX_INK_RADIUS = 28.0
+LAUNCHER_MASKS = ('circle', 'squircle', 'rounded_square', 'square', 'oval', 'teardrop')
 
 DENSITIES = {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 128, 'xxxhdpi': 192}
 
@@ -83,6 +88,55 @@ def path_bounds(path_data: str):
     if not xs:
         raise AssertionError(f'no coordinates in {path_data!r}')
     return min(xs), min(ys), max(xs), max(ys)
+
+
+def path_points(path_data: str):
+    """Every anchor the path actually passes through, following its commands."""
+    xs, ys = [], []
+    tokens = []
+    for match in TOKEN.finditer(path_data):
+        tokens.append(match.group(1) if match.group(1) else float(match.group(2)))
+    x = y = start_x = start_y = 0.0
+    command = None
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if isinstance(token, str):
+            command = token
+            index += 1
+            if command in 'Zz':
+                x, y = start_x, start_y
+                xs.append(x)
+                ys.append(y)
+            continue
+        if command in 'Mm':
+            x, y = token, tokens[index + 1]
+            index += 2
+            start_x, start_y = x, y
+        elif command in 'LlTt':
+            x, y = token, tokens[index + 1]
+            index += 2
+        elif command == 'Hh':
+            x = token
+            index += 1
+        elif command == 'Vv':
+            y = token
+            index += 1
+        elif command in 'Aa':
+            x, y = tokens[index + 5], tokens[index + 6]
+            index += 7
+        elif command in 'Cc':
+            x, y = tokens[index + 4], tokens[index + 5]
+            index += 6
+        elif command in 'QqSs':
+            x, y = tokens[index + 2], tokens[index + 3]
+            index += 4
+        else:
+            index += 1
+            continue
+        xs.append(x)
+        ys.append(y)
+    return list(zip(xs, ys))
 
 
 class LauncherIconTests(unittest.TestCase):
@@ -185,3 +239,75 @@ class LauncherIconTests(unittest.TestCase):
                 self.assertIsNotNone(root.get(ANDROID + 'width'), str(path))
                 self.assertIsNotNone(root.get(ANDROID + 'height'), str(path))
                 self.assertIsNotNone(root.get(ANDROID + 'viewportWidth'), str(path))
+
+
+class LauncherMaskTests(unittest.TestCase):
+    """The masks themselves, as opposed to the adaptive-icon safe zone.
+
+    A bounding-box check inside 66x66 is necessary but not sufficient: an oval mask keeps only
+    36 x 30 around the centre, which is *narrower* than the safe square at the top and bottom.
+    The generator measures the real signed distance from the mark's outline to each mask and
+    publishes it in the manifest, so a redesign cannot quietly ship an icon that only looks right
+    on a Pixel's circle.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location('generate_launcher_icons', ROOT / 'scripts/generate_launcher_icons.py')
+        cls.generator = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.generator)
+        cls.manifest = json.loads((ROOT / 'scripts/launcher_icon_manifest.json').read_text())
+
+    def test_every_launcher_mask_keeps_the_whole_mark(self):
+        masks = self.manifest['masks']
+        for name in LAUNCHER_MASKS:
+            with self.subTest(mask=name):
+                self.assertIn(name, masks)
+                self.assertTrue(masks[name]['clear'], f'{name} clips the mark: {masks[name]}')
+                self.assertGreaterEqual(masks[name]['clearance'], 1.0, f'{name}: {masks[name]}')
+        self.assertTrue(self.manifest['all_masks_clear'])
+
+    def test_the_mark_stays_small_enough_for_an_oval_launcher(self):
+        self.assertLessEqual(self.manifest['ink_radius'], MAX_INK_RADIUS)
+        self.assertLessEqual(self.generator.ORBIT_RADIUS + self.generator.ORBIT_WIDTH / 2.0, MAX_INK_RADIUS)
+        self.assertLessEqual(self.generator.MARBLE_RADIUS, MAX_INK_RADIUS)
+
+    def test_foreground_ink_is_inside_the_declared_radius(self):
+        """Every point the mark passes through, plus half its stroke, stays inside the radius."""
+        reach = self.generator.ORBIT_RADIUS + self.generator.ORBIT_WIDTH / 2.0
+        for name in ('ic_launcher_foreground.xml', 'ic_launcher_monochrome.xml'):
+            with self.subTest(name=name):
+                root = ET.parse(RES / 'drawable' / name).getroot()
+                for path in root:
+                    grow = float(path.get(ANDROID + 'strokeWidth') or 0) / 2.0
+                    for x, y in path_points(path.get(ANDROID + 'pathData')):
+                        distance = ((x - 54.0) ** 2 + (y - 54.0) ** 2) ** 0.5
+                        self.assertLessEqual(distance + grow, reach + 0.01, f'{name}: ({x}, {y})')
+
+    def test_themed_icon_punches_the_tick_out_of_the_marble(self):
+        """A stroked tick cannot be subtracted from a fill: the hole has to be a subpath."""
+        root = ET.parse(RES / 'drawable/ic_launcher_monochrome.xml').getroot()
+        body = root[0]
+        self.assertEqual('evenOdd', body.get(ANDROID + 'fillType'))
+        self.assertGreaterEqual(body.get(ANDROID + 'pathData').count('M'), 2)
+
+    def test_generated_resources_match_the_generator(self):
+        """Any hand edit to the vectors is caught here instead of in a launcher."""
+        for name, expected in (
+            ('ic_launcher_background.xml', self.generator.background_xml()),
+            ('ic_launcher_foreground.xml', self.generator.foreground_xml()),
+            ('ic_launcher_monochrome.xml', self.generator.monochrome_xml()),
+        ):
+            with self.subTest(name=name):
+                self.assertEqual(expected, (RES / 'drawable' / name).read_text(encoding='utf-8'))
+        for name in ('ic_launcher.xml', 'ic_launcher_round.xml'):
+            with self.subTest(name=name):
+                self.assertEqual(self.generator.adaptive_xml(), (RES / 'mipmap-anydpi-v26' / name).read_text(encoding='utf-8'))
+
+    def test_the_legacy_bitmaps_are_real_rasterisations(self):
+        """The square and round bitmaps carry different pixels, so none is a copy of the other."""
+        for density in DENSITIES:
+            with self.subTest(density=density):
+                square = (RES / f'mipmap-{density}/ic_launcher.png').read_bytes()
+                rounded = (RES / f'mipmap-{density}/ic_launcher_round.png').read_bytes()
+                self.assertNotEqual(square, rounded)

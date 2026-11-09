@@ -47,10 +47,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -203,24 +203,26 @@ fun countdownThemeBrush(theme: CountdownTheme): Brush = when (theme) {
     CountdownTheme.DIAL_GAUGE -> Brush.linearGradient(listOf(Color(0xFF1F2430), Color(0xFFFFC46B)))
 }
 
+/**
+ * The remaining time as a single compact line: `۲۴ روز · ۰۶:۱۲:۴۵`.
+ *
+ * "Extra text" is the whole point of this helper. Each face used to print a title, a set of digits,
+ * a row of four unit words, a theme caption and sometimes a target line — six pieces of text around
+ * one number, which is what made the shapes feel like posters rather than countdowns. A face now
+ * renders exactly this one line (plus the "it is here" note), and the title belongs to the card that
+ * owns it.
+ */
 @Composable
-private fun unitLabels(): List<String> = listOf(
-    stringResource(R.string.countdown_unit_days),
-    stringResource(R.string.countdown_unit_hours),
-    stringResource(R.string.countdown_unit_minutes),
-    stringResource(R.string.countdown_unit_seconds),
-)
-
-@Composable
-private fun CountdownFaceTitle(title: String, color: Color, style: TextStyle, maxLines: Int = 2) {
-    Text(
-        text = title,
-        style = style,
-        color = color,
-        maxLines = maxLines,
-        overflow = TextOverflow.Ellipsis,
-        textAlign = TextAlign.Center,
-    )
+internal fun countdownValueLine(units: CountdownUnits, includeSeconds: Boolean = true): String {
+    val numeralMode = LocalNumeralMode.current
+    val dayWord = stringResource(if (units.days == 1L) R.string.countdown_unit_day_one else R.string.countdown_unit_days_inline)
+    return remember(units, numeralMode, includeSeconds, dayWord) {
+        fun pad(value: Int) = value.toString().padStart(2, '0')
+        val clock = if (includeSeconds) "${pad(units.hours)}:${pad(units.minutes)}:${pad(units.seconds)}"
+        else "${pad(units.hours)}:${pad(units.minutes)}"
+        val line = if (units.days > 0L) "${units.days} $dayWord · $clock" else clock
+        TextNormalizer.formatDigits(line, numeralMode)
+    }
 }
 
 @Composable
@@ -239,23 +241,29 @@ fun CountdownFace(
     compact: Boolean = false,
 ) {
     val units = rememberCountdownUnits(dueAtEpochMillis, live = !compact)
-    val labels = unitLabels()
     val finishLabel = stringResource(R.string.countdown_finished)
-    val height = if (compact) 150.dp else 236.dp
-    val surface = modifier.fillMaxWidth().height(height)
+    // A little shorter than before: with the title, the unit words and the caption gone, the same
+    // digits do not need the poster height they used to reserve.
+    val height = if (compact) 132.dp else 208.dp
+    // The title is no longer printed inside the face, so it becomes the talking-point of the shape
+    // for a screen reader instead of disappearing from the card altogether.
+    val surface = modifier
+        .fillMaxWidth()
+        .height(height)
+        .semantics { contentDescription = title }
     when (theme) {
-        CountdownTheme.MARBLE_ORB -> MarbleOrbFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.AURORA_VEIL -> AuroraVeilFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.NEON_GRID -> NeonGridFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.FLIP_STUDIO -> FlipStudioFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.GLASS_LAYERS -> GlassLayersFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.ORBITAL_RINGS -> OrbitalRingsFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.TERMINAL_MATRIX -> TerminalMatrixFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.LIQUID_TIDE -> LiquidTideFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.PAPER_TYPE -> PaperTypeFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.STELLAR_NIGHT -> StellarNightFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.MOMENT_BLOCKS -> MomentBlocksFace(title, units, labels, finishLabel, surface, compact)
-        CountdownTheme.DIAL_GAUGE -> DialGaugeFace(title, units, labels, finishLabel, surface, compact)
+        CountdownTheme.MARBLE_ORB -> MarbleOrbFace(units, finishLabel, surface, compact)
+        CountdownTheme.AURORA_VEIL -> AuroraVeilFace(units, finishLabel, surface, compact)
+        CountdownTheme.NEON_GRID -> NeonGridFace(units, finishLabel, surface, compact)
+        CountdownTheme.FLIP_STUDIO -> FlipStudioFace(units, finishLabel, surface, compact)
+        CountdownTheme.GLASS_LAYERS -> GlassLayersFace(units, finishLabel, surface, compact)
+        CountdownTheme.ORBITAL_RINGS -> OrbitalRingsFace(units, finishLabel, surface, compact)
+        CountdownTheme.TERMINAL_MATRIX -> TerminalMatrixFace(units, finishLabel, surface, compact)
+        CountdownTheme.LIQUID_TIDE -> LiquidTideFace(units, finishLabel, surface, compact)
+        CountdownTheme.PAPER_TYPE -> PaperTypeFace(units, finishLabel, surface, compact)
+        CountdownTheme.STELLAR_NIGHT -> StellarNightFace(units, finishLabel, surface, compact)
+        CountdownTheme.MOMENT_BLOCKS -> MomentBlocksFace(units, finishLabel, surface, compact)
+        CountdownTheme.DIAL_GAUGE -> DialGaugeFace(units, finishLabel, surface, compact)
     }
 }
 
@@ -274,7 +282,7 @@ private fun daysText(units: CountdownUnits): String {
 // ---------------------------------------------------------------- 1. Marble orb
 
 @Composable
-private fun MarbleOrbFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun MarbleOrbFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val shift = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 9_000, label = "marble-orb")
     Box(
         modifier.clip(RoundedCornerShape(28.dp))
@@ -309,10 +317,9 @@ private fun MarbleOrbFace(title: String, units: CountdownUnits, labels: List<Str
             Modifier.fillMaxSize().padding(if (compact) 14.dp else 22.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            CountdownFaceTitle(title, Color.White.copy(alpha = 0.86f), MaterialTheme.typography.titleSmall)
-            Column {
+            Column(Modifier.fillMaxSize().padding(top = if (compact) 44.dp else 70.dp)) {
                 Text(
-                    auroraDigits(units),
+                    countdownValueLine(units),
                     style = MarbleTextStyles.heroDigits.copy(
                         fontSize = MaterialTheme.typography.displaySmall.fontSize,
                         lineHeight = MaterialTheme.typography.displaySmall.lineHeight,
@@ -322,11 +329,6 @@ private fun MarbleOrbFace(title: String, units: CountdownUnits, labels: List<Str
                     color = Color.White,
                     maxLines = 1,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    labels.forEach { label ->
-                        Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFFB7A9FF))
-                    }
-                }
                 if (units.isFinished) {
                     Text(finish, style = MaterialTheme.typography.labelLarge, color = Color(0xFF9DF3D0), modifier = Modifier.padding(top = 6.dp))
                 }
@@ -338,7 +340,7 @@ private fun MarbleOrbFace(title: String, units: CountdownUnits, labels: List<Str
 // ---------------------------------------------------------------- 2. Aurora veil
 
 @Composable
-private fun AuroraVeilFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun AuroraVeilFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val phase = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 6_000, label = "aurora")
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFF0A1B36), Color(0xFF07122A))))) {
         Canvas(Modifier.fillMaxSize()) {
@@ -371,10 +373,9 @@ private fun AuroraVeilFace(title: String, units: CountdownUnits, labels: List<St
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            CountdownFaceTitle(title, Color.White.copy(alpha = 0.9f), MaterialTheme.typography.titleSmall)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    auroraDigits(units),
+                    countdownValueLine(units),
                     style = MaterialTheme.typography.displaySmall.copy(
                         fontWeight = FontWeight.Light,
                         letterSpacing = 3.sp,
@@ -383,29 +384,18 @@ private fun AuroraVeilFace(title: String, units: CountdownUnits, labels: List<St
                     color = Color.White,
                     maxLines = 1,
                 )
-                Text(
-                    if (units.isFinished) finish else labels.joinToString("  ·  "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF9FE8DC),
-                )
+                if (units.isFinished) {
+                    Text(finish, style = MaterialTheme.typography.labelSmall, color = Color(0xFF9FE8DC))
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun auroraDigits(units: CountdownUnits): String {
-    val mode = LocalNumeralMode.current
-    return remember(units, mode) {
-        listOf(units.days.toString(), units.hours.toString().padStart(2, '0'), units.minutes.toString().padStart(2, '0'), units.seconds.toString().padStart(2, '0'))
-            .joinToString(" : ") { TextNormalizer.formatDigits(it, mode) }
     }
 }
 
 // ---------------------------------------------------------------- 3. Neon grid
 
 @Composable
-private fun NeonGridFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun NeonGridFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val glow = rememberAmbientPhase(compact = compact, initialValue = 0.55f, targetValue = 1f, durationMillis = 2_200, label = "neon-grid")
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.verticalGradient(listOf(Color(0xFF25064B), Color(0xFF0B0B2B))))) {
         Canvas(Modifier.fillMaxSize()) {
@@ -452,10 +442,9 @@ private fun NeonGridFace(title: String, units: CountdownUnits, labels: List<Stri
             Modifier.fillMaxSize().padding(if (compact) 14.dp else 22.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            CountdownFaceTitle(title, Color(0xFFB9F6FF), MaterialTheme.typography.titleSmall)
             Column {
                 Text(
-                    auroraDigits(units),
+                    countdownValueLine(units),
                     style = MaterialTheme.typography.displaySmall.copy(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
@@ -464,11 +453,9 @@ private fun NeonGridFace(title: String, units: CountdownUnits, labels: List<Stri
                     color = Color(0xFFEAFFFF),
                     maxLines = 1,
                 )
-                Text(
-                    if (units.isFinished) finish else labels.joinToString("  ·  "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFFFF8AD8),
-                )
+                if (units.isFinished) {
+                    Text(finish, style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF8AD8))
+                }
             }
         }
     }
@@ -477,7 +464,7 @@ private fun NeonGridFace(title: String, units: CountdownUnits, labels: List<Stri
 // ---------------------------------------------------------------- 4. Flip studio
 
 @Composable
-private fun FlipStudioFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun FlipStudioFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val values = listOf(
         daysText(units),
         rememberDigits(units) { it.hours },
@@ -492,7 +479,6 @@ private fun FlipStudioFace(title: String, units: CountdownUnits, labels: List<St
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            CountdownFaceTitle(title, Color(0xFF2A2450), MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 9.dp), verticalAlignment = Alignment.CenterVertically) {
                 values.forEachIndexed { index, value ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -511,17 +497,12 @@ private fun FlipStudioFace(title: String, units: CountdownUnits, labels: List<St
                                 color = Color(0xFF231E4B),
                             )
                         }
-                        if (!compact) {
-                            Text(labels.getOrElse(index) { "" }, style = MaterialTheme.typography.labelSmall, color = Color(0xFF6C6590), modifier = Modifier.padding(top = 5.dp))
-                        }
                     }
                 }
             }
-            Text(
-                if (units.isFinished) finish else labels.joinToString("  ·  "),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF6C6590),
-            )
+            if (units.isFinished) {
+                Text(finish, style = MaterialTheme.typography.labelSmall, color = Color(0xFF6C6590))
+            }
         }
     }
 }
@@ -529,7 +510,7 @@ private fun FlipStudioFace(title: String, units: CountdownUnits, labels: List<St
 // ---------------------------------------------------------------- 5. Glass layers
 
 @Composable
-private fun GlassLayersFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun GlassLayersFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val drift = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 8_000, label = "glass")
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFF3B2F73), Color(0xFF171436))))) {
         Canvas(Modifier.fillMaxSize()) {
@@ -550,44 +531,32 @@ private fun GlassLayersFace(title: String, units: CountdownUnits, labels: List<S
             Modifier.fillMaxSize().padding(if (compact) 14.dp else 20.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 GlassPanel(
                     value = daysText(units),
-                    label = labels.getOrElse(0) { "" },
                     modifier = Modifier.weight(1.1f),
                     compact = compact,
                 )
                 GlassPanel(
                     value = "${rememberDigits(units) { it.hours }}:${rememberDigits(units) { it.minutes }}",
-                    label = "${labels.getOrElse(1) { "" }} · ${labels.getOrElse(2) { "" }}",
                     modifier = Modifier.weight(1f),
                     compact = compact,
                 )
                 GlassPanel(
                     value = rememberDigits(units) { it.seconds },
-                    label = labels.getOrElse(3) { "" },
                     modifier = Modifier.weight(0.7f),
                     compact = compact,
                 )
             }
-            Text(
-                if (units.isFinished) finish else labels.joinToString("  ·  "),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f),
-            )
+            if (units.isFinished) {
+                Text(finish, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
+            }
         }
     }
 }
 
 @Composable
-private fun GlassPanel(value: String, label: String, modifier: Modifier, compact: Boolean) {
+private fun GlassPanel(value: String, modifier: Modifier, compact: Boolean) {
     Box(
         modifier
             .height(if (compact) 62.dp else 84.dp)
@@ -596,22 +565,19 @@ private fun GlassPanel(value: String, label: String, modifier: Modifier, compact
             .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(18.dp)),
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                value,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.White,
-                maxLines = 1,
-            )
-            Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.75f), maxLines = 1)
-        }
+        Text(
+            value,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = Color.White,
+            maxLines = 1,
+        )
     }
 }
 
 // ---------------------------------------------------------------- 6. Orbital rings
 
 @Composable
-private fun OrbitalRingsFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun OrbitalRingsFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val spin = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 360f, durationMillis = 24_000, label = "orbital", reverse = false)
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.radialGradient(listOf(Color(0xFF16204C), Color(0xFF05060F))))) {
         Canvas(Modifier.fillMaxSize()) {
@@ -648,19 +614,11 @@ private fun OrbitalRingsFace(title: String, units: CountdownUnits, labels: List<
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            CountdownFaceTitle(title, Color(0xFFA8B6FF), MaterialTheme.typography.titleSmall)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    daysText(units),
+                    countdownValueLine(units),
                     style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
                     color = Color.White,
-                )
-                Text(labels.getOrElse(0) { "" }, style = MaterialTheme.typography.labelSmall, color = Color(0xFF5CE1E6))
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    "${rememberDigits(units) { it.hours }}:${rememberDigits(units) { it.minutes }}:${rememberDigits(units) { it.seconds }}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color(0xFFA8B6FF),
                 )
                 if (units.isFinished) Text(finish, style = MaterialTheme.typography.labelSmall, color = Color(0xFFFFB25E))
             }
@@ -671,7 +629,7 @@ private fun OrbitalRingsFace(title: String, units: CountdownUnits, labels: List<
 // ---------------------------------------------------------------- 7. Terminal matrix
 
 @Composable
-private fun TerminalMatrixFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun TerminalMatrixFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val blink = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 900, label = "terminal")
     Box(modifier.clip(RoundedCornerShape(18.dp)).background(Color(0xFF03130A))) {
         Canvas(Modifier.fillMaxSize()) {
@@ -685,32 +643,24 @@ private fun TerminalMatrixFace(title: String, units: CountdownUnits, labels: Lis
             Modifier.fillMaxSize().padding(if (compact) 12.dp else 18.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                "> marbledo --countdown",
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                color = Color(0xFF68FF9A).copy(alpha = 0.8f),
-                maxLines = 1,
-            )
             Column {
                 Text(
-                    auroraDigits(units),
+                    countdownValueLine(units),
                     style = MaterialTheme.typography.displaySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
                     color = Color(0xFF7CFFAB),
                     maxLines = 1,
                 )
-                Text(
-                    (if (units.isFinished) finish else labels.joinToString("/")) + (if (blink > 0.5f) " _" else "  "),
-                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
-                    color = Color(0xFF37C46C),
-                    maxLines = 1,
-                )
-                Text(
-                    "# ${title}",
-                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                    color = Color(0xFF1E8C4B),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (units.isFinished) {
+                    Text(finish, style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace), color = Color(0xFF37C46C), maxLines = 1)
+                } else {
+                    // The caret is this theme's own heartbeat, and now the only decoration it carries.
+                    Text(
+                        if (blink > 0.5f) "_" else " ",
+                        style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
+                        color = Color(0xFF37C46C),
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
@@ -719,7 +669,7 @@ private fun TerminalMatrixFace(title: String, units: CountdownUnits, labels: Lis
 // ---------------------------------------------------------------- 8. Liquid tide
 
 @Composable
-private fun LiquidTideFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun LiquidTideFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val phase = rememberAmbientPhase(compact = compact, initialValue = 0f, targetValue = 1f, durationMillis = 4_200, label = "tide")
     val level = 0.42f + ((units.totalSeconds % 86_400L) / 86_400f) * 0.34f
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFFEAF8F6), Color(0xFFCDEDF3))))) {
@@ -748,19 +698,16 @@ private fun LiquidTideFace(title: String, units: CountdownUnits, labels: List<St
             Modifier.fillMaxSize().padding(if (compact) 14.dp else 22.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            CountdownFaceTitle(title, Color(0xFF12556B), MaterialTheme.typography.titleSmall)
             Column {
                 Text(
-                    auroraDigits(units),
+                    countdownValueLine(units),
                     style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
                     color = Color(0xFF0B3B4D),
                     maxLines = 1,
                 )
-                Text(
-                    if (units.isFinished) finish else labels.joinToString("  ·  "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF1E6C86),
-                )
+                if (units.isFinished) {
+                    Text(finish, style = MaterialTheme.typography.labelSmall, color = Color(0xFF1E6C86))
+                }
             }
         }
     }
@@ -769,7 +716,7 @@ private fun LiquidTideFace(title: String, units: CountdownUnits, labels: List<St
 // ---------------------------------------------------------------- 9. Paper type
 
 @Composable
-private fun PaperTypeFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun PaperTypeFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     Box(modifier.clip(RoundedCornerShape(18.dp)).background(Color(0xFFF8F2E7))) {
         Canvas(Modifier.fillMaxSize()) {
             drawRect(Color(0xFFE0D3BC), topLeft = Offset(0f, size.height * 0.72f), size = Size(size.width, 1.5f))
@@ -780,13 +727,6 @@ private fun PaperTypeFace(title: String, units: CountdownUnits, labels: List<Str
             Modifier.fillMaxSize().padding(if (compact) 14.dp else 22.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.sp),
-                color = Color(0xFF6B6151),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
             Column {
                 Text(
                     daysText(units),
@@ -795,13 +735,7 @@ private fun PaperTypeFace(title: String, units: CountdownUnits, labels: List<Str
                     maxLines = 1,
                 )
                 Text(
-                    "— ${labels.getOrElse(0) { "" }}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color(0xFF8A7E69),
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "${rememberDigits(units) { it.hours }}:${rememberDigits(units) { it.minutes }}:${rememberDigits(units) { it.seconds }}",
+                    countdownValueLine(units),
                     style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace),
                     color = Color(0xFF3A342A),
                 )
@@ -816,7 +750,7 @@ private fun PaperTypeFace(title: String, units: CountdownUnits, labels: List<Str
 // ---------------------------------------------------------------- 10. Stellar night
 
 @Composable
-private fun StellarNightFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun StellarNightFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val twinkle = rememberAmbientPhase(compact = compact, initialValue = 0.35f, targetValue = 1f, durationMillis = 2_600, label = "stellar")
     val stars = remember { List(46) { Offset(Random(7 * it + 3).nextFloat(), Random(11 * it + 5).nextFloat()) } }
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.radialGradient(listOf(Color(0xFF1A1F4C), Color(0xFF06070F))))) {
@@ -842,19 +776,15 @@ private fun StellarNightFace(title: String, units: CountdownUnits, labels: List<
             Modifier.fillMaxSize().padding(if (compact) 14.dp else 22.dp),
             verticalArrangement = Arrangement.Bottom,
         ) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = Color(0xFFC9D2FF), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(6.dp))
             Text(
-                auroraDigits(units),
+                countdownValueLine(units),
                 style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Light, letterSpacing = 2.sp),
                 color = Color.White,
                 maxLines = 1,
             )
-            Text(
-                if (units.isFinished) finish else labels.joinToString("  ·  "),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF9BA7E8),
-            )
+            if (units.isFinished) {
+                Text(finish, style = MaterialTheme.typography.labelSmall, color = Color(0xFF9BA7E8))
+            }
         }
     }
 }
@@ -862,12 +792,12 @@ private fun StellarNightFace(title: String, units: CountdownUnits, labels: List<
 // ---------------------------------------------------------------- 11. Moment blocks
 
 @Composable
-private fun MomentBlocksFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun MomentBlocksFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     val blocks = listOf(
-        Triple(daysText(units), labels.getOrElse(0) { "" }, (units.days % 30L) / 30f),
-        Triple(rememberDigits(units) { it.hours }, labels.getOrElse(1) { "" }, units.hours / 24f),
-        Triple(rememberDigits(units) { it.minutes }, labels.getOrElse(2) { "" }, units.minutes / 60f),
-        Triple(rememberDigits(units) { it.seconds }, labels.getOrElse(3) { "" }, units.seconds / 60f),
+        daysText(units) to (units.days % 30L) / 30f,
+        rememberDigits(units) { it.hours } to units.hours / 24f,
+        rememberDigits(units) { it.minutes } to units.minutes / 60f,
+        rememberDigits(units) { it.seconds } to units.seconds / 60f,
     )
     val accents = listOf(Color(0xFFFFB25E), Color(0xFFFF6E8A), Color(0xFF6D5BD0), Color(0xFF2FB8A6))
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Color(0xFF14141C))) {
@@ -875,9 +805,8 @@ private fun MomentBlocksFace(title: String, units: CountdownUnits, labels: List<
             Modifier.fillMaxSize().padding(if (compact) 13.dp else 20.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            CountdownFaceTitle(title, Color.White.copy(alpha = 0.85f), MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 9.dp), modifier = Modifier.fillMaxWidth()) {
-                blocks.forEachIndexed { index, (value, label, fraction) ->
+                blocks.forEachIndexed { index, (value, fraction) ->
                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             Modifier
@@ -900,17 +829,12 @@ private fun MomentBlocksFace(title: String, units: CountdownUnits, labels: List<
                                     .background(accents[index]),
                             )
                         }
-                        if (!compact) {
-                            Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f), modifier = Modifier.padding(top = 4.dp), maxLines = 1)
-                        }
                     }
                 }
             }
-            Text(
-                if (units.isFinished) finish else labels.joinToString("  ·  "),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.55f),
-            )
+            if (units.isFinished) {
+                Text(finish, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.55f))
+            }
         }
     }
 }
@@ -918,7 +842,7 @@ private fun MomentBlocksFace(title: String, units: CountdownUnits, labels: List<
 // ---------------------------------------------------------------- 12. Dial gauge
 
 @Composable
-private fun DialGaugeFace(title: String, units: CountdownUnits, labels: List<String>, finish: String, modifier: Modifier, compact: Boolean) {
+private fun DialGaugeFace(units: CountdownUnits, finish: String, modifier: Modifier, compact: Boolean) {
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFF20242F), Color(0xFF101219))))) {
         Canvas(Modifier.fillMaxSize()) {
             val center = Offset(size.width * 0.5f, size.height * 0.58f)
@@ -960,19 +884,16 @@ private fun DialGaugeFace(title: String, units: CountdownUnits, labels: List<Str
             Modifier.fillMaxSize().padding(if (compact) 12.dp else 18.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            CountdownFaceTitle(title, Color(0xFFC9CFE0), MaterialTheme.typography.titleSmall)
             Column {
                 Text(
-                    "${daysText(units)}  ${rememberDigits(units) { it.hours }}:${rememberDigits(units) { it.minutes }}",
+                    countdownValueLine(units),
                     style = MaterialTheme.typography.headlineSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
                     color = Color(0xFFECF0FA),
                     maxLines = 1,
                 )
-                Text(
-                    if (units.isFinished) finish else "${labels.getOrElse(0) { "" }} · ${labels.getOrElse(1) { "" }} · ${labels.getOrElse(2) { "" }}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFFFFC46B),
-                )
+                if (units.isFinished) {
+                    Text(finish, style = MaterialTheme.typography.labelSmall, color = Color(0xFFFFC46B))
+                }
             }
         }
     }

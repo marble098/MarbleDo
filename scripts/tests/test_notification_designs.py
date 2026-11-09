@@ -147,3 +147,90 @@ class NotificationDesignTests(unittest.TestCase):
         self.assertIn('val cells = if (allCells.subList(35, 42).none { it.inDisplayedMonth }) allCells.take(35) else allCells', cal_kt)
 
 
+
+
+class NotificationThemeTests(unittest.TestCase):
+    """The shade follows the app theme, not a hard-coded indigo."""
+
+    def test_accent_text_ids_match_the_layouts(self):
+        """Every id the builder tints is exactly one the layout paints in the accent colour.
+
+        The builder tints the compact and the expanded card separately, so each side is compared
+        with the layouts of that size. An id that is tinted but not declared would make RemoteViews
+        throw while SystemUI applies the row.
+        """
+        views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
+        block = _block_after(views, 'if (accentColor != 0) {')
+        branches = _split_else(block)
+        self.assertIsNotNone(branches, 'the accent tint is not split into a compact and an expanded branch')
+        compact, expanded = ({name for name in re.findall(r'R\.id\.(\w+)', part)} for part in branches)
+        self.assertTrue(compact and expanded, 'no accent ids declared')
+        for design in ('classic', 'minimal', 'editorial', 'banner'):
+            for direction in ('rtl', 'ltr'):
+                for size, declared in (('compact', compact), ('expanded', expanded)):
+                    path = ROOT / f'app/src/main/res/layout/notification_{design}_{size}_{direction}.xml'
+                    actual = {
+                        view.get(ANDROID + 'id').split('/')[-1]
+                        for view in ET.parse(path).iter()
+                        if view.get(ANDROID + 'textColor') == '@color/notification_card_accent'
+                    }
+                    self.assertEqual(declared, actual, str(path))
+
+
+    def test_the_ongoing_notification_is_tinted_from_the_app_palette(self):
+        source = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/PersistentCalendarNotification.kt').read_text()
+        self.assertIn('MarblePalettes.resolve(', source)
+        self.assertIn('settings.themeMode', source)
+        # A theme switch has to change the signature, otherwise the posted row is never updated.
+        signature = source.split('val signature = listOf(')[1].split(')')[0]
+        self.assertIn('settings.themeMode', signature)
+        # Both the collapsed and the expanded card are handed the theme accent.
+        self.assertGreaterEqual(source.count(', accent)'), 2, 'a card view is built without the theme accent')
+
+    def test_every_plain_notification_uses_the_theme_accent(self):
+        for name in ('ReminderReceiver.kt', 'CalendarOccurrenceWorker.kt'):
+            with self.subTest(name=name):
+                source = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications' / name).read_text()
+                self.assertNotIn('R.color.marble_accent', source)
+                self.assertIn('notificationAccent(', source)
+
+    def test_both_widgets_paint_themselves_from_the_app_theme(self):
+        widgets = {
+            'countdown': ROOT / 'feature/countdown/src/main/kotlin/com/marbledo/feature/countdown/MarbleCountdownWidget.kt',
+            'habits': ROOT / 'feature/habits/src/main/kotlin/com/marbledo/feature/habits/MarbleHabitWidget.kt',
+        }
+        for name, path in widgets.items():
+            with self.subTest(widget=name):
+                source = path.read_text(encoding='utf-8')
+                self.assertIn('MarblePalettes.resolve(', source)
+                self.assertIn('settings.themeMode', source)
+        app = (ROOT / 'app/src/main/kotlin/com/marbledo/MarbleDoApp.kt').read_text()
+        habit_effect = app.split('updateMarbleHabitWidgets(context)')[0].rsplit('LaunchedEffect(', 1)[1]
+        self.assertIn('settings.themeMode', habit_effect)
+
+
+def _block_after(source: str, marker: str) -> str:
+    """The brace-balanced body of the first block that starts at ``marker``."""
+    start = source.index(marker) + len(marker)
+    depth = 1
+    for index in range(start, len(source)):
+        if source[index] == '{':
+            depth += 1
+        elif source[index] == '}':
+            depth -= 1
+            if depth == 0:
+                return source[start:index]
+    raise AssertionError(f'unbalanced block after {marker!r}')
+
+
+def _split_else(block: str):
+    """Split a block on its top-level ``} else {``, or return None when it has no else branch."""
+    depth = 0
+    for index, char in enumerate(block):
+        if char == '{':
+            depth += 1
+        elif char == '}':
+            depth -= 1
+            if depth == 0 and block[index:index + 9].startswith('} else {'):
+                return block[:index], block[index + 8:]
+    return None

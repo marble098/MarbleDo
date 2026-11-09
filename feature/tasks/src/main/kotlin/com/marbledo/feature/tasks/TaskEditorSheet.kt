@@ -224,6 +224,10 @@ fun TaskEditorSheet(
                 onPickDate = { pickDate(it) },
                 onPickTime = { pickTime(it) },
                 onClear = { clearSchedule() },
+                onPickTomorrowSameTime = {
+                    pickDate(LocalDate.now(zone).plusDays(1))
+                    pickTime(LocalTime.now(zone).withSecond(0).withNano(0))
+                },
             )
 
             OutlinedTextField(

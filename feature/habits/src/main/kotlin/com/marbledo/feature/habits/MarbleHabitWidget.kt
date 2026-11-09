@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -42,7 +43,9 @@ import androidx.glance.layout.RowScope
 import com.marbledo.core.data.db.MarbleDatabase
 import com.marbledo.core.data.repository.RoomHabitRepository
 import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.core.designsystem.MarblePalettes
 import com.marbledo.domain.model.AppSettings
+import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.Habit
 import com.marbledo.domain.model.HabitEntry
 import com.marbledo.domain.model.HabitKind
@@ -92,7 +95,9 @@ class MarbleHabitWidget : GlanceAppWidget() {
             HabitAnalytics.stats(habit, byHabit[habit.id].orEmpty(), today).currentStreak
         } ?: 0
         val theme = HabitTheme.from(settings.habitTheme)
-        val palette = habitPalette(theme, isDark(context))
+        // The card, its text and its accent follow the app theme; the habit look keeps the heat strip,
+        // so switching Ocean/Forest/Sunset/Rose repaints the widget just like the cabinet.
+        val palette = habitWidgetPalette(theme, settings.themeMode, context)
         val numeral = settings.numeralMode
         // Glance lays out in the system direction, but the widget must follow the language the
         // user chose inside the app: Persian is right-to-left, English is left-to-right.
@@ -386,6 +391,28 @@ suspend fun updateMarbleHabitWidgets(context: Context) {
 
 internal fun isDark(context: Context): Boolean =
     context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+
+/**
+ * The habit widget in the app theme.
+ *
+ * Every surface, text colour and the accent come from [MarblePalettes] — the same table the screens
+ * paint themselves from — so changing the app theme visibly changes the widget. The habit look still
+ * owns the heat strip, which is the only place a habit's own colour is informational.
+ */
+private fun habitWidgetPalette(theme: HabitTheme, mode: AppThemeMode, context: Context): HabitPalette {
+    val habit = habitPalette(theme, MarblePalettes.isDark(mode.name, isDark(context)))
+    val app = MarblePalettes.resolve(mode, MarblePalettes.isDark(mode.name, isDark(context)), context.applicationContext)
+    return habit.copy(
+        backgroundTop = Color(app.background),
+        backgroundBottom = Color(app.surfaceContainer),
+        card = Color(app.surface),
+        onCard = Color(app.onBackground),
+        muted = Color(app.onSurfaceVariant),
+        track = Color(app.outlineVariant),
+        accent = Color(app.primary),
+        accentSoft = Color(app.primaryContainer),
+    )
+}
 
 private fun Context.forLanguage(languageTag: String): Context {
     val locale = java.util.Locale.forLanguageTag(languageTag)

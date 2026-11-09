@@ -2,6 +2,7 @@
 
 package com.marbledo.core.designsystem
 
+import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -66,7 +67,7 @@ val LocalReduceMotion = staticCompositionLocalOf { false }
 val LocalAppFontScale = staticCompositionLocalOf { 1f }
 val LocalNumeralMode = staticCompositionLocalOf { NumeralMode.PERSIAN }
 
-private val LightColors: ColorScheme = lightColorScheme(
+internal val LightColors: ColorScheme = lightColorScheme(
     primary = Color(0xFF6258C8),
     onPrimary = Color.White,
     primaryContainer = Color(0xFFE7E3FF),
@@ -91,7 +92,7 @@ private val LightColors: ColorScheme = lightColorScheme(
     error = Color(0xFFBA1A1A),
 )
 
-private val GlassColors = LightColors.copy(
+internal val GlassColors = LightColors.copy(
     background = Color(0xFFF2F3FA),
     surface = Color(0xF7FFFFFF),
     surfaceVariant = Color(0xDDE8E8F4),
@@ -101,7 +102,7 @@ private val GlassColors = LightColors.copy(
     primaryContainer = Color(0xFFE2DEFF),
 )
 
-private val DarkColors = darkColorScheme(
+internal val DarkColors = darkColorScheme(
     primary = Color(0xFFC7BFFF),
     onPrimary = Color(0xFF302782),
     primaryContainer = Color(0xFF49409B),
@@ -125,7 +126,7 @@ private val DarkColors = darkColorScheme(
     scrim = Color.Black.copy(alpha = 0.55f),
 )
 
-private val AmoledColors = DarkColors.copy(
+internal val AmoledColors = DarkColors.copy(
     background = Color.Black,
     surface = Color.Black,
     surfaceVariant = Color(0xFF111116),
@@ -138,7 +139,7 @@ private val AmoledColors = DarkColors.copy(
 
 // Calm, low-glare palettes. Each named palette follows system light/dark mode while keeping
 // the user's chosen hue; unlike DYNAMIC, these do not depend on Android 12+ wallpaper colors.
-private val OceanLight = lightColorScheme(
+internal val OceanLight = lightColorScheme(
     primary = Color(0xFF006874), onPrimary = Color.White,
     primaryContainer = Color(0xFFA2EEFA), onPrimaryContainer = Color(0xFF001F24),
     secondary = Color(0xFF4A6268), onSecondary = Color.White,
@@ -150,7 +151,7 @@ private val OceanLight = lightColorScheme(
     surfaceContainer = Color(0xFFEAF1F2), surfaceContainerHigh = Color(0xFFE4ECEE),
     outline = Color(0xFF6F797B), outlineVariant = Color(0xFFBEC8CA),
 )
-private val OceanDark = darkColorScheme(
+internal val OceanDark = darkColorScheme(
     primary = Color(0xFF6DD9E8), onPrimary = Color(0xFF00363D),
     primaryContainer = Color(0xFF004F58), onPrimaryContainer = Color(0xFFA2EEFA),
     secondary = Color(0xFFB1CBD0), onSecondary = Color(0xFF1C3439),
@@ -162,7 +163,7 @@ private val OceanDark = darkColorScheme(
     surfaceContainer = Color(0xFF20292B), surfaceContainerHigh = Color(0xFF2A3335),
     outline = Color(0xFF899395), outlineVariant = Color(0xFF3F484A),
 )
-private val ForestLight = lightColorScheme(
+internal val ForestLight = lightColorScheme(
     primary = Color(0xFF35693D), onPrimary = Color.White,
     primaryContainer = Color(0xFFB7F0B5), onPrimaryContainer = Color(0xFF002108),
     secondary = Color(0xFF52634E), onSecondary = Color.White,
@@ -174,7 +175,7 @@ private val ForestLight = lightColorScheme(
     surfaceContainer = Color(0xFFEBF0E5), surfaceContainerHigh = Color(0xFFE5EBDD),
     outline = Color(0xFF73796D), outlineVariant = Color(0xFFC4C9BC),
 )
-private val ForestDark = darkColorScheme(
+internal val ForestDark = darkColorScheme(
     primary = Color(0xFF9BD69A), onPrimary = Color(0xFF073911),
     primaryContainer = Color(0xFF1E5128), onPrimaryContainer = Color(0xFFB7F0B5),
     secondary = Color(0xFFB9CCB2), onSecondary = Color(0xFF253422),
@@ -186,7 +187,7 @@ private val ForestDark = darkColorScheme(
     surfaceContainer = Color(0xFF252B23), surfaceContainerHigh = Color(0xFF2F352D),
     outline = Color(0xFF90968A), outlineVariant = Color(0xFF41483E),
 )
-private val SunsetLight = lightColorScheme(
+internal val SunsetLight = lightColorScheme(
     primary = Color(0xFF98440D), onPrimary = Color.White,
     primaryContainer = Color(0xFFFFDBC7), onPrimaryContainer = Color(0xFF321000),
     secondary = Color(0xFF745944), onSecondary = Color.White,
@@ -198,7 +199,7 @@ private val SunsetLight = lightColorScheme(
     surfaceContainer = Color(0xFFF8ECE4), surfaceContainerHigh = Color(0xFFF2E5DD),
     outline = Color(0xFF81756E), outlineVariant = Color(0xFFD5C3B9),
 )
-private val SunsetDark = darkColorScheme(
+internal val SunsetDark = darkColorScheme(
     primary = Color(0xFFFFB68C), onPrimary = Color(0xFF542000),
     primaryContainer = Color(0xFF76300A), onPrimaryContainer = Color(0xFFFFDBC7),
     secondary = Color(0xFFE5C1A6), onSecondary = Color(0xFF422C1A),
@@ -210,7 +211,7 @@ private val SunsetDark = darkColorScheme(
     surfaceContainer = Color(0xFF2D2520), surfaceContainerHigh = Color(0xFF372E29),
     outline = Color(0xFF9A8D85), outlineVariant = Color(0xFF51443D),
 )
-private val RoseLight = lightColorScheme(
+internal val RoseLight = lightColorScheme(
     primary = Color(0xFF9B3F63), onPrimary = Color.White,
     primaryContainer = Color(0xFFFFD9E3), onPrimaryContainer = Color(0xFF3E001D),
     secondary = Color(0xFF75565D), onSecondary = Color.White,
@@ -222,7 +223,7 @@ private val RoseLight = lightColorScheme(
     surfaceContainer = Color(0xFFF8E9ED), surfaceContainerHigh = Color(0xFFF2E2E6),
     outline = Color(0xFF827277), outlineVariant = Color(0xFFD6C2C7),
 )
-private val RoseDark = darkColorScheme(
+internal val RoseDark = darkColorScheme(
     primary = Color(0xFFFFB1C8), onPrimary = Color(0xFF5F1133),
     primaryContainer = Color(0xFF7E294A), onPrimaryContainer = Color(0xFFFFD9E3),
     secondary = Color(0xFFE5BDC5), onSecondary = Color(0xFF432930),
@@ -234,6 +235,33 @@ private val RoseDark = darkColorScheme(
     surfaceContainer = Color(0xFF2E2528), surfaceContainerHigh = Color(0xFF382E32),
     outline = Color(0xFF9A8B90), outlineVariant = Color(0xFF514348),
 )
+
+/**
+ * Resolves a theme name to its Material colour scheme.
+ *
+ * This is the **only** place the mapping from an app theme name to a colour scheme lives:
+ * [MarbleTheme] uses it for the Compose tree, and [MarblePalettes] uses it for everything that
+ * cannot read Compose colours — the Glance widgets and the RemoteViews notification — so one
+ * theme change repaints all three instead of only the app.
+ */
+internal fun marbleColorScheme(mode: String, dark: Boolean, context: Context?): ColorScheme {
+    val dynamic = mode == "DYNAMIC" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && context != null
+    return when (mode) {
+        "OCEAN" -> if (dark) OceanDark else OceanLight
+        "FOREST" -> if (dark) ForestDark else ForestLight
+        "SUNSET" -> if (dark) SunsetDark else SunsetLight
+        "ROSE" -> if (dark) RoseDark else RoseLight
+        "GLASS_LIGHT" -> GlassColors
+        "AMOLED" -> AmoledColors
+        "DARK" -> DarkColors
+        "DYNAMIC" -> if (dynamic && dark) dynamicDarkColorScheme(context!!)
+            else if (dynamic) dynamicLightColorScheme(context!!)
+            else if (dark) DarkColors else LightColors
+        else -> if (dynamic && dark) dynamicDarkColorScheme(context!!)
+            else if (dynamic) dynamicLightColorScheme(context!!)
+            else if (dark) DarkColors else LightColors
+    }
+}
 
 @Composable
 fun MarbleTheme(
@@ -248,27 +276,8 @@ fun MarbleTheme(
     val baseDensity = LocalDensity.current
     val effectiveFontScale = baseDensity.fontScale * fontScale.coerceIn(0.8f, 1.5f)
     val systemDark = isSystemInDarkTheme()
-    val dynamic = mode == "DYNAMIC" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val dark = when (mode) {
-        "DARK", "AMOLED" -> true
-        "GLASS_LIGHT" -> false
-        else -> systemDark
-    }
-    val scheme = when (mode) {
-        "OCEAN" -> if (dark) OceanDark else OceanLight
-        "FOREST" -> if (dark) ForestDark else ForestLight
-        "SUNSET" -> if (dark) SunsetDark else SunsetLight
-        "ROSE" -> if (dark) RoseDark else RoseLight
-        "GLASS_LIGHT" -> GlassColors
-        "AMOLED" -> AmoledColors
-        "DARK" -> DarkColors
-        "DYNAMIC" -> if (dynamic && dark) dynamicDarkColorScheme(context)
-            else if (dynamic) dynamicLightColorScheme(context)
-            else if (dark) DarkColors else LightColors
-        else -> if (dynamic && dark) dynamicDarkColorScheme(context)
-            else if (dynamic) dynamicLightColorScheme(context)
-            else if (dark) DarkColors else LightColors
-    }
+    val dark = MarblePalettes.isDark(mode, systemDark)
+    val scheme = marbleColorScheme(mode, dark, context)
     CompositionLocalProvider(
         LocalDensity provides Density(
             density = baseDensity.density,

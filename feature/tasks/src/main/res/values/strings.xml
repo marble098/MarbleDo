@@ -1,6 +1,7 @@
 <resources>
     <string name="tasks_more">More options</string>
     <string name="tasks_today">Today</string>
+    <string name="tasks_tomorrow_same_time">Tomorrow, same time</string>
     <string name="tasks_tomorrow">Tomorrow</string>
     <string name="tasks_quick_add_hint">Try “tomorrow at 8, team meeting”</string>
     <string name="tasks_add">Add task</string>
@@ -60,9 +61,10 @@
     <string name="tasks_quick_add_title">New task</string>
     <string name="tasks_quick_add_subtitle">Type it, pick a time, or say it.</string>
     <string name="tasks_clear_input">Clear text</string>
-    <string name="tasks_parsed_hint">Date and time read from your text</string>
+    <string name="tasks_parsed_hint_format">Read from your text · %1$s</string>
     <string name="tasks_when">When?</string>
     <string name="tasks_date_none">No date</string>
+    <string name="tasks_date_in_ten_days">In ten days</string>
     <string name="tasks_date_next_week">Next week</string>
     <string name="tasks_date_next_month">Next month</string>
     <string name="tasks_priority">Priority</string>

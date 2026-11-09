@@ -58,10 +58,28 @@ internal object CalendarNotificationViews {
         expanded: Boolean,
         design: String = "classic",
         rtl: Boolean = false,
+        accentColor: Int = 0,
     ): RemoteViews = RemoteViews(context.packageName,
         layout(design, expanded, rtl)).apply {
         setTextViewText(R.id.notification_title, content.title)
         setTextViewText(R.id.notification_mood_pill, content.moodSubtitle)
+        // The card is laid out with the light/dark accent resources; when the app theme has its own
+        // accent, tint the accent text with it. setTextColor is a first-class RemoteViews action, so
+        // there is no reflective call that a locked-down SystemUI could reject.
+        // These are exactly the views the layouts declare with `@color/notification_card_accent` (the
+        // Kotlin contract test asserts that every id set here exists in the layout that renders it),
+        // so a theme switch recolours the card in the shade as well as the screens.
+        if (accentColor != 0) {
+            if (!expanded) {
+                listOf(R.id.notification_mood_pill).forEach { setTextColor(it, accentColor) }
+            } else {
+                listOf(
+                    R.id.notification_mood_pill,
+                    R.id.notification_next_label,
+                    R.id.notification_occasions_label,
+                ).forEach { setTextColor(it, accentColor) }
+            }
+        }
         if (badge != null && design != "minimal") setImageViewBitmap(R.id.notification_badge, badge)
         else setViewVisibility(R.id.notification_badge, View.GONE)
         // The banner theme tints its leading accent rule with the day's mood colour, through a

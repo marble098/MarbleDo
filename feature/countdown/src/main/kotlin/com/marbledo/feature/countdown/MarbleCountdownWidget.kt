@@ -39,9 +39,9 @@ import androidx.glance.layout.RowScope
 import com.marbledo.core.data.db.MarbleDatabase
 import com.marbledo.core.data.repository.RoomTaskRepository
 import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.core.designsystem.MarblePalettes
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
-import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.enabledOccasionCultures
 import com.marbledo.feature.calendar.OccasionCatalog
@@ -133,8 +133,9 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         val dayValue = days?.let { TextNormalizer.formatDigits(it.toString(), settings.numeralMode) }
         val hourValue = hours?.let { TextNormalizer.formatDigits(it.toString().padStart(2, '0'), settings.numeralMode) }
         val minuteValue = minutes?.let { TextNormalizer.formatDigits(it.toString().padStart(2, '0'), settings.numeralMode) }
-        val themeId = countdownTask?.countdownTheme?.takeIf { CountdownTheme.isKnown(it) } ?: settings.countdownTheme
-        val palette = widgetPalette(widgetContext, settings.themeMode, themeId)
+        // The widget colours come from the app theme, exactly like the screens: a theme switch now
+        // repaints the home-screen card instead of leaving it on the old indigo.
+        val palette = widgetPalette(widgetContext, settings.themeMode)
         // Glance lays out in the system direction, but the widget must follow the language the
         // user chose inside the app: Persian is right-to-left, English is left-to-right.
         val isRtl = settings.languageTag == "fa"
@@ -406,39 +407,17 @@ private data class WidgetPalette(
     val accentContainer: Color,
 )
 
-private fun widgetPalette(context: Context, mode: AppThemeMode, themeId: String): WidgetPalette {
+private fun widgetPalette(context: Context, mode: AppThemeMode): WidgetPalette {
     val systemIsDark = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-    val isDark = when (mode) {
-        AppThemeMode.DARK, AppThemeMode.AMOLED -> true
-        AppThemeMode.GLASS_LIGHT -> false
-        AppThemeMode.AUTO, AppThemeMode.DYNAMIC, AppThemeMode.OCEAN,
-        AppThemeMode.FOREST, AppThemeMode.SUNSET, AppThemeMode.ROSE -> systemIsDark
-    }
-    val accent = when (CountdownTheme.from(themeId)) {
-        CountdownTheme.MARBLE_ORB -> Color(0xFF6258C8)
-        CountdownTheme.AURORA_VEIL -> Color(0xFF32B8A6)
-        CountdownTheme.NEON_GRID -> Color(0xFF00A6D6)
-        CountdownTheme.FLIP_STUDIO -> Color(0xFFB86D36)
-        CountdownTheme.GLASS_LAYERS -> Color(0xFF66899B)
-        CountdownTheme.ORBITAL_RINGS -> Color(0xFF7665D7)
-        CountdownTheme.TERMINAL_MATRIX -> Color(0xFF32B86C)
-        CountdownTheme.LIQUID_TIDE -> Color(0xFF168F99)
-        CountdownTheme.PAPER_TYPE -> Color(0xFF31566D)
-        CountdownTheme.STELLAR_NIGHT -> Color(0xFF8A63D2)
-        CountdownTheme.MOMENT_BLOCKS -> Color(0xFFDA6954)
-        CountdownTheme.DIAL_GAUGE -> Color(0xFF287A91)
-    }
+    val dark = MarblePalettes.isDark(mode.name, systemIsDark)
+    val theme = MarblePalettes.resolve(mode, dark, context.applicationContext)
     return WidgetPalette(
-        background = when {
-            mode == AppThemeMode.AMOLED -> Color.Black
-            isDark -> Color(0xFF1D1A26)
-            else -> Color(0xFFF7F5FC)
-        },
-        surface = if (isDark) Color(0xFF2A2634) else Color.White,
-        onBackground = if (isDark) Color(0xFFF4F0FA) else Color(0xFF211D2A),
-        secondaryText = if (isDark) Color(0xFFC0BBCB) else Color(0xFF6D6878),
-        accent = accent,
-        accentContainer = if (isDark) accent.copy(alpha = 0.22f) else accent.copy(alpha = 0.12f),
+        background = Color(theme.background),
+        surface = Color(theme.surfaceContainer),
+        onBackground = Color(theme.onBackground),
+        secondaryText = Color(theme.onSurfaceVariant),
+        accent = Color(theme.primary),
+        accentContainer = Color(theme.primaryContainer),
     )
 }
 
