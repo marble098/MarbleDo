@@ -18,9 +18,9 @@
     <string name="tasks_notes_hint">یادداشت (اختیاری)</string>
     <string name="tasks_save">ذخیره</string>
     <string name="tasks_cancel">انصراف</string>
-    <string name="tasks_speech_unavailable">ورودی صوتی روی این دستگاه نیست.</string>
+    <string name="tasks_speech_unavailable">ورودی صوتی روی این دستگاه در دسترس نیست.</string>
     <string name="tasks_voice_input">ورودی صوتی</string>
-    <string name="tasks_tag_hint">برچسب‌ها، با ویرگول جدا شوند</string>
+    <string name="tasks_tag_hint">برچسب‌ها را با ویرگول جدا کن</string>
     <string name="tasks_project_hint">پروژه یا فهرست</string>
     <string name="tasks_repeat_none">بدون تکرار</string>
     <string name="tasks_repeat_daily">روزانه</string>
@@ -35,7 +35,7 @@
     <string name="tasks_pin">سنجاق‌کردن</string>
     <string name="tasks_unpin">برداشتن سنجاق</string>
     <string name="tasks_voice_guide_title">ساخت کار با صدا</string>
-    <string name="tasks_voice_guide_body">هر مرحله را جدا بگو: ۱) دسته یا «بدون دسته»، ۲) عنوان کار، ۳) تاریخ شمسی یا «رد کن»، ۴) ساعت و دقیقه یا «رد کن»، ۵) اولویت. هر مرحله را می‌توانی دوباره بگویی یا رد کنی.</string>
+    <string name="tasks_voice_guide_body">هر مرحله را جدا بگو: ۱) دسته، ۲) عنوان کار، ۳) تاریخ، ۴) ساعت، ۵) اولویت. اگر دسته نداری بگو «بدون دسته». برای گذشتن از تاریخ یا ساعت بگو «رد کن». می‌توانی هر مرحله را دوباره بگویی.</string>
     <string name="tasks_voice_guide_example">نمونه: «کارهای خانه» ← «خرید هدیه» ← «۲۵ آبان ۱۴۰۵» ← «ساعت ۱۴ و ۳۰ دقیقه» ← «زیاد»</string>
     <string name="tasks_voice_guide_privacy">گفتار روی دستگاه خودت با سرویس گفتار اندروید بررسی می‌شود؛ ماربل‌دو صدایت را ذخیره نمی‌کند.</string>
     <string name="tasks_voice_start">شروع راهنمای صوتی</string>
@@ -48,7 +48,7 @@
     <string name="tasks_voice_task_created">کارت با صدایت ثبت شد؛ عالیه!</string>
     <string name="tasks_voice_date_retry">تاریخ را نفهمیدم؛ دوباره بگو یا این مرحله را رد کن.</string>
     <string name="tasks_voice_time_retry">ساعت را نفهمیدم؛ دوباره بگو یا این مرحله را رد کن.</string>
-    <string name="tasks_voice_try_again">گفتار گرفته نشد؛ دوباره بزن یا مرحله را رد کن.</string>
+    <string name="tasks_voice_try_again">صدایت دریافت نشد؛ دوباره امتحان کن یا از این مرحله بگذر.</string>
     <string name="tasks_voice_progress_title">راهنمای صوتی کار</string>
     <string name="tasks_voice_step_count">مرحلهٔ %1$d از %2$d</string>
     <string name="tasks_voice_current_category">دسته: %1$s</string>
@@ -70,7 +70,7 @@
     <string name="tasks_category">دسته</string>
     <string name="tasks_repeat">تکرار</string>
     <string name="tasks_countdown_toggle_title">شمارش معکوس زنده</string>
-    <string name="tasks_countdown_toggle_body">در خانه و ویجت شمرده شود.</string>
+    <string name="tasks_countdown_toggle_body">شمارش را در خانه و ویجت ببین.</string>
     <string name="tasks_countdown_needs_date">برای شروع روزشمار، اول یک تاریخ یا ساعت انتخاب کن.</string>
     <string name="tasks_countdown_theme">تم: %1$s</string>
     <string name="tasks_countdown_on">روشن کردن شمارش معکوس</string>

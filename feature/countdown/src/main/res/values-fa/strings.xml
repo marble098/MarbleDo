@@ -1,7 +1,7 @@
 <resources>
     <string name="countdown_title">شمارش‌های معکوس</string>
     <string name="countdown_subtitle">لحظه‌های مهمت همیشه جلوی چشمت باشند.</string>
-    <string name="countdown_empty">یک کار با تاریخ بساز و شمارش معکوسش را روشن کن تا همین‌جا زنده ببینی.</string>
+    <string name="countdown_empty">یک کار تاریخ‌دار بساز و شمارش معکوسش را روشن کن تا اینجا ببینی چقدر مانده.</string>
     <string name="countdown_themes">ظاهر دلخواه</string>
     <string name="countdown_upcoming">لحظه‌های پیش رو</string>
     <string name="countdown_remaining">%1$s مانده</string>
@@ -39,7 +39,7 @@
     <string name="countdown_caption_orbital_rings">چهار مدار، یک مقصد</string>
     <string name="countdown_caption_terminal_matrix">شمارش خط فرمان با نور فسفری</string>
     <string name="countdown_caption_liquid_tide">موجی که به سمت لحظه بالا می‌آید</string>
-    <string name="countdown_caption_paper_type">پوستر سرمقاله‌ای با عدد بزرگ روز</string>
+    <string name="countdown_caption_paper_type">پوستر کاغذی با عدد بزرگ روز</string>
     <string name="countdown_caption_stellar_night">ستاره‌ها و مسیر صورت فلکی</string>
     <string name="countdown_caption_moment_blocks">یک بلوک برای هر واحد زمان</string>
     <string name="countdown_caption_dial_gauge">صفحهٔ اندازه‌گیری با خط‌های مدرج</string>
@@ -57,7 +57,7 @@
     <string name="countdown_calendar_gregorian">میلادی</string>
     <string name="countdown_calendar_lunar">قمری</string>
     <string name="countdown_create_title">ساخت شمارش معکوس</string>
-    <string name="countdown_create_hint">عنوان را بنویس، یک زمان آماده بزن یا تاریخ و ساعت را دقیق کن.</string>
+    <string name="countdown_create_hint">عنوان را بنویس و تاریخ و ساعت را انتخاب کن.</string>
     <string name="countdown_title_field">عنوان لحظهٔ مهم</string>
     <string name="countdown_date_field">تاریخ</string>
     <string name="countdown_date_hint">نمونه: ۱۴۰۵/۰۸/۲۵</string>

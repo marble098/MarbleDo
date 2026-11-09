@@ -125,6 +125,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.marbledo.core.designsystem.LocalReduceMotion
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.core.designsystem.MarbleMotion
 import com.marbledo.core.designsystem.MarbleSpacing
@@ -458,19 +459,6 @@ fun DashboardScreen(
 
             when (selectedTab) {
                 DashboardTab.TODAY -> {
-                    // The day's plan comes first as one calm line: three picks, the time budget, the
-                    // next free gap and anything waiting too long. Collapsed it costs one row, so the
-                    // task list below still starts on the first screen.
-                    item {
-                        DailyPlanCard(
-                            tasks = state.allTasks,
-                            now = now.toInstant(),
-                            zone = zone,
-                            numeralMode = numeralMode,
-                            onStart = onOpenFocus,
-                            onEdit = { editingTask = it },
-                        )
-                    }
                     // Tasks are the reason the screen exists, so they come first and they keep the space.
                     item {
                         Row(
@@ -882,6 +870,17 @@ fun DashboardScreen(
                         }
                     }
 
+                    // Keep planning suggestions available after the task list.
+                    item {
+                        DailyPlanCard(
+                            tasks = state.allTasks,
+                            now = now.toInstant(),
+                            zone = zone,
+                            numeralMode = numeralMode,
+                            onStart = onOpenFocus,
+                            onEdit = { editingTask = it },
+                        )
+                    }
                 }
 
                 DashboardTab.WEEK -> {
@@ -1095,6 +1094,7 @@ private fun DashboardTabRow(
     // Material 3 Expressive: the selected pill springs to its new home on the theme's own
     // timing instead of snapping, so the control moves like every other component does.
     val motion = MaterialTheme.motionScheme
+    val reduceMotion = LocalReduceMotion.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -1108,13 +1108,13 @@ private fun DashboardTabRow(
             val isSelected = tab == selected
             val label = stringResource(tab.labelRes)
             val pill by animateColorAsState(
-                targetValue = if (isSelected) colors.surface else colors.surfaceVariant.copy(alpha = 0f),
-                animationSpec = motion.defaultEffectsSpec(),
+                targetValue = if (isSelected) colors.primary else Color.Transparent,
+                animationSpec = if (reduceMotion) androidx.compose.animation.core.snap() else motion.defaultEffectsSpec(),
                 label = "dashboardTabPill",
             )
             val labelColor by animateColorAsState(
-                targetValue = if (isSelected) colors.primary else colors.onSurfaceVariant,
-                animationSpec = motion.defaultEffectsSpec(),
+                targetValue = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
+                animationSpec = if (reduceMotion) androidx.compose.animation.core.snap() else motion.defaultEffectsSpec(),
                 label = "dashboardTabLabel",
             )
             Surface(
@@ -1217,16 +1217,6 @@ private fun DailyHeaderCard(
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xxs)) {
-                        Surface(shape = CircleShape, color = colors.surface.copy(alpha = 0.78f)) {
-                            IconButton(onClick = onOpenCalendar) {
-                                Icon(
-                                    Icons.Outlined.CalendarMonth,
-                                    contentDescription = stringResource(R.string.nav_calendar),
-                                    tint = colors.primary,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-                        }
                         Surface(shape = CircleShape, color = colors.surface.copy(alpha = 0.78f)) {
                             IconButton(onClick = onShare) {
                                 Icon(
