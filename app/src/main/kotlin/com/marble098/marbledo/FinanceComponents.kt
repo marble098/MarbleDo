@@ -234,7 +234,7 @@ fun FinanceMonitoringCard(
             // Debts Section
             if (debts.isNotEmpty()) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    SectionHeader(stringResource(R.string.finance_debts_title), debts.size, expanded = true, onClick = {})
+                    SectionHeader(stringResource(R.string.finance_debts_title), debts.size)
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(vertical = MarbleSpacing.xs),
