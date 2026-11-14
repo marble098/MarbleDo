@@ -227,6 +227,12 @@ object PersistentCalendarNotification {
             .setSmallIcon(smallIcon)
             .setColor(NotificationArtwork.accentColor(notificationContext, content.mood))
             .setContentTitle(content.title).setContentText(content.collapsedLine).setSubText(content.moodSubtitle)
+            // Material Expressive redesign integration: Add expressive banner styling metadata
+            .setExtras(Bundle().apply {
+                putString("com.marble098.marbledo.EXPRESSIVE_MOOD", content.mood.name)
+                putString("com.marble098.marbledo.EXPRESSIVE_TITLE", content.title)
+                putString("com.marble098.marbledo.EXPRESSIVE_SUBTITLE", content.collapsedLine)
+            })
         if (collapsedView != null && expandedView != null) {
             builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(collapsedView)

@@ -191,6 +191,7 @@ private enum class DashboardTab(val labelRes: Int) {
     TODAY(R.string.dash_tab_today),
     WEEK(R.string.dash_tab_week),
     OCCASIONS(R.string.dash_tab_occasions),
+    FINANCE(R.string.finance_tab_title),
 }
 
 private data class DashboardOccasion(
@@ -962,6 +963,21 @@ fun DashboardScreen(
                     }
                 }
 
+                DashboardTab.FINANCE -> {
+                    // Finance monitoring section: professional monitoring, debts and checks
+                    item {
+                        com.marble098.marbledo.FinanceMonitoringCard(
+                            debts = emptyList(), // TODO: Fetch from ViewModel
+                            checks = emptyList(), // TODO: Fetch from ViewModel
+                            onAddDebt = {}, // TODO: Implement
+                            onAddCheck = {}, // TODO: Implement
+                            onToggleDebtPaid = {}, // TODO: Implement
+                            onToggleCheckCleared = {}, // TODO: Implement
+                        )
+                    }
+                    item { Spacer(Modifier.height(MarbleSpacing.md)) }
+                }
+
                 DashboardTab.OCCASIONS -> {
                     // Everything occasion-shaped lives here now. The header no longer repeats
                     // today's occasion above a card that lists today's occasions.
@@ -1131,6 +1147,7 @@ private fun DashboardTabRow(
                 DashboardTab.TODAY -> Icons.Outlined.AccessTime
                 DashboardTab.WEEK -> Icons.Outlined.CalendarMonth
                 DashboardTab.OCCASIONS -> Icons.Outlined.StarBorder
+                DashboardTab.FINANCE -> Icons.Outlined.CalendarMonth
             }
             val pill by animateColorAsState(
                 targetValue = if (isSelected) colors.primary else Color.Transparent,
