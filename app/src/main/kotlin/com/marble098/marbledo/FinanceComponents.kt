@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -258,7 +259,7 @@ fun FinanceMonitoringCard(
             // Checks Section
             if (checks.isNotEmpty()) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    SectionHeader(stringResource(R.string.finance_checks_title), checks.size, expanded = true, onClick = {})
+                    SectionHeader(stringResource(R.string.finance_checks_title), checks.size)
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(vertical = MarbleSpacing.xs),
@@ -292,6 +293,7 @@ fun FinanceMonitoringCard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FinanceItemCard(
     item: Any, // Debt or Check
@@ -500,7 +502,7 @@ fun ExpressiveNotificationBanner(
                             tint = when (mood) {
                                 "HOLIDAY", "RELIGIOUS", "OCCASION" -> colors.onTertiaryContainer
                                 "TASKS_DUE" -> colors.onPrimaryContainer
-                                "QUIET" -> colors.onOutlineVariant
+                                "QUIET" -> colors.onSurfaceVariant
                                 else -> colors.onPrimaryContainer
                             },
                             modifier = Modifier.size(16.dp),
@@ -511,7 +513,7 @@ fun ExpressiveNotificationBanner(
                             color = when (mood) {
                                 "HOLIDAY", "RELIGIOUS", "OCCASION" -> colors.onTertiaryContainer
                                 "TASKS_DUE" -> colors.onPrimaryContainer
-                                "QUIET" -> colors.onOutlineVariant
+                                "QUIET" -> colors.onSurfaceVariant
                                 else -> colors.onPrimaryContainer
                             },
                             maxLines = 1,
