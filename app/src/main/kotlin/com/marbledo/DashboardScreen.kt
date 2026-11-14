@@ -46,6 +46,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -184,7 +185,7 @@ private enum class TaskGroup(val labelRes: Int) {
 private data class GroupedTasks(val group: TaskGroup, val tasks: List<Task>)
 
 /**
- * The three stops of the home page. The screen used to be one endless stack of eleven cards;
+ * The four stops of the home page. The screen used to be one endless stack of eleven cards;
  * now each stop is short and has one job, so the list the user came for starts immediately.
  */
 private enum class DashboardTab(val labelRes: Int) {
@@ -206,7 +207,7 @@ private const val MAX_DASHBOARD_OCCASIONS = 3
 private const val MAX_DASHBOARD_UPCOMING = 4
 
 /**
- * The home page is three short stops, not one endless stack of cards.
+ * The home page is four short stops, not one endless stack of cards.
  *
  * A compact hero carries the greeting, the three dates and the day's counters, and it stays put
  * above the stops so the date and the progress ring are always one glance away. Under it, one
@@ -216,6 +217,7 @@ private const val MAX_DASHBOARD_UPCOMING = 4
  *    the screen exists, so they start immediately and they keep the space.
  *  * **Week** — how the coming days are loaded, plus the day agenda.
  *  * **Occasions** — today's occasions, the ones ahead, and the occasion radar.
+ *  * **Finance** — debts and cheques, so money stops living in a separate app.
  *
  * Nothing was removed. What changed is that the three occasion surfaces no longer sit on top of
  * each other on one screen, and the weekly load no longer pushes the task list below the fold.
@@ -1114,7 +1116,7 @@ fun DashboardScreen(
 }
 
 /**
- * The three stops of the home page as one segmented row. The selected stop is a real tab for
+ * The four stops of the home page as one segmented row. The selected stop is a real tab for
  * accessibility services, and every stop keeps a full-size touch target (docs/UI_COUNCIL_REVIEW.md).
  */
 @Composable
@@ -1141,13 +1143,13 @@ private fun DashboardTabRow(
         DashboardTab.entries.forEach { tab ->
             val isSelected = tab == selected
             val label = stringResource(tab.labelRes)
-            // An icon next to the word: the three stops used to be text only, so the row read as
-            // a segmented filter rather than the three places of the app.
+            // An icon next to the word: the stops used to be text only, so the row read as
+            // a segmented filter rather than the places of the app.
             val icon = when (tab) {
                 DashboardTab.TODAY -> Icons.Outlined.AccessTime
                 DashboardTab.WEEK -> Icons.Outlined.CalendarMonth
                 DashboardTab.OCCASIONS -> Icons.Outlined.StarBorder
-                DashboardTab.FINANCE -> Icons.Outlined.CalendarMonth
+                DashboardTab.FINANCE -> Icons.Outlined.AccountBalanceWallet
             }
             val pill by animateColorAsState(
                 targetValue = if (isSelected) colors.primary else Color.Transparent,

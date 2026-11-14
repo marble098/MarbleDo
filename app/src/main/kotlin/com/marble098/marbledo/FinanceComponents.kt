@@ -522,15 +522,3 @@ fun ExpressiveNotificationBanner(
         }
     }
 }
-
-/** Integration into DashboardScreen */
-// We will inject FinanceMonitoringCard into DashboardTab.OCCASIONS or a new TAB.
-// For now, let's add a new Tab: FINANCE
-private enum class DashboardTab(val labelRes: Int) {
-    TODAY(R.string.dash_tab_today),
-    WEEK(R.string.dash_tab_week),
-    OCCASIONS(R.string.dash_tab_occasions),
-    FINANCE(R.string.finance_tab_title), // NEW
-}
-
-// We will update DashboardScreen below in the edit_file step.
