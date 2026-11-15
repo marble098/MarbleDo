@@ -264,13 +264,10 @@ class CalendarOccurrenceWorker(
             monthLabel = PersianDateUtils.monthName(month, languageTag),
             mood = mood,
         ) ?: ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap()
-        
-        // Integrate ExpressiveNotificationBanner for Material Expressive redesign
-        // Note: The banner component is Compose-based. Since this is a system notification worker,
-        // we use the existing NotificationCompat.Builder structure but update the styling
-        // to match the Material Expressive color scheme and mood accents.
+        // Android owns notification-shade layout and motion. Keep the semantic mood accent and
+        // structured InboxStyle content, and let SystemUI render its native Material surface.
         val accentColor = NotificationArtwork.accentColor(context, mood)
-        
+
         val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
             .addExtras(Bundle().apply {
                 putBoolean(EXTRA_EDUCATIONAL_CONTENT, events.any { it.category == OccasionCategory.EDUCATIONAL })
@@ -296,12 +293,6 @@ class CalendarOccurrenceWorker(
                 context.getString(R.string.calendar_notification_open),
                 pending,
             )
-            // Material Expressive redesign: Add expressive mood accent and banner styling
-            .setExtras(Bundle().apply {
-                putString("com.marble098.marbledo.EXPRESSIVE_MOOD", mood.name)
-                putString("com.marble098.marbledo.EXPRESSIVE_TITLE", title)
-                putString("com.marble098.marbledo.EXPRESSIVE_SUBTITLE", summary)
-            })
             .build()
         NotificationManagerCompat.from(context).notify(requestCode, notification)
     }

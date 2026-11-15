@@ -2,6 +2,8 @@ package com.marble098.marbledo
 
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.DashboardViewMode
+import com.marbledo.domain.repository.FinanceRepository
+import com.marbledo.domain.repository.FinanceSnapshot
 import com.marbledo.feature.tasks.TaskChange
 import com.marbledo.feature.tasks.TaskChangeKind
 import android.content.Context
@@ -225,6 +227,7 @@ private const val MAX_DASHBOARD_UPCOMING = 4
 @Composable
 fun DashboardScreen(
     viewModel: TasksViewModel,
+    financeRepository: FinanceRepository,
     settings: AppSettings,
     occasionCatalog: OccasionCatalog,
     enabledOccasionCategories: Set<OccasionCategory>,
@@ -247,6 +250,9 @@ fun DashboardScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val financeSnapshot by remember(financeRepository) {
+        financeRepository.observe()
+    }.collectAsStateWithLifecycle(initialValue = FinanceSnapshot())
     val numeralMode = LocalNumeralMode.current
     val zone = remember { ZoneId.systemDefault() }
     var showQuickAdd by rememberSaveable { mutableStateOf(false) }
@@ -420,7 +426,12 @@ fun DashboardScreen(
             modifier = Modifier.fillMaxSize(),
             // The list ends above the compact FAB with room to spare, so the last card can be
             // read in full instead of sitting underneath a wide pill (docs/UI_REFRESH.md, V-4).
-            contentPadding = PaddingValues(start = MarbleSpacing.lg, end = MarbleSpacing.lg, top = MarbleSpacing.md, bottom = 104.dp),
+            contentPadding = PaddingValues(
+                start = MarbleSpacing.lg,
+                end = MarbleSpacing.lg,
+                top = MarbleSpacing.md,
+                bottom = if (selectedTab == DashboardTab.FINANCE) MarbleSpacing.lg else 104.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
         ) {
             item {
@@ -966,18 +977,29 @@ fun DashboardScreen(
                 }
 
                 DashboardTab.FINANCE -> {
-                    // Finance monitoring section: professional monitoring, debts and checks
                     item {
-                        com.marble098.marbledo.FinanceMonitoringCard(
-                            debts = emptyList(), // TODO: Fetch from ViewModel
-                            checks = emptyList(), // TODO: Fetch from ViewModel
-                            onAddDebt = {}, // TODO: Implement
-                            onAddCheck = {}, // TODO: Implement
-                            onToggleDebtPaid = {}, // TODO: Implement
-                            onToggleCheckCleared = {}, // TODO: Implement
+                        FinanceMonitoringCard(
+                            debts = financeSnapshot.debts,
+                            checks = financeSnapshot.checks,
+                            settings = settings,
+                            today = todayDateForOccasions,
+                            onCalendarDisplaySelected = onCalendarDisplaySelected,
+                            onSaveDebt = { financeRepository.saveDebt(it); Unit },
+                            onSaveCheck = { financeRepository.saveCheck(it); Unit },
+                            onDeleteDebt = financeRepository::deleteDebt,
+                            onDeleteCheck = financeRepository::deleteCheck,
+                            onToggleDebtPaid = { id ->
+                                financeSnapshot.debts.firstOrNull { it.id == id }?.let { debt ->
+                                    financeRepository.setDebtPaid(id, !debt.isPaid)
+                                }
+                            },
+                            onToggleCheckCleared = { id ->
+                                financeSnapshot.checks.firstOrNull { it.id == id }?.let { check ->
+                                    financeRepository.setCheckCleared(id, !check.isCleared)
+                                }
+                            },
                         )
                     }
-                    item { Spacer(Modifier.height(MarbleSpacing.md)) }
                 }
 
                 DashboardTab.OCCASIONS -> {
@@ -1004,27 +1026,29 @@ fun DashboardScreen(
             }
         }
 
-        // A labelled add button: one word on the button beats a bare plus that sat on top of the
-        // last card. It stays short enough not to read as part of the bottom navigation.
-        Surface(
-            onClick = { sharedText = ""; showQuickAdd = true },
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            shadowElevation = 6.dp,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(MarbleSpacing.lg),
-        ) {
-            Row(
-                Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+        if (selectedTab != DashboardTab.FINANCE) {
+            // The finance stop has its own two labelled creation actions; keep the task shortcut
+            // out of the way there instead of asking the user to guess what the floating plus adds.
+            Surface(
+                onClick = { sharedText = ""; showQuickAdd = true },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shadowElevation = 6.dp,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(MarbleSpacing.lg),
             ) {
-                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-                Text(
-                    stringResource(R.string.dash_new_task),
-                    style = MarbleTextStyles.metaLabel,
-                    fontWeight = FontWeight.Bold,
-                )
+                Row(
+                    Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Text(
+                        stringResource(R.string.dash_new_task),
+                        style = MarbleTextStyles.metaLabel,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
         }
 

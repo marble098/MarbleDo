@@ -86,6 +86,8 @@ import com.marbledo.core.data.backup.BackupEnvelope
 import com.marbledo.core.data.backup.LocalBackupWorker
 import com.marbledo.core.data.settings.SettingsRepository
 import com.marbledo.domain.model.AppSettings
+import com.marbledo.domain.repository.FinanceRepository
+import com.marbledo.domain.repository.FinanceSnapshot
 import com.marbledo.domain.repository.HabitRepository
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.enabledOccasionCultures
@@ -162,6 +164,7 @@ fun MarbleDoApp(
     val habitsViewModel: HabitsViewModel = koinViewModel()
     val habitState by habitsViewModel.state.collectAsStateWithLifecycle()
     val habitRepository: HabitRepository = koinInject()
+    val financeRepository: FinanceRepository = koinInject()
     val settingsRepository: SettingsRepository = koinInject()
     val occasionRepository: OccasionRepository = koinInject()
     // Keep the not-yet-loaded state distinct from the default profile. Applying the default
@@ -221,6 +224,7 @@ fun MarbleDoApp(
                     val passphrase = pendingExportPassphrase
                     pendingExportPassphrase = null
                     val habits = withContext(Dispatchers.IO) { habitRepository.snapshot() }
+                    val finance = withContext(Dispatchers.IO) { financeRepository.snapshot() }
                     val bytes = withContext(Dispatchers.Default) {
                         try {
                             BackupCodec.encode(
@@ -229,6 +233,8 @@ fun MarbleDoApp(
                                 passphrase = passphrase,
                                 habits = habits.habits,
                                 habitEntries = habits.entries,
+                                debts = finance.debts,
+                                checks = finance.checks,
                             )
                         } finally { passphrase?.fill(0.toChar()) }
                     }
@@ -388,7 +394,7 @@ fun MarbleDoApp(
             numeralMode = settings.numeralMode,
             languageTag = settings.languageTag,
         ) {
-            Surface(Modifier.fillMaxSize()) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 val enabledOccasionCategories = settings.enabledOccasionCategories()
                 // Material 3 Expressive motion: the screen transition rides the theme's springs
                 // instead of a hard-coded tween, so it matches every component's timing.
@@ -414,6 +420,7 @@ fun MarbleDoApp(
                             entry<HomeDestination> {
                                 DashboardScreen(
                                     viewModel = taskViewModel,
+                                    financeRepository = financeRepository,
                                     settings = settings,
                                     occasionCatalog = occasionState.catalog,
                                     enabledOccasionCategories = enabledOccasionCategories,
@@ -690,8 +697,11 @@ fun MarbleDoApp(
                     if (backup != null) {
                         taskViewModel.restoreTasks(backup.tasks, merge = true)
                         coroutineScope.launch {
-                            settingsRepository.update { backup.settings }
+                            // Persist data before settings: applying a restored locale can recreate
+                            // the Activity and cancel this composition's scope.
                             habitRepository.replaceAll(backup.habits, backup.habitEntries)
+                            financeRepository.replaceAll(FinanceSnapshot(backup.debts, backup.checks))
+                            settingsRepository.update { backup.settings }
                         }
                     }
                     restoreEnvelope = null

@@ -9,13 +9,13 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DebtDao {
-    @Query("SELECT * FROM debts ORDER BY isPaid ASC, dueAtEpochMillis ASC")
+    @Query("SELECT * FROM debts ORDER BY isPaid ASC, CASE WHEN dueAtEpochMillis IS NULL THEN 1 ELSE 0 END, dueAtEpochMillis ASC, id DESC")
     fun observeAll(): Flow<List<DebtEntity>>
 
     @Query("SELECT * FROM debts WHERE id = :id LIMIT 1")
     suspend fun getById(id: Long): DebtEntity?
 
-    @Query("SELECT * FROM debts ORDER BY isPaid ASC, dueAtEpochMillis ASC")
+    @Query("SELECT * FROM debts ORDER BY isPaid ASC, CASE WHEN dueAtEpochMillis IS NULL THEN 1 ELSE 0 END, dueAtEpochMillis ASC, id DESC")
     suspend fun snapshot(): List<DebtEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -46,13 +46,13 @@ interface DebtDao {
 
 @Dao
 interface CheckDao {
-    @Query("SELECT * FROM checks ORDER BY isCleared ASC, dueAtEpochMillis ASC")
+    @Query("SELECT * FROM checks ORDER BY isCleared ASC, CASE WHEN dueAtEpochMillis IS NULL THEN 1 ELSE 0 END, dueAtEpochMillis ASC, id DESC")
     fun observeAll(): Flow<List<CheckEntity>>
 
     @Query("SELECT * FROM checks WHERE id = :id LIMIT 1")
     suspend fun getById(id: Long): CheckEntity?
 
-    @Query("SELECT * FROM checks ORDER BY isCleared ASC, dueAtEpochMillis ASC")
+    @Query("SELECT * FROM checks ORDER BY isCleared ASC, CASE WHEN dueAtEpochMillis IS NULL THEN 1 ELSE 0 END, dueAtEpochMillis ASC, id DESC")
     suspend fun snapshot(): List<CheckEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

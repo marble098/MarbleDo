@@ -17,7 +17,7 @@ data class Debt(
 ) {
     init {
         require(title.isNotBlank()) { "Debt title cannot be blank" }
-        require(amount >= 0.0) { "Debt amount cannot be negative" }
+        require(amount.isFinite() && amount >= 0.0) { "Debt amount must be finite and cannot be negative" }
     }
 }
 
@@ -37,6 +37,6 @@ data class Check(
 ) {
     init {
         require(title.isNotBlank()) { "Check title cannot be blank" }
-        require(amount >= 0.0) { "Check amount cannot be negative" }
+        require(amount.isFinite() && amount >= 0.0) { "Check amount must be finite and cannot be negative" }
     }
 }

@@ -5,6 +5,7 @@ import android.util.AtomicFile
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.marbledo.core.data.db.MarbleDatabase
+import com.marbledo.core.data.repository.RoomFinanceRepository
 import com.marbledo.core.data.repository.RoomHabitRepository
 import com.marbledo.core.data.repository.RoomTaskRepository
 import com.marbledo.core.data.settings.SettingsRepository
@@ -25,8 +26,16 @@ class LocalBackupWorker(
             val db = MarbleDatabase.create(applicationContext)
             val tasks = RoomTaskRepository(db.taskDao()).snapshot()
             val habits = RoomHabitRepository(db.habitDao()).snapshot()
+            val finance = RoomFinanceRepository(db).snapshot()
             val settings = SettingsRepository(applicationContext).settings.first()
-            val bytes = BackupCodec.encode(tasks, settings, habits = habits.habits, habitEntries = habits.entries)
+            val bytes = BackupCodec.encode(
+                tasks,
+                settings,
+                habits = habits.habits,
+                habitEntries = habits.entries,
+                debts = finance.debts,
+                checks = finance.checks,
+            )
             val targetDir = File(applicationContext.filesDir, BACKUP_DIRECTORY)
                 .apply { if (!exists() && !mkdirs()) error("Cannot create backup folder") }
             val timestamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")

@@ -521,7 +521,12 @@ fun SettingsScreen(
             // 2. Minimal Live Notification Preview Card so the user sees the clean notification layout
             if (settings.persistentDateNotificationEnabled) {
                 Spacer(Modifier.height(10.dp))
-                MinimalNotificationPreviewBox(
+                Text(
+                    stringResource(R.string.settings_notification_preview),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                NotificationLivePreviewCard(
                     context = context,
                     settings = settings,
                     tasks = tasks,
@@ -974,7 +979,7 @@ private fun NotificationDesignSelector(
 
 /** Uses the same fields, hierarchy and design rules as the delivered expanded notification. */
 @Composable
-private fun MinimalNotificationPreviewBox(
+private fun NotificationLivePreviewCard(
     context: Context,
     settings: AppSettings,
     tasks: List<Task>,
@@ -998,11 +1003,16 @@ private fun MinimalNotificationPreviewBox(
     val isEditorial = design == "editorial"
     val isBanner = design == "banner"
     val previewDirection = if (settings.languageTag == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr
-    val outerShape = RoundedCornerShape(if (isEditorial) 12.dp else 20.dp)
+    val outerShape = RoundedCornerShape(
+        when {
+            isBanner -> 28.dp
+            isEditorial -> 12.dp
+            else -> 20.dp
+        },
+    )
     val progressHeight = when (design) {
         "minimal" -> 2.dp
-        "editorial" -> 3.dp
-        "banner" -> 3.dp
+        "editorial", "banner" -> 3.dp
         else -> 4.dp
     }
     val hairline = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)

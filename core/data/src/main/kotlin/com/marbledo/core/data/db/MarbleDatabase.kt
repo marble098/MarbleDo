@@ -8,14 +8,18 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [TaskEntity::class, HabitEntity::class, HabitEntryEntity::class],
-    version = 5,
+    entities = [TaskEntity::class, HabitEntity::class, HabitEntryEntity::class, DebtEntity::class, CheckEntity::class],
+    version = 6,
     exportSchema = true,
 )
 abstract class MarbleDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
 
     abstract fun habitDao(): HabitDao
+
+    abstract fun debtDao(): DebtDao
+
+    abstract fun checkDao(): CheckDao
 
     companion object {
         const val DATABASE_NAME = "marbledo.db"
@@ -97,6 +101,47 @@ abstract class MarbleDatabase : RoomDatabase() {
             }
         }
 
+        /** v6 adds offline finance records without touching existing tasks or habits. */
+        val MIGRATION_5_6: Migration = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `debts` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`title` TEXT NOT NULL, " +
+                        "`amount` REAL NOT NULL, " +
+                        "`currency` TEXT NOT NULL, " +
+                        "`dueAtEpochMillis` INTEGER, " +
+                        "`isPaid` INTEGER NOT NULL DEFAULT 0, " +
+                        "`creditor` TEXT NOT NULL, " +
+                        "`description` TEXT NOT NULL, " +
+                        "`createdAtEpochMillis` INTEGER NOT NULL, " +
+                        "`updatedAtEpochMillis` INTEGER NOT NULL DEFAULT 0)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_debts_dueAtEpochMillis` ON `debts` (`dueAtEpochMillis`)",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_debts_isPaid` ON `debts` (`isPaid`)")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `checks` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`title` TEXT NOT NULL, " +
+                        "`amount` REAL NOT NULL, " +
+                        "`currency` TEXT NOT NULL, " +
+                        "`dueAtEpochMillis` INTEGER, " +
+                        "`isCleared` INTEGER NOT NULL DEFAULT 0, " +
+                        "`bankName` TEXT NOT NULL, " +
+                        "`accountNumber` TEXT NOT NULL, " +
+                        "`description` TEXT NOT NULL, " +
+                        "`createdAtEpochMillis` INTEGER NOT NULL, " +
+                        "`updatedAtEpochMillis` INTEGER NOT NULL DEFAULT 0)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_checks_dueAtEpochMillis` ON `checks` (`dueAtEpochMillis`)",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_checks_isCleared` ON `checks` (`isCleared`)")
+            }
+        }
+
         @Volatile
         private var instance: MarbleDatabase? = null
 
@@ -108,7 +153,7 @@ abstract class MarbleDatabase : RoomDatabase() {
                     MarbleDatabase::class.java,
                     DATABASE_NAME,
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .fallbackToDestructiveMigrationOnDowngrade()
                     .build()
                     .also { instance = it }

@@ -1,6 +1,8 @@
 package com.marbledo.core.data.backup
 
 import com.marbledo.domain.model.AppSettings
+import com.marbledo.domain.model.Check
+import com.marbledo.domain.model.Debt
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.ChecklistItem
 import com.marbledo.domain.model.RecurrenceRule
@@ -54,6 +56,36 @@ class BackupCodecTest {
     }
 
     @Test
+    fun `finance records round trip with their status and payment details`() {
+        val debt = Debt(
+            id = 7,
+            title = "Workshop",
+            amount = 125.75,
+            currency = "EUR",
+            dueAtEpochMillis = 1_800_000_000_000,
+            creditor = "Mina",
+            description = "Second instalment",
+        )
+        val check = Check(
+            id = 9,
+            title = "Office rent",
+            amount = 2_500_000.0,
+            currency = "IRR",
+            dueAtEpochMillis = 1_800_000_000_000,
+            bankName = "Mehr",
+            accountNumber = "1234567890",
+            description = "Monthly cheque",
+            isCleared = true,
+        )
+
+        val decoded = BackupCodec.decode(BackupCodec.encode(emptyList(), AppSettings(), debts = listOf(debt), checks = listOf(check)))
+
+        assertEquals(3, decoded.schemaVersion)
+        assertEquals(listOf(debt), decoded.debts)
+        assertEquals(listOf(check), decoded.checks)
+    }
+
+    @Test
     fun `an intentionally empty culture selection and preparation identities survive backup`() {
         val linked = task.copy(tags = listOf("occasion:x:2026-12-25", "occasion-step:x:2026-12-25:plan"))
         val backup = BackupCodec.decode(BackupCodec.encode(listOf(linked), AppSettings(occasionCultureIds = emptyList())))
@@ -96,6 +128,8 @@ class BackupCodecTest {
         val decoded = BackupCodec.decode(legacyBackupFile(payload))
 
         assertEquals(StatusBarIconStyle.NUMERAL, decoded.settings.statusBarIconStyle)
+        assertTrue(decoded.debts.isEmpty())
+        assertTrue(decoded.checks.isEmpty())
     }
 
     /** Rebuilds the container the codec expects around raw envelope JSON, as an older release wrote it. */
