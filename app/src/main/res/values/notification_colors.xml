@@ -1,4 +1,8 @@
 <resources>
+    <!-- Explicit card colours. A custom RemoteViews layout inherits SystemUI's text colour, which
+         is invisible in one of the two themes; these pair with values-night. -->
+    <color name="notification_card_text">#1C1B22</color>
+    <color name="notification_card_muted">#5D5A6B</color>
     <color name="notification_card_accent">#5E52B5</color>
     <color name="notification_card_section">#0C6E61D8</color>
     <color name="notification_card_track">#246E61D8</color>

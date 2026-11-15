@@ -150,4 +150,8 @@
     <string name="habit_notification_body_quit">امروز هم پاک بمان؛ یک روز دیگر به زنجیره اضافه می‌شود.</string>
     <string name="habit_notification_done">انجام شد</string>
     <string name="habit_notification_slipped">امروز لغزش داشتم</string>
+    <!-- بازطراحی: امتیاز یک عدد، وضعیت یک واژه، بقیهٔ فهرست یک سطر. -->
+    <string name="habit_widget_score">%1$s از %2$s</string>
+    <string name="habit_widget_remaining">%1$s مانده برای امروز</string>
+    <string name="habit_widget_more">و %1$s عادت دیگر</string>
 </resources>

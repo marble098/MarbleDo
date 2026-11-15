@@ -6,20 +6,27 @@ import android.view.View
 import android.widget.RemoteViews
 import com.marble098.marbledo.R
 
-/** Framework-decorated layouts: Android retains its trusted header, expand affordance and actions. */
+/**
+ * The one place that turns [PersistentCalendarNotification.NotificationBoxContent] into the
+ * framework-decorated rows of the ongoing notification.
+ *
+ * The redesign removed rows rather than decorating them. The old card stacked a mood pill, a
+ * title, two secondary dates, a progress label, a bar, a labelled next-task block and a labelled
+ * occasion block — six labels for four facts, which is what read as "busy". Now:
+ *
+ *  * the header is a date and a mood word (the secondary calendars only appear when expanded);
+ *  * progress is one reading with the bar beside it, not above it;
+ *  * the next step is the single filled surface, with its label and time on one line;
+ *  * occasions are a value line, not a section with its own heading.
+ *
+ * The banner look keeps its mood rule: it is already tinted for the day (a drawable per mood)
+ * so that it stays a first-class `setImageViewResource()` call — a reflective action that a
+ * locked-down SystemUI rejected would abort the whole apply and take the row, and the
+ * status-bar icon with it, off the screen.
+ */
 internal object CalendarNotificationViews {
 
-    /**
-     * The banner theme's accent rule, already tinted for the day's mood.
-     *
-     * The rule used to be tinted reflectively, by name, with a "setBackgroundColor" method call —
-     * the only reflective action in the whole builder. Reflection is the fragile half of
-     * RemoteViews: the method must exist on the target class *and* carry `@RemotableViewMethod`,
-     * and a single action that cannot run aborts the entire apply, so the row — and with it the
-     * status-bar icon — never renders. A drawable per mood turns that into a first-class
-     * `setImageViewResource()`, which has no lookup to fail. It also keeps the rule's rounded
-     * corner, which a flat background colour used to erase.
-     */
+    /** A drawable per mood: no reflection, and the rule keeps its rounded corner. */
     private fun accentRuleRes(mood: NotificationMood): Int = when (mood) {
         NotificationMood.HOLIDAY -> R.drawable.notification_banner_bar_holiday
         NotificationMood.RELIGIOUS -> R.drawable.notification_banner_bar_religious
@@ -62,13 +69,13 @@ internal object CalendarNotificationViews {
     ): RemoteViews = RemoteViews(context.packageName,
         layout(design, expanded, rtl)).apply {
         setTextViewText(R.id.notification_title, content.title)
-        setTextViewText(R.id.notification_mood_pill, content.moodSubtitle)
+        setTextViewText(R.id.notification_mood_pill, content.moodLabel)
         // The card is laid out with the light/dark accent resources; when the app theme has its own
-        // accent, tint the accent text with it. setTextColor is a first-class RemoteViews action, so
-        // there is no reflective call that a locked-down SystemUI could reject.
-        // These are exactly the views the layouts declare with `@color/notification_card_accent` (the
-        // Kotlin contract test asserts that every id set here exists in the layout that renders it),
-        // so a theme switch recolours the card in the shade as well as the screens.
+        // accent, tint the two accent labels with it. setTextColor is a first-class RemoteViews
+        // action, so there is no reflective call that a locked-down SystemUI could reject.
+        // These are exactly the views the layouts declare with `@color/notification_card_accent`
+        // (the Kotlin contract test asserts that every id set here exists in the layout that
+        // renders it), so a theme switch recolours the card in the shade as well as the screens.
         if (accentColor != 0) {
             if (!expanded) {
                 listOf(R.id.notification_mood_pill).forEach { setTextColor(it, accentColor) }
@@ -76,24 +83,31 @@ internal object CalendarNotificationViews {
                 listOf(
                     R.id.notification_mood_pill,
                     R.id.notification_next_label,
-                    R.id.notification_occasions_label,
                 ).forEach { setTextColor(it, accentColor) }
             }
         }
+        // Minimal is deliberately text only: the badge is declared so every layout accepts the
+        // same actions, and hidden here instead of shipping a second set of ids.
         if (badge != null && design != "minimal") setImageViewBitmap(R.id.notification_badge, badge)
         else setViewVisibility(R.id.notification_badge, View.GONE)
-        // The banner theme tints its leading accent rule with the day's mood colour, through a
-        // first-class RemoteViews action on an ImageView.
+        // The banner look tints its leading rule with the day's mood colour, through a first-class
+        // RemoteViews action on an ImageView.
         if (design == "banner") {
             setImageViewResource(R.id.notification_accent_rule, accentRuleRes(content.mood))
         }
-        setContentDescription(R.id.notification_root, if (expanded) content.expandedText else "${content.title}. ${content.collapsedLine}")
+        setContentDescription(R.id.notification_root,
+            if (expanded) content.expandedText else "${content.title}. ${content.summaryLine}")
         if (!expanded) {
-            setTextViewText(R.id.notification_compact_summary, content.collapsedLine)
+            setTextViewText(R.id.notification_compact_summary, content.summaryLine)
         } else {
             setTextViewText(R.id.notification_secondary_dates, content.secondaryDatesLine)
-            setViewVisibility(R.id.notification_progress_container, if (content.hasProgress) View.VISIBLE else View.GONE)
-            setTextViewText(R.id.notification_progress_label, content.progressSummary)
+
+            setViewVisibility(R.id.notification_progress_container,
+                if (content.hasProgress) View.VISIBLE else View.GONE)
+            setTextViewText(R.id.notification_progress_label, content.progressLabel)
+            // The bar only makes sense when the day has a total; an overdue-only reading is a
+            // sentence in the same row, so the track is hidden rather than drawn empty.
+            setViewVisibility(R.id.notification_progress, if (content.todayTotal > 0) View.VISIBLE else View.GONE)
             setProgressBar(R.id.notification_progress, content.todayTotal.coerceAtLeast(1), content.todayCompleted, false)
 
             val showNextSection = content.hasNextTask || !content.hasOccasions
@@ -104,10 +118,7 @@ internal object CalendarNotificationViews {
             setViewVisibility(R.id.notification_next_time, if (content.nextTaskTime == null) View.GONE else View.VISIBLE)
 
             setViewVisibility(R.id.notification_occasions_container, if (content.hasOccasions) View.VISIBLE else View.GONE)
-            setTextViewText(R.id.notification_occasions_label, context.getString(R.string.notification_occasions))
-            setTextViewText(R.id.notification_occasions_text, content.occasionLines.joinToString("\n").ifEmpty { content.fallbackOccasionText })
-            setTextViewText(R.id.notification_more_occasions, content.moreOccasionsText)
-            setViewVisibility(R.id.notification_more_occasions, if (content.moreOccasionsCount > 0) View.VISIBLE else View.GONE)
+            setTextViewText(R.id.notification_occasions_text, content.occasionsLine)
         }
     }
 }

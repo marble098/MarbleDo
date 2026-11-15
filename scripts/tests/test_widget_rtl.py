@@ -73,3 +73,47 @@ class WidgetRtlTests(unittest.TestCase):
                         start = source.rfind('Text(', 0, match.start())
                         window = source[start:match.end()]
                         self.assertIn('fillMaxWidth', window, window[:160])
+
+
+class WidgetRedesignTests(unittest.TestCase):
+    """The widgets read as one card with one job, not as a stack of cards with labels."""
+
+    def test_the_planner_widget_has_one_filled_surface(self):
+        source = WIDGETS['countdown'].read_text(encoding='utf-8')
+        # Exactly one card: the countdown. The header is a date, the two meta lines are sentences.
+        self.assertEqual(1, source.count('cornerRadius(22.dp)'), 'the widget grew a second card')
+        self.assertNotIn('GlanceInfoCard(', source, 'the occasions/next-task cards came back')
+        self.assertIn('R.string.widget_meta_occasions', source)
+        self.assertIn('R.string.widget_meta_next', source)
+        # The upper-case section headers were the loudest thing on the old card.
+        self.assertNotIn('R.string.widget_occasions_label', source)
+        self.assertNotIn('R.string.widget_next_task_label', source)
+
+    def test_the_habit_widget_states_its_score_once(self):
+        source = WIDGETS['habits'].read_text(encoding='utf-8')
+        self.assertIn('R.string.habit_widget_score', source)
+        self.assertIn('R.string.habit_widget_more', source)
+        # The footer that counted the same habits again in another denominator is gone.
+        self.assertNotIn('R.string.habit_widget_progress', source)
+
+    def test_every_widget_string_is_translated(self):
+        """A widget follows the app language; a missing Persian string silently falls back."""
+        modules = {
+            'countdown': (
+                WIDGETS['countdown'],
+                ROOT / 'feature/countdown/src/main/res/values/widget_strings.xml',
+                ROOT / 'feature/countdown/src/main/res/values-fa/widget_strings.xml',
+            ),
+            'habits': (
+                WIDGETS['habits'],
+                ROOT / 'feature/habits/src/main/res/values/strings.xml',
+                ROOT / 'feature/habits/src/main/res/values-fa/strings.xml',
+            ),
+        }
+        for name, (source_path, english, persian) in modules.items():
+            used = set(re.findall(r'R\.string\.(\w+)', source_path.read_text(encoding='utf-8')))
+            for path in (english, persian):
+                declared = set(re.findall(r'name="(\w+)"', path.read_text(encoding='utf-8')))
+                missing = used - declared
+                with self.subTest(widget=name, file=path.name):
+                    self.assertFalse(missing, f'{name}: {sorted(missing)} missing from {path}')

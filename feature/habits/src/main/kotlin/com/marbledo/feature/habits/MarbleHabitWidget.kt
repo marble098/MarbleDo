@@ -27,6 +27,7 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
+import androidx.glance.layout.RowScope
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
@@ -39,7 +40,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import androidx.glance.layout.RowScope
 import com.marbledo.core.data.db.MarbleDatabase
 import com.marbledo.core.data.repository.RoomHabitRepository
 import com.marbledo.core.data.settings.SettingsRepository
@@ -65,8 +65,14 @@ private const val MAX_WIDGET_ROWS = 4
 private val HABIT_ID_KEY = ActionParameters.Key<Long>("habitId")
 
 /**
- * A dedicated habit widget: today's list with a one-tap check-off, the day's progress and the best
- * run. Ticking a habit writes straight to the same database the app reads, so the widget and the
+ * The habit widget, second generation.
+ *
+ * The old card repeated the day's score three times — a name line, a progress line and a footer
+ * line that counted the same habits again in a different denominator — around rows that each had
+ * their own surface. It now reads as a scoreboard: one headline number, one short status word, a
+ * streak, and the rows themselves, with no footer restating the header.
+ *
+ * Ticking a habit still writes straight to the same database the app reads, so the widget and the
  * cabinet can never disagree.
  */
 class MarbleHabitWidget : GlanceAppWidget() {
@@ -105,6 +111,12 @@ class MarbleHabitWidget : GlanceAppWidget() {
         val bodyAlignment = if (isRtl) TextAlign.End else TextAlign.Start
         val rows = todays.take(MAX_WIDGET_ROWS)
         val hidden = (todays.size - rows.size).coerceAtLeast(0)
+        val score = widgetContext.getString(
+            R.string.habit_widget_score,
+            TextNormalizer.formatDigits(done.toString(), numeral),
+            TextNormalizer.formatDigits(todays.size.toString(), numeral),
+        )
+        val status = statusLine(widgetContext, done, todays.size, numeral)
 
         val launchComponent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.component
         val openApp = launchComponent?.let { component -> actionStartActivity(component) }
@@ -112,12 +124,13 @@ class MarbleHabitWidget : GlanceAppWidget() {
             .fillMaxSize()
             .background(ColorProvider(palette.backgroundTop))
             .cornerRadius(26.dp)
-            .padding(13.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp)
         val root = if (openApp != null) base.clickable(openApp) else base
 
         provideContent {
             GlanceTheme {
                 Column(modifier = root) {
+                    // The scoreboard: one number, one status word, one streak.
                     directionalRow(
                         isRtl = isRtl,
                         modifier = GlanceModifier.fillMaxWidth(),
@@ -127,11 +140,19 @@ class MarbleHabitWidget : GlanceAppWidget() {
                                     Text(
                                         text = widgetContext.getString(R.string.habit_widget_name),
                                         modifier = GlanceModifier.fillMaxWidth(),
-                                        style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
+                                        style = TextStyle(color = ColorProvider(palette.accent), fontSize = 9.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
+                                        maxLines = 1,
+                                    )
+                                    Spacer(GlanceModifier.height(1.dp))
+                                    Text(
+                                        text = score,
+                                        modifier = GlanceModifier.fillMaxWidth(),
+                                        style = TextStyle(color = ColorProvider(palette.onCard), fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = bodyAlignment),
                                         maxLines = 1,
                                     )
                                     Text(
-                                        text = progressLine(widgetContext, done, todays.size, numeral),
+                                        text = status,
+                                        modifier = GlanceModifier.fillMaxWidth(),
                                         style = TextStyle(color = ColorProvider(palette.muted), fontSize = 10.sp, textAlign = bodyAlignment),
                                         maxLines = 1,
                                     )
@@ -159,7 +180,7 @@ class MarbleHabitWidget : GlanceAppWidget() {
                             },
                         ),
                     )
-                    Spacer(GlanceModifier.height(10.dp))
+                    Spacer(GlanceModifier.height(9.dp))
                     if (rows.isEmpty()) {
                         Column(
                             modifier = GlanceModifier
@@ -194,17 +215,17 @@ class MarbleHabitWidget : GlanceAppWidget() {
                                 isRtl = isRtl,
                                 align = bodyAlignment,
                             )
-                            Spacer(GlanceModifier.height(6.dp))
+                            Spacer(GlanceModifier.height(5.dp))
                         }
                         if (hidden > 0) {
+                            // One quiet line for the overflow, not a second numerator.
                             Text(
-                                modifier = GlanceModifier.fillMaxWidth(),
                                 text = widgetContext.getString(
-                                    R.string.habit_widget_progress,
-                                    TextNormalizer.formatDigits(todays.size.toString(), numeral),
-                                    TextNormalizer.formatDigits(active.size.toString(), numeral),
+                                    R.string.habit_widget_more,
+                                    TextNormalizer.formatDigits(hidden.toString(), numeral),
                                 ),
-                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 10.sp, textAlign = bodyAlignment),
+                                modifier = GlanceModifier.fillMaxWidth(),
+                                style = TextStyle(color = ColorProvider(palette.muted), fontSize = 9.sp, textAlign = bodyAlignment),
                                 maxLines = 1,
                             )
                         }
@@ -233,20 +254,20 @@ class MarbleHabitWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .background(ColorProvider(palette.card))
-                .cornerRadius(16.dp)
-                .padding(horizontal = 9.dp, vertical = 7.dp),
+                .cornerRadius(14.dp)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             items = listOf(
                 {
                     Box(
                         modifier = GlanceModifier
-                            .size(28.dp)
+                            .size(26.dp)
                             .background(ColorProvider(palette.accentSoft))
-                            .cornerRadius(11.dp),
+                            .cornerRadius(9.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = habit.icon,
-                            style = TextStyle(fontSize = 14.sp, textAlign = TextAlign.Center),
+                            style = TextStyle(fontSize = 13.sp, textAlign = TextAlign.Center),
                         )
                     }
                 },
@@ -273,9 +294,9 @@ class MarbleHabitWidget : GlanceAppWidget() {
                 {
                     Box(
                         modifier = GlanceModifier
-                            .size(30.dp)
+                            .size(28.dp)
                             .background(ColorProvider(if (isQuit && !done) palette.track else if (done) palette.accent else palette.track))
-                            .cornerRadius(15.dp)
+                            .cornerRadius(14.dp)
                             .clickable(
                                 actionRunCallback<HabitToggleAction>(
                                     actionParametersOf(HABIT_ID_KEY to habit.id),
@@ -291,7 +312,7 @@ class MarbleHabitWidget : GlanceAppWidget() {
                             },
                             style = TextStyle(
                                 color = ColorProvider(if (done) palette.backgroundTop else palette.onCard),
-                                fontSize = 15.sp,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
                             ),
@@ -319,21 +340,19 @@ class MarbleHabitWidget : GlanceAppWidget() {
         }
     }
 
-    private fun progressLine(
+    /** One short status word under the score. It never repeats the numbers above it. */
+    private fun statusLine(
         context: Context,
         done: Int,
         scheduled: Int,
         numeral: NumeralMode,
-    ): String {
-        val doneText = TextNormalizer.formatDigits(done.toString(), numeral)
-        val totalText = TextNormalizer.formatDigits(scheduled.toString(), numeral)
-        return if (scheduled == 0) {
-            context.getString(R.string.habit_summary_empty)
-        } else if (done >= scheduled) {
-            context.getString(R.string.habit_widget_all_done)
-        } else {
-            context.getString(R.string.habit_widget_progress, doneText, totalText)
-        }
+    ): String = when {
+        scheduled == 0 -> context.getString(R.string.habit_summary_empty)
+        done >= scheduled -> context.getString(R.string.habit_widget_all_done)
+        else -> context.getString(
+            R.string.habit_widget_remaining,
+            TextNormalizer.formatDigits((scheduled - done).toString(), numeral),
+        )
     }
 }
 
