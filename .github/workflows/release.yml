@@ -2,80 +2,34 @@ name: Signed Android release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release (for example 1.0.2 or v1.0.2). A missing v-prefixed tag is created at the selected ref."
-        required: true
-        type: string
 
 permissions:
   contents: write
 
+# Serialize releases. A pending run may be superseded, but its changes are
+# included in the next run's range from the last published release.
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Check out selected source revision
+      - name: Check out source and tags
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Normalize version and create the release tag if needed
+      - name: Plan version and release notes
         id: release_tag
         env:
-          RELEASE_VERSION_INPUT: ${{ github.event.inputs.version || github.ref_name }}
-          RELEASE_SOURCE_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-
-          version_input="$RELEASE_VERSION_INPUT"
-          # Trim whitespace and accept either a version or a full tag ref.
-          version_input="${version_input#"${version_input%%[![:space:]]*}"}"
-          version_input="${version_input%"${version_input##*[![:space:]]}"}"
-          version_input="${version_input#refs/tags/}"
-          version="${version_input#v}"
-
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?(\+[A-Za-z0-9.-]+)?$ ]]; then
-            echo "::error title=Invalid release version::Enter a semantic version such as 1.2.3 or v1.2.3."
-            exit 2
-          fi
-
-          tag="v$version"
-          if git ls-remote --exit-code --refs origin "refs/tags/$tag" >/dev/null; then
-            echo "Release tag '$tag' already exists; the existing tag will not be moved."
-          else
-            ls_remote_status=$?
-            if [[ "$ls_remote_status" -ne 2 ]]; then
-              echo "::error title=Unable to inspect remote tags::git ls-remote failed with exit code $ls_remote_status."
-              exit "$ls_remote_status"
-            fi
-
-            echo "Release tag '$tag' does not exist. Creating it at $RELEASE_SOURCE_SHA."
-            git tag "$tag" "$RELEASE_SOURCE_SHA"
-            if git push origin "refs/tags/$tag"; then
-              echo "Created release tag '$tag'."
-            elif git ls-remote --exit-code --refs origin "refs/tags/$tag" >/dev/null; then
-              # Another release run may have created the tag between our check and push.
-              echo "::warning::Another run created '$tag' first; using the existing remote tag."
-              git tag -d "$tag" >/dev/null
-            else
-              echo "::error title=Unable to create release tag::Could not push '$tag'. Confirm this workflow has contents: write permission."
-              exit 1
-            fi
-          fi
-
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Check out versioned release
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ steps.release_tag.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/release_plan.py
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -136,28 +90,19 @@ jobs:
           RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
         run: |
           set -euo pipefail
-          # Expand the build output globs in the shell so that gh only ever
-          # receives real file paths. nullglob keeps an unmatched glob from
-          # reaching gh as a literal pattern, which gh rejects with
-          # "syntax error in pattern".
           shopt -s nullglob
           apks=(app/build/outputs/apk/release/*.apk)
           bundles=(app/build/outputs/bundle/release/*.aab)
-          if (( ${#apks[@]} == 0 || ${#bundles[@]} == 0 )); then
-            echo "::error title=Missing release artifacts::Expected a signed APK and an AAB under app/build/outputs before publishing."
+          for abi in universal armeabi-v7a arm64-v8a x86 x86_64; do
+            test -f "app/build/outputs/apk/release/app-${abi}-release.apk" || { echo "::error::Missing APK for $abi"; exit 1; }
+          done
+          (( ${#bundles[@]} > 0 )) || { echo "::error::Missing AAB"; exit 1; }
+          artifacts=("${apks[@]}" "${bundles[@]}" "$RUNNER_TEMP/SHA256SUMS.txt")
+          # A failed publication can be retried without moving an existing tag.
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Release $RELEASE_TAG already exists; refusing to overwrite it."
             exit 1
           fi
-          artifacts=("${apks[@]}" "${bundles[@]}" "$RUNNER_TEMP/SHA256SUMS.txt")
-          for artifact in "${artifacts[@]}"; do
-            test -f "$artifact" || { echo "::error title=Missing release artifact::'$artifact' does not exist."; exit 1; }
-          done
-          # Each arm of the next command is continued with a single backslash.
-          # A doubled backslash is not a continuation: it becomes a literal
-          # backslash argument, which gh treats as a malformed glob pattern.
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "${artifacts[@]}" --clobber
-          else
-            gh release create "$RELEASE_TAG" "${artifacts[@]}" \
-              --title "MarbleDo $RELEASE_TAG" \
-              --generate-notes
-          fi
+          gh release create "$RELEASE_TAG" "${artifacts[@]}" \
+            --target "$GITHUB_SHA" \
+            --title "MarbleDo $RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md" --latest
