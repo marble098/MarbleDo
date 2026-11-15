@@ -53,9 +53,19 @@ android {
         }
     }
 
+    // AGP 9 cannot shrink resources for ABI-split APKs and an App Bundle in the
+    // same invocation (issuetracker 402800800): R8 writes one shrunk-resources
+    // file per split and buildReleasePreBundle refuses them. A bundle carries
+    // every ABI by itself, so APK splits are off only for bundle* invocations.
+    // The release workflow builds the AAB first, then the per-ABI APKs in a
+    // second Gradle invocation; see docs/RELEASE_POLICY.md.
+    val buildsBundle = gradle.startParameter.taskNames.any { requested ->
+        requested.substringAfterLast(':').startsWith("bundle", ignoreCase = true)
+    }
+
     splits {
         abi {
-            isEnable = true
+            isEnable = !buildsBundle
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
             isUniversalApk = true
