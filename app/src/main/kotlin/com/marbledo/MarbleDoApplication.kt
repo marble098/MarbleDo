@@ -15,12 +15,14 @@ import com.marble098.marbledo.notifications.NotificationChannels
 import com.marbledo.core.data.backup.BackupWorkInitializer
 import com.marbledo.core.data.backup.WorkManagerBackupScheduler
 import com.marbledo.core.data.db.MarbleDatabase
+import com.marbledo.core.data.repository.RoomFinanceRepository
 import com.marbledo.core.data.repository.RoomHabitRepository
 import com.marbledo.core.data.repository.RoomTaskRepository
 import com.marbledo.core.data.settings.SettingsRepository
 import com.marbledo.feature.calendar.OccasionRepository
 import com.marbledo.domain.repository.TaskBackupScheduler
 import com.marbledo.domain.repository.TaskReminderScheduler
+import com.marbledo.domain.repository.FinanceRepository
 import com.marbledo.domain.repository.HabitRepository
 import com.marbledo.domain.repository.TaskRepository
 import com.marbledo.feature.habits.HabitsViewModel
@@ -81,6 +83,7 @@ private val marbleDoModule = module {
     single { MarbleDatabase.create(androidContext()) }
     single<TaskRepository> { RoomTaskRepository(get<MarbleDatabase>().taskDao()) }
     single<HabitRepository> { RoomHabitRepository(get<MarbleDatabase>().habitDao()) }
+    single<FinanceRepository> { RoomFinanceRepository(get<MarbleDatabase>()) }
     single { SettingsRepository(androidContext()) }
     single { OccasionRepository(androidContext()) }
     single { WorkManagerBackupScheduler(androidContext()) }

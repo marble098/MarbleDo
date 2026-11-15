@@ -1,6 +1,8 @@
 package com.marbledo.core.data.backup
 
 import com.marbledo.domain.model.AppSettings
+import com.marbledo.domain.model.Check
+import com.marbledo.domain.model.Debt
 import com.marbledo.domain.model.Habit
 import com.marbledo.domain.model.HabitEntry
 import com.marbledo.domain.model.Task
@@ -31,8 +33,11 @@ data class BackupEnvelope(
     /** Habits are stored from schema 2 onwards; older backups simply have none. */
     val habits: List<Habit> = emptyList(),
     val habitEntries: List<HabitEntry> = emptyList(),
+    /** Finance records are included from schema 3 onwards; older backups restore as an empty ledger. */
+    val debts: List<Debt> = emptyList(),
+    val checks: List<Check> = emptyList(),
 ) {
-    companion object { const val CURRENT_SCHEMA = 2 }
+    companion object { const val CURRENT_SCHEMA = 3 }
 }
 
 object BackupCodec {
@@ -49,6 +54,8 @@ object BackupCodec {
         passphrase: CharArray? = null,
         habits: List<Habit> = emptyList(),
         habitEntries: List<HabitEntry> = emptyList(),
+        debts: List<Debt> = emptyList(),
+        checks: List<Check> = emptyList(),
     ): ByteArray {
         require(passphrase == null || passphrase.size >= 8) { "Use a passphrase of at least eight characters" }
         val envelope = BackupEnvelope(
@@ -56,6 +63,8 @@ object BackupCodec {
             settings = settings,
             habits = habits,
             habitEntries = habitEntries,
+            debts = debts,
+            checks = checks,
         )
         val jsonBytes = json.encodeToString(BackupEnvelope.serializer(), envelope).toByteArray(Charsets.UTF_8)
         require(jsonBytes.size <= MAX_JSON_BYTES) { "Backup is too large" }
@@ -124,6 +133,12 @@ object BackupCodec {
         require(envelope.schemaVersion == headerSchema && envelope.schemaVersion in 1..BackupEnvelope.CURRENT_SCHEMA) { "Unsupported or inconsistent backup schema" }
         require(envelope.tasks.all { it.title.isNotBlank() }) { "Backup contains a task without a title" }
         require(envelope.habits.all { it.name.isNotBlank() }) { "Backup contains a habit without a name" }
+        require(envelope.debts.all { it.title.isNotBlank() && it.amount.isFinite() && it.amount >= 0.0 }) {
+            "Backup contains an invalid debt"
+        }
+        require(envelope.checks.all { it.title.isNotBlank() && it.amount.isFinite() && it.amount >= 0.0 }) {
+            "Backup contains an invalid check"
+        }
         return envelope
     }
 

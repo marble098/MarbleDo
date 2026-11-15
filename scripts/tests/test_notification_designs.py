@@ -116,6 +116,17 @@ class NotificationDesignTests(unittest.TestCase):
         self.assertNotIn('AndroidView', settings)
         self.assertIn('val isMinimal = design == "minimal"', settings)
         self.assertIn('val isEditorial = design == "editorial"', settings)
+        self.assertIn('NotificationLivePreviewCard(', settings)
+        self.assertIn('settings_notification_preview', settings)
+
+    def test_occasion_notification_keeps_its_semantic_extras(self):
+        worker = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarOccurrenceWorker.kt').read_text()
+        self.assertIn('.addExtras(Bundle().apply {', worker)
+        self.assertIn('EXTRA_EDUCATIONAL_CONTENT', worker)
+        self.assertIn('EXTRA_CULTURES', worker)
+        self.assertIn('.setStyle(inbox)', worker)
+        self.assertIn('.setColor(accentColor)', worker)
+        self.assertNotIn('.setExtras(', worker, 'setExtras replaces the classification bundle needed to clear stale notifications')
 
     def test_occasion_bloom_lazy_row_uses_day_and_occasion_id_key(self):
         bloom = (ROOT / 'feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/OccasionBloomView.kt').read_text()
