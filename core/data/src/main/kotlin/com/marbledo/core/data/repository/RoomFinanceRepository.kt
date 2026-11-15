@@ -22,14 +22,14 @@ class RoomFinanceRepository(
         checkDao.observeAll(),
     ) { debts, checks ->
         FinanceSnapshot(
-            debts = debts.map(DebtEntity::toDomain),
-            checks = checks.map(CheckEntity::toDomain),
+            debts = debts.map { it.toDomain() },
+            checks = checks.map { it.toDomain() },
         )
     }
 
     override suspend fun snapshot(): FinanceSnapshot = FinanceSnapshot(
-        debts = debtDao.snapshot().map(DebtEntity::toDomain),
-        checks = checkDao.snapshot().map(CheckEntity::toDomain),
+        debts = debtDao.snapshot().map { it.toDomain() },
+        checks = checkDao.snapshot().map { it.toDomain() },
     )
 
     override suspend fun saveDebt(debt: Debt): Long {
