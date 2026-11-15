@@ -67,10 +67,33 @@ jobs:
       - name: Summarize actual unit-test and lint results
         run: python3 scripts/summarize_verification.py
 
+      - name: Verify the release build (AAB and per-ABI APKs)
+        run: |
+          set -euo pipefail
+          # AGP 9 refuses an AAB and ABI-split APKs in one Gradle invocation
+          # (issuetracker 402800800). app/build.gradle.kts disables splits for
+          # bundle* task names, so the bundle is built first, then the APKs.
+          # This is the exact path the release workflow takes after a merge.
+          ./gradlew --no-daemon --stacktrace --console=plain :app:bundleRelease 2>&1 | tee "$RUNNER_TEMP/gradle-release.log"
+          rm -f app/build/outputs/apk/release/*.apk
+          ./gradlew --no-daemon --stacktrace --console=plain :app:assembleRelease 2>&1 | tee -a "$RUNNER_TEMP/gradle-release.log"
+          for abi in universal armeabi-v7a arm64-v8a x86 x86_64; do
+            compgen -G "app/build/outputs/apk/release/app-${abi}-release*.apk" >/dev/null || {
+              echo "::error::Missing release APK for $abi"; exit 1; }
+          done
+          compgen -G 'app/build/outputs/bundle/release/*.aab' >/dev/null || {
+            echo "::error::Missing release AAB"; exit 1; }
+          echo "Release build produced the AAB and all five APKs."
+
       - name: Add Gradle diagnostics to the job summary
         if: failure()
         run: |
           log="$RUNNER_TEMP/gradle-build.log"
+          # A release-build failure is more relevant than the earlier debug log.
+          if [[ -f "$RUNNER_TEMP/gradle-release.log" ]] &&
+             { [[ ! -f "$log" ]] || [[ "$RUNNER_TEMP/gradle-release.log" -nt "$log" ]]; }; then
+            log="$RUNNER_TEMP/gradle-release.log"
+          fi
           if [[ -f "$log" ]]; then
             # Keep compiler/lint errors ahead of deprecation warnings; annotation text is size-limited.
             diagnostics="$(grep -E '(^e: |:[0-9]+: (Error|Fatal):|^> Task .* FAILED|Execution failed for task|CompilationErrorException:)' "$log" | tail -n 80 || true)"
