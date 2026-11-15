@@ -95,8 +95,8 @@ respect the distinction between all-day dates and timed deadlines.
 
 | Previous problem | New treatment |
 | --- | --- |
-| A long, emoji-prefixed `BigTextStyle` mixed dates, occasions and tasks into a wall of text | A compact two-line glance and a framework-decorated expanded layout with a date header, progress, next-task panel and a separate occasion section |
-| Attractive Settings preview was not the actual notification layout | Both render the same `NotificationBoxContent`, sections, counts, task/time and overflow text; Settings explicitly identifies Android-controlled framing and sizing |
+| A long, emoji-prefixed `BigTextStyle` mixed dates, occasions and tasks into a wall of text | A compact row that states one fact, and a framework-decorated expanded card with a date header, one progress reading, one filled next-step plate and one occasion line — see [NOTIFICATION_WIDGET_REDESIGN.md](NOTIFICATION_WIDGET_REDESIGN.md) |
+| Attractive Settings preview was not the actual notification layout | Both render the same `NotificationBoxContent` — the same date, mood word, progress reading, next step and occasion line; Settings explicitly identifies Android-controlled framing and sizing |
 | Next task omitted its precise time, and a future task could hide overdue work | Localized due date/time, an attention label for overdue work, and overdue-first selection with priority tie-breaking |
 | No daily completion indicator or immediate action | Today's done/total progress plus a system **Mark task done** action; the persistent card refreshes after completion |
 | Large badge could pair a Gregorian/Islamic status day with a Persian month | Large badge now belongs to its Persian primary date; the status-bar calendar and its rendering are unchanged |

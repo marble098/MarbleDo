@@ -152,6 +152,65 @@ class NotificationDesignTests(unittest.TestCase):
         self.assertIn('R.id.notification_next_container', views_kt)
         self.assertIn('R.id.notification_occasions_container', views_kt)
 
+    def test_the_layouts_are_generated_from_one_table(self):
+        """Sixteen hand-written files drifted; one table cannot. Regenerate with --check."""
+        import subprocess
+        import sys
+        result = subprocess.run(
+            [sys.executable, str(ROOT / 'scripts/generate_notification_layouts.py'), '--check'],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+    def test_direction_pairs_are_identical_apart_from_the_direction(self):
+        for design in ('classic', 'minimal', 'editorial', 'banner'):
+            for size in ('compact', 'expanded'):
+                with self.subTest(design=design, size=size):
+                    base = ROOT / f'app/src/main/res/layout/notification_{design}_{size}'
+                    rtl = base.with_name(base.name + '_rtl.xml').read_text(encoding='utf-8')
+                    ltr = base.with_name(base.name + '_ltr.xml').read_text(encoding='utf-8')
+                    self.assertEqual(rtl.replace('"rtl"', '"ltr"'), ltr)
+
+    def test_every_text_states_its_colour(self):
+        """A custom card inherits SystemUI's text colour; in one of the two themes it vanishes."""
+        for path in sorted((ROOT / 'app/src/main/res/layout').glob('notification_*_rtl.xml')):
+            for text in ET.parse(path).iter('TextView'):
+                with self.subTest(layout=path.name, view=text.get(ANDROID + 'id')):
+                    self.assertIsNotNone(text.get(ANDROID + 'textColor'), path.name)
+
+    def test_the_card_has_exactly_one_filled_surface(self):
+        """The redesign's rule: the next step is the only place a background is painted."""
+        for path in sorted((ROOT / 'app/src/main/res/layout').glob('notification_*_expanded_*.xml')):
+            filled = [
+                view.get(ANDROID + 'id', '').split('/')[-1]
+                for view in ET.parse(path).getroot().iter()
+                if view.get(ANDROID + 'background', '').startswith('@drawable/')
+            ]
+            expected = [] if 'minimal' in path.name else ['notification_next_container']
+            with self.subTest(layout=path.name):
+                self.assertEqual(expected, filled)
+
+    def test_no_section_labels_come_back(self):
+        """Occasions are a value line now; a second heading above them was the clutter."""
+        for design in ('classic', 'minimal', 'editorial', 'banner'):
+            for size in ('compact', 'expanded'):
+                path = ROOT / f'app/src/main/res/layout/notification_{design}_{size}_rtl.xml'
+                text = path.read_text(encoding='utf-8')
+                self.assertNotIn('@+id/notification_occasions_label', text)
+                self.assertNotIn('@+id/notification_more_occasions', text)
+        views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
+        self.assertNotIn('R.id.notification_occasions_label', views)
+        self.assertNotIn('R.id.notification_more_occasions', views)
+
+    def test_the_collapsed_row_states_one_fact(self):
+        """The old summary chained a task, an occasion and a count with separators."""
+        source = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/PersistentCalendarNotification.kt').read_text()
+        self.assertIn('val summaryLine = when {', source)
+        self.assertIn('nextSummary != null -> nextSummary', source)
+        # The old "a · b · c" collapsed line is gone.
+        self.assertNotIn('collapsedLine', source)
+
     def test_calendar_screen_uses_unified_command_card_and_adaptive_month_rows(self):
         cal_kt = (ROOT / 'feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/CalendarScreen.kt').read_text()
         self.assertIn('CalendarCommandCard', cal_kt)

@@ -45,4 +45,14 @@
     <string name="notification_checklist">%1$d of %2$d steps done</string>
     <string name="planning_added_count">%1$d tasks created. Use Undo to take them all back.</string>
     <string name="planning_save_failed">Nothing was saved and no task was added. Try again.</string>
+    <!-- The redesign's vocabulary: words, not sentences, one per row. -->
+    <string name="notification_mood_holiday">Public holiday</string>
+    <string name="notification_mood_religious">Religious day</string>
+    <string name="notification_mood_occasion">Occasion</string>
+    <string name="notification_mood_tasks">Tasks today</string>
+    <string name="notification_mood_today">Today</string>
+    <string name="notification_focus_next">Next</string>
+    <string name="notification_focus_overdue">Overdue</string>
+    <string name="notification_progress_pair">%1$s of %2$s</string>
+    <string name="notification_occasions_overflow">+%1$s</string>
 </resources>

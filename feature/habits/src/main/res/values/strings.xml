@@ -150,4 +150,8 @@
     <string name="habit_notification_body_quit">Stay clean today; one more day joins the streak.</string>
     <string name="habit_notification_done">Mark as done</string>
     <string name="habit_notification_slipped">I slipped today</string>
+    <!-- Redesign: the score is one number, the status is one word, the overflow is one line. -->
+    <string name="habit_widget_score">%1$s / %2$s</string>
+    <string name="habit_widget_remaining">%1$s left today</string>
+    <string name="habit_widget_more">%1$s more</string>
 </resources>
