@@ -231,8 +231,14 @@ internal object CalendarNotificationViews {
     }
 }
 
-/** The semantic state the chip states, in the order the card prefers to talk about them. */
-internal enum class NotificationState { OVERDUE, TODAY, OCCASION, QUIET }
+/**
+ * The semantic state the chip states, in the order the card prefers to talk about them.
+ *
+ * Public because it is a field of the public [PersistentCalendarNotification.NotificationBoxContent]:
+ * a public data class cannot expose an `internal` type, and the Settings preview reads the state to
+ * pick the same colours the shade paints.
+ */
+enum class NotificationState { OVERDUE, TODAY, OCCASION, QUIET }
 
 /** The mark that belongs to a state, for the header of the Settings preview. */
 internal fun NotificationState.iconRes(): Int = when (this) {

@@ -272,12 +272,15 @@ internal object ReminderClassification {
             else -> ReminderState.LATER
         }
     }
-
-    /**
-     * A single task cannot count its siblings, and it must not pretend to: the grouped summary is
-     * the only card that states a total, so one late task reads "۱ عقب‌افتاده" and the group's
-     * summary carries the real number.
-     */
-    fun ReminderState.overdueCountFor(@Suppress("UNUSED_PARAMETER") task: Task): Int =
-        if (this == ReminderState.OVERDUE) 1 else 0
 }
+
+/**
+ * A single task cannot count its siblings, and it must not pretend to: the grouped summary is the
+ * only card that states a total, so one late task reads "۱ عقب‌افتاده" and the group's summary
+ * carries the real number.
+ *
+ * A top-level extension rather than a member of [ReminderClassification], so the receiver can call
+ * it on the value `of()` returned without being inside the object.
+ */
+internal fun ReminderState.overdueCountFor(@Suppress("UNUSED_PARAMETER") task: Task): Int =
+    if (this == ReminderState.OVERDUE) 1 else 0
