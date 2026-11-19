@@ -13,7 +13,7 @@ data class DebtEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
     val amount: Double = 0.0,
-    val currency: String = "IRR",
+    val currency: String = "IRT",
     val dueAtEpochMillis: Long? = null,
     @ColumnInfo(defaultValue = "0") val isPaid: Boolean = false,
     val creditor: String = "",

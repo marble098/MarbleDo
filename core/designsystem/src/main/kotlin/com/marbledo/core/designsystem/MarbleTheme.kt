@@ -298,13 +298,15 @@ fun MarbleTheme(
             typography = marbleTypography(languageTag),
             // Council review (docs/UI_COUNCIL_REVIEW.md, DS-1): the old 12/16/22/30/36 scale was
             // roughly double the Material 3 scale and made every card and field look inflated.
-            // 8/12/16/24/28 keeps the soft identity without the bloat.
+            // 8/12/16/24/28 kept the soft identity without the bloat; the M3 Expressive pass now
+            // rounds the whole ladder up and tightens its steps (10/14/20/28/32) so cards, chips,
+            // fields and sheets all read as one family of rounded boxes.
             shapes = Shapes(
-                extraSmall = RoundedCornerShape(8.dp),
-                small = RoundedCornerShape(12.dp),
-                medium = RoundedCornerShape(16.dp),
-                large = RoundedCornerShape(24.dp),
-                extraLarge = RoundedCornerShape(28.dp),
+                extraSmall = RoundedCornerShape(10.dp),
+                small = RoundedCornerShape(14.dp),
+                medium = RoundedCornerShape(20.dp),
+                large = RoundedCornerShape(28.dp),
+                extraLarge = RoundedCornerShape(32.dp),
             ),
             content = content,
         )

@@ -8,6 +8,7 @@ import com.marbledo.domain.model.Check
 import com.marbledo.domain.model.Debt
 import com.marbledo.domain.repository.FinanceRepository
 import com.marbledo.domain.repository.FinanceSnapshot
+import com.marbledo.domain.util.FinanceAmountParser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
@@ -34,12 +35,13 @@ class RoomFinanceRepository(
 
     override suspend fun saveDebt(debt: Debt): Long {
         val now = System.currentTimeMillis()
+        val (tomanAmount, tomanCurrency) = taman(debt.amount, debt.currency)
         return debtDao.insert(
             DebtEntity(
                 id = debt.id,
                 title = debt.title.trim(),
-                amount = debt.amount,
-                currency = debt.currency.trim().uppercase(),
+                amount = tomanAmount,
+                currency = tomanCurrency.trim().uppercase(),
                 dueAtEpochMillis = debt.dueAtEpochMillis,
                 isPaid = debt.isPaid,
                 creditor = debt.creditor.trim(),
@@ -52,12 +54,13 @@ class RoomFinanceRepository(
 
     override suspend fun saveCheck(check: Check): Long {
         val now = System.currentTimeMillis()
+        val (tomanAmount, tomanCurrency) = taman(check.amount, check.currency)
         return checkDao.insert(
             CheckEntity(
                 id = check.id,
                 title = check.title.trim(),
-                amount = check.amount,
-                currency = check.currency.trim().uppercase(),
+                amount = tomanAmount,
+                currency = tomanCurrency.trim().uppercase(),
                 dueAtEpochMillis = check.dueAtEpochMillis,
                 isCleared = check.isCleared,
                 bankName = check.bankName.trim(),
@@ -86,24 +89,29 @@ class RoomFinanceRepository(
         checkDao.replaceAll(snapshot.checks.map { it.toEntity() })
     }
 
-    private fun Debt.toEntity(): DebtEntity = DebtEntity(
+    private fun Debt.toEntity(): DebtEntity {
+        val (tomanAmount, tomanCurrency) = taman(amount, currency)
+        return DebtEntity(
         id = id,
         title = title.trim(),
-        amount = amount,
-        currency = currency.trim().uppercase(),
+        amount = tomanAmount,
+        currency = tomanCurrency.trim().uppercase(),
         dueAtEpochMillis = dueAtEpochMillis,
         isPaid = isPaid,
         creditor = creditor.trim(),
         description = description.trim(),
         createdAtEpochMillis = createdAtEpochMillis,
         updatedAtEpochMillis = updatedAtEpochMillis,
-    )
+        )
+    }
 
-    private fun Check.toEntity(): CheckEntity = CheckEntity(
+    private fun Check.toEntity(): CheckEntity {
+        val (tomanAmount, tomanCurrency) = taman(amount, currency)
+        return CheckEntity(
         id = id,
         title = title.trim(),
-        amount = amount,
-        currency = currency.trim().uppercase(),
+        amount = tomanAmount,
+        currency = tomanCurrency.trim().uppercase(),
         dueAtEpochMillis = dueAtEpochMillis,
         isCleared = isCleared,
         bankName = bankName.trim(),
@@ -111,26 +119,41 @@ class RoomFinanceRepository(
         description = description.trim(),
         createdAtEpochMillis = createdAtEpochMillis,
         updatedAtEpochMillis = updatedAtEpochMillis,
-    )
+        )
+    }
 
-    private fun DebtEntity.toDomain(): Debt = Debt(
+    /**
+     * Rial left the ledger when Toman became the only Iranian currency. Legacy rows are folded
+     * into Toman at the fixed ten-to-one rate at this boundary — reads, saves and restored
+     * backups all pass through here — so a stored Rial amount keeps its real value and the UI
+     * never meets the old code again.
+     */
+    private fun taman(amount: Double, currency: String): Pair<Double, String> =
+        FinanceAmountParser.taman(amount, currency)
+
+    private fun DebtEntity.toDomain(): Debt {
+        val (tomanAmount, tomanCurrency) = taman(amount, currency)
+        return Debt(
         id = id,
         title = title,
-        amount = amount,
-        currency = currency,
+        amount = tomanAmount,
+        currency = tomanCurrency,
         dueAtEpochMillis = dueAtEpochMillis,
         isPaid = isPaid,
         creditor = creditor,
         description = description,
         createdAtEpochMillis = createdAtEpochMillis,
         updatedAtEpochMillis = updatedAtEpochMillis,
-    )
+        )
+    }
 
-    private fun CheckEntity.toDomain(): Check = Check(
+    private fun CheckEntity.toDomain(): Check {
+        val (tomanAmount, tomanCurrency) = taman(amount, currency)
+        return Check(
         id = id,
         title = title,
-        amount = amount,
-        currency = currency,
+        amount = tomanAmount,
+        currency = tomanCurrency,
         dueAtEpochMillis = dueAtEpochMillis,
         isCleared = isCleared,
         bankName = bankName,
@@ -138,5 +161,6 @@ class RoomFinanceRepository(
         description = description,
         createdAtEpochMillis = createdAtEpochMillis,
         updatedAtEpochMillis = updatedAtEpochMillis,
-    )
+        )
+    }
 }

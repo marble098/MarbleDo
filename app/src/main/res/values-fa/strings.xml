@@ -190,10 +190,15 @@
     <string name="finance_delete">پاک‌کردن</string>
     <string name="finance_mark_open">بازگرداندن به موارد باز</string>
     <string name="finance_mark_settled">علامت‌گذاری به‌عنوان تسویه‌شده</string>
-    <string name="finance_currency_irr">ریال (IRR)</string>
     <string name="finance_currency_irt">تومان (IRT)</string>
     <string name="finance_currency_usd">دلار آمریکا (USD)</string>
     <string name="finance_currency_eur">یورو (EUR)</string>
+    <string name="finance_settled_this_month_title">تسویه‌شده در این ماه</string>
+    <string name="finance_settled_this_month_items">%1$d مورد</string>
+    <string name="finance_settled_this_month_empty">این ماه هنوز چیزی تسویه نشده</string>
+    <string name="finance_overdue_amount_title">مبلغ عقب‌افتاده</string>
+    <string name="finance_amount_hint">موقع تایپ، اعداد سه‌رقمی سه‌رقمی از هم جدا می‌شوند.</string>
+    <string name="finance_amount_hint_short">تایپ کن؛ عدد سه‌به‌سه جدا می‌شود</string>
     <string name="dash_search_hint">جست‌وجوی کار</string>
     <string name="dash_tasks">کارها</string>
     <string name="dash_group_overdue">عقب‌افتاده</string>

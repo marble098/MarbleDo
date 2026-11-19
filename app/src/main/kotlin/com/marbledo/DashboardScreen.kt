@@ -133,6 +133,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marbledo.core.designsystem.LocalReduceMotion
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleBox
 import com.marbledo.core.designsystem.MarbleMotion
 import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
@@ -478,130 +479,138 @@ fun DashboardScreen(
                 DashboardTab.TODAY -> {
                     // Tasks are the reason the screen exists, so they come first and they keep the space.
                     item {
-                        TaskListHeader(
-                            title = stringResource(R.string.dash_tasks),
-                            count = state.visibleTasks.size,
-                            doneCount = state.completedCount,
-                            totalCount = state.allTasks.count { !it.isArchived },
-                            mode = settings.dashboardViewMode,
-                            onSelectMode = { mode ->
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onViewModeChange(mode)
-                            },
-                            onAdd = {
-                                sharedText = ""
-                                showQuickAdd = true
-                            },
-                        )
+                        MarbleBox(padding = MarbleSpacing.md, gap = MarbleSpacing.sm) {
+                            TaskListHeader(
+                                title = stringResource(R.string.dash_tasks),
+                                count = state.visibleTasks.size,
+                                doneCount = state.completedCount,
+                                totalCount = state.allTasks.count { !it.isArchived },
+                                mode = settings.dashboardViewMode,
+                                onSelectMode = { mode ->
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onViewModeChange(mode)
+                                },
+                                onAdd = {
+                                    sharedText = ""
+                                    showQuickAdd = true
+                                },
+                            )
+                        }
                     }
                     if (searchOpen) {
                         item {
-                            OutlinedTextField(
-                                value = state.query,
-                                onValueChange = viewModel::setQuery,
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text(stringResource(R.string.dash_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                                trailingIcon = {
-                                    if (state.query.isNotBlank()) {
-                                        IconButton(onClick = { viewModel.setQuery("") }) {
-                                            Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.dash_clear_search))
+                            MarbleBox(padding = MarbleSpacing.sm, gap = MarbleSpacing.sm) {
+                                OutlinedTextField(
+                                    value = state.query,
+                                    onValueChange = viewModel::setQuery,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = { Text(stringResource(R.string.dash_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                                    trailingIcon = {
+                                        if (state.query.isNotBlank()) {
+                                            IconButton(onClick = { viewModel.setQuery("") }) {
+                                                Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.dash_clear_search))
+                                            }
                                         }
-                                    }
-                                },
-                                singleLine = true,
-                                shape = MaterialTheme.shapes.large,
-                            )
+                                    },
+                                    singleLine = true,
+                                    shape = MaterialTheme.shapes.large,
+                                )
+                        }
                         }
                     }
                     if (categoriesOpen && categoryChoices.isNotEmpty()) {
                         item {
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
-                                contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
-                            ) {
-                                item {
-                                    FilterChip(
-                                        selected = state.selectedCategory == null,
-                                        onClick = { viewModel.setCategory(null) },
-                                        label = { Text(stringResource(R.string.dash_category_all)) },
-                                    )
+                        MarbleBox(padding = MarbleSpacing.sm, gap = MarbleSpacing.xs) {
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
+                                    contentPadding = PaddingValues(start = MarbleSpacing.xxs, end = MarbleSpacing.md),
+                                ) {
+                                    item {
+                                        FilterChip(
+                                            selected = state.selectedCategory == null,
+                                            onClick = { viewModel.setCategory(null) },
+                                            label = { Text(stringResource(R.string.dash_category_all)) },
+                                        )
+                                    }
+                                    items(categoryChoices) { name ->
+                                        FilterChip(
+                                            selected = state.selectedCategory == name,
+                                            onClick = { viewModel.setCategory(name) },
+                                            label = { Text(name, maxLines = 1) },
+                                        )
+                                    }
                                 }
-                                items(categoryChoices) { name ->
-                                    FilterChip(
-                                        selected = state.selectedCategory == name,
-                                        onClick = { viewModel.setCategory(name) },
-                                        label = { Text(name, maxLines = 1) },
-                                    )
-                                }
-                            }
+                        }
                         }
                     }
                     // A labelled tool row. The four glyphs of the old pill row each needed the
                     // user to guess; the chips say what they do, and the current scope is spelled
                     // out on the filter chip instead of a floating label somewhere else.
                     item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
+                        MarbleBox(padding = MarbleSpacing.sm, gap = MarbleSpacing.sm) {
                             Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .horizontalScroll(rememberScrollState()),
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                             ) {
-                                ToolChip(
-                                    icon = Icons.Outlined.Search,
-                                    label = stringResource(R.string.dash_search),
-                                    active = searchOpen,
-                                    onClick = {
-                                        searchOpen = !searchOpen
-                                        if (!searchOpen) viewModel.setQuery("")
-                                    },
-                                )
-                                Box {
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .horizontalScroll(rememberScrollState()),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+                                ) {
                                     ToolChip(
-                                        icon = Icons.Outlined.Tune,
-                                        label = filterLabel(state.filter),
-                                        active = state.filter != TaskFilter.TODAY,
-                                        onClick = { filterMenuExpanded = true },
+                                        icon = Icons.Outlined.Search,
+                                        label = stringResource(R.string.dash_search),
+                                        active = searchOpen,
+                                        onClick = {
+                                            searchOpen = !searchOpen
+                                            if (!searchOpen) viewModel.setQuery("")
+                                        },
                                     )
-                                    DropdownMenu(expanded = filterMenuExpanded, onDismissRequest = { filterMenuExpanded = false }) {
-                                        TaskFilter.entries.forEach { filter ->
-                                            DropdownMenuItem(
-                                                text = { Text(filterLabel(filter)) },
-                                                trailingIcon = {
-                                                    if (state.filter == filter) Icon(Icons.Outlined.Check, contentDescription = null)
-                                                },
-                                                onClick = { viewModel.setFilter(filter); filterMenuExpanded = false },
-                                            )
+                                    Box {
+                                        ToolChip(
+                                            icon = Icons.Outlined.Tune,
+                                            label = filterLabel(state.filter),
+                                            active = state.filter != TaskFilter.TODAY,
+                                            onClick = { filterMenuExpanded = true },
+                                        )
+                                        DropdownMenu(expanded = filterMenuExpanded, onDismissRequest = { filterMenuExpanded = false }) {
+                                            TaskFilter.entries.forEach { filter ->
+                                                DropdownMenuItem(
+                                                    text = { Text(filterLabel(filter)) },
+                                                    trailingIcon = {
+                                                        if (state.filter == filter) Icon(Icons.Outlined.Check, contentDescription = null)
+                                                    },
+                                                    onClick = { viewModel.setFilter(filter); filterMenuExpanded = false },
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                                ToolChip(
-                                    icon = Icons.Outlined.FilterAlt,
-                                    label = stringResource(R.string.dash_categories),
-                                    active = categoriesOpen || state.selectedCategory != null,
-                                    onClick = { categoriesOpen = !categoriesOpen },
-                                )
-                                Box {
                                     ToolChip(
-                                        icon = Icons.Outlined.Sort,
-                                        label = stringResource(R.string.dash_sort_menu),
-                                        active = false,
-                                        onClick = { sortMenuExpanded = true },
+                                        icon = Icons.Outlined.FilterAlt,
+                                        label = stringResource(R.string.dash_categories),
+                                        active = categoriesOpen || state.selectedCategory != null,
+                                        onClick = { categoriesOpen = !categoriesOpen },
                                     )
-                                    DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
-                                        TaskSort.entries.forEach { sort ->
-                                            DropdownMenuItem(
-                                                text = { Text(sortLabel(sort)) },
-                                                trailingIcon = {
-                                                    if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
-                                                },
-                                                onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
-                                            )
+                                    Box {
+                                        ToolChip(
+                                            icon = Icons.Outlined.Sort,
+                                            label = stringResource(R.string.dash_sort_menu),
+                                            active = false,
+                                            onClick = { sortMenuExpanded = true },
+                                        )
+                                        DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                                            TaskSort.entries.forEach { sort ->
+                                                DropdownMenuItem(
+                                                    text = { Text(sortLabel(sort)) },
+                                                    trailingIcon = {
+                                                        if (state.sortBy == sort) Icon(Icons.Outlined.Check, contentDescription = null)
+                                                    },
+                                                    onClick = { viewModel.setSort(sort); sortMenuExpanded = false },
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -785,14 +794,16 @@ fun DashboardScreen(
                     item { Spacer(Modifier.height(MarbleSpacing.md)) }
 
                     item {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            SectionHeader(stringResource(R.string.dash_countdown_hero), countdowns.size.takeIf { it > 0 }, Modifier.weight(1f))
-                            IconButton(onClick = { showCreateCountdown = true }) {
-                                Icon(
-                                    Icons.Outlined.Add,
-                                    contentDescription = stringResource(R.string.dash_create_countdown),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
+                        MarbleBox(padding = MarbleSpacing.sm, gap = MarbleSpacing.sm) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                SectionHeader(stringResource(R.string.dash_countdown_hero), countdowns.size.takeIf { it > 0 }, Modifier.weight(1f))
+                                IconButton(onClick = { showCreateCountdown = true }) {
+                                    Icon(
+                                        Icons.Outlined.Add,
+                                        contentDescription = stringResource(R.string.dash_create_countdown),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                             }
                         }
                     }
@@ -826,21 +837,23 @@ fun DashboardScreen(
                         DashboardViewMode.GRID -> {
                             // Every countdown becomes a card; the first one is just the most urgent stop.
                             item {
-                                FlowRow(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    countdowns.forEach { task ->
-                                        CountdownMiniCard(
-                                            title = task.title,
-                                            dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
-                                            themeId = task.countdownTheme,
-                                            onClick = { editingTask = task },
-                                            onLongPress = { onOpenFocus(task) },
-                                        )
+                            MarbleBox(padding = MarbleSpacing.sm, gap = MarbleSpacing.sm) {
+                                    FlowRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        countdowns.forEach { task ->
+                                            CountdownMiniCard(
+                                                title = task.title,
+                                                dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
+                                                themeId = task.countdownTheme,
+                                                onClick = { editingTask = task },
+                                                onLongPress = { onOpenFocus(task) },
+                                            )
+                                        }
                                     }
-                                }
+                            }
                             }
                         }
                         else -> {
@@ -872,19 +885,21 @@ fun DashboardScreen(
                                 }
                             } else if (countdowns.size > 1) {
                                 item {
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        SectionHeader(stringResource(R.string.dash_upcoming_countdowns), countdowns.size - 1)
-                                        countdowns.drop(1).forEach { task ->
-                                            CountdownMiniCard(
-                                                title = task.title,
-                                                dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
-                                                themeId = task.countdownTheme,
-                                                fillWidth = true,
-                                                onClick = { editingTask = task },
-                                                onLongPress = { onOpenFocus(task) },
-                                            )
+                            MarbleBox(padding = MarbleSpacing.md, gap = MarbleSpacing.sm) {
+                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            SectionHeader(stringResource(R.string.dash_upcoming_countdowns), countdowns.size - 1)
+                                            countdowns.drop(1).forEach { task ->
+                                                CountdownMiniCard(
+                                                    title = task.title,
+                                                    dueAtEpochMillis = task.dueAtEpochMillis ?: 0L,
+                                                    themeId = task.countdownTheme,
+                                                    fillWidth = true,
+                                                    onClick = { editingTask = task },
+                                                    onLongPress = { onOpenFocus(task) },
+                                                )
+                                            }
                                         }
-                                    }
+                            }
                                 }
                             }
                         }
@@ -909,13 +924,15 @@ fun DashboardScreen(
                     // The balance line answers the first question the workload card raises — "is one
                     // day carrying all of this?" — before the user has to count the bars.
                     item {
-                        WeekBalanceRow(
-                            tasks = state.allTasks,
-                            now = now.toInstant(),
-                            zone = zone,
-                            languageTag = settings.languageTag,
-                            numeralMode = numeralMode,
-                        )
+                        MarbleBox(padding = MarbleSpacing.md, gap = MarbleSpacing.sm) {
+                            WeekBalanceRow(
+                                tasks = state.allTasks,
+                                now = now.toInstant(),
+                                zone = zone,
+                                languageTag = settings.languageTag,
+                                numeralMode = numeralMode,
+                            )
+                        }
                     }
                     item {
                         WeeklyWorkloadCard(state.allTasks, now.toInstant(), zone, settings.languageTag,
@@ -978,27 +995,29 @@ fun DashboardScreen(
 
                 DashboardTab.FINANCE -> {
                     item {
-                        FinanceMonitoringCard(
-                            debts = financeSnapshot.debts,
-                            checks = financeSnapshot.checks,
-                            settings = settings,
-                            today = todayDateForOccasions,
-                            onCalendarDisplaySelected = onCalendarDisplaySelected,
-                            onSaveDebt = { financeRepository.saveDebt(it); Unit },
-                            onSaveCheck = { financeRepository.saveCheck(it); Unit },
-                            onDeleteDebt = financeRepository::deleteDebt,
-                            onDeleteCheck = financeRepository::deleteCheck,
-                            onToggleDebtPaid = { id ->
-                                financeSnapshot.debts.firstOrNull { it.id == id }?.let { debt ->
-                                    financeRepository.setDebtPaid(id, !debt.isPaid)
-                                }
-                            },
-                            onToggleCheckCleared = { id ->
-                                financeSnapshot.checks.firstOrNull { it.id == id }?.let { check ->
-                                    financeRepository.setCheckCleared(id, !check.isCleared)
-                                }
-                            },
-                        )
+                        MarbleBox(padding = MarbleSpacing.md, gap = MarbleSpacing.md) {
+                            FinanceMonitoringCard(
+                                debts = financeSnapshot.debts,
+                                checks = financeSnapshot.checks,
+                                settings = settings,
+                                today = todayDateForOccasions,
+                                onCalendarDisplaySelected = onCalendarDisplaySelected,
+                                onSaveDebt = { financeRepository.saveDebt(it); Unit },
+                                onSaveCheck = { financeRepository.saveCheck(it); Unit },
+                                onDeleteDebt = financeRepository::deleteDebt,
+                                onDeleteCheck = financeRepository::deleteCheck,
+                                onToggleDebtPaid = { id ->
+                                    financeSnapshot.debts.firstOrNull { it.id == id }?.let { debt ->
+                                        financeRepository.setDebtPaid(id, !debt.isPaid)
+                                    }
+                                },
+                                onToggleCheckCleared = { id ->
+                                    financeSnapshot.checks.firstOrNull { it.id == id }?.let { check ->
+                                        financeRepository.setCheckCleared(id, !check.isCleared)
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
 

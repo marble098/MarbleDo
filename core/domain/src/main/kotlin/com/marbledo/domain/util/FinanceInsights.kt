@@ -28,6 +28,12 @@ data class FinanceInsights(
     val undatedCount: Int,
     val openDebtCount: Int,
     val openCheckCount: Int,
+    /** Money already past its due date, grouped by currency. */
+    val overdueAmounts: Map<String, BigDecimal>,
+    /** Items settled since the first day of the current local month. */
+    val settledThisMonthCount: Int,
+    /** What was settled this month, grouped by currency, counted at the moment of settling. */
+    val settledThisMonthAmounts: Map<String, BigDecimal>,
 ) {
     companion object {
         fun build(
@@ -41,6 +47,21 @@ data class FinanceInsights(
             val allOpen = openDebts.map { it.dueAtEpochMillis } + openChecks.map { it.dueAtEpochMillis }
             val states = allOpen.map { dueAt -> dueState(dueAt, settled = false, today, zone) }
 
+            val overduePairs = openDebts.filter { dueState(it.dueAtEpochMillis, false, today, zone) == FinanceDueState.OVERDUE }
+                .map { it.currency to it.amount } +
+                openChecks.filter { dueState(it.dueAtEpochMillis, false, today, zone) == FinanceDueState.OVERDUE }
+                    .map { it.currency to it.amount }
+
+            // "This month" is the local calendar month of the user's today; an item counts where
+            // it was settled (its last update), which is what the ledger's timestamp records.
+            val monthStart = today.withDayOfMonth(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val monthEnd = today.withDayOfMonth(1).plusMonths(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val settledDebtPairs = debts.filter { it.isPaid && it.updatedAtEpochMillis in monthStart until monthEnd }
+                .map { it.currency to it.amount }
+            val settledCheckPairs = checks.filter { it.isCleared && it.updatedAtEpochMillis in monthStart until monthEnd }
+                .map { it.currency to it.amount }
+            val settledPairs = settledDebtPairs + settledCheckPairs
+
             return FinanceInsights(
                 outstandingDebts = totalsByCurrency(openDebts.map { it.currency to it.amount }),
                 pendingChecks = totalsByCurrency(openChecks.map { it.currency to it.amount }),
@@ -50,6 +71,9 @@ data class FinanceInsights(
                 undatedCount = states.count { it == FinanceDueState.UNDATED },
                 openDebtCount = openDebts.size,
                 openCheckCount = openChecks.size,
+                overdueAmounts = totalsByCurrency(overduePairs),
+                settledThisMonthCount = settledPairs.size,
+                settledThisMonthAmounts = totalsByCurrency(settledPairs),
             )
         }
 

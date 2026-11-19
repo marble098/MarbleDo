@@ -1,9 +1,11 @@
 <resources>
     <!-- Explicit card colours. A custom RemoteViews layout inherits SystemUI's text colour, which
-         is invisible in one of the two themes; these pair with values-night. -->
+         is invisible in one of the two themes; these pair with values-night. They mirror the
+         default MarbleTheme palette (LightColors), and the builder repaints the accent carriers
+         (rule, progress, plate, accent labels) in whichever theme the user actually picked. -->
     <color name="notification_card_text">#1C1B22</color>
-    <color name="notification_card_muted">#5D5A6B</color>
-    <color name="notification_card_accent">#5E52B5</color>
-    <color name="notification_card_section">#0C6E61D8</color>
-    <color name="notification_card_track">#246E61D8</color>
+    <color name="notification_card_muted">#5A5A6B</color>
+    <color name="notification_card_accent">#4355A5</color>
+    <color name="notification_card_section">#0C4355A5</color>
+    <color name="notification_card_track">#244355A5</color>
 </resources>

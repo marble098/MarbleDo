@@ -218,10 +218,10 @@ object PersistentCalendarNotification {
         val notificationContext = context.applicationContext.forLanguage(settings.languageTag)
         NotificationChannels.create(notificationContext)
         val content = buildContent(notificationContext, settings, tasks, catalog, nowMillis)
-        // The shade follows the app theme: the accent labels of the card are tinted with the palette
-        // of the theme the user picked, so Ocean/Forest/Sunset/Rose also repaint the notification.
-        // The mood colours of the status-bar icon and the date badge stay semantic (holiday,
-        // religious, occasion, tasks) and are not theme-dependent by design.
+        // The shade follows the app theme: the accent labels, the mood rule, the progress line,
+        // the next-step plate and the date badge are painted from the palette of the theme the
+        // user picked, so Ocean/Forest/Sunset/Rose also repaint the notification. Only the small
+        // mood chip keeps its semantic colour (holiday, religious, occasion, tasks).
         val accent = MarblePalettes.resolve(
             settings.themeMode,
             MarblePalettes.isDark(settings.themeMode.name, isNightMode(notificationContext)),
@@ -244,7 +244,7 @@ object PersistentCalendarNotification {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val calendarIntent = destination(NOTIFICATION_ID, "marbledo://calendar/today", "calendar")
-        val largeIcon = NotificationArtwork.dateBadge(notificationContext, content.badgeDayDigits, content.monthLabel, content.mood)
+        val largeIcon = NotificationArtwork.dateBadge(notificationContext, content.badgeDayDigits, content.monthLabel, content.mood, accent)
             ?: ContextCompat.getDrawable(notificationContext, R.drawable.ic_notification_calendar_large)?.toBitmap()
         val smallIcon = NotificationArtwork.smallIcon(notificationContext, content.dayDigits, content.mood, settings.statusBarIconStyle)
         val publicVersion = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)

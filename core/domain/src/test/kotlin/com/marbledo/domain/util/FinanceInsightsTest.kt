@@ -56,6 +56,31 @@ class FinanceInsightsTest {
     }
 
     @Test
+    fun `overdue money and this month's settlements are tracked per currency`() {
+        fun due(days: Long) = today.plusDays(days).atStartOfDay(zone).toInstant().toEpochMilli()
+        val monthStart = today.withDayOfMonth(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val insights = FinanceInsights.build(
+            debts = listOf(
+                Debt(title = "Late toman", amount = 60_000.0, currency = "IRT", dueAtEpochMillis = due(-3)),
+                Debt(title = "Late euro", amount = 40.0, currency = "EUR", dueAtEpochMillis = due(-1)),
+                Debt(title = "Open", amount = 10.0, currency = "IRT", dueAtEpochMillis = due(10)),
+                Debt(title = "Settled now", amount = 500.0, currency = "IRT", isPaid = true, updatedAtEpochMillis = monthStart + 1_000),
+                Debt(title = "Settled earlier", amount = 700.0, currency = "EUR", isPaid = true, updatedAtEpochMillis = monthStart - 1_000),
+            ),
+            checks = listOf(
+                Check(title = "Cleared cheque", amount = 25.0, currency = "EUR", isCleared = true, updatedAtEpochMillis = monthStart + 2_000),
+                Check(title = "Late cheque", amount = 9.0, currency = "EUR", dueAtEpochMillis = due(-2)),
+            ),
+            today = today,
+            zone = zone,
+        )
+
+        assertEquals(mapOf("IRT" to BigDecimal("60000.0"), "EUR" to BigDecimal("49.0")), insights.overdueAmounts)
+        assertEquals(2, insights.settledThisMonthCount)
+        assertEquals(mapOf("IRT" to BigDecimal("500.0"), "EUR" to BigDecimal("25.0")), insights.settledThisMonthAmounts)
+    }
+
+    @Test
     fun `due state treats the local calendar day as the boundary`() {
         val endOfToday = today.plusDays(1).atStartOfDay(zone).toInstant().minusMillis(1).toEpochMilli()
         assertEquals(FinanceDueState.DUE_TODAY, FinanceInsights.dueState(endOfToday, settled = false, today, zone))

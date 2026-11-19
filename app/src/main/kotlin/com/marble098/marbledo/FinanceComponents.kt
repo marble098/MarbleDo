@@ -66,12 +66,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleBox
 import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.AppSettings
@@ -262,6 +267,7 @@ fun FinanceMonitoringCard(
             }
         }
 
+        MarbleBox(padding = MarbleSpacing.sm, gap = MarbleSpacing.sm) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
@@ -294,6 +300,7 @@ fun FinanceMonitoringCard(
                 Spacer(Modifier.width(MarbleSpacing.xs))
                 Text(stringResource(R.string.finance_add_check), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+        }
         }
 
         FinanceOverviewPanel(insights, settings.languageTag, numeralMode)
@@ -368,6 +375,7 @@ fun FinanceMonitoringCard(
                     )
                 }
 
+                MarbleBox(padding = MarbleSpacing.sm, gap = MarbleSpacing.sm) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it.take(80) },
@@ -401,6 +409,7 @@ fun FinanceMonitoringCard(
                             label = { Text(stringResource(statusFilterLabel(option))) },
                         )
                     }
+                }
                 }
 
                 if (matchingRecords.isEmpty()) {
@@ -542,6 +551,47 @@ private fun FinanceOverviewPanel(
                     FinanceCurrencyTotals(insights.pendingChecks, languageTag, numeralMode, horizontal = false)
                 }
             }
+            HorizontalDivider(color = colors.onPrimaryContainer.copy(alpha = 0.14f))
+            Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xs)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.finance_settled_this_month_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.onPrimaryContainer.copy(alpha = 0.75f),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Surface(shape = CircleShape, color = colors.onPrimaryContainer.copy(alpha = 0.10f)) {
+                        Text(
+                            if (insights.settledThisMonthCount > 0) {
+                                TextNormalizer.formatDigits(
+                                    stringResource(R.string.finance_settled_this_month_items, insights.settledThisMonthCount),
+                                    numeralMode,
+                                )
+                            } else {
+                                stringResource(R.string.finance_settled_this_month_empty)
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.onPrimaryContainer,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = MarbleSpacing.sm, vertical = MarbleSpacing.xs),
+                        )
+                    }
+                }
+                if (insights.settledThisMonthAmounts.isNotEmpty()) {
+                    FinanceCurrencyTotals(insights.settledThisMonthAmounts, languageTag, numeralMode, horizontal = true)
+                }
+            }
+            if (insights.overdueAmounts.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.xs)) {
+                    Text(
+                        stringResource(R.string.finance_overdue_amount_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.onPrimaryContainer.copy(alpha = 0.75f),
+                    )
+                    FinanceCurrencyTotals(insights.overdueAmounts, languageTag, numeralMode, horizontal = true)
+                }
+            }
         }
     }
 
@@ -617,7 +667,7 @@ private fun FinanceCurrencyTotals(
                 horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.xs),
             ) {
                 Text(
-                    currency,
+                    currencyName(currency),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.68f),
@@ -702,7 +752,7 @@ private fun FinanceNextDueCard(
                 Text(dueLabel, style = MaterialTheme.typography.labelSmall, color = colors.tertiary)
             }
             Text(
-                formatFinanceAmount(record.amount, record.currency, settings.languageTag, numeralMode) + " " + record.currency,
+                formatFinanceAmount(record.amount, record.currency, settings.languageTag, numeralMode) + " " + currencyName(record.currency),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = colors.onSurface,
@@ -823,7 +873,7 @@ private fun FinanceRecordCard(
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
-                    Text(record.currency, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    Text(currencyName(record.currency), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     Text("·", color = colors.outline)
                     Text(typeLabel, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1)
                 }
@@ -898,7 +948,7 @@ private fun FinanceEditorSheet(
     var amountText by rememberSaveable(editorKey) {
         mutableStateOf((debt?.amount ?: check?.amount)?.let(::amountInputText).orEmpty())
     }
-    var currency by rememberSaveable(editorKey) { mutableStateOf(debt?.currency ?: check?.currency ?: "IRR") }
+    var currency by rememberSaveable(editorKey) { mutableStateOf(debt?.currency ?: check?.currency ?: "IRT") }
     var detail by rememberSaveable(editorKey) { mutableStateOf(debt?.creditor ?: check?.bankName.orEmpty()) }
     var accountNumber by rememberSaveable(editorKey) { mutableStateOf(check?.accountNumber.orEmpty()) }
     var description by rememberSaveable(editorKey) { mutableStateOf(debt?.description ?: check?.description.orEmpty()) }
@@ -914,7 +964,9 @@ private fun FinanceEditorSheet(
     val scope = rememberCoroutineScope()
     val existingCurrency = debt?.currency ?: check?.currency
     val currencyOptions = remember(existingCurrency) {
-        (listOf("IRR", "IRT", "USD", "EUR") + listOfNotNull(existingCurrency))
+        // Toman is the only Iranian currency: legacy Rial records arrive already folded into
+        // Toman by the repository, so Rial is gone from the picker for good.
+        (listOf("IRT", "USD", "EUR") + listOfNotNull(existingCurrency))
             .distinct()
     }
     val amount = remember(amountText) { FinanceAmountParser.parse(amountText) }
@@ -976,17 +1028,24 @@ private fun FinanceEditorSheet(
                     label = { Text(stringResource(R.string.finance_amount_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    // Banking apps group the typed number three digits at a time while the field
+                    // keeps the raw text the parser reads, so the caret never lies.
+                    visualTransformation = remember(numeralMode) { FinanceAmountGroupingTransformation(numeralMode) },
                     isError = amountText.isNotBlank() && amount == null,
                     supportingText = if (amountText.isNotBlank() && amount == null) {
                         { Text(stringResource(R.string.finance_invalid_amount)) }
-                    } else null,
+                    } else {
+                        { Text(stringResource(R.string.finance_amount_hint)) }
+                    },
                     shape = MaterialTheme.shapes.large,
                 )
                 Text(
-                    stringResource(R.string.finance_currency_label, currency),
+                    currencyName(currency),
                     modifier = Modifier.padding(top = 22.dp),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Row(
@@ -1223,7 +1282,6 @@ private fun statusFilterLabel(filter: FinanceStatusFilter): Int = when (filter) 
 }
 
 private fun currencyLabel(currency: String): Int? = when (currency) {
-    "IRR" -> R.string.finance_currency_irr
     "IRT" -> R.string.finance_currency_irt
     "USD" -> R.string.finance_currency_usd
     "EUR" -> R.string.finance_currency_eur
@@ -1232,9 +1290,10 @@ private fun currencyLabel(currency: String): Int? = when (currency) {
 
 private fun formatFinanceAmount(amount: BigDecimal, currency: String, languageTag: String, numeralMode: NumeralMode): String {
     val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag(languageTag)).apply {
+        // Banking style: every three digits get a grouping mark, from the left of the number.
         isGroupingUsed = true
         minimumFractionDigits = 0
-        maximumFractionDigits = if (currency == "IRR" || currency == "IRT") 0 else 2
+        maximumFractionDigits = if (currency == "IRT") 0 else 2
     }
     return TextNormalizer.formatDigits(formatter.format(amount), numeralMode)
 }
@@ -1246,3 +1305,38 @@ private fun amountInputText(amount: Double): String = BigDecimal.valueOf(amount)
 
 private fun maskAccountNumber(value: String): String =
     if (value.length <= 4) "••••" else "•••• ${value.takeLast(4)}"
+
+/** The currency's localized name — codes like "IRT" read as English in a Persian ledger. */
+@Composable
+private fun currencyName(currency: String): String =
+    currencyLabel(currency)?.let { stringResource(it) } ?: currency
+
+/**
+ * Shows a typed amount the way banking apps do — one grouping mark every three digits of the
+ * integer part, counted from the left — while the field keeps the raw text the parser reads,
+ * so editing and the caret keep working.
+ */
+private class FinanceAmountGroupingTransformation(
+    private val numeralMode: NumeralMode,
+) : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val display = FinanceAmountParser.groupedDisplay(text.text, numeralMode)
+        return TransformedText(
+            text = AnnotatedString(display.text),
+            offsetMapping = object : OffsetMapping {
+                override fun originalToTransformed(offset: Int): Int =
+                    display.boundary.getOrElse(offset) { display.text.length }
+
+                override fun transformedToOriginal(offset: Int): Int {
+                    var low = 0
+                    var high = display.boundary.size - 1
+                    while (low < high) {
+                        val mid = (low + high + 1) ushr 1
+                        if (display.boundary[mid] <= offset) low = mid else high = mid - 1
+                    }
+                    return low
+                }
+            },
+        )
+    }
+}

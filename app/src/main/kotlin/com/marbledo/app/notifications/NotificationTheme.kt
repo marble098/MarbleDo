@@ -14,8 +14,9 @@ import com.marbledo.domain.model.AppThemeMode
  * The colour now comes from the same palette table the screens and the widgets use, which is what
  * makes "change the theme" mean the whole app and not only the screens.
  *
- * Mood colours are untouched on purpose: a holiday stays red in the status bar and on the date badge
- * because that colour carries meaning, not branding.
+ * Only the mood chip keeps its semantic colour (a holiday stays red because that colour carries
+ * meaning, not branding); the badge plate, the rules, the lines and the shapes around it are all
+ * painted from the theme accent now.
  */
 internal fun notificationAccent(context: Context, settings: AppSettings): Int =
     notificationAccent(context, settings.themeMode)

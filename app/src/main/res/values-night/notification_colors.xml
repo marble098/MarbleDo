@@ -1,7 +1,8 @@
 <resources>
+    <!-- The dark half of the same table, mirroring MarbleTheme's DarkColors. -->
     <color name="notification_card_text">#EFECF6</color>
-    <color name="notification_card_muted">#B4B0C4</color>
-    <color name="notification_card_accent">#C7BFFF</color>
-    <color name="notification_card_section">#18C7BFFF</color>
-    <color name="notification_card_track">#35C7BFFF</color>
+    <color name="notification_card_muted">#B7B2C6</color>
+    <color name="notification_card_accent">#BBC5FF</color>
+    <color name="notification_card_section">#18BBC5FF</color>
+    <color name="notification_card_track">#35BBC5FF</color>
 </resources>

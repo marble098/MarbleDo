@@ -269,17 +269,15 @@ def expanded(design: str) -> str:
     )
     progress_bar = "\n".join(
         [
-            "<ProgressBar",
+            "<ImageView",
             '    android:id="@+id/notification_progress"',
-            '    style="?android:attr/progressBarStyleHorizontal"',
             '    android:layout_width="0dp"',
             '    android:layout_height="3dp"',
             '    android:layout_weight="1"',
             f'    android:layoutDirection="{DIRECTION}"',
             '    android:layout_marginStart="10dp"',
             '    android:importantForAccessibility="no"',
-            f'    android:progressBackgroundTint="{TRACK}"',
-            f'    android:progressTint="{ACCENT}" />',
+            '    android:scaleType="fitXY" />',
         ]
     )
     progress = "\n".join(
@@ -325,18 +323,29 @@ def expanded(design: str) -> str:
     )
     next_card = "\n".join(
         [
-            '<LinearLayout',
+            '<FrameLayout',
             '    android:id="@+id/notification_next_container"',
             '    android:layout_width="match_parent"',
             '    android:layout_height="wrap_content"',
             f'    android:layoutDirection="{DIRECTION}"',
             '    android:layout_marginTop="8dp"',
             f'    android:background="{spec["focus"]}"',
-            '    android:orientation="vertical"',
-            '    android:paddingStart="10dp"',
-            '    android:paddingTop="8dp"',
-            '    android:paddingEnd="10dp"',
-            '    android:paddingBottom="8dp">',
+            '    android:clipToOutline="true">',
+            '    <ImageView',
+            '        android:id="@+id/notification_focus_plate"',
+            '        android:layout_width="match_parent"',
+            '        android:layout_height="match_parent"',
+            '        android:importantForAccessibility="no"',
+            '        android:scaleType="fitXY" />',
+            '    <LinearLayout',
+            '        android:layout_width="match_parent"',
+            '        android:layout_height="wrap_content"',
+            f'        android:layoutDirection="{DIRECTION}"',
+            '        android:orientation="vertical"',
+            '        android:paddingStart="10dp"',
+            '        android:paddingTop="8dp"',
+            '        android:paddingEnd="10dp"',
+            '        android:paddingBottom="8dp">',
             _indent(
                 "\n".join(
                     [
@@ -351,10 +360,11 @@ def expanded(design: str) -> str:
                         '</LinearLayout>',
                     ]
                 ),
-                4,
+                8,
             ),
-            _indent(next_title, 4),
-            '</LinearLayout>',
+            _indent(next_title, 8),
+            '    </LinearLayout>',
+            '</FrameLayout>',
         ]
     )
 
