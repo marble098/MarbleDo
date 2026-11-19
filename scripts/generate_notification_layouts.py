@@ -168,7 +168,10 @@ def image(
     if src is not None:
         attrs.append(f'android:src="{src}"')
     if tint is not None:
-        attrs.append(f'android:tint="{tint}"')
+        # `app:tint`, not `android:tint`: with AppCompat on the classpath lint's UseAppTint check
+        # rejects the framework attribute. RemoteViews is inflated by the app's own LayoutInflater,
+        # so the support attribute resolves exactly like the framework one on every API level.
+        attrs.append(f'app:tint="{tint}"')
     body = "\n".join(f"    {attr}" for attr in attrs)
     return f"<ImageView\n{body} />"
 
@@ -596,6 +599,7 @@ def card_root(content: str) -> str:
     return "\n".join(
         [
             '<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"',
+            '    xmlns:app="http://schemas.android.com/apk/res-auto"',
             '    android:id="@+id/notification_root"',
             '    android:layout_width="match_parent"',
             '    android:layout_height="wrap_content"',

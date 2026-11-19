@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 ANDROID = '{http://schemas.android.com/apk/res/android}'
+APP = '{http://schemas.android.com/apk/res-auto}'
 
 
 class NotificationDesignTests(unittest.TestCase):
@@ -285,7 +286,10 @@ class NotificationDesignTests(unittest.TestCase):
                     ]
                     with self.subTest(design=design, direction=direction, size=size):
                         self.assertEqual(1, len(icons), 'exactly one chip mark per card')
-                        self.assertEqual('@color/notification_state_overdue', icons[0].get(ANDROID + 'tint'))
+                        # `app:tint` (the support attribute) and not `android:tint`: lint's
+                        # UseAppTint rule rejects the framework one in an AppCompat project, and
+                        # RemoteViews is inflated by the app's own inflater so it resolves the same.
+                        self.assertEqual('@color/notification_state_overdue', icons[0].get(APP + 'tint'))
 
     def test_the_layouts_are_generated_from_one_table(self):
         """Sixteen hand-written files drifted; one table cannot. Regenerate with --check."""
