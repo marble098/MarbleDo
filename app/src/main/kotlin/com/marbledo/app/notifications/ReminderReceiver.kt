@@ -150,11 +150,13 @@ class ReminderReceiver : BroadcastReceiver() {
             Intent(context, ReminderReceiver::class.java).setAction(ACTION_SNOOZE).setData(Uri.parse("marbledo://action/snooze/$id")).putExtra(EXTRA_TASK_ID, id),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val largeIcon = ContextCompat.getDrawable(context, R.drawable.ic_notification_large)?.toBitmap()
+        val themeAccent = notificationAccent(context.applicationContext, settings)
+        val largeIcon = NotificationArtwork.tintedFallbackIcon(context, R.drawable.ic_notification_large, themeAccent)
+            ?: ContextCompat.getDrawable(context, R.drawable.ic_notification_large)?.toBitmap()
         val builder = NotificationCompat.Builder(context, NotificationChannels.TASKS)
             .setSmallIcon(R.drawable.ic_stat_marble)
             .setLargeIcon(largeIcon)
-            .setColor(notificationAccent(context.applicationContext, settings))
+            .setColor(themeAccent)
             .setContentTitle(task.title)
             .setContentText(detail)
             .setSubText(listOf(priority, task.category).filter { it.isNotBlank() }.joinToString(" · "))

@@ -199,7 +199,7 @@ def header_column(expanded: bool, title_sp: int) -> str:
         size=10,
         color=MUTED,
         style=INFO_STYLE,
-        margin_top=1,
+        margin_top=2,
     )
     return "\n".join(
         [
@@ -298,10 +298,10 @@ def expanded(design: str) -> str:
             "<ImageView",
             '    android:id="@+id/notification_progress"',
             '    android:layout_width="0dp"',
-            '    android:layout_height="3dp"',
+            '    android:layout_height="4dp"',
             '    android:layout_weight="1"',
             f'    android:layoutDirection="{DIRECTION}"',
-            '    android:layout_marginStart="10dp"',
+            '    android:layout_marginStart="12dp"',
             '    android:importantForAccessibility="no"',
             '    android:scaleType="fitXY" />',
         ]
@@ -313,7 +313,7 @@ def expanded(design: str) -> str:
             '    android:layout_width="match_parent"',
             '    android:layout_height="wrap_content"',
             f'    android:layoutDirection="{DIRECTION}"',
-            '    android:layout_marginTop="8dp"',
+            '    android:layout_marginTop="10dp"',
             '    android:gravity="start|center_vertical"',
             '    android:orientation="horizontal">',
             _indent(progress_label, 4),
@@ -324,7 +324,7 @@ def expanded(design: str) -> str:
 
     next_label = text(
         "notification_next_label",
-        size=9,
+        size=10,
         color=ACCENT,
         bold=True,
         style=INFO_STYLE,
@@ -333,19 +333,19 @@ def expanded(design: str) -> str:
     )
     next_time = text(
         "notification_next_time",
-        size=9,
+        size=10,
         color=MUTED,
         style=INFO_STYLE,
         width="wrap_content",
-        margin_start=6,
+        margin_start=8,
     )
     next_title = text(
         "notification_next_title",
-        size=13,
+        size=14,
         color=TITLE,
         bold=True,
         style=TITLE_STYLE,
-        margin_top=1,
+        margin_top=2,
     )
     next_card = "\n".join(
         [
@@ -354,9 +354,9 @@ def expanded(design: str) -> str:
             '    android:layout_width="match_parent"',
             '    android:layout_height="wrap_content"',
             f'    android:layoutDirection="{DIRECTION}"',
-            '    android:layout_marginTop="8dp"',
+            '    android:layout_marginTop="10dp"',
             f'    android:background="{spec["focus"]}"',
-            '    android:clipToOutline="true">',
+            '>',
             '    <ImageView',
             '        android:id="@+id/notification_focus_plate"',
             '        android:layout_width="match_parent"',
@@ -368,10 +368,10 @@ def expanded(design: str) -> str:
             '        android:layout_height="wrap_content"',
             f'        android:layoutDirection="{DIRECTION}"',
             '        android:orientation="vertical"',
-            '        android:paddingStart="10dp"',
-            '        android:paddingTop="8dp"',
-            '        android:paddingEnd="10dp"',
-            '        android:paddingBottom="8dp">',
+            '        android:paddingStart="12dp"',
+            '        android:paddingTop="10dp"',
+            '        android:paddingEnd="12dp"',
+            '        android:paddingBottom="10dp">',
             _indent(
                 "\n".join(
                     [
@@ -407,7 +407,7 @@ def expanded(design: str) -> str:
             '    android:layout_width="match_parent"',
             '    android:layout_height="wrap_content"',
             f'    android:layoutDirection="{DIRECTION}"',
-            '    android:layout_marginTop="8dp"',
+            '    android:layout_marginTop="10dp"',
             '    android:gravity="start"',
             '    android:orientation="vertical">',
             _indent(occasions_text, 4),
@@ -424,10 +424,10 @@ def expanded(design: str) -> str:
             f'    android:layoutDirection="{DIRECTION}"',
             '    android:gravity="start"',
             '    android:orientation="vertical"',
-            '    android:paddingStart="12dp"',
-            '    android:paddingEnd="12dp"',
-            '    android:paddingTop="8dp"',
-            '    android:paddingBottom="8dp">',
+            '    android:paddingStart="14dp"',
+            '    android:paddingEnd="14dp"',
+            '    android:paddingTop="10dp"',
+            '    android:paddingBottom="10dp">',
             inner,
             '</LinearLayout>',
         ]
