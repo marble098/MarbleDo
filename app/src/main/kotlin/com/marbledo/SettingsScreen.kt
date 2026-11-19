@@ -4,10 +4,12 @@ import android.content.Context
 import android.os.Build
 import android.os.SystemClock
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,7 +74,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -90,7 +91,11 @@ import androidx.compose.ui.unit.dp
 import com.marble098.marbledo.notifications.NotificationArtwork
 import com.marble098.marbledo.notifications.NotificationMood
 import com.marble098.marbledo.notifications.PersistentCalendarNotification
+import com.marble098.marbledo.notifications.notificationPalette
 import com.marbledo.core.data.backup.AutomaticBackupStatus
+import com.marbledo.core.designsystem.MarbleBoxBorder
+import com.marbledo.core.designsystem.MarbleContrast
+import com.marbledo.core.designsystem.MarblePalettes
 import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.AppSettings
@@ -1003,12 +1008,22 @@ private fun NotificationLivePreviewCard(
     val content = remember(settings, tasks, catalog, now, configuration) {
         PersistentCalendarNotification.buildContent(context, settings, tasks, catalog, now)
     }
-    // The badge is painted in the very accent this screen renders with, so the preview always
-    // shows exactly what the shade will get after a theme switch.
-    val themeAccent = MaterialTheme.colorScheme.primary.toArgb()
+    // The preview is painted from the *same* palette the builder hands to RemoteViews, not from
+    // whatever the surrounding Compose surface happens to be. That is what makes it a preview: a
+    // card that renders a slightly different plate, accent or muted ink from the one in the shade
+    // is worse than no preview at all.
+    val shade = remember(settings.themeMode, configuration) {
+        notificationPalette(context, settings.themeMode)
+    }
+    val themeAccent = shade.accent.toInt()
     val badgeBitmap = remember(context, content.badgeDayDigits, content.monthLabel, content.mood, configuration, themeAccent) {
         NotificationArtwork.dateBadge(context, content.badgeDayDigits, content.monthLabel, content.mood, themeAccent)
     }
+    val cardPlate = Color(shade.background)
+    val cardInk = Color(shade.text)
+    val cardMuted = Color(shade.muted)
+    val cardAccent = Color(shade.accent)
+    val cardHairline = Color(shade.hairline)
     val design = settings.notificationDesign
     val isMinimal = design == "minimal"
     val isEditorial = design == "editorial"
@@ -1026,10 +1041,11 @@ private fun NotificationLivePreviewCard(
     CompositionLocalProvider(LocalLayoutDirection provides previewDirection) {
         Surface(
             shape = outerShape,
-            color = MaterialTheme.colorScheme.surfaceContainer,
+            color = cardPlate,
+            contentColor = cardInk,
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), outerShape),
+                .border(1.dp, cardHairline, outerShape),
         ) {
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
@@ -1056,28 +1072,26 @@ private fun NotificationLivePreviewCard(
                             Text(
                                 content.title,
                                 style = MarbleTextStyles.itemTitle,
+                                color = cardInk,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f),
                             )
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                            ) {
-                                Text(
-                                    content.moodLabel,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    maxLines = 1,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                )
-                            }
+                            // The mood word is an accent label on the shade card; a filled chip
+                            // here promised a pill the notification does not draw.
+                            Text(
+                                content.moodLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = cardAccent,
+                                maxLines = 1,
+                                modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp),
+                            )
                         }
                         Text(
                             content.secondaryDatesLine,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = cardMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -1091,13 +1105,15 @@ private fun NotificationLivePreviewCard(
                         Text(
                             content.progressLabel,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = cardMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         if (content.todayTotal > 0) {
                             androidx.compose.material3.LinearProgressIndicator(
                                 progress = { content.todayCompleted.toFloat() / content.todayTotal },
+                                color = cardAccent,
+                                trackColor = cardAccent.copy(alpha = if (shade.isDark) 0.25f else 0.18f),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(progressHeight)
@@ -1111,10 +1127,10 @@ private fun NotificationLivePreviewCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(focusShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isBanner) 0.09f else 0.07f))
+                            .background(cardAccent.copy(alpha = if (isBanner) 0.09f else 0.07f))
                             .then(
                                 if (isEditorial) {
-                                    Modifier.border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), focusShape)
+                                    Modifier.border(1.dp, cardAccent.copy(alpha = 0.2f), focusShape)
                                 } else {
                                     Modifier
                                 },
@@ -1130,7 +1146,7 @@ private fun NotificationLivePreviewCard(
                                 content.nextTaskLabel,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = cardAccent,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f),
@@ -1139,7 +1155,7 @@ private fun NotificationLivePreviewCard(
                                 Text(
                                     it,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = cardMuted,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -1338,7 +1354,10 @@ private fun SettingsSection(
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MarbleBoxBorder(MaterialTheme.colorScheme.surfaceContainerLow),
+        ),
     ) {
         Column(Modifier.fillMaxWidth().padding(MarbleSpacing.lg)) {
             // When the user already filtered the screen to this very tab ("Appearance", "Calendar"…)
@@ -1479,16 +1498,25 @@ private fun themeLabel(mode: AppThemeMode): String = when (mode) {
     AppThemeMode.ROSE -> stringResource(R.string.theme_rose)
 }
 
+/**
+ * The dot next to a theme name, in the colour that theme actually paints.
+ *
+ * The old dot was a hand-written table copied out of an earlier palette, so several of them no
+ * longer matched the theme they named — Rose's dot was a muted plum the current scheme does not
+ * contain at all, and Dark and AMOLED shared one indigo. Resolving the real palette means the dot
+ * cannot drift again.
+ */
 @Composable
 private fun ThemeMenuLabel(mode: AppThemeMode) {
+    val context = LocalContext.current
     val swatch = when (mode) {
-        AppThemeMode.OCEAN -> Color(0xFF006874)
-        AppThemeMode.FOREST -> Color(0xFF35693D)
-        AppThemeMode.SUNSET -> Color(0xFF98440D)
-        AppThemeMode.ROSE -> Color(0xFF9B3F63)
-        AppThemeMode.DARK, AppThemeMode.AMOLED -> Color(0xFF49409B)
-        AppThemeMode.GLASS_LIGHT -> Color(0xFF8F86E8)
-        AppThemeMode.DYNAMIC, AppThemeMode.AUTO -> MaterialTheme.colorScheme.primary
+        AppThemeMode.DYNAMIC -> MaterialTheme.colorScheme.primary
+        else -> {
+            // The dot is a *colour sample*, so it has to be painted on a plate it can be seen on.
+            // A light theme's primary over a dark menu row is a dot that vanishes.
+            val dark = MarblePalettes.isDark(mode.name, isSystemInDarkTheme())
+            remember(mode, dark, context) { Color(MarblePalettes.resolve(mode, dark, context).primary) }
+        }
     }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.size(18.dp).background(swatch, CircleShape))
@@ -1558,30 +1586,41 @@ private fun StatusIconStyleCard(
         modifier = modifier
             .clip(shape)
             .background(
+                // A themed tint, not a 55% wash of the surface variant: the wash disappeared on
+                // the AMOLED and glass schemes, so the options stopped looking like options.
                 if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                else MaterialTheme.colorScheme.surfaceContainerHigh,
             )
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+                color = if (isSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outlineVariant,
                 shape = shape,
             )
             .selectable(selected = isSelected, role = Role.RadioButton) { onSelect(style) }
             .padding(vertical = 10.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Surface(shape = RoundedCornerShape(7.dp), color = Color(0xFF101014)) {
+        // The strip previews a real status bar, which is dark on most devices — but it needs an
+        // edge in the AMOLED scheme, where a black strip on a black page is invisible. The strip
+        // keeps its own dark ink and gains a hairline of the surrounding outline.
+        val stripInk = MarbleContrast.INK_DARK
+        Surface(
+            shape = RoundedCornerShape(7.dp),
+            color = Color(stripInk),
+            border = BorderStroke(1.dp, MarbleBoxBorder(Color(stripInk))),
+        ) {
             Row(
                 Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                StatusIconPreview(stripBitmap, Modifier.size(17.dp), Color.White)
+                StatusIconPreview(stripBitmap, Modifier.size(17.dp), Color(MarbleContrast.INK_LIGHT))
                 Box(
                     Modifier
                         .size(width = 20.dp, height = 6.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color.White.copy(alpha = 0.35f)),
+                        .background(Color(MarbleContrast.INK_LIGHT).copy(alpha = 0.45f)),
                 )
             }
         }

@@ -21,6 +21,7 @@ import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.IconCompat
 import com.marble098.marbledo.R
 import com.marble098.marbledo.core.designsystem.R as DesignR
+import com.marbledo.core.designsystem.MarbleContrast
 import com.marbledo.domain.model.StatusBarIconStyle
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
@@ -98,6 +99,7 @@ object NotificationArtwork {
 
     private val statusBitmapCache = LruCache<String, Bitmap>(28)
     private val dateBadgeCache = LruCache<String, Bitmap>(8)
+    private val tintCache = LruCache<String, Bitmap>(4)
     private val typefaceCache = ConcurrentHashMap<Int, Typeface>()
     @Volatile private var baseVazirTypeface: Typeface? = null
 
@@ -120,6 +122,22 @@ object NotificationArtwork {
         NotificationMood.OCCASION -> color(context, R.color.notification_occasion)
         NotificationMood.TASKS_DUE -> color(context, R.color.notification_tasks)
         NotificationMood.QUIET -> color(context, R.color.notification_quiet)
+    }
+
+    /**
+     * The plate behind the mood mark on the date badge.
+     *
+     * The badge itself is painted in the app theme's accent, so the mood chip is drawn in its own
+     * fixed colour instead of a blend of the two: a blend of a pale dark-theme accent with a pale
+     * mood colour produced a plate that was lighter than the white mark on it, which is what made
+     * the small glyph disappear. These plates all clear 9:1 with white.
+     */
+    private fun moodChipColor(context: Context, mood: NotificationMood): Int = when (mood) {
+        NotificationMood.HOLIDAY -> color(context, R.color.notification_badge_chip_holiday)
+        NotificationMood.RELIGIOUS -> color(context, R.color.notification_badge_chip_religious)
+        NotificationMood.OCCASION -> color(context, R.color.notification_badge_chip_occasion)
+        NotificationMood.TASKS_DUE -> color(context, R.color.notification_badge_chip_tasks)
+        NotificationMood.QUIET -> color(context, R.color.notification_badge_chip_quiet)
     }
 
     /** Static vector fallback shown when the dynamic bitmap cannot be drawn. */
@@ -197,6 +215,45 @@ object NotificationArtwork {
             icon
         }.getOrNull()
     }
+
+    /**
+     * A plain icon drawable recoloured to the theme accent.
+     *
+     * The two large notification icons are shipped with the old indigo baked in. They are only
+     * used as fallbacks (when the generated badge cannot be drawn), but a fallback that keeps a
+     * colour the user's theme does not have is exactly the "some parts never change colour"
+     * complaint, so the indigo plate is repainted in the accent the notification already wears
+     * while the white glyph on top of it is left alone.
+     */
+    fun tintedFallbackIcon(context: Context, drawableRes: Int, accentColor: Int): Bitmap? = runCatching {
+        val key = "$drawableRes:$accentColor"
+        synchronized(tintCache) { tintCache.get(key)?.takeIf { !it.isRecycled }?.let { return@runCatching it } }
+        val drawable = ResourcesCompat.getDrawable(context.resources, drawableRes, context.theme) ?: return@runCatching null
+        val width = drawable.intrinsicWidth.coerceAtLeast(1)
+        val height = drawable.intrinsicHeight.coerceAtLeast(1)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        drawable.setBounds(0, 0, width, height)
+        drawable.draw(Canvas(bitmap))
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        // The plate is the only saturated colour in these assets; the glyph is pure white.
+        for (index in pixels.indices) {
+            val pixel = pixels[index]
+            val alpha = pixel ushr 24
+            if (alpha == 0) continue
+            val red = (pixel shr 16) and 0xFF
+            val green = (pixel shr 8) and 0xFF
+            val blue = pixel and 0xFF
+            val isGlyph = red > 0xE0 && green > 0xE0 && blue > 0xE0
+            if (!isGlyph) {
+                pixels[index] = (alpha shl 24) or (accentColor and 0x00FFFFFF)
+            }
+        }
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+        bitmap.density = context.resources.displayMetrics.densityDpi
+        synchronized(tintCache) { tintCache.put(key, bitmap) }
+        bitmap
+    }.getOrNull()
 
     /**
      * Colored large icon: the date badge. The plate is painted in the **app theme's accent** — the
@@ -297,7 +354,7 @@ object NotificationArtwork {
                     side * 0.815f + chipHeight,
                 )
                 val chip = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = ColorUtils.blendARGB(moodColor, deep, 0.22f)
+                    color = moodChipColor(context, mood)
                 }
                 canvas.drawRoundRect(chipRect, chipHeight / 2f, chipHeight / 2f, chip)
                 drawMoodMark(
@@ -321,14 +378,24 @@ object NotificationArtwork {
     // palette of the app theme; each shape stays a first-class `setImageViewBitmap()`.
     // ---------------------------------------------------------------------------------------
 
-    /** The banner's leading rule, blended from the theme accent and the day's mood colour. */
-    fun accentRule(context: Context, accentColor: Int, mood: NotificationMood): Bitmap? = runCatching {
+    /**
+     * The banner's leading rule, blended from the theme accent and the day's mood colour and then
+     * lifted until it reads as a shape on the card plate ([MarbleContrast.UI_MINIMUM]).
+     */
+    fun accentRule(
+        context: Context,
+        accentColor: Int,
+        mood: NotificationMood,
+        dark: Boolean = isNightMode(context),
+    ): Bitmap? = runCatching {
         val metrics = context.resources.displayMetrics
         val width = (3f * metrics.density).roundToInt().coerceAtLeast(2)
         val height = (48f * metrics.density).roundToInt().coerceAtLeast(8)
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val color = ColorUtils.blendARGB(accentColor, accentColor(context, mood), 0.55f)
+        val plate = if (dark) NOTIFICATION_PLATE_DARK else NOTIFICATION_PLATE_LIGHT
+        val blended = ColorUtils.blendARGB(accentColor, accentColor(context, mood), 0.55f)
+        val color = MarbleContrast.readable(blended.toLong() and 0xFFFFFFFFL, plate, MarbleContrast.UI_MINIMUM).toInt()
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
         val radius = width / 2f
         canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, paint)
@@ -336,17 +403,27 @@ object NotificationArtwork {
         bitmap
     }.getOrNull()
 
-    /** The progress line as a rounded track + fill, in the theme accent. */
-    fun progressBitmap(context: Context, completed: Int, total: Int, accentColor: Int): Bitmap? = runCatching {
+    /**
+     * The progress line as a rounded track + fill, in the theme accent.
+     *
+     * [dark] is the **card's** lightness, which follows the app theme rather than the device; the
+     * track alpha depends on the plate behind it, not on the system's night mode.
+     */
+    fun progressBitmap(
+        context: Context,
+        completed: Int,
+        total: Int,
+        accentColor: Int,
+        dark: Boolean = isNightMode(context),
+    ): Bitmap? = runCatching {
         val metrics = context.resources.displayMetrics
         val width = 512
         val height = 16
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val radius = height / 2f
-        val dark = isNightMode(context)
         val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 46 else 30)
+            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 64 else 46)
         }
         canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, track)
         val fraction = (completed.toFloat() / total.coerceAtLeast(1)).coerceIn(0f, 1f)
@@ -358,23 +435,31 @@ object NotificationArtwork {
         bitmap
     }.getOrNull()
 
-    /** The next-step plate: the one filled surface of the card, in the theme accent. */
-    fun focusPlate(context: Context, accentColor: Int): Bitmap? = runCatching {
+    /**
+     * The next-step plate: the one filled surface of the card, in the theme accent.
+     *
+     * [dark] is the card's lightness (the app theme's, not the device's), so the fill and its
+     * hairline are tuned for the plate they actually land on.
+     */
+    fun focusPlate(
+        context: Context,
+        accentColor: Int,
+        dark: Boolean = isNightMode(context),
+    ): Bitmap? = runCatching {
         val width = 640
         val height = 176
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val dark = isNightMode(context)
         val rect = RectF(1f, 1f, width - 1f, height - 1f)
         val radius = 40f
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 26 else 18)
+            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 34 else 22)
         }
         canvas.drawRoundRect(rect, radius, radius, fill)
         val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 2f
-            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 60 else 42)
+            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 78 else 54)
         }
         canvas.drawRoundRect(rect, radius, radius, stroke)
         bitmap

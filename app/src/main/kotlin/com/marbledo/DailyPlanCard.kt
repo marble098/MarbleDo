@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.marbledo.core.designsystem.MarbleBoxBorder
 import com.marbledo.core.designsystem.MarbleMotion
 import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
@@ -154,7 +155,7 @@ internal fun DailyPlanCard(
             }
 
             if (expanded) {
-                HorizontalDivider(color = colors.outline.copy(alpha = 0.14f))
+                HorizontalDivider(color = MarbleBoxBorder(colors.surfaceContainerLow))
                 if (picks.isNotEmpty()) {
                     PlanSectionLabel(stringResource(R.string.dash_plan_start_here))
                     picks.forEach { pick ->

@@ -190,9 +190,9 @@
     <string name="finance_delete">پاک‌کردن</string>
     <string name="finance_mark_open">بازگرداندن به موارد باز</string>
     <string name="finance_mark_settled">علامت‌گذاری به‌عنوان تسویه‌شده</string>
-    <string name="finance_currency_irt">تومان (IRT)</string>
-    <string name="finance_currency_usd">دلار آمریکا (USD)</string>
-    <string name="finance_currency_eur">یورو (EUR)</string>
+    <string name="finance_currency_irt">تومان</string>
+    <string name="finance_currency_usd">دلار</string>
+    <string name="finance_currency_eur">یورو</string>
     <string name="finance_settled_this_month_title">تسویه‌شده در این ماه</string>
     <string name="finance_settled_this_month_items">%1$d مورد</string>
     <string name="finance_settled_this_month_empty">این ماه هنوز چیزی تسویه نشده</string>

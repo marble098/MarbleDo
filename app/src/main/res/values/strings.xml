@@ -190,9 +190,9 @@
     <string name="finance_delete">Delete</string>
     <string name="finance_mark_open">Mark as outstanding</string>
     <string name="finance_mark_settled">Mark as settled</string>
-    <string name="finance_currency_irt">Toman (IRT)</string>
-    <string name="finance_currency_usd">US dollar (USD)</string>
-    <string name="finance_currency_eur">Euro (EUR)</string>
+    <string name="finance_currency_irt">Toman</string>
+    <string name="finance_currency_usd">Dollar</string>
+    <string name="finance_currency_eur">Euro</string>
     <string name="finance_settled_this_month_title">Settled this month</string>
     <string name="finance_settled_this_month_items">%1$d record(s)</string>
     <string name="finance_settled_this_month_empty">Nothing settled yet this month</string>

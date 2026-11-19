@@ -13,11 +13,9 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.BidiFormatter
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
-import com.marbledo.core.designsystem.MarblePalettes
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.Task
@@ -222,12 +220,13 @@ object PersistentCalendarNotification {
         // the next-step plate and the date badge are painted from the palette of the theme the
         // user picked, so Ocean/Forest/Sunset/Rose also repaint the notification. Only the small
         // mood chip keeps its semantic colour (holiday, religious, occasion, tasks).
-        val accent = MarblePalettes.resolve(
-            settings.themeMode,
-            MarblePalettes.isDark(settings.themeMode.name, isNightMode(notificationContext)),
-            notificationContext,
-        ).primary.toInt()
-        val signature = listOf(content, settings.notificationDesign, settings.themeMode, settings.languageTag, settings.statusBarIconStyle, notificationContext.resources.configuration.uiMode,
+        // One palette decides the plate, the text and the accents, from the app theme's own
+        // lightness. The old card mixed the theme accent with the *system's* night resources, so a
+        // pinned theme in the "other" mode got half of the card in the wrong direction.
+        val shade = notificationPalette(notificationContext, settings.themeMode)
+        val accent = shade.accent.toInt()
+        val signature = listOf(content, settings.notificationDesign, settings.themeMode, shade, settings.languageTag, settings.statusBarIconStyle,
+            notificationContext.resources.configuration.uiMode,
             notificationContext.resources.displayMetrics.densityDpi, notificationContext.resources.configuration.fontScale).hashCode()
         val isVisible = notificationContext.getSystemService(NotificationManager::class.java)?.activeNotifications
             ?.any { it.id == NOTIFICATION_ID } == true
@@ -245,7 +244,7 @@ object PersistentCalendarNotification {
             }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val calendarIntent = destination(NOTIFICATION_ID, "marbledo://calendar/today", "calendar")
         val largeIcon = NotificationArtwork.dateBadge(notificationContext, content.badgeDayDigits, content.monthLabel, content.mood, accent)
-            ?: ContextCompat.getDrawable(notificationContext, R.drawable.ic_notification_calendar_large)?.toBitmap()
+            ?: NotificationArtwork.tintedFallbackIcon(notificationContext, R.drawable.ic_notification_calendar_large, accent)
         val smallIcon = NotificationArtwork.smallIcon(notificationContext, content.dayDigits, content.mood, settings.statusBarIconStyle)
         val publicVersion = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
             .setSmallIcon(smallIcon).setContentTitle(content.title)
@@ -256,10 +255,16 @@ object PersistentCalendarNotification {
         // icon is part of the notification, so "no custom view" still looks far better than
         // "no notification".
         val collapsedView = runCatching {
-            CalendarNotificationViews.create(notificationContext, content, largeIcon, false, settings.notificationDesign, settings.languageTag == "fa", accent)
+            CalendarNotificationViews.create(
+                notificationContext, content, largeIcon, false, settings.notificationDesign,
+                settings.languageTag == "fa", accent, shade,
+            )
         }.onFailure { Log.w(TAG, "collapsed ${settings.notificationDesign} view failed; falling back to text", it) }.getOrNull()
         val expandedView = runCatching {
-            CalendarNotificationViews.create(notificationContext, content, largeIcon, true, settings.notificationDesign, settings.languageTag == "fa", accent)
+            CalendarNotificationViews.create(
+                notificationContext, content, largeIcon, true, settings.notificationDesign,
+                settings.languageTag == "fa", accent, shade,
+            )
         }.onFailure { Log.w(TAG, "expanded ${settings.notificationDesign} view failed; falling back to text", it) }.getOrNull()
         val builder = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
             .setSmallIcon(smallIcon)
@@ -320,10 +325,6 @@ object PersistentCalendarNotification {
         ) return false
         return NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
-
-    /** True when the device is in dark mode, which the un-pinned themes follow. */
-    private fun isNightMode(context: Context): Boolean =
-        context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
     private fun Context.forLanguage(languageTag: String): Context {
         val locale = Locale.forLanguageTag(languageTag)

@@ -2,9 +2,81 @@ package com.marble098.marbledo.notifications
 
 import android.content.Context
 import android.content.res.Configuration
+import com.marbledo.core.designsystem.MarbleContrast
 import com.marbledo.core.designsystem.MarblePalettes
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.AppThemeMode
+
+/**
+ * The palette the shade is painted from, derived from the app theme rather than from SystemUI.
+ *
+ * A custom `RemoteViews` card carries its own colours, but it is still drawn inside SystemUI's
+ * shade, which follows the wallpaper or the device theme. The card therefore may not depend on the
+ * shade for anything: it paints its own plate ([background]), states every text colour explicitly,
+ * and derives those colours from the same palette the screens use. That is what makes one theme
+ * switch repaint the whole app instead of only the Compose surfaces.
+ *
+ * Every pair below is checked with [MarbleContrast]: text clears WCAG AA for body text (4.5:1) on
+ * the plate, and accents keep their hue while being lifted or deepened until they do.
+ */
+internal data class NotificationPalette(
+    /** Opaque plate of the card; the shade behind it cannot change how the text reads. */
+    val background: Long,
+    val text: Long,
+    val muted: Long,
+    val accent: Long,
+    val accentSoft: Long,
+    val hairline: Long,
+    val isDark: Boolean,
+)
+
+/**
+ * The two plates the card can paint, matching `drawable/notification_card_plate_light.xml` and
+ * `..._dark.xml` exactly.
+ *
+ * These are literals here for the same reason they are literals in the drawables: the plate is
+ * chosen from the *app* theme's lightness, so it may not follow the night configuration. Having one
+ * copy of each value means the palette can check every text colour against the plate the card
+ * really paints, instead of against a `surface` the card does not use.
+ */
+internal const val NOTIFICATION_PLATE_LIGHT = 0xFFF2F1F6L
+internal const val NOTIFICATION_PLATE_DARK = 0xFF26272EL
+
+/** The app theme's own light/dark decision, not the system's. */
+internal fun appIsDark(context: Context, settings: AppSettings): Boolean =
+    MarblePalettes.isDark(settings.themeMode.name, systemIsDark(context))
+
+internal fun systemIsDark(context: Context): Boolean =
+    context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+        Configuration.UI_MODE_NIGHT_YES
+
+/**
+ * Resolves the notification palette. [dark] is the app theme's decision, so a user on the pinned
+ * DARK theme gets a dark card inside a light shade and vice versa — the card still looks like the
+ * app, and every colour on it is checked against the plate the card actually paints.
+ */
+internal fun notificationPalette(
+    context: Context,
+    mode: AppThemeMode,
+    dark: Boolean = MarblePalettes.isDark(mode.name, systemIsDark(context)),
+): NotificationPalette {
+    val app = MarblePalettes.resolve(mode, dark, context.applicationContext)
+    // The plate the card paints, not `surface`: the two differ by a few steps, and the whole point
+    // of this palette is that its contrasts are measured against the pixels that end up on screen.
+    val plate = if (dark) NOTIFICATION_PLATE_DARK else NOTIFICATION_PLATE_LIGHT
+    val accent = MarbleContrast.readable(app.primary, plate, MarbleContrast.TEXT_MINIMUM)
+    return NotificationPalette(
+        background = plate,
+        text = MarbleContrast.readable(app.onSurface, plate, MarbleContrast.TEXT_MINIMUM),
+        muted = MarbleContrast.readable(app.onSurfaceVariant, plate, MarbleContrast.TEXT_MINIMUM),
+        accent = accent,
+        // A tinted section plate has to stay visible on the card without turning into a second
+        // background, so its alpha follows the plate's own lightness.
+        accentSoft = MarbleContrast.withAlpha(accent, if (MarbleContrast.relativeLuminance(plate) < 0.4) 0.16 else 0.09),
+        hairline = MarbleContrast.withAlpha(accent, if (MarbleContrast.relativeLuminance(plate) < 0.4) 0.34 else 0.24),
+        isDark = dark,
+    )
+}
 
 /**
  * The accent every notification uses, taken from the app theme.
@@ -21,9 +93,5 @@ import com.marbledo.domain.model.AppThemeMode
 internal fun notificationAccent(context: Context, settings: AppSettings): Int =
     notificationAccent(context, settings.themeMode)
 
-internal fun notificationAccent(context: Context, mode: AppThemeMode): Int {
-    val systemDark = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
-        Configuration.UI_MODE_NIGHT_YES
-    val dark = MarblePalettes.isDark(mode.name, systemDark)
-    return MarblePalettes.resolve(mode, dark, context.applicationContext).primary.toInt()
-}
+internal fun notificationAccent(context: Context, mode: AppThemeMode): Int =
+    notificationPalette(context, mode).accent.toInt()

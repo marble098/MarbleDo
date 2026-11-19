@@ -154,11 +154,16 @@ class MarbleCountdownWidget : GlanceAppWidget() {
         // A tap anywhere on the glance card opens the calendar/planner in the app.
         val launchComponent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.component
         val openApp = launchComponent?.let { component -> actionStartActivity(component) }
+        // The card is a *card*: it sits inset inside the launcher's own squircle, so the plate needs
+        // room to breathe on every edge. The old 14/12 dp against a 28 dp corner pressed the text
+        // into the curve at the top-right and bottom-left — the "boxy" look — and the inner card's
+        // 13/11 dp made the two radii collide. The same 4 dp gap is now kept on all four sides.
         val baseModifier = GlanceModifier
             .fillMaxSize()
+            .padding(4.dp)
             .background(ColorProvider(palette.background))
-            .cornerRadius(28.dp)
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .cornerRadius(26.dp)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
         val rootModifier = if (openApp != null) baseModifier.clickable(openApp) else baseModifier
         val metaNext = nextTask?.title?.let { widgetContext.getString(R.string.widget_meta_next, it) }
             ?: widgetContext.getString(R.string.widget_no_next_task)
@@ -204,7 +209,9 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                         modifier = GlanceModifier
                             .fillMaxWidth()
                             .height(1.dp)
-                            .background(ColorProvider(palette.secondaryText.copy(alpha = 0.22f))),
+                            // 38% instead of 22%: on the AMOLED plate the hairline used to vanish
+                            // completely, which made the three bands read as one undivided block.
+                            .background(ColorProvider(palette.secondaryText.copy(alpha = 0.38f))),
                     ) { }
                     Spacer(GlanceModifier.height(9.dp))
 
@@ -213,8 +220,10 @@ class MarbleCountdownWidget : GlanceAppWidget() {
                         modifier = GlanceModifier
                             .fillMaxWidth()
                             .background(ColorProvider(palette.surface))
-                            .cornerRadius(22.dp)
-                            .padding(horizontal = 13.dp, vertical = 11.dp),
+                            // Concentric with the outer plate (26 - 4 - 2), and its padding is on
+                            // the 4 dp rhythm like the rest of the card.
+                            .cornerRadius(18.dp)
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                     ) {
                         directionalRow(
                             isRtl = isRtl,
@@ -444,13 +453,17 @@ suspend fun updateMarbleCountdownWidgets(context: Context) {
     }
 }
 
+/**
+ * The five colours the widget actually paints. `accentContainer` used to be carried here from the
+ * old four-box layout and was never read; a palette entry nothing paints is a colour that can
+ * silently disagree with the theme, so it is gone.
+ */
 private data class WidgetPalette(
     val background: Color,
     val surface: Color,
     val onBackground: Color,
     val secondaryText: Color,
     val accent: Color,
-    val accentContainer: Color,
 )
 
 private fun widgetPalette(context: Context, mode: AppThemeMode): WidgetPalette {
@@ -463,7 +476,6 @@ private fun widgetPalette(context: Context, mode: AppThemeMode): WidgetPalette {
         onBackground = Color(theme.onBackground),
         secondaryText = Color(theme.onSurfaceVariant),
         accent = Color(theme.primary),
-        accentContainer = Color(theme.primaryContainer),
     )
 }
 

@@ -3,9 +3,14 @@
          is invisible in one of the two themes; these pair with values-night. They mirror the
          default MarbleTheme palette (LightColors), and the builder repaints the accent carriers
          (rule, progress, plate, accent labels) in whichever theme the user actually picked. -->
+    <color name="notification_card_background">#F2F1F6</color>
     <color name="notification_card_text">#1C1B22</color>
     <color name="notification_card_muted">#5A5A6B</color>
     <color name="notification_card_accent">#4355A5</color>
-    <color name="notification_card_section">#0C4355A5</color>
-    <color name="notification_card_track">#244355A5</color>
+    <!-- Neutral, not indigo. These two paint the next-step plate and its hairline *under* the
+         theme-accent bitmap the builder draws on top; a fixed indigo tint used to show through as
+         a second colour, so the card looked half-themed no matter which palette was chosen. They
+         are now a low-alpha version of the card's own ink, which stays neutral under any accent. -->
+    <color name="notification_card_section">#121C1B22</color>
+    <color name="notification_card_track">#2E1C1B22</color>
 </resources>

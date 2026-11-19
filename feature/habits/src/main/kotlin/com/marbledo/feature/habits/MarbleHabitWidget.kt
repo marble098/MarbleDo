@@ -120,11 +120,15 @@ class MarbleHabitWidget : GlanceAppWidget() {
 
         val launchComponent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.component
         val openApp = launchComponent?.let { component -> actionStartActivity(component) }
+        // Same card geometry as the countdown widget: a 4 dp inset so the plate is not pressed
+        // against the launcher's own corner, then a concentric 26 dp radius and even padding, so
+        // the text stops colliding with the curve.
         val base = GlanceModifier
             .fillMaxSize()
+            .padding(4.dp)
             .background(ColorProvider(palette.backgroundTop))
             .cornerRadius(26.dp)
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
         val root = if (openApp != null) base.clickable(openApp) else base
 
         provideContent {
