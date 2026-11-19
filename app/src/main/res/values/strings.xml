@@ -190,10 +190,15 @@
     <string name="finance_delete">Delete</string>
     <string name="finance_mark_open">Mark as outstanding</string>
     <string name="finance_mark_settled">Mark as settled</string>
-    <string name="finance_currency_irr">Rial (IRR)</string>
     <string name="finance_currency_irt">Toman (IRT)</string>
     <string name="finance_currency_usd">US dollar (USD)</string>
     <string name="finance_currency_eur">Euro (EUR)</string>
+    <string name="finance_settled_this_month_title">Settled this month</string>
+    <string name="finance_settled_this_month_items">%1$d record(s)</string>
+    <string name="finance_settled_this_month_empty">Nothing settled yet this month</string>
+    <string name="finance_overdue_amount_title">Past-due amount</string>
+    <string name="finance_amount_hint">Digits group in threes as you type, like banking apps.</string>
+    <string name="finance_amount_hint_short">Grouped in threes while typing</string>
     <string name="dash_search_hint">Search your tasks</string>
     <string name="dash_tasks">Tasks</string>
     <string name="dash_group_overdue">Late</string>

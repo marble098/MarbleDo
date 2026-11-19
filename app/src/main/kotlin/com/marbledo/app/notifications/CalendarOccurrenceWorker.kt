@@ -23,6 +23,8 @@ import androidx.work.WorkerParameters
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
 import com.marbledo.core.data.settings.SettingsRepository
+import com.marbledo.core.designsystem.MarblePalettes
+import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.enabledOccasionCultures
 import com.marbledo.domain.model.OccasionCulture
 import com.marbledo.domain.model.AppSettings
@@ -77,6 +79,7 @@ class CalendarOccurrenceWorker(
                     day = today.day,
                     languageTag = settings.languageTag,
                     numeralMode = settings.numeralMode,
+                    themeMode = settings.themeMode,
                 )
             }
             notifyUpcomingFavorites(
@@ -200,6 +203,7 @@ class CalendarOccurrenceWorker(
         day: Int,
         languageTag: String,
         numeralMode: NumeralMode,
+        themeMode: AppThemeMode,
     ) {
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
@@ -258,11 +262,18 @@ class CalendarOccurrenceWorker(
             hasOccasion = events.isNotEmpty(),
             tasksDueToday = 0,
         )
+        // The badge wears the app theme's accent; the mood keeps its own chip on it.
+        val themeAccent = MarblePalettes.resolve(
+            themeMode,
+            MarblePalettes.isDark(themeMode.name, isNightMode(context)),
+            context,
+        ).primary.toInt()
         val largeIcon = NotificationArtwork.dateBadge(
             context = context,
             dayDigits = TextNormalizer.formatDigits(day.toString(), numeralMode),
             monthLabel = PersianDateUtils.monthName(month, languageTag),
             mood = mood,
+            accentColor = themeAccent,
         ) ?: ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap()
         // Android owns notification-shade layout and motion. Keep the semantic mood accent and
         // structured InboxStyle content, and let SystemUI render its native Material surface.
@@ -296,6 +307,10 @@ class CalendarOccurrenceWorker(
             .build()
         NotificationManagerCompat.from(context).notify(requestCode, notification)
     }
+
+    /** True when the device is in dark mode, which the un-pinned themes follow. */
+    private fun isNightMode(context: Context): Boolean =
+        context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
     companion object {
         private const val EXTRA_CULTURES = "com.marble098.marbledo.OCCASION_CULTURES"

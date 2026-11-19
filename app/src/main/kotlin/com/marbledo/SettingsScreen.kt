@@ -72,6 +72,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -1002,8 +1003,11 @@ private fun NotificationLivePreviewCard(
     val content = remember(settings, tasks, catalog, now, configuration) {
         PersistentCalendarNotification.buildContent(context, settings, tasks, catalog, now)
     }
-    val badgeBitmap = remember(context, content.badgeDayDigits, content.monthLabel, content.mood, configuration) {
-        NotificationArtwork.dateBadge(context, content.badgeDayDigits, content.monthLabel, content.mood)
+    // The badge is painted in the very accent this screen renders with, so the preview always
+    // shows exactly what the shade will get after a theme switch.
+    val themeAccent = MaterialTheme.colorScheme.primary.toArgb()
+    val badgeBitmap = remember(context, content.badgeDayDigits, content.monthLabel, content.mood, configuration, themeAccent) {
+        NotificationArtwork.dateBadge(context, content.badgeDayDigits, content.monthLabel, content.mood, themeAccent)
     }
     val design = settings.notificationDesign
     val isMinimal = design == "minimal"
@@ -1327,11 +1331,14 @@ private fun SettingsSection(
     showHeader: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    // Every settings zone lives in its own expressive box: a rounded, tonal card with a
+    // hairline border, so nothing on the page floats loose on the background.
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
     ) {
         Column(Modifier.fillMaxWidth().padding(MarbleSpacing.lg)) {
             // When the user already filtered the screen to this very tab ("Appearance", "Calendar"…)
@@ -1342,7 +1349,7 @@ private fun SettingsSection(
                     horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                 ) {
                     Surface(
-                        shape = MaterialTheme.shapes.small,
+                        shape = MaterialTheme.shapes.medium,
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
                     ) {
                         Icon(

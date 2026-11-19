@@ -198,11 +198,22 @@ object NotificationArtwork {
         }.getOrNull()
     }
 
-    /** Colored large icon: gradient date badge with the day number and month name. */
-    fun dateBadge(context: Context, dayDigits: String, monthLabel: String, mood: NotificationMood): Bitmap? =
+    /**
+     * Colored large icon: the date badge. The plate is painted in the **app theme's accent** — the
+     * same palette the screens use — with the day's mood carried in its own chip at the foot of the
+     * badge, so one theme switch repaints the shade with it instead of leaving indigo behind.
+     */
+    fun dateBadge(
+        context: Context,
+        dayDigits: String,
+        monthLabel: String,
+        mood: NotificationMood,
+        accentColor: Int = 0,
+    ): Bitmap? =
         runCatching {
-            val accent = accentColor(context, mood)
-            val cacheKey = "$dayDigits:$monthLabel:${mood.name}:$accent"
+            val themeAccent = if (accentColor != 0) accentColor else accentColor(context, mood)
+            val moodColor = accentColor(context, mood)
+            val cacheKey = "$dayDigits:$monthLabel:${mood.name}:$themeAccent:$moodColor"
             synchronized(dateBadgeCache) {
                 dateBadgeCache.get(cacheKey)?.takeIf { !it.isRecycled }?.let { return@runCatching it }
             }
@@ -210,24 +221,27 @@ object NotificationArtwork {
             val side = size.toFloat()
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            val deep = ColorUtils.blendARGB(accent, Color.BLACK, 0.38f)
+            // The gradient comes from the theme, exactly like the app's own surfaces: a lifted top
+            // edge and a deep foot, so the badge has the same light as a Material card.
+            val deep = ColorUtils.blendARGB(themeAccent, Color.BLACK, 0.32f)
             val plate = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 shader = LinearGradient(
                     0f,
                     0f,
                     0f,
                     side,
-                    ColorUtils.blendARGB(accent, Color.WHITE, 0.18f),
+                    ColorUtils.blendARGB(themeAccent, Color.WHITE, 0.22f),
                     deep,
                     Shader.TileMode.CLAMP,
                 )
             }
             val outerRect = RectF(0f, 0f, side, side)
-            canvas.drawRoundRect(outerRect, 58f, 58f, plate)
+            val radius = side * 0.26f
+            canvas.drawRoundRect(outerRect, radius, radius, plate)
 
             // Subtle top calendar header band + crisp inner rim for modern depth.
             val headerClip = Path().apply {
-                addRoundRect(outerRect, 58f, 58f, Path.Direction.CW)
+                addRoundRect(outerRect, radius, radius, Path.Direction.CW)
             }
             canvas.save()
             canvas.clipPath(headerClip)
@@ -250,7 +264,7 @@ object NotificationArtwork {
                 style = Paint.Style.STROKE
                 strokeWidth = 3f
             }
-            canvas.drawRoundRect(RectF(1.5f, 1.5f, side - 1.5f, side - 1.5f), 56.5f, 56.5f, rimPaint)
+            canvas.drawRoundRect(RectF(1.5f, 1.5f, side - 1.5f, side - 1.5f), radius - 1.5f, radius - 1.5f, rimPaint)
 
             val monthPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.WHITE
@@ -263,7 +277,7 @@ object NotificationArtwork {
 
             // The same ink-filling layout the status icon uses, so the two always agree.
             val run = DigitRun(vazirTypeface(context, DIGIT_WEIGHT), dayDigits, DIGIT_GAP_EM)
-            val dayBox = RectF(side * 0.16f, side * 0.36f, side * 0.84f, side * 0.78f)
+            val dayBox = RectF(side * 0.14f, side * 0.34f, side * 0.86f, side * 0.78f)
             run.draw(
                 canvas = canvas,
                 textSize = run.fittedSize(dayBox.width(), dayBox.height()),
@@ -271,19 +285,104 @@ object NotificationArtwork {
                 centerY = dayBox.centerY(),
                 color = Color.WHITE,
             )
-            drawMoodMark(
-                canvas = canvas,
-                mood = mood,
-                centerX = side / 2f,
-                centerY = side * 0.865f,
-                size = side * 0.135f,
-                color = Color.WHITE,
-            )
+            // The mood lives in a chip of its own colour at the foot of the badge: the meaning
+            // (holiday, religious, occasion, tasks) stays semantic while the plate follows theme.
+            if (mood != NotificationMood.QUIET) {
+                val chipHeight = side * 0.15f
+                val chipWidth = side * 0.36f
+                val chipRect = RectF(
+                    (side - chipWidth) / 2f,
+                    side * 0.815f,
+                    (side + chipWidth) / 2f,
+                    side * 0.815f + chipHeight,
+                )
+                val chip = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = ColorUtils.blendARGB(moodColor, deep, 0.22f)
+                }
+                canvas.drawRoundRect(chipRect, chipHeight / 2f, chipHeight / 2f, chip)
+                drawMoodMark(
+                    canvas = canvas,
+                    mood = mood,
+                    centerX = side / 2f,
+                    centerY = chipRect.centerY(),
+                    size = side * 0.085f,
+                    color = Color.WHITE,
+                )
+            }
             synchronized(dateBadgeCache) {
                 dateBadgeCache.put(cacheKey, bitmap)
             }
             bitmap
         }.getOrNull()
+
+    // ---------------------------------------------------------------------------------------
+    // Themed notification chrome. The RemoteViews card may not run reflective tint calls, so the
+    // mood rule, the progress line and the next-step plate arrive as ready-painted bitmaps in the
+    // palette of the app theme; each shape stays a first-class `setImageViewBitmap()`.
+    // ---------------------------------------------------------------------------------------
+
+    /** The banner's leading rule, blended from the theme accent and the day's mood colour. */
+    fun accentRule(context: Context, accentColor: Int, mood: NotificationMood): Bitmap? = runCatching {
+        val metrics = context.resources.displayMetrics
+        val width = (3f * metrics.density).roundToInt().coerceAtLeast(2)
+        val height = (48f * metrics.density).roundToInt().coerceAtLeast(8)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val color = ColorUtils.blendARGB(accentColor, accentColor(context, mood), 0.55f)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
+        val radius = width / 2f
+        canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, paint)
+        bitmap.density = metrics.densityDpi
+        bitmap
+    }.getOrNull()
+
+    /** The progress line as a rounded track + fill, in the theme accent. */
+    fun progressBitmap(context: Context, completed: Int, total: Int, accentColor: Int): Bitmap? = runCatching {
+        val metrics = context.resources.displayMetrics
+        val width = 512
+        val height = 16
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val radius = height / 2f
+        val dark = isNightMode(context)
+        val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 46 else 30)
+        }
+        canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, track)
+        val fraction = (completed.toFloat() / total.coerceAtLeast(1)).coerceIn(0f, 1f)
+        if (fraction > 0f) {
+            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
+            canvas.drawRoundRect(RectF(0f, 0f, width * fraction, height.toFloat()), radius, radius, fill)
+        }
+        bitmap.density = metrics.densityDpi
+        bitmap
+    }.getOrNull()
+
+    /** The next-step plate: the one filled surface of the card, in the theme accent. */
+    fun focusPlate(context: Context, accentColor: Int): Bitmap? = runCatching {
+        val width = 640
+        val height = 176
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val dark = isNightMode(context)
+        val rect = RectF(1f, 1f, width - 1f, height - 1f)
+        val radius = 40f
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 26 else 18)
+        }
+        canvas.drawRoundRect(rect, radius, radius, fill)
+        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 2f
+            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 60 else 42)
+        }
+        canvas.drawRoundRect(rect, radius, radius, stroke)
+        bitmap
+    }.getOrNull()
+
+    private fun isNightMode(context: Context): Boolean =
+        context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
 
     // ---------------------------------------------------------------------------------------
     // Looks. Every coordinate below is a fraction of the icon side, so the same code draws a

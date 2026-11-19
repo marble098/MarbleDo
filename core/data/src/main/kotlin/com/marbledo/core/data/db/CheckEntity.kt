@@ -13,7 +13,7 @@ data class CheckEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
     val amount: Double = 0.0,
-    val currency: String = "IRR",
+    val currency: String = "IRT",
     val dueAtEpochMillis: Long? = null,
     @ColumnInfo(defaultValue = "0") val isCleared: Boolean = false,
     val bankName: String = "",

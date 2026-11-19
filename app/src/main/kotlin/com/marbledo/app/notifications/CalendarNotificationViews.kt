@@ -35,6 +35,10 @@ internal object CalendarNotificationViews {
         NotificationMood.QUIET -> R.drawable.notification_banner_bar_quiet
     }
 
+    /** The theme accent, or the card's static fallback colour when no accent arrived. */
+    private fun cardAccent(context: Context, accentColor: Int): Int =
+        if (accentColor != 0) accentColor else androidx.core.content.ContextCompat.getColor(context, R.color.notification_card_accent)
+
     private fun layout(design: String, expanded: Boolean, rtl: Boolean): Int = when (design) {
         "minimal" -> if (expanded) {
             if (rtl) R.layout.notification_minimal_expanded_rtl else R.layout.notification_minimal_expanded_ltr
@@ -91,9 +95,16 @@ internal object CalendarNotificationViews {
         if (badge != null && design != "minimal") setImageViewBitmap(R.id.notification_badge, badge)
         else setViewVisibility(R.id.notification_badge, View.GONE)
         // The banner look tints its leading rule with the day's mood colour, through a first-class
-        // RemoteViews action on an ImageView.
+        // RemoteViews action on an ImageView. The resource stays as the un-themed fallback; when a
+        // theme accent is available the same rule is repainted — still a first-class bitmap call —
+        // in the blend of the accent and the mood, so the line follows the app theme.
         if (design == "banner") {
             setImageViewResource(R.id.notification_accent_rule, accentRuleRes(content.mood))
+            if (accentColor != 0) {
+                NotificationArtwork.accentRule(context, accentColor, content.mood)?.let { rule ->
+                    setImageViewBitmap(R.id.notification_accent_rule, rule)
+                }
+            }
         }
         setContentDescription(R.id.notification_root,
             if (expanded) content.expandedText else "${content.title}. ${content.summaryLine}")
@@ -106,12 +117,30 @@ internal object CalendarNotificationViews {
                 if (content.hasProgress) View.VISIBLE else View.GONE)
             setTextViewText(R.id.notification_progress_label, content.progressLabel)
             // The bar only makes sense when the day has a total; an overdue-only reading is a
-            // sentence in the same row, so the track is hidden rather than drawn empty.
+            // sentence in the same row, so the track is hidden rather than drawn empty. The bar
+            // itself is a themed bitmap: a rounded track and fill in the accent of the app theme.
             setViewVisibility(R.id.notification_progress, if (content.todayTotal > 0) View.VISIBLE else View.GONE)
-            setProgressBar(R.id.notification_progress, content.todayTotal.coerceAtLeast(1), content.todayCompleted, false)
+            if (content.todayTotal > 0) {
+                NotificationArtwork.progressBitmap(
+                    context,
+                    content.todayCompleted,
+                    content.todayTotal,
+                    cardAccent(context, accentColor),
+                )?.let { bar -> setImageViewBitmap(R.id.notification_progress, bar) }
+            }
 
             val showNextSection = content.hasNextTask || !content.hasOccasions
             setViewVisibility(R.id.notification_next_container, if (showNextSection) View.VISIBLE else View.GONE)
+            // Minimal is text only: its plate stays hidden and the drawable behind the container
+            // is already transparent. Every other design paints the plate in the theme accent.
+            if (design == "minimal") {
+                setViewVisibility(R.id.notification_focus_plate, View.GONE)
+            }
+            if (design != "minimal") {
+                NotificationArtwork.focusPlate(context, cardAccent(context, accentColor))?.let { plate ->
+                    setImageViewBitmap(R.id.notification_focus_plate, plate)
+                }
+            }
             setTextViewText(R.id.notification_next_label, content.nextTaskLabel)
             setTextViewText(R.id.notification_next_title, content.nextTaskTitle ?: content.fallbackTaskText)
             setTextViewText(R.id.notification_next_time, content.nextTaskTime.orEmpty())
