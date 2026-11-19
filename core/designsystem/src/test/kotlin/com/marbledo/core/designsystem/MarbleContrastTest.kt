@@ -77,11 +77,78 @@ class MarbleContrastTest {
         assertEquals(0x4355A5L, tinted and 0x00FFFFFFL)
     }
 
+    /**
+     * The angle between two colours on the hue wheel, in degrees (0..180).
+     *
+     * Two colours can share a WCAG contrast ratio against a plate and still be obviously different
+     * to a reader — that is the whole point of using a red for "overdue" and a purple for
+     * "occasion". This helper states that difference in the units it is actually perceived in.
+     */
+    private fun hueDistance(a: Long, b: Long): Double {
+        fun hue(argb: Long): Double {
+            val r = ((argb shr 16) and 0xFF) / 255.0
+            val g = ((argb shr 8) and 0xFF) / 255.0
+            val bl = (argb and 0xFF) / 255.0
+            val max = maxOf(r, g, bl)
+            val min = minOf(r, g, bl)
+            val delta = max - min
+            if (delta == 0.0) return 0.0
+            val raw = when (max) {
+                r -> 60 * (((g - bl) / delta) % 6)
+                g -> 60 * (((bl - r) / delta) + 2)
+                else -> 60 * (((r - g) / delta) + 4)
+            }
+            return (raw + 360) % 360
+        }
+        val gap = kotlin.math.abs(hue(a) - hue(b))
+        return if (gap > 180) 360 - gap else gap
+    }
+
     @Test
     fun widenedIntsRoundTrip() {
         val value = 0xFFBBC5FF.toInt()
         assertEquals(0xFFBBC5FFL, value.toArgb())
         assertEquals(value, value.toArgb().toArgbInt())
+    }
+
+    @Test
+    fun theSemanticStateHuesStayApartAfterBeingLifted() {
+        // "Overdue" must read as a warning and "occasion" as a calm secondary, so the two can never
+        // collapse into the same brown chip. Both are lifted to read on the card plates; the lift
+        // moves lightness, and this pins that it does not move the hue far enough to re-merge them.
+        val overdueHue = 0xFFC33A22L
+        val occasionHue = 0xFF6B4FA8L
+        for ((name, plate) in listOf("light" to 0xFFF2F1F6L, "dark" to 0xFF26272EL)) {
+            val overdue = MarbleContrast.readable(overdueHue, plate)
+            val occasion = MarbleContrast.readable(occasionHue, plate)
+            assertTrue(
+                MarbleContrast.ratio(overdue, plate) >= MarbleContrast.TEXT_MINIMUM,
+                "$name: the overdue chip is unreadable on the card",
+            )
+            assertTrue(
+                MarbleContrast.ratio(occasion, plate) >= MarbleContrast.TEXT_MINIMUM,
+                "$name: the occasion chip is unreadable on the card",
+            )
+            // Red and purple may both be lifted, but they must remain distinguishable. Contrast
+            // *ratio* cannot express that (a red and a purple can share a luminance and still be
+            // obviously different), so the check is the hue itself: the lift moves lightness only,
+            // which is what keeps "overdue" red and "occasion" purple instead of both becoming
+            // the same brown.
+            val hueGap = hueDistance(overdue, occasion)
+            assertTrue(
+                hueGap >= 60.0,
+                "$name: the overdue and occasion chips are only $hueGap° apart — they read as one colour",
+            )
+            assertTrue(
+                hueDistance(overdue, overdueHue) <= 12.0,
+                "$name: lifting the overdue hue to read on the plate also changed what colour it is",
+            )
+            val soft = MarbleContrast.blend(overdue, plate, 0.82)
+            assertTrue(
+                MarbleContrast.ratio(MarbleContrast.bestInk(soft), soft) >= MarbleContrast.TEXT_MINIMUM,
+                "$name: the warning mark disappears on its own disc",
+            )
+        }
     }
 
     @Test

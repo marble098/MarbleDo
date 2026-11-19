@@ -57,6 +57,12 @@ data class AppSettings(
     val occasionReminderLeadDays: Int = 0,
     /** How the dashboard lays out its task and countdown sections; see [DashboardViewMode]. */
     val dashboardViewMode: DashboardViewMode = DashboardViewMode.LIST,
+    /** The grouped "overdue" reminder on its own high-importance channel. */
+    val overdueNotificationsEnabled: Boolean = true,
+    /** Reminders for tasks that are due today, on their own channel. */
+    val todayRemindersEnabled: Boolean = true,
+    /** Morning hour (local time) of the once-a-day occasion briefing. */
+    val occasionNotificationHour: Int = 8,
     /** Independent discovery packs; an empty list intentionally hides all occasion packs. */
     val occasionCultureIds: List<String> = OccasionCulture.defaultIds,
 ) {
@@ -67,5 +73,6 @@ data class AppSettings(
         require(quietStartMinute in 0..1439 && quietEndMinute in 0..1439)
         require(reminderLeadMinutes in 0..1440)
         require(occasionReminderLeadDays in 0..30)
+        require(occasionNotificationHour in 0..23)
     }
 }

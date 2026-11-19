@@ -19,6 +19,7 @@ import com.marble098.marbledo.R
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.Task
+import com.marbledo.domain.model.TaskPriority
 import com.marbledo.domain.model.enabledOccasionCultures
 import com.marbledo.domain.util.NotificationPlanBuilder
 import com.marbledo.domain.util.TextNormalizer
@@ -28,6 +29,7 @@ import com.marbledo.feature.calendar.OccasionCatalog
 import com.marbledo.feature.calendar.OccasionIndex
 import com.marbledo.feature.calendar.PersianDateUtils
 import com.marbledo.feature.calendar.dayOfMonthIn
+import com.marbledo.feature.tasks.R as TaskR
 import com.marbledo.feature.calendar.enabledOccasionCategories
 import java.time.Instant
 import java.time.ZoneId
@@ -37,47 +39,77 @@ import java.util.Locale
 /**
  * The quiet daily planner that keeps the status-bar date and the one next step in the shade.
  *
- * The content model follows the redesign rule: **one row, one idea**. The card no longer carries
- * a mood pill *and* a task count *and* a labelled section for occasions *and* a labelled block for
- * the next task; it carries a date, the day's character, one progress reading, one next step and
- * — when there is one — one line of occasions. Everything is derived here so Settings can render
- * the same model with Compose and the shade can render it with `RemoteViews`.
+ * The content model follows the redesign rule: **two sections, in priority order**. The card
+ * carries the Jalali date and a state chip, then the *tasks* it wants the user to act on, then —
+ * only when the day has any — the *occasions* that are merely interesting. Everything is derived
+ * here so Settings can render the same model with Compose and the shade can render it with
+ * `RemoteViews`; a string is formatted once and appears identically in both.
  */
 object PersistentCalendarNotification {
     const val NOTIFICATION_ID = 8_412
     enum class StatusIconState { ACTIVE, OFF, PERMISSION_MISSING, BLOCKED }
 
     data class NotificationBoxContent(
-        /** Weekday, day and month of the primary calendar. The year belongs to the secondary line. */
+        /** Weekday, day, month **and year** of the Jalali calendar: the only date the card shows. */
         val title: String,
-        /** One or two words for the character of the day: holiday, religious, occasion, tasks, today. */
-        val moodLabel: String,
-        /** Gregorian and lunar dates, one line, for the reader who needs a cross-check. */
+        /** Gregorian and lunar dates, one line, for the reader who needs a cross-check. Expanded only. */
         val secondaryDatesLine: String,
-        /** The single fact the collapsed row shows under the date. */
-        val summaryLine: String,
-        /** The day's occasions as one value line, never a labelled section. */
+        /** The state the chip states: overdue first, then today, then an occasion-only day. */
+        val state: NotificationState,
+        /** The chip's word: "۳ عقب‌افتاده" or "امروز". */
+        val stateLabel: String,
+        /** The heading of the priority-1 section. */
+        val tasksLabel: String,
+        /** The task the card is about — the next overdue one, or the next one due today. */
+        val taskTitle: String?,
+        /** Its due time and priority, one muted line under the title. */
+        val taskMetaLine: String?,
+        /** A second task, expanded only, so two things can be acted on without opening the app. */
+        val secondTaskTitle: String?,
+        val secondTaskMetaLine: String?,
+        /** "و ۲ کار دیگر" when the day has more open tasks than the card shows. */
+        val moreTasksLine: String?,
+        /** What the card says instead of a title when nothing is due. */
+        val emptyTaskText: String,
+        val hasTask: Boolean = taskTitle != null,
+        /** The day's occasions as one value line, never a labelled section of their own. */
         val occasionsLine: String,
-        val nextTaskId: Long?,
-        val nextTaskTitle: String?,
-        val nextTaskTime: String?,
-        val nextTaskLabel: String,
-        val todayCompleted: Int,
-        val todayTotal: Int,
-        val progressLabel: String,
-        val fallbackTaskText: String,
-        val expandedText: String,
+        /** The heading of the priority-2 section ("مناسبت‌های امروز"). */
+        val occasionsLabel: String,
+        /** False when the task block should not be closed with a hairline (nothing below it). */
+        val occasionsDivider: Boolean = occasionsLine.isNotBlank(),
+        /** The task id the card and its actions target; 0 when there is nothing to act on. */
+        val focusTaskId: Long?,
+        val overdueCount: Int,
+        /** The list behind the grouped overdue reminder, already in reading order. */
+        val overdueTasks: List<Task>,
         val mood: NotificationMood,
         /** Unchanged day number and mood policy for the status-bar icon. */
         val dayDigits: String,
         /** The large badge belongs to the primary Persian date, not the status-bar calendar. */
         val badgeDayDigits: String,
         val monthLabel: String,
-        val weekdayLabel: String,
         val hasOccasions: Boolean = occasionsLine.isNotBlank(),
-        val hasProgress: Boolean = todayTotal > 0 || progressLabel.isNotBlank(),
-        val hasNextTask: Boolean = nextTaskTitle != null,
-    )
+    ) {
+        /** Everything a reader needs from the custom card, in the order it is drawn. */
+        fun accessibilityText(expanded: Boolean): String {
+            val lines = mutableListOf(title, stateLabel)
+            if (hasTask) {
+                lines += tasksLabel
+                lines += taskTitle.orEmpty()
+                taskMetaLine?.let { lines += it }
+                secondTaskTitle?.let { lines += it }
+                moreTasksLine?.let { lines += it }
+            } else {
+                lines += emptyTaskText
+            }
+            if (expanded && hasOccasions) {
+                lines += occasionsLabel
+                lines += occasionsLine
+            }
+            return lines.filter { it.isNotBlank() }.joinToString(". ")
+        }
+    }
 
     @Volatile private var lastPostedSignature: Int = 0
 
@@ -115,21 +147,18 @@ object PersistentCalendarNotification {
         val locale = firstLocale(notificationContext)
         fun digits(value: String) = TextNormalizer.formatDigits(value, settings.numeralMode)
         val bidi = BidiFormatter.getInstance(settings.languageTag == "fa")
-        // Weekday + day + month. The old title repeated the year, which is the one part of a date
-        // nobody reads in a status bar; it now lives in the secondary line.
-        val title = digits("${PersianDateUtils.weekdayName(today.weekdayIndex, settings.languageTag)} " +
-            "${today.day} ${PersianDateUtils.monthName(today.month, settings.languageTag)}")
+        // The Jalali date, with its year, exactly as the collapsed card shows it: "۲۸ آبان ۱۴۰۵".
+        // A date without the year cannot be read at a glance — "۲۸ آبان" of which year? — and the
+        // old card hid the year in the secondary line nobody saw.
+        val title = digits(
+            "${today.day} ${PersianDateUtils.monthName(today.month, settings.languageTag)} ${today.year}",
+        )
         val gregorian = PersianDateUtils.gregorianDate(nowMillis, locale, zone)
         val lunar = PersianDateUtils.lunarDate(nowMillis, settings.languageTag, NumeralMode.LATIN,
             settings.lunarOffsetDays, zone)
-        val secondary = digits("$gregorian · $lunar")
-        val moodLabel = notificationContext.getString(when (mood) {
-            NotificationMood.HOLIDAY -> R.string.notification_mood_holiday
-            NotificationMood.RELIGIOUS -> R.string.notification_mood_religious
-            NotificationMood.OCCASION -> R.string.notification_mood_occasion
-            NotificationMood.TASKS_DUE -> R.string.notification_mood_tasks
-            NotificationMood.QUIET -> R.string.notification_mood_today
-        })
+        // The cross-check line, expanded only, labelled so nobody has to guess which calendar is
+        // which: "میلادی …  ·  قمری …".
+        val secondary = digits(notificationContext.getString(R.string.notification_secondary_dates, gregorian, lunar))
         val favorites = catalog.canonicalFavoriteIds(settings.favoriteOccasionIds)
         val sortedEvents = events.sortedWith(compareBy<Occasion> { if (it.id in favorites) 0 else 1 }
             .thenBy { if (it.isHoliday) 0 else 1 }.thenBy { it.id })
@@ -145,12 +174,16 @@ object PersistentCalendarNotification {
             },
         )).joinToString(" · ")
         val noTask = notificationContext.getString(R.string.persistent_date_notification_no_task)
-        val next = plan.nextTask
-        val nextTitle = next?.let { bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(it.title)) }
-        val nextTime = next?.dueAtEpochMillis?.let { due ->
+        // ---- priority 1: the tasks -----------------------------------------------------------
+        // The card is about the next *actionable* task, so the overdue list comes first: it is the
+        // one the user can no longer do on time, and hiding it behind a today task was problem #1.
+        val focus = plan.overdueTasks.firstOrNull() ?: plan.todayTasks.firstOrNull() ?: plan.nextTask
+        val second = (plan.overdueTasks + plan.todayTasks).firstOrNull { it.id != focus?.id }
+        val openToday = (plan.todayTasks.size + plan.overdueTasks.size)
+        fun taskTime(task: Task?): String? = task?.dueAtEpochMillis?.let { due ->
             val instant = Instant.ofEpochMilli(due)
             val date = instant.atZone(zone).toLocalDate()
-            val clock = if (next?.isAllDay == true) notificationContext.getString(R.string.notification_all_day)
+            val clock = if (task.isAllDay) notificationContext.getString(R.string.notification_all_day)
                 else digits(instant.atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)))
             val dayLabel = when {
                 date == todayDate -> ""
@@ -162,53 +195,69 @@ object PersistentCalendarNotification {
             }
             listOf(dayLabel, clock).filter { it.isNotBlank() }.joinToString(" · ")
         }
-        val nextSummary = nextTitle?.let { listOf(it, nextTime.orEmpty()).filter { it.isNotBlank() }.joinToString(" · ") }
-        val nextLabel = notificationContext.getString(
-            if (plan.nextIsOverdue) R.string.notification_focus_overdue else R.string.notification_focus_next,
-        )
-        // Progress is one reading: "3 of 5", with the overdue count appended only when it exists.
-        val progress = if (plan.todayTotal > 0) digits(notificationContext.getString(
-            R.string.notification_progress_pair, plan.todayCompleted.toString(), plan.todayTotal.toString(),
-        )) else ""
-        val overdueLine = if (plan.overdueCount > 0) digits(
-            notificationContext.getString(R.string.notification_overdue_count, plan.overdueCount),
-        ) else ""
-        val progressLabel = listOf(progress, overdueLine).filter { it.isNotBlank() }.joinToString(" · ")
-        // The collapsed row states one fact, in order of what the user can act on next.
-        val summaryLine = when {
-            nextSummary != null -> nextSummary
-            occasionsLine.isNotBlank() -> occasionsLine
-            progressLabel.isNotBlank() -> progressLabel
-            else -> secondary
+        fun taskMeta(task: Task?): String? {
+            if (task == null) return null
+            val priority = notificationContext.getString(when (task.priority) {
+                TaskPriority.LOW -> TaskR.string.tasks_priority_low
+                TaskPriority.NORMAL -> TaskR.string.tasks_priority_normal
+                TaskPriority.HIGH -> TaskR.string.tasks_priority_high
+                TaskPriority.URGENT -> TaskR.string.tasks_priority_urgent
+            })
+            return listOf(taskTime(task), priority, task.category.takeIf { it.isNotBlank() })
+                .filterNotNull().filter { it.isNotBlank() }.joinToString(" · ")
         }
-        val expandedText = listOf(
-            title,
-            moodLabel,
-            secondary,
-            progressLabel,
-            if (nextTitle != null) "$nextLabel: $nextTitle ${nextTime.orEmpty()}".trim() else noTask,
-            occasionsLine,
-        ).filter { it.isNotBlank() }.joinToString(". ")
+        val taskTitle = focus?.let { bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(it.title)) }
+        val taskMetaLine = taskMeta(focus)
+        val secondTaskTitle = second?.let { bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(it.title)) }
+        val secondTaskMetaLine = taskMeta(second)
+        // A count, not a progress bar: "و ۲ کار دیگر" under the two tasks the card already shows.
+        val hiddenTasks = (openToday - listOfNotNull(focus, second).size).coerceAtLeast(0)
+        val moreTasksLine = if (hiddenTasks > 0) {
+            digits(notificationContext.getString(R.string.notification_more_tasks, hiddenTasks.toString()))
+        } else {
+            null
+        }
+        // The state chip: the day's most urgent fact, stated in one word and one colour.
+        val state = when {
+            plan.overdueCount > 0 -> NotificationState.OVERDUE
+            plan.todayOpen > 0 || plan.todayTotal > 0 -> NotificationState.TODAY
+            occasionsLine.isNotBlank() -> NotificationState.OCCASION
+            else -> NotificationState.QUIET
+        }
+        val stateLabel = digits(when (state) {
+            NotificationState.OVERDUE -> notificationContext.getString(
+                R.string.notification_overdue_chip, plan.overdueCount.toString(),
+            )
+            NotificationState.TODAY -> notificationContext.getString(R.string.notification_today_chip)
+            NotificationState.OCCASION -> notificationContext.getString(R.string.notification_occasion_chip)
+            NotificationState.QUIET -> notificationContext.getString(R.string.notification_quiet_chip)
+        })
+        val tasksLabel = notificationContext.getString(R.string.notification_tasks_section)
+        val occasionsLabel = notificationContext.getString(R.string.notification_occasions_section)
         return NotificationBoxContent(
             title = title,
-            moodLabel = moodLabel,
             secondaryDatesLine = secondary,
-            summaryLine = summaryLine,
+            state = state,
+            stateLabel = stateLabel,
+            tasksLabel = tasksLabel,
+            taskTitle = taskTitle,
+            taskMetaLine = taskMetaLine?.takeIf { it.isNotBlank() },
+            secondTaskTitle = secondTaskTitle,
+            secondTaskMetaLine = secondTaskMetaLine?.takeIf { it.isNotBlank() },
+            moreTasksLine = moreTasksLine,
+            emptyTaskText = noTask,
             occasionsLine = occasionsLine,
-            nextTaskId = next?.id,
-            nextTaskTitle = nextTitle,
-            nextTaskTime = nextTime,
-            nextTaskLabel = nextLabel,
-            todayCompleted = plan.todayCompleted,
-            todayTotal = plan.todayTotal,
-            progressLabel = progressLabel,
-            fallbackTaskText = noTask,
-            expandedText = expandedText,
+            occasionsLabel = occasionsLabel,
+            occasionsDivider = occasionsLine.isNotBlank(),
+            focusTaskId = focus?.id,
+            overdueCount = plan.overdueCount,
+            overdueTasks = plan.overdueTasks,
             mood = mood,
             dayDigits = digits(dayOfMonthIn(nowMillis, settings.statusBarCalendar, zone).toString()),
             badgeDayDigits = digits(today.day.toString()),
             monthLabel = PersianDateUtils.monthName(today.month, settings.languageTag),
-            weekdayLabel = PersianDateUtils.weekdayName(today.weekdayIndex, settings.languageTag),
+            // The weekday has no slot on the redesigned header: the Jalali date with its year is
+            // the one date the card states, and the chip carries the day's character.
         )
     }
 
@@ -216,10 +265,10 @@ object PersistentCalendarNotification {
         val notificationContext = context.applicationContext.forLanguage(settings.languageTag)
         NotificationChannels.create(notificationContext)
         val content = buildContent(notificationContext, settings, tasks, catalog, nowMillis)
-        // The shade follows the app theme: the accent labels, the mood rule, the progress line,
-        // the next-step plate and the date badge are painted from the palette of the theme the
-        // user picked, so Ocean/Forest/Sunset/Rose also repaint the notification. Only the small
-        // mood chip keeps its semantic colour (holiday, religious, occasion, tasks).
+        // The shade follows the app theme: the section labels, the mood rule, the task plate, the
+        // state chip and the date badge are painted from the palette of the theme the user picked,
+        // so Ocean/Forest/Sunset/Rose also repaint the notification. Only the semantic states keep
+        // their own hues (overdue red, occasion purple), because those carry meaning, not branding.
         // One palette decides the plate, the text and the accents, from the app theme's own
         // lightness. The old card mixed the theme accent with the *system's* night resources, so a
         // pinned theme in the "other" mode got half of the card in the wrong direction.
@@ -254,41 +303,74 @@ object PersistentCalendarNotification {
         // posted from its title/text/actions instead of not being posted at all. The status-bar
         // icon is part of the notification, so "no custom view" still looks far better than
         // "no notification".
-        val collapsedView = runCatching {
+        //
+        // The *compact* card is used as the heads-up view, not as the collapsed row: Android caps
+        // a collapsed custom view at 48 dp, which cannot hold a date, a chip and two lines of
+        // task. The collapsed row therefore keeps the platform template (title + one line + the
+        // date badge), which is also the row the shade draws with its own touch feedback.
+        val headsUpView = runCatching {
             CalendarNotificationViews.create(
                 notificationContext, content, largeIcon, false, settings.notificationDesign,
                 settings.languageTag == "fa", accent, shade,
             )
-        }.onFailure { Log.w(TAG, "collapsed ${settings.notificationDesign} view failed; falling back to text", it) }.getOrNull()
+        }.onFailure { Log.w(TAG, "heads-up ${settings.notificationDesign} view failed; falling back to text", it) }.getOrNull()
         val expandedView = runCatching {
             CalendarNotificationViews.create(
                 notificationContext, content, largeIcon, true, settings.notificationDesign,
                 settings.languageTag == "fa", accent, shade,
             )
         }.onFailure { Log.w(TAG, "expanded ${settings.notificationDesign} view failed; falling back to text", it) }.getOrNull()
+        // The card itself opens the task it is about: a tap on the notification is the fastest
+        // route to the thing, so it deep-links to that task and only falls back to the calendar
+        // when no task is focused.
+        val focusTaskId = content.focusTaskId?.takeIf { it > 0 }
+        val cardIntent = if (focusTaskId != null) {
+            NotificationActions.openTask(notificationContext, focusTaskId, requestCode = NOTIFICATION_ID)
+        } else {
+            calendarIntent
+        }
         val builder = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
             .setSmallIcon(smallIcon)
-            .setColor(NotificationArtwork.accentColor(notificationContext, content.mood))
-            .setContentTitle(content.title).setContentText(content.summaryLine)
-        if (collapsedView != null && expandedView != null) {
+            .setLargeIcon(largeIcon)
+            .setColor(accent)
+            .setContentTitle(content.title)
+            .setContentText(content.taskTitle ?: content.stateLabel)
+            .setSubText(content.stateLabel)
+        if (expandedView != null) {
             builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
-                .setCustomContentView(collapsedView)
                 .setCustomBigContentView(expandedView)
+                .setCustomHeadsUpContentView(headsUpView ?: expandedView)
         }
-        builder.setContentIntent(calendarIntent).setCategory(NotificationCompat.CATEGORY_STATUS)
+        builder.setContentIntent(cardIntent).setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(publicVersion).setShowWhen(false).setLocalOnly(true).setSilent(true)
             .setOnlyAlertOnce(true).setOngoing(true).setAutoCancel(false)
-        // Two actions, not three: the shade is not a toolbar. The whole card already opens the
-        // calendar, so the only extra verbs are "mark this one done" and "open the day".
-        content.nextTaskId?.takeIf { it > 0 }?.let { taskId ->
-            val done = PendingIntent.getBroadcast(notificationContext, NOTIFICATION_ID + 2,
-                Intent(notificationContext, ReminderReceiver::class.java).setAction(ReminderReceiver.ACTION_DONE)
-                    .setData(Uri.parse("marbledo://action/done/$taskId")).putExtra(ReminderReceiver.EXTRA_TASK_ID, taskId),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            builder.addAction(R.drawable.ic_stat_marble, notificationContext.getString(R.string.notification_done_next), done)
+        // At most three actions, each with an icon and a TalkBack label. The order is the order of
+        // use: finish it, postpone it, open it. The task-level verbs only exist when the card is
+        // about a task — on an occasion-only day there is nothing to complete.
+        if (focusTaskId != null) {
+            builder.addAction(
+                R.drawable.ic_notification_done,
+                notificationContext.getString(R.string.notification_done),
+                NotificationActions.done(notificationContext, focusTaskId, requestCode = NOTIFICATION_ID + 2),
+            )
+            builder.addAction(
+                R.drawable.ic_notification_snooze,
+                notificationContext.getString(R.string.notification_snooze),
+                NotificationActions.snoozePicker(notificationContext, focusTaskId, requestCode = NOTIFICATION_ID + 3),
+            )
+            builder.addAction(
+                R.drawable.ic_notification_open,
+                notificationContext.getString(R.string.notification_open_task),
+                cardIntent,
+            )
+        } else {
+            builder.addAction(
+                R.drawable.ic_notification_open,
+                notificationContext.getString(R.string.calendar_notification_open),
+                calendarIntent,
+            )
         }
-        builder.addAction(R.drawable.ic_stat_calendar, notificationContext.getString(R.string.calendar_notification_open), calendarIntent)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ContextCompat.checkSelfPermission(notificationContext,
                 Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         NotificationManagerCompat.from(notificationContext).notify(NOTIFICATION_ID, builder.build())

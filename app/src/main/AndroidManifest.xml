@@ -45,8 +45,33 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
+            <!--
+                The notification deep links: `marbledo://task/{id}` for one task and
+                `marbledo://calendar[/year/month/day]` for a day. Both are handled by the same
+                activity, which already knows how to route them; declaring the scheme here makes
+                them valid `ACTION_VIEW` intents rather than implicit broadcasts nothing resolves.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="marbledo" android:host="task" />
+                <data android:scheme="marbledo" android:host="calendar" />
+            </intent-filter>
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
+
+        <!--
+            "بعداً" from a task notification: a light-weight, transparent dialog that offers an hour,
+            this evening or tomorrow morning, then finishes. It never shows the launcher, and it is
+            excluded from recents so a one-second decision leaves no trace.
+        -->
+        <activity
+            android:name=".notifications.SnoozePickerActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.MarbleDo.SnoozePicker" />
 
         <receiver
             android:name=".notifications.ReminderReceiver"

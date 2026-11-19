@@ -55,7 +55,11 @@ class MainActivity : AppCompatActivity() {
         shareText = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
         openAdd = intent.getBooleanExtra(EXTRA_OPEN_ADD, false)
         destination = intent.getStringExtra(EXTRA_DESTINATION)
+        // Two ways in, both standard: the explicit extra the Quick Settings tile uses, and the
+        // `marbledo://task/{id}` URI every notification action sends. Reading the URI here is what
+        // makes a notification tap open *that task's* editor instead of the home screen.
         taskId = intent.getLongExtra(EXTRA_TASK_ID, 0L).takeIf { it > 0 }
+            ?: intent.data?.takeIf { it.scheme == "marbledo" && it.host == "task" }?.lastPathSegment?.toLongOrNull()?.takeIf { it > 0 }
     }
 
     companion object {

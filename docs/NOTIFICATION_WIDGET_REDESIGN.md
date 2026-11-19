@@ -1,111 +1,166 @@
-# Notification and widget redesign — “one row, one idea”
+# Notification redesign — two sections, the task first
 
-The complaint that started this pass was not “the notification is missing a feature”; it was that
-the notification area **feels crowded**. So the work here is subtraction, not decoration.
+The first pass on this card was subtraction: it removed labels, killed the progress row's second
+reading, and turned the occasions into one value line. This second pass fixes what subtraction could
+not: the card still mixed two unrelated kinds of information, and the line that mattered most — the
+task's title — was the one clipped to a single ellipsised row.
 
-## What was actually crowded
+## What the user reported
 
-The ongoing card had four looks, but all four shared one content policy: every fact got a label, and
-some facts got two.
-
-| Where | What was on screen |
-| --- | --- |
-| Collapsed row | badge + title + mood pill + a summary line that chained a task, an occasion and a count with ` · ` |
-| Expanded card | mood pill, title, two secondary dates, a progress label, a progress bar, a *labelled block* for the next task (label + title + time), a *labelled section* for occasions (heading + bulleted list + “and N more”), and a sub-text line |
-| Action row | three actions: mark done, open the calendar, open the tasks |
-| Countdown widget | a date header card, an occasions card, a next-task card, and a countdown card containing a nested “days · hours · minutes” card — four surfaces and six labels |
-| Habit widget | name, progress, streak, four row cards, and a footer that counted the same habits again with a different denominator |
-
-Nine of those elements said something the reader already knew, and each one was a separate row with
-its own padding, so the eye had no place to land. The sixteen custom-view layouts were also
-hand-maintained per look per size per direction, and they had drifted.
+| # | Report | Root cause |
+| --- | --- | --- |
+| 1 | The task title is cut with `…` and the task cannot be understood | the title was `maxLines="1"` in the card, next to a 38–48 dp badge and a mood pill |
+| 2 | “عقب‌افتاده” and “مناسبت” look the same brown/orange | both were painted from a blend of the accent and the day's mood, i.e. from one hue |
+| 3 | “۰ از ۱۰۱ عقب‌افتاده” with a progress bar is confusing | a track whose fill never moves is not a reading |
+| 4 | Three calendars on one line are crowded and low-contrast | Gregorian + Jalali + lunar in one 10 sp muted line |
+| 5 | “انجام شد” and “دیدن تقویم” have no icons and no “بعداً” | two text-only actions, no snooze at all |
+| 6 | Occasions are a tiny line at the lowest priority | occasions were a value line *below* everything |
+| 7 | Merging occasions and tasks in one card is cluttered | one stack of rows for two different concerns |
 
 ## The new anatomy
 
-**Notifications (all four looks share this):**
+**Priority 1 is the task. Priority 2 is the occasion. The date is a date, not a paragraph.**
 
 ```
-compact                                    expanded
-┌───────────────────────────────┐          ┌───────────────────────────────┐
-│ [badge]  پنجشنبه ۲۴ آبان  امروز│          │ [badge] پنجشنبه ۲۴ آبان  امروز │
-│          ۲۲:۳۰ · خرید          │          │         ۱۴۰۵/۰۸/۲۴ · ۲۵ جمادی…│
-└───────────────────────────────┘          │ ۳ از ۵ ──────────────          │
-                                           │ ┌─ بعدی ─────────── ۲۲:۳۰ ──┐ │
-                                           │ │ خرید نان                  │ │
-                                           │ └───────────────────────────┘ │
-                                           │ اربعین · عاشورا · +۱           │
-                                           └───────────────────────────────┘
+heads-up (88 dp budget)                      expanded
+┌────────────────────────────────────┐       ┌────────────────────────────────────┐
+│ [۲۸]  ۲۸ آبان ۱۴۰۵                │       │ [۲۸]  ۲۸ آبان ۱۴۰۵                │
+│        ⚠ ۳ عقب‌افتاده              │       │         میلادی … · قمری …          │
+│                                    │       │         ⚠ ۳ عقب‌افتاده            │
+│  کارها                             │       │ ┌─ کارها ───────────────────────┐ │
+│  خرید نان و شیر برای صبحانه        │       │ │ خرید نان و شیر برای صبحانه     │ │
+│  ۲۲,۳۰ · بالا                      │       │ │ ۲۲,۳۰ · بالا                   │ │
+└────────────────────────────────────┘       │ │ تماس با dentist               │ │
+                                             │ │ و ۲ کار دیگر                   │ │
+collapsed (platform template)                │ └────────────────────────────────┘ │
+┌────────────────────────────────────┐       │ ─────────────────────────────────  │
+│ [۲۸]  ۲۸ آبان ۱۴۰۵                │       │ ★ مناسبت‌های امروز                │
+│        خرید نان و شیر…             │       │ روز جهانی مرد · روز جهانی فلسفه    │
+└────────────────────────────────────┘       └────────────────────────────────────┘
 ```
 
-Rules, in order of importance:
+### Why the collapsed row is the platform template
 
-1. **One row, one idea.** Header = the date. Chip = the day's character in one or two words.
-   Progress = one reading (`3 of 5`, plus `2 late` only when something is late). Next step = the
-   only filled surface. Occasions = one value line, with the overflow count riding at the end.
-2. **The collapsed row states exactly one fact**, in order of what can be acted on: the next step,
-   else today's occasions, else progress, else the secondary calendars. It no longer joins three
-   facts with dots.
-3. **Two actions, not three.** The whole card opens the calendar, so the action row only adds
-   “mark this done” (when there is a next task) and the explicit calendar verb.
-4. **No section headings inside a notification.** The mood word already says “occasions”, so the
-   occasions line does not need a heading above it.
-5. **Explicit colours.** A custom `RemoteViews` layout inherits SystemUI's text colour; it now
-   declares `notification_card_text` / `notification_card_muted` for both themes, so the card cannot
-   disappear into a light or a dark shade.
+Android limits a *collapsed* custom view to **48 dp** and says so in the docs ("collapsed view
+layouts are limited to as little as 48 dp"). Forty-eight dp cannot hold a date, a chip and two
+lines of task. The redesign therefore spends its `RemoteViews` where there is room:
 
-The four looks differ in furniture, not in information:
+* **collapsed** — the platform's own template: title, one text line, the large date badge. It also
+  keeps SystemUI's touch ripple and expand affordance, which a custom row loses.
+* **heads-up** (88 dp) — the *compact* card: Jalali date, state chip, task title with **two lines**.
+* **expanded** (252 dp+) — the *expanded* card: both calendars, the state chip, the task section on
+  the card's one filled surface, then the occasion section under a hairline.
 
-| Look | Compact | Expanded |
+That is the "use `RemoteViews` only where it is needed" half of the requirement.
+
+### Rules, in order of importance
+
+1. **Two sections, in priority order.** The task section is always present; the occasion section is
+   second, quieter, and hidden whole (`notification_occasions_container` → `GONE`) when the day has
+   no occasion. A labelled section that says "nothing" was half the clutter.
+2. **The task title gets two lines, then four.** `maxLines="2"` in the heads-up card and `4` when
+   expanded; `ellipsize="end"` stays only as the last-resort overflow of a line that ran out of room.
+3. **One date in the compact card.** `۲۸ آبان ۱۴۰۵` — day, month **and year** — with no weekday
+   pushing it out. Gregorian and lunar appear only expanded, and labelled: `میلادی … · قمری …`.
+4. **The state is a chip, not a bar.** One pill with a mark and a word: `⚠ ۳ عقب‌افتاده` or
+   `امروز`. The progress bar and its `۰ از ۱۰۱` label are gone.
+5. **The day badge is small and lives in the header.** 28 dp compact, 34 dp expanded — the old
+   38–48 dp plate was taking the width the title needed.
+6. **No section headings for occasions on the collapsed card**; the expanded one gets a hairline, a
+   star and `مناسبت‌های امروز`, which is a *priority* marker, not a restatement.
+
+### Colour and semantics
+
+Every colour is stated on the card, because a custom `RemoteViews` row inherits SystemUI's text
+colour and disappears in one of the two themes. The three states are **hues**, not shades of the
+brand accent, and each is lifted only in lightness until it clears WCAG AA on the plate actually
+painted:
+
+| State | Hue | Mark | Contrast |
+| --- | --- | --- | --- |
+| عقب‌افتاده | deep red-orange `#C33A22` | triangle warning | lifted to ≥ 4.5:1 on both plates |
+| امروز | the theme accent (Material You's primary under `DYNAMIC`) | tasks mark | ≥ 4.5:1 |
+| مناسبت | calm purple `#6B4FA8` | four-point star | ≥ 4.5:1 |
+
+The lift is lightness-only, and `MarbleContrastTest` pins that red and purple stay **≥ 60° apart on
+the hue wheel** — a contrast *ratio* cannot express "these two look different", and that is exactly
+how the old card ended up with two brown chips.
+
+`values/notification_colors.xml` and `values-night/notification_colors.xml` carry the same three
+hues as layout fallbacks; the builder repaints them from `NotificationPalette`, which is resolved
+from the **app theme** (so a pinned dark theme gets a dark card inside a light shade, and vice
+versa) and from Material You's `dynamicLightColorScheme` / `dynamicDarkColorScheme` under `DYNAMIC`.
+
+### Actions — three, at most
+
+| Action | Icon | What it does |
 | --- | --- | --- |
-| **Card** (classic) | rounded date badge, title + mood, one line | header, progress + bar, rounded next-step plate, occasions line |
-| **Line** (minimal) | no badge, no plate — text only | one column, no fill, square bar |
-| **Poster** (editorial) | larger date, 16sp title | 19sp title, 48dp badge, square-ruled next-step plate |
-| **Banner** | 3dp mood rule leads the row | mood rule runs the header's height, tinted plate |
+| `انجام شد` | ✓ | `ReminderReceiver` completes the task, cancels its alarm, dismisses the card and shakes 30 ms with a toast — **without opening the app** |
+| `بعداً` | ⏰ | a transparent `SnoozePickerActivity` offers `یک ساعت دیگر`, `امشب`, `فردا صبح`; the choice reschedules the alarm and dismisses the card |
+| `باز کردن` | ↗ | deep-links to that task: `marbledo://task/{id}` **plus** `EXTRA_TASK_ID`, which `MainActivity` and `DashboardScreen.pendingEditTaskId` already know how to open |
 
-## Widgets
+Tapping the card itself carries the same deep link as `باز کردن`. On an occasion-only day the
+task verbs are not offered at all and the single action opens the calendar; the persistent date
+icon's card keeps `Done`/`Later`/`Open`.
 
-**Countdown widget — three bands, one surface:**
+`SnoozeOptions` is pure `ZonedDateTime` arithmetic and is unit-tested: an hour, 18:00 if it is still
+more than half an hour away (otherwise an hour), and 08:00 tomorrow — never 00:40, which is what
+"24 hours from now" turns a late-night snooze into.
 
-1. `TODAY` eyebrow, the triple calendar date as one bold block.
-2. A hairline (a 1dp line, not another card).
-3. **One** card: countdown label + target date on one line, the moment's title, then the three
-   readings — the day number large, hours and minutes smaller — each unit printed once beneath its
-   number.
-4. Two quiet meta lines: `Occasions · …` and `Next · …`. They are sentences, not cards.
+### Channels
 
-**Habit widget — a scoreboard, not three counters:**
+| Channel id | Label | Importance |
+| --- | --- | --- |
+| `marbledo_overdue` | عقب‌افتاده | HIGH, vibrating |
+| `marbledo_today` | یادآور امروز | DEFAULT |
+| `marbledo_occasions` | مناسبت‌ها | LOW, `setSound(null, null)`, no vibration, no badge |
+| `marbledo_status_date` | تقویم همیشگی | DEFAULT, silent, ongoing |
 
-1. Eyebrow (the widget's name), the score as one large number (`2 / 5`), one short status word
-   (`3 left today`, or “everything is done” when it is).
-2. The streak chip stays.
-3. The four habit rows stay (they are the interaction), with tighter padding and 28dp targets.
-4. The footer now only says how many habits did not fit — it no longer restates the day's counts.
+`marbledo_occasions` deliberately has a **new** id: a channel's importance is frozen when it is
+created, so reusing `marbledo_calendar` would have left every existing install with a ringing
+channel for a briefing the redesign promises is silent. Settings now has one switch per channel
+(`overdueNotificationsEnabled`, `todayRemindersEnabled`, `calendarNotificationsEnabled`) plus the
+briefing hour (`occasionNotificationHour`, 06–20), and the morning work is re-armed whenever that
+hour changes.
 
-Both widget thumbnails (`ic_widget_preview`, `ic_habit_widget_preview`) were redrawn to match, since
-they are what the launcher shows in the widget picker.
+### Grouped overdue reminders
+
+Each late task is posted into `setGroup("marbledo_overdue_tasks")`. A group **summary**
+(`GroupedNotification`) then states up to three of them by name, `و ۲ مورد دیگر` for the rest, and
+the count in the chip. The summary is silent (the cards already buzzed), is rebuilt from the
+database whenever a task is completed from a notification, and disappears once nothing is late.
+
+### Accessibility
+
+* Every remote `TextView` is RTL, `textAlignment="viewStart"` and uses `@font/vazirmatn_variable`.
+* The state chip's mark carries its own meaning (warning / task / star), and the card's root has a
+  `contentDescription` that reads the date, the state, the task and its due time in order.
+* Each action has a word next to its icon; an icon alone is not a TalkBack label.
+* The chip and its mark are `importantForAccessibility="no"` where the label beside them already
+  says the same thing, so TalkBack reads the card once, not twice.
 
 ## Verification
 
-The redesign is guarded by tests that fail if the clutter returns:
-
-- `scripts/tests/test_notification_designs.py` — sixteen layouts come from one table
+- `scripts/tests/test_notification_designs.py` — sixteen layouts from one table
   (`scripts/generate_notification_layouts.py --check`), direction pairs differ only in direction,
-  every text view states its colour, exactly one filled surface in the expanded card (none in the
-  minimal look), the old section headings are gone, the collapsed row is a single choice, the
-  RemoteViews widget allowlist still holds, and the accent ids the builder tints are exactly the
-  ids the layouts paint with the accent colour.
+  every text states its colour, one filled surface, the collapsed card has no secondary dates, the
+  task title is never `maxLines="1"`, the state chip exists in both cards and the progress bar does
+  not, and the accent ids the builder tints are exactly the ids the layouts paint with it.
 - `app/src/test/.../NotificationLayoutContractTest.kt` — every `R.id` the builder sets exists in
-  every layout it can be rendered from.
-- `scripts/tests/test_widget_rtl.py` — one filled surface in the planner widget, the widget's
-  strings are translated in both languages, and the habit widget states its score once.
-
-`python3 scripts/generate_notification_layouts.py` rewrites the sixteen layouts after a change to
-the table; `--check` is what the test runs.
+  every layout it can be rendered from, under the new `if (expanded)` / `if (design == "minimal")`
+  branch analysis.
+- `app/src/test/.../NotificationBehaviourTest.kt` — the three snooze moments (including the
+  late-night case), distinct channel ids with a silent briefing, three labelled actions, the group
+  contract, "done" never starting an activity, and the deep-link resolution.
+- `core/designsystem/.../MarbleContrastTest.kt` — the state hues stay ≥ 60° apart and each clears
+  AA on both plates after being lifted.
+- `core/domain/.../NotificationPlanTest.kt` — the overdue list's reading order and the grouped
+  summary's hidden count.
 
 ## Limits
 
-The sandbox has no Android SDK and no emulator, so this pass is verified by compilation in CI, unit
+The sandbox has no Android SDK and no emulator, so this pass is verified by CI's compilation, unit
 tests, lint and the static guards above — not by a screenshot. Android still owns the outer frame,
-the header and the final expansion height, so a narrow shade or a very large font scale can ellipsize
-the occasion line; every text view is bounded and ellipsized for exactly that reason. Device review on
-API 26 and 31+, in Persian and English, light and dark, remains worth doing.
+the header, the action row and the final expansion height, so a narrow shade or a very large font
+scale can still clip; every text view is bounded and ellipsised for exactly that reason. Device
+review on API 26 and 31+, in Persian and English, light and dark, remains worth doing.

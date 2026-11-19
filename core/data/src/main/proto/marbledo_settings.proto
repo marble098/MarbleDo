@@ -47,4 +47,10 @@ message MarbleDoSettingsProto {
   // Presence distinguishes an intentionally empty selection from an older install.
   optional bool occasion_cultures_configured = 33;
   string notification_design = 34;
+  // Per-channel switches. Optional presence keeps the default (on) for installs saved before the
+  // channels were split out of the single task channel.
+  optional bool overdue_notifications_enabled = 35;
+  optional bool today_reminders_enabled = 36;
+  // Morning hour of the once-a-day occasion briefing (0..23).
+  optional int32 occasion_notification_hour = 37;
 }

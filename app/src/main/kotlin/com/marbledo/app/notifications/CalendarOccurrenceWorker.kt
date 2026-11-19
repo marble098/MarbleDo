@@ -37,7 +37,6 @@ import com.marbledo.feature.calendar.OccasionPlanner
 import com.marbledo.feature.calendar.OccasionRepository
 import com.marbledo.feature.calendar.PersianDate
 import com.marbledo.feature.calendar.PersianDateUtils
-import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +51,8 @@ class CalendarOccurrenceWorker(
         try {
             val settings = SettingsRepository(applicationContext).settings.first()
             if (!settings.educationModeEnabled) clearEducationalNotifications(applicationContext)
+            // One switch, one promise: the briefing respects both the occasion switch and its own
+            // morning hour, and it posts on the silent channel when it does run.
             if (!settings.calendarNotificationsEnabled) return@withContext Result.success()
             val repository = OccasionRepository(applicationContext)
             repository.load()
@@ -276,7 +277,9 @@ class CalendarOccurrenceWorker(
         // the fixed red) after a theme switch while the rest of the app repainted.
         val accentColor = themeAccent
 
-        val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
+        // The once-a-day briefing goes out on the silent occasions channel: it is information
+        // about the day, not an alarm, and it arrives at the hour the user picked.
+        val notification = NotificationCompat.Builder(context, NotificationChannels.OCCASIONS)
             .addExtras(Bundle().apply {
                 putBoolean(EXTRA_EDUCATIONAL_CONTENT, events.any { it.category == OccasionCategory.EDUCATIONAL })
                 putStringArrayList(EXTRA_CULTURES, ArrayList(events.flatMap { it.cultures }.map { it.key }.distinct()))
@@ -338,18 +341,19 @@ class CalendarOccurrenceWorker(
 }
 
 object CalendarNotificationWorkInitializer {
-    fun ensureDaily(context: Context) {
-        val now = System.currentTimeMillis()
-        val next = Calendar.getInstance().apply {
-            timeInMillis = now
-            set(Calendar.HOUR_OF_DAY, 9)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            if (timeInMillis <= now) add(Calendar.DAY_OF_YEAR, 1)
-        }
+    /**
+     * Arms the once-a-day briefing at [hour] (the user's "morning briefing hour", default 08:00).
+     *
+     * The hour comes from the [ReminderPreferences] mirror, not from DataStore: this runs from the
+     * Application and from the boot receiver, where a suspending read would mean doing the work
+     * twice. `UPDATE` re-arms the request whenever the hour or the settings change, and the
+     * initial delay is always the *next* occurrence of that hour, so changing 08:00 to 20:00 does
+     * not leave the old 08:00 alarm in place.
+     */
+    fun ensureDaily(context: Context, hour: Int = ReminderPreferences.occasionHour(context)) {
+        val delay = ReminderPreferences.delayUntilHour(hour)
         val request = PeriodicWorkRequestBuilder<CalendarOccurrenceWorker>(1, TimeUnit.DAYS)
-            .setInitialDelay(next.timeInMillis - now, TimeUnit.MILLISECONDS)
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .addTag(CalendarOccurrenceWorker.WORK_TAG)
             .build()
         WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(

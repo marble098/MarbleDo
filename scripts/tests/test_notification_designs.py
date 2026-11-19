@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 ANDROID = '{http://schemas.android.com/apk/res/android}'
+APP = '{http://schemas.android.com/apk/res-auto}'
 
 
 class NotificationDesignTests(unittest.TestCase):
@@ -179,21 +180,116 @@ class NotificationDesignTests(unittest.TestCase):
         db = (ROOT / 'core/data/src/main/kotlin/com/marbledo/core/data/db/MarbleDatabase.kt').read_text()
         self.assertNotIn('takeIf { it.isOpen }', db)
 
-    def test_expanded_notifications_have_smart_section_containers_and_mood_pill(self):
+    def test_expanded_notifications_have_two_sections_and_a_state_chip(self):
+        """Priority 1 is the tasks, priority 2 the occasions, and the state is a chip.
+
+        The redesign splits the card in two on purpose: what the user has to act on and what is
+        merely interesting. A section that exists must also be *hideable*, which is why both
+        containers carry ids whose visibility the builder sets.
+        """
         for design in ('classic', 'minimal', 'editorial', 'banner'):
             for direction in ('rtl', 'ltr'):
                 compact = (ROOT / f'app/src/main/res/layout/notification_{design}_compact_{direction}.xml').read_text()
                 expanded = (ROOT / f'app/src/main/res/layout/notification_{design}_expanded_{direction}.xml').read_text()
-                self.assertIn('@+id/notification_mood_pill', compact)
-                self.assertIn('@+id/notification_mood_pill', expanded)
-                self.assertIn('@+id/notification_progress_container', expanded)
-                self.assertIn('@+id/notification_next_container', expanded)
+                for markup, size in ((compact, 'compact'), (expanded, 'expanded')):
+                    with self.subTest(design=design, direction=direction, size=size):
+                        # The state chip replaces the progress bar and the mood pill.
+                        self.assertIn('@+id/notification_state_container', markup)
+                        self.assertIn('@+id/notification_state_label', markup)
+                        self.assertIn('@+id/notification_state_chip_plate', markup)
+                        self.assertIn('@+id/notification_state_icon', markup)
+                        # Priority 1 is always present.
+                        self.assertIn('@+id/notification_tasks_container', markup)
+                        self.assertIn('@+id/notification_task_title', markup)
+                        # What the chip replaced is gone for good.
+                        self.assertNotIn('notification_progress', markup)
+                        self.assertNotIn('notification_mood_pill', markup)
+                # Priority 2 exists only on the expanded card, where there is room for it.
                 self.assertIn('@+id/notification_occasions_container', expanded)
+                self.assertIn('@+id/notification_occasions_label', expanded)
+                self.assertIn('@+id/notification_occasions_icon', expanded)
+                self.assertIn('@+id/notification_occasions_divider', expanded)
+                self.assertNotIn('@+id/notification_occasions_container', compact)
 
         views_kt = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
-        self.assertIn('R.id.notification_progress_container', views_kt)
-        self.assertIn('R.id.notification_next_container', views_kt)
+        self.assertIn('R.id.notification_state_label', views_kt)
         self.assertIn('R.id.notification_occasions_container', views_kt)
+        self.assertIn('R.id.notification_task_title', views_kt)
+
+    def test_the_task_title_is_never_clipped_to_one_line(self):
+        """The most important line on the card was the one that got the ellipsis.
+
+        A task title truncated to a single line is unreadable, so the compact card gives it two
+        lines and the expanded card four; the ellipsis that remains is the last-resort overflow of
+        a line that genuinely ran out of room.
+        """
+        for design in ('classic', 'minimal', 'editorial', 'banner'):
+            for direction in ('rtl', 'ltr'):
+                compact = ET.parse(ROOT / f'app/src/main/res/layout/notification_{design}_compact_{direction}.xml')
+                expanded = ET.parse(ROOT / f'app/src/main/res/layout/notification_{design}_expanded_{direction}.xml')
+                for tree, minimum in ((compact, 2), (expanded, 4)):
+                    titles = [
+                        view for view in tree.iter('TextView')
+                        if (view.get(ANDROID + 'id') or '').endswith('/notification_task_title')
+                    ]
+                    with self.subTest(design=design, direction=direction, minimum=minimum):
+                        self.assertEqual(1, len(titles), 'exactly one task title per card')
+                        self.assertGreaterEqual(int(titles[0].get(ANDROID + 'maxLines')), minimum)
+                        self.assertEqual('end', titles[0].get(ANDROID + 'ellipsize'))
+
+    def test_the_chip_word_is_painted_in_an_ink_that_reads_on_its_own_pill(self):
+        """The chip is a coloured pill with a word and a mark on it, not a word on the card.
+
+        This is the contrast bug that a screenshot, not a compile, would catch: the state hue reads
+        on the *card* (it clears 4.5:1 there) but the word sits on the state's own soft fill, and
+        on the light theme's red that pairing is 1.3:1 — an embossed-looking chip. The fix is that
+        the ink is chosen against the fill, so both the chip label and the mark must come from
+        that one value, and neither may reuse the hue meant for the card.
+        """
+        views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
+        theme = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/NotificationTheme.kt').read_text()
+        self.assertIn('val chipInk = inkOn(chipFill)', views,
+                      'the chip ink must be derived from the fill behind it')
+        self.assertIn('MarbleContrast.bestInk(fill)', views)
+        # Both the word and the mark take that ink; the mark is a white vector in the resources, so
+        # leaving it untinted would put white on a pale pill.
+        self.assertIn('setTextColor(R.id.notification_state_label, chipInk)', views)
+        self.assertIn('R.id.notification_state_icon, chipIcon(state), chipInk', views)
+        self.assertNotIn('setTextColor(R.id.notification_state_label, stateHue)', views)
+        # The fills are composited, so a bitmap can be filled with them and still hold ink.
+        for field in ('accentFill', 'occasionFill'):
+            self.assertIn(f'val {field}', theme, f'the palette lost {field}')
+        self.assertIn('MarbleContrast.alphaOver(accent, plate,', theme)
+        self.assertIn('MarbleContrast.alphaOver(occasion, plate,', theme)
+        # The Compose preview reads the same two values, so it cannot show a chip the shade will not.
+        settings = (ROOT / 'app/src/main/kotlin/com/marbledo/SettingsScreen.kt').read_text()
+        self.assertIn('val chipFill = when (content.state)', settings)
+        self.assertIn('val chipInk = Color(MarbleContrast.bestInk(chipFill))', settings)
+        self.assertNotIn('tint = stateColor', settings)
+
+    def test_the_chip_mark_is_not_left_white_on_a_pale_pill(self):
+        """The static layout is the fallback when a tinted bitmap cannot be drawn.
+
+        With no builder running, the drawable must still be visible: the pill is filled with the
+        light theme's soft red, and the shipping vector is white, which is 1.3:1 on it. The layout
+        therefore carries a static tint, and it is the state's own hue rather than the card's text
+        colour so the two themes' colours stay in one table.
+        """
+        for design in ('classic', 'minimal', 'editorial', 'banner'):
+            for direction in ('rtl', 'ltr'):
+                for size in ('compact', 'expanded'):
+                    path = ROOT / f'app/src/main/res/layout/notification_{design}_{size}_{direction}.xml'
+                    tree = ET.parse(path)
+                    icons = [
+                        view for view in tree.iter('ImageView')
+                        if (view.get(ANDROID + 'id') or '').endswith('/notification_state_icon')
+                    ]
+                    with self.subTest(design=design, direction=direction, size=size):
+                        self.assertEqual(1, len(icons), 'exactly one chip mark per card')
+                        # `app:tint` (the support attribute) and not `android:tint`: lint's
+                        # UseAppTint rule rejects the framework one in an AppCompat project, and
+                        # RemoteViews is inflated by the app's own inflater so it resolves the same.
+                        self.assertEqual('@color/notification_state_overdue', icons[0].get(APP + 'tint'))
 
     def test_the_layouts_are_generated_from_one_table(self):
         """Sixteen hand-written files drifted; one table cannot. Regenerate with --check."""
@@ -234,25 +330,24 @@ class NotificationDesignTests(unittest.TestCase):
             with self.subTest(layout=path.name):
                 self.assertEqual(expected, filled)
 
-    def test_no_section_labels_come_back(self):
-        """Occasions are a value line now; a second heading above them was the clutter."""
-        for design in ('classic', 'minimal', 'editorial', 'banner'):
-            for size in ('compact', 'expanded'):
-                path = ROOT / f'app/src/main/res/layout/notification_{design}_{size}_rtl.xml'
-                text = path.read_text(encoding='utf-8')
-                self.assertNotIn('@+id/notification_occasions_label', text)
-                self.assertNotIn('@+id/notification_more_occasions', text)
-        views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
-        self.assertNotIn('R.id.notification_occasions_label', views)
-        self.assertNotIn('R.id.notification_more_occasions', views)
+    def test_the_compact_card_shows_the_jalali_date_and_the_expanded_one_the_rest(self):
+        """"۲۸ آبان ۱۴۰۵" collapsed; Gregorian and lunar only when the card has room.
 
-    def test_the_collapsed_row_states_one_fact(self):
-        """The old summary chained a task, an occasion and a count with separators."""
+        The old card stacked all three calendars into one low-contrast line that fit nowhere. The
+        date the app is built around is the Jalali one, so that is the header; the cross-check line
+        lives on the expanded card, labelled, where it can wrap onto two lines.
+        """
         source = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/PersistentCalendarNotification.kt').read_text()
-        self.assertIn('val summaryLine = when {', source)
-        self.assertIn('nextSummary != null -> nextSummary', source)
-        # The old "a · b · c" collapsed line is gone.
-        self.assertNotIn('collapsedLine', source)
+        self.assertIn('R.string.notification_secondary_dates', source)
+        # The title is the day, the month *and* the year, with no weekday pushing it out.
+        self.assertIn('${today.year}', source)
+        views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
+        self.assertIn('setTextViewText(R.id.notification_secondary_dates, content.secondaryDatesLine)', views)
+        # The compact card must not carry the secondary line at all.
+        for design in ('classic', 'minimal', 'editorial', 'banner'):
+            for direction in ('rtl', 'ltr'):
+                compact = (ROOT / f'app/src/main/res/layout/notification_{design}_compact_{direction}.xml').read_text()
+                self.assertNotIn('notification_secondary_dates', compact)
 
     def test_calendar_screen_uses_unified_command_card_and_adaptive_month_rows(self):
         cal_kt = (ROOT / 'feature/calendar/src/main/kotlin/com/marbledo/feature/calendar/CalendarScreen.kt').read_text()
@@ -274,32 +369,28 @@ class NotificationThemeTests(unittest.TestCase):
         the night resource — the device theme — instead of the app theme.
         """
         views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
-        # The accent tint is one `if (!expanded) { … } else { … }` block. Slice it out between the
-        # comment that introduces it and the comment that follows it, then split on the else: a
-        # brace walker would stop at the closing brace of the trailing `forEach` lambda.
-        anchor = 'The accent labels:'
-        tail = '// Minimal is deliberately text only'
-        self.assertIn(anchor, views)
-        self.assertIn(tail, views)
-        section = views[views.index(anchor):views.index(tail)]
-        compact, expanded = section.split('} else {', 1)
-        compact = set(re.findall(r'R\.id\.(\w+)', compact))
-        expanded = set(re.findall(r'R\.id\.(\w+)', expanded))
-        self.assertEqual({'notification_mood_pill'}, compact, 'the compact accent set changed')
-        self.assertEqual(
-            {'notification_mood_pill', 'notification_next_label'}, expanded,
-            'the expanded accent set changed',
-        )
+        # The accent is painted at run time, so the layouts state the accent only as a *fallback*
+        # for the views the builder always recolours. Those ids are exactly the ones the builder
+        # re-tints from the palette; anything else would keep the night resource, i.e. the device
+        # theme, instead of the app theme.
+        # The state label states the *state's* colour (red for overdue, the accent for today), so
+        # it is stated in the layout and then re-stated by the builder; the tasks heading is the
+        # one label that is always the brand accent.
+        compact = set()
+        expanded = {'notification_tasks_label'}
+        self.assertIn('setTextColor(R.id.notification_state_label, chipInk)', views)
+        self.assertIn('setTextColor(R.id.notification_tasks_label, tint)', views)
         for design in ('classic', 'minimal', 'editorial', 'banner'):
             for direction in ('rtl', 'ltr'):
-                for size, declared in (('compact', compact), ('expanded', expanded)):
+                for size, expected in (('compact', compact), ('expanded', expanded)):
                     path = ROOT / f'app/src/main/res/layout/notification_{design}_{size}_{direction}.xml'
                     actual = {
                         view.get(ANDROID + 'id').split('/')[-1]
                         for view in ET.parse(path).iter()
                         if view.get(ANDROID + 'textColor') == '@color/notification_card_accent'
                     }
-                    self.assertEqual(declared, actual, str(path))
+                    with self.subTest(layout=path.name):
+                        self.assertEqual(expected, actual, str(path))
 
     def test_the_palette_plates_match_the_drawables(self):
         """The palette checks text against a plate, so the plate constants must be the real fills.

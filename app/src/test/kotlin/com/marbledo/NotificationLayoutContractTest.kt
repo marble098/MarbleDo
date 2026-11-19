@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test
 class NotificationLayoutContractTest {
 
     private val designs = listOf("classic", "minimal", "editorial", "banner")
-    private val knownGuards = setOf("", "banner", "expanded", "expanded-else")
+    private val knownGuards = setOf("", "banner", "heads-up", "expanded", "else")
 
     @Test
     fun `every view id the builder targets exists in every layout it can render`() {
@@ -57,13 +57,16 @@ class NotificationLayoutContractTest {
     fun `the branch analysis covers every id the builder references`() {
         val references = referencesByGuard(builderSource())
 
-        // Completeness of the analysis itself: with the banner guard satisfied and both sides of
-        // the expanded split walked, no reference may be dropped on the floor.
-        val bannerBothSides = requiredIds(references, "banner", false) +
+        // Completeness of the analysis itself: with every branch walked, no reference may be
+        // dropped on the floor. Both the banner rule and the two sides of the heads-up/expanded
+        // split exist in the builder, so the walk covers a banner card and a non-banner one.
+        val everyBranch = requiredIds(references, "classic", false) +
+            requiredIds(references, "classic", true) +
+            requiredIds(references, "banner", false) +
             requiredIds(references, "banner", true)
         assertEquals(
             references.keys,
-            bannerBothSides,
+            everyBranch,
             "the branch analysis lost track of some R.id references",
         )
 
@@ -75,7 +78,7 @@ class NotificationLayoutContractTest {
             "unknown branch guard(s) in CalendarNotifications: ${guards - knownGuards}",
         )
         assertTrue(
-            "banner" in guards && "expanded" in guards && "expanded-else" in guards,
+            "banner" in guards && "expanded" in guards && "heads-up" in guards,
             "expected branch guards were not recognised; the parser is out of step with " +
                 "CalendarNotificationViews (saw $guards)",
         )
@@ -113,13 +116,16 @@ class NotificationLayoutContractTest {
                     depth++
                     openGuards[depth] = "expanded"
                 }
-                code.contains(ELSE_GUARD) -> {
-                    // `} else {` closes the `if (!expanded)` block and reopens the same depth in
-                    // the other branch: depth is unchanged, only the guard flips.
-                    openGuards.remove(depth)
-                    depth--
+                code.contains(COMPACT_GUARD) -> {
                     depth++
-                    openGuards[depth] = "expanded-else"
+                    openGuards[depth] = "heads-up"
+                }
+                code.contains(ELSE_GUARD) -> {
+                    // `} else {` closes the branch just opened and reopens the same depth on the
+                    // other side: the innermost guard flips to the "other branch" marker, so an id
+                    // reachable through neither side is still accounted for.
+                    openGuards.remove(depth)
+                    openGuards[depth] = "else"
                 }
                 else -> STRING.replace(code, "").forEach { char ->
                     when (char) {
@@ -152,9 +158,13 @@ class NotificationLayoutContractTest {
             guards.all { guard ->
                 when (guard) {
                     "" -> true
+                    // The compact card branches once, on `minimal` ("text only"); every other
+                    // design draws the badge, so `banner` is its own branch and `heads-up` its
+                    // complement.
                     "banner" -> design == "banner"
-                    "expanded" -> !expanded
-                    "expanded-else" -> expanded
+                    "else" -> design != "minimal"
+                    "expanded" -> expanded
+                    "heads-up" -> !expanded
                     else -> error("unknown branch guard '$guard'")
                 }
             }
@@ -286,7 +296,9 @@ class NotificationLayoutContractTest {
         val LAYOUT_ID = Regex("""@\+id/([A-Za-z_][A-Za-z0-9_]*)""")
         val STRING = Regex("\"(?:[^\"\\\\]|\\\\.)*\"")
         const val BANNER_GUARD = "if (design == \"banner\") {"
-        const val EXPANDED_GUARD = "if (!expanded) {"
+        const val EXPANDED_GUARD = "if (expanded) {"
+        /** The one place the builder still branches on the compact (heads-up) card. */
+        const val COMPACT_GUARD = "if (design == \"minimal\") {"
         const val ELSE_GUARD = "} else {"
     }
 }

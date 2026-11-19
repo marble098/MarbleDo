@@ -46,6 +46,11 @@ class BackupCodecTest {
             educationModeEnabled = true,
             thursdayWeekendEnabled = true,
             occasionCultureIds = listOf("iranian", "western", "europe"),
+            // The per-channel reminder switches and the briefing hour are part of a profile, so a
+            // restore that dropped them would silently re-enable a channel the user muted.
+            overdueNotificationsEnabled = false,
+            todayRemindersEnabled = false,
+            occasionNotificationHour = 19,
         )
         val encoded = BackupCodec.encode(listOf(task), settings)
 
