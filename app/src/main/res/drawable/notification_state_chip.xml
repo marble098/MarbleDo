@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- The pill behind the state word on the card. A RemoteViews layout may not call
-     setBackgroundColor reflectively, so the chip is an ImageView painted with
-     setImageViewResource / setImageViewBitmap by CalendarNotificationViews. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/notification_state_overdue_soft" />
-    <corners android:radius="10dp" />
-</shape>

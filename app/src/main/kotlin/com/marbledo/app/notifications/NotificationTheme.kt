@@ -25,26 +25,27 @@ internal data class NotificationPalette(
     val text: Long,
     val muted: Long,
     val accent: Long,
-    val accentSoft: Long,
+    /** The 1 dp line between sections, as the hairline drawables paint it composited on the plate. */
     val hairline: Long,
     val isDark: Boolean,
     /** "Overdue" reads as a warning: a deep red-orange that never shares the accent's hue. */
-    val overdue: Long = 0L,
+    val overdue: Long,
     /** "Today" is the brand accent, i.e. the day the user is living in. */
-    val today: Long = 0L,
+    val today: Long,
     /** "Occasion" is a calm neutral purple, deliberately the opposite of the warning red. */
-    val occasion: Long = 0L,
-    /** A soft container for the overdue chip and the day badge; the ink on it is [overdueIcon]. */
-    val overdueSoft: Long = 0L,
-    /** White or near-black on [overdueSoft], chosen by contrast rather than assumed. */
-    val overdueIcon: Long = 0L,
-    /** The tinted container behind the occasion (priority 2) section. */
-    val occasionSoft: Long = 0L,
-    /** [accentSoft] composited onto the plate: a chip fill has to be opaque to hold ink. */
-    val accentFill: Long = 0L,
-    /** [occasionSoft] composited onto the plate: same reason. */
-    val occasionFill: Long = 0L,
-)
+    val occasion: Long,
+    /** The tonal panel the classic look paints under the tasks, as its drawable paints it. */
+    val panel: Long,
+) {
+    /** The ink that reads on a band filled with [accent]. */
+    val onAccent: Long get() = MarbleContrast.bestInk(accent)
+}
+
+/** Literal twins of the drawables the card paints, so the palette can measure against them. */
+internal const val NOTIFICATION_PANEL_LIGHT = 0xFFE9E8EEL
+internal const val NOTIFICATION_PANEL_DARK = 0xFF2F3038L
+internal const val NOTIFICATION_HAIRLINE_LIGHT = 0x1F1C1B22L
+internal const val NOTIFICATION_HAIRLINE_DARK = 0x2EEFECF6L
 
 /**
  * The two plates the card can paint, matching `drawable/notification_card_plate_light.xml` and
@@ -92,38 +93,31 @@ internal fun notificationPalette(
     // The plate the card paints, not `surface`: the two differ by a few steps, and the whole point
     // of this palette is that its contrasts are measured against the pixels that end up on screen.
     val plate = if (dark) NOTIFICATION_PLATE_DARK else NOTIFICATION_PLATE_LIGHT
-    val accent = MarbleContrast.readable(app.primary, plate, MarbleContrast.TEXT_MINIMUM)
+    val panel = if (dark) NOTIFICATION_PANEL_DARK else NOTIFICATION_PANEL_LIGHT
+    // Text is checked against the *panel* as well as the plate: the classic look sets the task
+    // title on the panel, and the panel is the darker (or lighter) of the two.
+    fun ink(colour: Long) = MarbleContrast.readable(
+        MarbleContrast.readable(colour, plate, MarbleContrast.TEXT_MINIMUM), panel, MarbleContrast.TEXT_MINIMUM,
+    )
+    val accent = ink(app.primary)
     // The three states the card colours: a warning red for what is late, the brand accent for
     // today, and a calm purple for occasions. They are *hues* that carry meaning, so each one
     // keeps its hue and is only moved in lightness until it reads on the plate — a red that is
     // merely darker indigo is the exact bug that made "overdue" and "occasion" look alike.
-    val overdue = MarbleContrast.readable(NOTIFICATION_OVERDUE_HUE, plate, MarbleContrast.TEXT_MINIMUM)
-    val occasion = MarbleContrast.readable(NOTIFICATION_OCCASION_HUE, plate, MarbleContrast.TEXT_MINIMUM)
-    // The warning disc: the hue as a fill, with the ink picked against the fill.
-    val overdueSoft = MarbleContrast.blend(overdue, plate, 0.82)
-    val accentSoft = MarbleContrast.withAlpha(accent, if (MarbleContrast.relativeLuminance(plate) < 0.4) 0.16 else 0.09)
-    val occasionSoft = MarbleContrast.withAlpha(occasion, if (MarbleContrast.relativeLuminance(plate) < 0.4) 0.18 else 0.10)
+    val overdue = ink(NOTIFICATION_OVERDUE_HUE)
+    val occasion = ink(NOTIFICATION_OCCASION_HUE)
+    val hairline = if (dark) NOTIFICATION_HAIRLINE_DARK else NOTIFICATION_HAIRLINE_LIGHT
     return NotificationPalette(
         background = plate,
-        text = MarbleContrast.readable(app.onSurface, plate, MarbleContrast.TEXT_MINIMUM),
-        muted = MarbleContrast.readable(app.onSurfaceVariant, plate, MarbleContrast.TEXT_MINIMUM),
+        text = ink(app.onSurface),
+        muted = ink(app.onSurfaceVariant),
         accent = accent,
-        // A tinted section plate has to stay visible on the card without turning into a second
-        // background, so its alpha follows the plate's own lightness.
-        accentSoft = accentSoft,
-        hairline = MarbleContrast.withAlpha(accent, if (MarbleContrast.relativeLuminance(plate) < 0.4) 0.34 else 0.24),
+        hairline = MarbleContrast.alphaOver(hairline, plate, ((hairline ushr 24) and 0xFF) / 255.0),
         isDark = dark,
         overdue = overdue,
         today = accent,
         occasion = occasion,
-        overdueSoft = overdueSoft,
-        overdueIcon = MarbleContrast.bestInk(overdueSoft),
-        occasionSoft = occasionSoft,
-        // A `RemoteViews` chip is a bitmap, and a bitmap cannot be translucent and still hold
-        // ink: the alpha versions above are for a Compose background, where the plate shows
-        // through. These are the same tints already composited onto the plate the card paints.
-        accentFill = MarbleContrast.alphaOver(accent, plate, if (MarbleContrast.relativeLuminance(plate) < 0.4) 0.16 else 0.09),
-        occasionFill = MarbleContrast.alphaOver(occasion, plate, if (MarbleContrast.relativeLuminance(plate) < 0.4) 0.18 else 0.10),
+        panel = panel,
     )
 }
 

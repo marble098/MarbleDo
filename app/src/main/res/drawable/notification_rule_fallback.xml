@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Editorial: the vertical rule beside the task block. The builder repaints it as a bitmap in the
+     theme accent; this is only the un-themed fallback the layout inflates with. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/notification_card_accent" />
+</shape>

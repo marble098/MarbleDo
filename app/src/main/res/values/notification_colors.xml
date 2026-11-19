@@ -1,29 +1,14 @@
 <resources>
-    <!-- Explicit card colours. A custom RemoteViews layout inherits SystemUI's text colour, which
-         is invisible in one of the two themes; these pair with values-night. They mirror the
-         default MarbleTheme palette (LightColors), and the builder repaints the accent carriers
-         (rule, progress, plate, accent labels) in whichever theme the user actually picked. -->
-    <color name="notification_card_background">#F2F1F6</color>
+    <!-- Fallback colours for the notification layouts. A custom RemoteViews layout inherits
+         SystemUI's text colour, which is invisible in one of the two themes, so every text states
+         a colour here — but the builder (CalendarNotificationViews) restates all of them from the
+         NotificationPalette of the *app* theme at paint time. Nothing on the card depends on
+         these values; they only keep the layout readable if a palette action is ever dropped. -->
     <color name="notification_card_text">#1C1B22</color>
     <color name="notification_card_muted">#5A5A6B</color>
     <color name="notification_card_accent">#4355A5</color>
-    <!-- Neutral, not indigo. These two paint the next-step plate and its hairline *under* the
-         theme-accent bitmap the builder draws on top; a fixed indigo tint used to show through as
-         a second colour, so the card looked half-themed no matter which palette was chosen. They
-         are now a low-alpha version of the card's own ink, which stays neutral under any accent. -->
-    <color name="notification_card_section">#121C1B22</color>
-    <color name="notification_card_track">#2E1C1B22</color>
 
-    <!-- The three states the card carries as a word. Each is a hue, not a shade of the brand
-         accent: "overdue" is a warning red-orange and "occasion" a calm purple, so the two can
-         never be confused for the same brown chip. Both clear 4.5:1 on the light plate (#F2F1F6)
-         and are re-checked and lifted by NotificationPalette at paint time. -->
+    <!-- The two semantic states that keep their own hue (the third, "today", is the accent). -->
     <color name="notification_state_overdue">#B02A12</color>
-    <color name="notification_state_today">#4355A5</color>
     <color name="notification_state_occasion">#5B3F94</color>
-    <!-- The warning disc behind the overdue icon: the hue as a fill, with white ink on it. -->
-    <color name="notification_state_overdue_soft">#F7DCD4</color>
-    <color name="notification_state_occasion_soft">#E7DFF6</color>
-    <!-- Priority-2 section labels and their star mark, kept quieter than the task section. -->
-    <color name="notification_occasion_icon">#5B3F94</color>
 </resources>

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Editorial keeps the paper look with a soft 6dp corner — enough to avoid the
-     outer 20dp plate's corners fighting the inner rectangle, but still square
-     enough to feel editorial. No drawable stroke; the themed hairline comes from
-     the focusPlate bitmap to avoid a double border. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/notification_card_section" />
-    <corners android:radius="6dp" />
-</shape>
