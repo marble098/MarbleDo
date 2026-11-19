@@ -63,7 +63,15 @@ internal object GroupedNotification {
             NotificationManagerCompat.from(notificationContext).cancel(SUMMARY_ID)
             return
         }
-        if (!canPost(notificationContext)) return
+        // Lint only recognises the permission check when it is written at the call site it guards,
+        // so this is spelled out here rather than hidden behind `canPost`.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                notificationContext,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return
+        if (!NotificationManagerCompat.from(notificationContext).areNotificationsEnabled()) return
         NotificationChannels.create(notificationContext)
         val digits = { value: String -> TextNormalizer.formatDigits(value, settings.numeralMode) }
         val zone = ZoneId.systemDefault()
@@ -134,10 +142,4 @@ internal object GroupedNotification {
         postSummary(context, settings, tasks)
     }
 
-    private fun canPost(context: Context): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return false
-        return NotificationManagerCompat.from(context).areNotificationsEnabled()
-    }
 }
