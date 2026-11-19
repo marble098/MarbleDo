@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -30,7 +31,7 @@ fun MarbleBox(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLow,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
-    borderColor: Color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+    borderColor: Color = MarbleBoxBorder(containerColor),
     shape: Shape = MaterialTheme.shapes.extraLarge,
     tonalElevation: Dp = 1.dp,
     padding: Dp = MarbleSpacing.lg,
@@ -51,6 +52,29 @@ fun MarbleBox(
                 .padding(padding),
             verticalArrangement = Arrangement.spacedBy(gap),
             content = content,
+        )
+    }
+}
+
+/**
+ * The hairline that gives a box its edge.
+ *
+ * Every block in the app is a card with a 1 dp border, so that border *is* the structure: when it
+ * disappears the page turns into loose text on a background and the whole design reads as shapeless
+ * — the "boxy but flat" report, worst on the AMOLED scheme, where 55% of a near-black outline over
+ * near-black composited to 1.2:1. [MarbleContrast.separator] keeps the light themes' calm value and
+ * only lifts the line where the composite would vanish.
+ */
+@Composable
+fun MarbleBoxBorder(containerColor: Color): Color {
+    val outline = MaterialTheme.colorScheme.outlineVariant
+    return remember(containerColor, outline) {
+        Color(
+            MarbleContrast.separator(
+                colour = outline.toArgbLong(),
+                background = containerColor.toArgbLong(),
+                alpha = 0.55,
+            ),
         )
     }
 }

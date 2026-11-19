@@ -13,7 +13,6 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
 import androidx.core.text.BidiFormatter
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -23,7 +22,6 @@ import androidx.work.WorkerParameters
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
 import com.marbledo.core.data.settings.SettingsRepository
-import com.marbledo.core.designsystem.MarblePalettes
 import com.marbledo.domain.model.AppThemeMode
 import com.marbledo.domain.model.enabledOccasionCultures
 import com.marbledo.domain.model.OccasionCulture
@@ -173,7 +171,9 @@ class CalendarOccurrenceWorker(
                 putStringArrayList(EXTRA_CULTURES, ArrayList(occasions.flatMap { it.cultures }.map { it.key }.distinct()))
             })
             .setSmallIcon(R.drawable.ic_stat_calendar)
-            .setLargeIcon(ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap())
+            // The indigo baked into this asset does not belong to any theme but the base one;
+            // repaint its plate in the accent the alert already wears.
+            .setLargeIcon(NotificationArtwork.tintedFallbackIcon(context, R.drawable.ic_notification_calendar_large, accent))
             .setColor(accent)
             .setContentTitle(title)
             .setContentText(collapsedUpcoming)
@@ -263,21 +263,18 @@ class CalendarOccurrenceWorker(
             tasksDueToday = 0,
         )
         // The badge wears the app theme's accent; the mood keeps its own chip on it.
-        val themeAccent = MarblePalettes.resolve(
-            themeMode,
-            MarblePalettes.isDark(themeMode.name, isNightMode(context)),
-            context,
-        ).primary.toInt()
+        val themeAccent = notificationAccent(context, themeMode)
         val largeIcon = NotificationArtwork.dateBadge(
             context = context,
             dayDigits = TextNormalizer.formatDigits(day.toString(), numeralMode),
             monthLabel = PersianDateUtils.monthName(month, languageTag),
             mood = mood,
             accentColor = themeAccent,
-        ) ?: ContextCompat.getDrawable(context, R.drawable.ic_notification_calendar_large)?.toBitmap()
-        // Android owns notification-shade layout and motion. Keep the semantic mood accent and
-        // structured InboxStyle content, and let SystemUI render its native Material surface.
-        val accentColor = NotificationArtwork.accentColor(context, mood)
+        ) ?: NotificationArtwork.tintedFallbackIcon(context, R.drawable.ic_notification_calendar_large, themeAccent)
+        // The shade tint follows the app theme, like every other notification. It used to be the
+        // semantic mood colour here, which is why a per-day occasion alert kept the old indigo (or
+        // the fixed red) after a theme switch while the rest of the app repainted.
+        val accentColor = themeAccent
 
         val notification = NotificationCompat.Builder(context, NotificationChannels.CALENDAR)
             .addExtras(Bundle().apply {
@@ -307,10 +304,6 @@ class CalendarOccurrenceWorker(
             .build()
         NotificationManagerCompat.from(context).notify(requestCode, notification)
     }
-
-    /** True when the device is in dark mode, which the un-pinned themes follow. */
-    private fun isNightMode(context: Context): Boolean =
-        context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
     companion object {
         private const val EXTRA_CULTURES = "com.marble098.marbledo.OCCASION_CULTURES"

@@ -126,15 +126,22 @@ internal val DarkColors = darkColorScheme(
     scrim = Color.Black.copy(alpha = 0.55f),
 )
 
+// True black is the point of AMOLED, but nothing on it may *also* be black: the app draws every
+// block as a MarbleBox with a hairline border, so a black box on a black page with a near-black
+// outline is a card nobody can see. The container greys stay within a few steps of black (so the
+// panel still reads as "off" pixels on an OLED panel) while giving each box an edge, and the
+// outline pair is lifted until the 1dp hairline is actually visible against the plate it borders.
 internal val AmoledColors = DarkColors.copy(
     background = Color.Black,
-    surface = Color.Black,
-    surfaceVariant = Color(0xFF111116),
-    surfaceContainer = Color(0xFF09090D),
-    surfaceContainerLow = Color.Black,
-    surfaceContainerHigh = Color(0xFF17161C),
-    outline = Color(0xFF3A3840),
-    outlineVariant = Color(0xFF25232A),
+    surface = Color(0xFF0A0A0E),
+    surfaceVariant = Color(0xFF17171D),
+    surfaceContainer = Color(0xFF0F0F14),
+    surfaceContainerLow = Color(0xFF101015),
+    surfaceContainerHigh = Color(0xFF1B1B22),
+    // 5.6:1 and 3.5:1 on the plate: `outline` is the icon/field ring, `outlineVariant` the box
+    // hairline. Both are lifted from the near-black they used to be, where nothing was visible.
+    outline = Color(0xFF8A8796),
+    outlineVariant = Color(0xFF67646F),
 )
 
 // Calm, low-glare palettes. Each named palette follows system light/dark mode while keeping

@@ -47,15 +47,58 @@ class NotificationDesignTests(unittest.TestCase):
             self.assertNotIn('color = Color.Transparent,\n        shadowElevation', (ROOT / path).read_text())
 
     def test_compact_badge_fits_android_12_collapsed_height(self):
+        """Android 12 clips the collapsed row at 48 dp, so the badge plus its own padding must fit.
+
+        The paddings moved from the root to the content row when the card grew a plate: the root is
+        now a FrameLayout holding the background image, and the padding belongs to the row that
+        actually carries the text. The badge is still identified by id, because the banner theme
+        also leads with an ImageView (the accent rule).
+        """
         for path in (ROOT / 'app/src/main/res/layout').glob('notification_*_compact_*.xml'):
             root = ET.parse(path).getroot()
-            # Identify the badge by id: the banner theme also leading with an ImageView (the
-            # accent rule) would otherwise be mistaken for it.
-            badge = next(view for view in root.iter() if view.get(ANDROID + 'id', '').endswith('/notification_badge'))
+            parents = {
+                child.get(ANDROID + 'id'): parent
+                for parent in root.iter() for child in parent
+            }
+            badge = next(
+                child for parent in root.iter() for child in parent
+                if child.get(ANDROID + 'id', '').endswith('/notification_badge')
+            )
+            owner = parents[badge.get(ANDROID + 'id')]
             height = sum(int(v.removesuffix('dp')) for v in (
                 badge.get(ANDROID + 'layout_height'),
-                root.get(ANDROID + 'paddingTop'), root.get(ANDROID + 'paddingBottom')))
+                owner.get(ANDROID + 'paddingTop'), owner.get(ANDROID + 'paddingBottom')))
             self.assertLessEqual(height, 48, str(path))
+
+    def test_the_card_paints_its_own_plate(self):
+        """A custom row sits inside SystemUI's shade, so it has to own its background.
+
+        The root used to have no background at all: the text then sat on whatever the shade showed,
+        which is why the same card was readable in one theme and washed out in the other. Every
+        layout now starts with an ImageView plate painted by ``setImageViewResource`` — a
+        first-class RemoteViews action, unlike the reflective ``setInt(…, "setBackgroundColor")``.
+        """
+        for path in sorted((ROOT / 'app/src/main/res/layout').glob('notification_*.xml')):
+            root = ET.parse(path).getroot()
+            plate = next(
+                (child for parent in root.iter() for child in parent
+                 if child.get(ANDROID + 'id', '').endswith('/notification_card_plate')),
+                None,
+            )
+            self.assertIsNotNone(plate, f'{path.name}: no card plate')
+            self.assertEqual('ImageView', plate.tag, str(path))
+            self.assertEqual('fitXY', plate.get(ANDROID + 'scaleType'), str(path))
+            self.assertIn(plate.get(ANDROID + 'src'), (
+                '@drawable/notification_card_plate_light',
+                '@drawable/notification_card_plate_dark',
+            ), str(path))
+            # One plate per card, and it is the first thing drawn.
+            count = sum(
+                1 for parent in root.iter() for child in parent
+                if child.get(ANDROID + 'id', '').endswith('/notification_card_plate')
+            )
+            self.assertEqual(1, count, str(path))
+            self.assertIs(next(iter(root)), plate, f'{path.name}: the content is drawn under the plate')
 
     def test_notification_layouts_only_use_widgets_remoteviews_can_inflate(self):
         """A class outside RemoteViews' allowlist takes the whole notification off the screen.
@@ -227,14 +270,26 @@ class NotificationThemeTests(unittest.TestCase):
 
         The builder tints the compact and the expanded card separately, so each side is compared
         with the layouts of that size. An id that is tinted but not declared would make RemoteViews
-        throw while SystemUI applies the row.
+        throw while SystemUI applies the row; an id that is declared but never tinted would keep
+        the night resource — the device theme — instead of the app theme.
         """
         views = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/CalendarNotificationViews.kt').read_text()
-        block = _block_after(views, 'if (accentColor != 0) {')
-        branches = _split_else(block)
-        self.assertIsNotNone(branches, 'the accent tint is not split into a compact and an expanded branch')
-        compact, expanded = ({name for name in re.findall(r'R\.id\.(\w+)', part)} for part in branches)
-        self.assertTrue(compact and expanded, 'no accent ids declared')
+        # The accent tint is one `if (!expanded) { … } else { … }` block. Slice it out between the
+        # comment that introduces it and the comment that follows it, then split on the else: a
+        # brace walker would stop at the closing brace of the trailing `forEach` lambda.
+        anchor = 'The accent labels:'
+        tail = '// Minimal is deliberately text only'
+        self.assertIn(anchor, views)
+        self.assertIn(tail, views)
+        section = views[views.index(anchor):views.index(tail)]
+        compact, expanded = section.split('} else {', 1)
+        compact = set(re.findall(r'R\.id\.(\w+)', compact))
+        expanded = set(re.findall(r'R\.id\.(\w+)', expanded))
+        self.assertEqual({'notification_mood_pill'}, compact, 'the compact accent set changed')
+        self.assertEqual(
+            {'notification_mood_pill', 'notification_next_label'}, expanded,
+            'the expanded accent set changed',
+        )
         for design in ('classic', 'minimal', 'editorial', 'banner'):
             for direction in ('rtl', 'ltr'):
                 for size, declared in (('compact', compact), ('expanded', expanded)):
@@ -246,16 +301,39 @@ class NotificationThemeTests(unittest.TestCase):
                     }
                     self.assertEqual(declared, actual, str(path))
 
+    def test_the_palette_plates_match_the_drawables(self):
+        """The palette checks text against a plate, so the plate constants must be the real fills.
+
+        The card's contrasts are computed in `notificationPalette` against
+        `NOTIFICATION_PLATE_LIGHT`/`_DARK`; if those drift from the two drawables, every number the
+        palette promises describes a colour the shade never paints.
+        """
+        theme = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/NotificationTheme.kt').read_text()
+        for half, constant in (('light', 'NOTIFICATION_PLATE_LIGHT'), ('dark', 'NOTIFICATION_PLATE_DARK')):
+            with self.subTest(half=half):
+                match = re.search(constant + r'\s*=\s*0xFF([0-9A-Fa-f]{6})L', theme)
+                self.assertIsNotNone(match, f'{constant} is not a 0xAARRGGBB literal')
+                drawable = (ROOT / f'app/src/main/res/drawable/notification_card_plate_{half}.xml').read_text()
+                self.assertIn(f'#{match.group(1).upper()}', drawable.upper(),
+                              f'{constant} no longer matches the plate drawable')
 
     def test_the_ongoing_notification_is_tinted_from_the_app_palette(self):
+        """The card, its plate and its text all come from one palette resolved from the app theme.
+
+        The palette lives in NotificationTheme.kt now, so the assertion is that the *builder* asks
+        for it — reading the resolved palette from the app theme is what the old `@color/...` table
+        could not do.
+        """
         source = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/PersistentCalendarNotification.kt').read_text()
-        self.assertIn('MarblePalettes.resolve(', source)
+        theme = (ROOT / 'app/src/main/kotlin/com/marbledo/app/notifications/NotificationTheme.kt').read_text()
+        self.assertIn('notificationPalette(notificationContext, settings.themeMode)', source)
+        self.assertIn('MarblePalettes.resolve(', theme)
         self.assertIn('settings.themeMode', source)
         # A theme switch has to change the signature, otherwise the posted row is never updated.
-        signature = source.split('val signature = listOf(')[1].split(')')[0]
+        signature = source.split('val signature = listOf(')[1].split(')\n')[0]
         self.assertIn('settings.themeMode', signature)
-        # Both the collapsed and the expanded card are handed the theme accent.
-        self.assertGreaterEqual(source.count(', accent)'), 2, 'a card view is built without the theme accent')
+        # Both the collapsed and the expanded card are handed the same palette.
+        self.assertGreaterEqual(source.count('shade,'), 2, 'a card view is built without the palette')
 
     def test_every_plain_notification_uses_the_theme_accent(self):
         for name in ('ReminderReceiver.kt', 'CalendarOccurrenceWorker.kt'):

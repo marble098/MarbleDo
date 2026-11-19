@@ -25,11 +25,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleContrast
 import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.NumeralMode
@@ -150,10 +152,13 @@ private fun BloomPetal(
             .heightIn(min = 40.dp)
             .widthIn(min = 104.dp, max = 208.dp)
             .clip(shape)
-            .background(accent.copy(alpha = 0.10f))
+            // The wash and its ring are a tint of the category accent, and 10% / 20% of it on a
+            // light page was a pill nobody could find. The ink and the stroke are the pair that
+            // carry the category now; the fill only has to prove the pill is a surface.
+            .background(accent.copy(alpha = if (isHoliday) 0.16f else 0.13f))
             .border(
                 width = 1.dp,
-                color = if (isHoliday) colors.error.copy(alpha = 0.30f) else accent.copy(alpha = 0.20f),
+                color = if (isHoliday) colors.error.copy(alpha = 0.55f) else accent.copy(alpha = 0.42f),
                 shape = shape,
             )
             .clickable(onClick = onClick)
@@ -161,18 +166,22 @@ private fun BloomPetal(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
     ) {
+        val disc = if (isHoliday) colors.error else accent
         Box(
             Modifier
                 .size(24.dp)
                 .clip(CircleShape)
-                .background(if (isHoliday) colors.error else accent),
+                .background(disc),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 TextNormalizer.formatDigits(day.toString(), numeralMode),
                 style = MarbleTextStyles.microLabel,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                // The disc is a semantic colour, so it can be light or dark depending on the
+                // theme (the night error is a pale red). White ink disappeared on those; the
+                // numeral picks whichever of the two inks actually reads on the disc.
+                color = Color(MarbleContrast.bestInk(disc.toArgb())),
                 textAlign = TextAlign.Center,
                 maxLines = 1,
             )

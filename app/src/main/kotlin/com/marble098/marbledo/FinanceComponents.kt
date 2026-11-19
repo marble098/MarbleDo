@@ -4,10 +4,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -77,6 +79,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.core.designsystem.MarbleBox
+import com.marbledo.core.designsystem.MarbleBoxBorder
 import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.AppSettings
@@ -736,7 +739,7 @@ private fun FinanceNextDueCard(
     Surface(
         shape = MaterialTheme.shapes.large,
         color = colors.surfaceContainerLow,
-        modifier = Modifier.fillMaxWidth().border(1.dp, colors.outlineVariant.copy(alpha = 0.45f), MaterialTheme.shapes.large),
+        modifier = Modifier.fillMaxWidth().border(1.dp, MarbleBoxBorder(colors.surfaceContainerLow), MaterialTheme.shapes.large),
     ) {
         Row(
             modifier = Modifier.padding(MarbleSpacing.md),
@@ -821,7 +824,11 @@ private fun FinanceRecordCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, colors.outlineVariant.copy(alpha = 0.42f), MaterialTheme.shapes.large)
+            .border(
+                1.dp,
+                MarbleBoxBorder(if (record.settled) colors.surfaceContainerLow else colors.surface),
+                MaterialTheme.shapes.large,
+            )
             .clickable(role = Role.Button, onClick = onOpen),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = if (record.settled) colors.surfaceContainerLow else colors.surface),
@@ -1039,14 +1046,17 @@ private fun FinanceEditorSheet(
                     },
                     shape = MaterialTheme.shapes.large,
                 )
-                Text(
-                    currencyName(currency),
-                    modifier = Modifier.padding(top = 22.dp),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                // The resting label is aligned with the text row of the field beside it, not with
+                // a guessed top padding, so it stays centred when the font scale changes.
+                Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    Text(
+                        currencyName(currency),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -1056,7 +1066,14 @@ private fun FinanceEditorSheet(
                     FilterChip(
                         selected = currency == code,
                         onClick = { currency = code },
-                        label = { Text(currencyLabel(code)?.let { stringResource(it) } ?: code) },
+                        label = {
+                            Text(
+                                listOfNotNull(
+                                    currencyLabel(code)?.let { stringResource(it) },
+                                    code.takeIf { code != "IRT" },
+                                ).joinToString(" · "),
+                            )
+                        },
                     )
                 }
             }
@@ -1100,7 +1117,7 @@ private fun FinanceEditorSheet(
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f), MaterialTheme.shapes.large)
+                    .border(1.dp, MarbleBoxBorder(MaterialTheme.colorScheme.surfaceContainerLow), MaterialTheme.shapes.large)
                     .clickable(role = Role.Button) { showDatePicker = true },
             ) {
                 Row(
@@ -1306,7 +1323,14 @@ private fun amountInputText(amount: Double): String = BigDecimal.valueOf(amount)
 private fun maskAccountNumber(value: String): String =
     if (value.length <= 4) "••••" else "•••• ${value.takeLast(4)}"
 
-/** The currency's localized name — codes like "IRT" read as English in a Persian ledger. */
+/**
+ * The currency's localized name — codes like "IRT" read as English in a Persian ledger.
+ *
+ * A name is the whole label here: Toman is the app's only Iranian currency (legacy Rial records
+ * are folded into Toman by the repository), and the shaded "تومان (IRT)" form repeated the same
+ * fact in two scripts next to an amount that was already denominated in Toman. The picker still
+ * shows the code for foreign currencies, where USD and EUR genuinely need disambiguating.
+ */
 @Composable
 private fun currencyName(currency: String): String =
     currencyLabel(currency)?.let { stringResource(it) } ?: currency

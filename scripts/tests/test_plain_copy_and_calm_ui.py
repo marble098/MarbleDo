@@ -59,6 +59,34 @@ class PlainCopyTests(unittest.TestCase):
                 # One short paragraph is the ceiling; longer explanations belong in the README.
                 self.assertLess(len(value), 200, f'{path.name}/{name} is {len(value)} characters')
 
+    def test_a_currency_name_never_repeats_its_own_code(self):
+        """A Toman amount must not read "۱۲۳ تومان (IRT)".
+
+        The label and the amount are rendered next to each other, so a name that also carries the
+        ISO code says the same thing twice — once in Persian and once in the code the reader was
+        never shown. The name is the whole label; only the picker needs the code, because USD and
+        EUR are genuinely ambiguous in a Persian ledger.
+        """
+        for path in (RES / 'values/strings.xml', RES / 'values-fa/strings.xml'):
+            values = strings(path)
+            for key in ('finance_currency_irt', 'finance_currency_usd', 'finance_currency_eur'):
+                with self.subTest(path=path.parent.name, key=key):
+                    text = values[key]
+                    for code in ('IRT', 'USD', 'EUR'):
+                        self.assertNotIn(
+                            code,
+                            text,
+                            f'{path.parent.name}/{key} still spells the code out: {text!r}',
+                        )
+                    # The name also has to survive the "no long strings" rule.
+                    self.assertLess(len(text), 30, f'{path.parent.name}/{key} is too long: {text!r}')
+
+    def test_the_amount_field_does_not_repeat_the_currency_chip_row(self):
+        source = (ROOT / 'app/src/main/kotlin/com/marble098/marbledo/FinanceComponents.kt').read_text(encoding='utf-8')
+        # One helper for the name; a second near-copy would drift from it.
+        self.assertEqual(1, source.count('private fun currencyName('))
+        self.assertNotIn('shortCurrencyName(', source)
+
     def test_the_new_home_and_calendar_words_exist_in_both_languages(self):
         for keys, en, fa in (
             (

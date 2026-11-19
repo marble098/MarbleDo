@@ -73,6 +73,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleBoxBorder
 import com.marbledo.core.designsystem.MarbleTextStyles
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.TaskPriority
@@ -272,7 +273,7 @@ fun TaskRowCard(
                 }
                 .combinedClickable(onClick = onEdit, onLongClick = onLongPress),
             shape = MaterialTheme.shapes.large,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+            border = BorderStroke(1.dp, MarbleBoxBorder(MaterialTheme.colorScheme.surfaceContainerLow)),
             colors = CardDefaults.cardColors(
                 containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
             ),

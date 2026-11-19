@@ -80,8 +80,10 @@ class WidgetRedesignTests(unittest.TestCase):
 
     def test_the_planner_widget_has_one_filled_surface(self):
         source = WIDGETS['countdown'].read_text(encoding='utf-8')
-        # Exactly one card: the countdown. The header is a date, the two meta lines are sentences.
-        self.assertEqual(1, source.count('cornerRadius(22.dp)'), 'the widget grew a second card')
+        # Exactly one inner card: the countdown. The header is a date, the two meta lines are
+        # sentences. The radius moved from 22 dp to 18 dp so it sits concentrically inside the
+        # 26 dp plate at its 4 dp inset; what must not change is that there is only one card.
+        self.assertEqual(1, source.count('cornerRadius(18.dp)'), 'the widget grew a second card')
         self.assertNotIn('GlanceInfoCard(', source, 'the occasions/next-task cards came back')
         self.assertIn('R.string.widget_meta_occasions', source)
         self.assertIn('R.string.widget_meta_next', source)

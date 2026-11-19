@@ -1274,12 +1274,18 @@ private fun DayCellView(
         cell.isToday -> colors.primaryContainer
         else -> Color.Transparent
     }
+    // Out-of-month days are de-emphasised by *tone*, not by opacity. A 32% ink computed to about
+    // 2:1 against the grid — visible enough to look intentional, too faint to read as a day, which
+    // is the "numbers missing from the calendar" report. 62% keeps them clearly secondary while
+    // clearing 4.5:1 in both the light and the dark scheme.
     val targetForeground = when {
         selected -> colors.onPrimary
         cell.isToday -> colors.onPrimaryContainer
-        !cell.inDisplayedMonth -> colors.onSurface.copy(alpha = 0.32f)
+        !cell.inDisplayedMonth -> colors.onSurface.copy(alpha = 0.62f)
+        // Weekends are a property of the date, not an error; semantic red on a whole column read as
+        // "something is wrong with these days". The holiday stays red because it is a real state.
         isHoliday -> colors.error
-        isWeekend -> colors.error.copy(alpha = 0.86f)
+        isWeekend -> colors.onSurface.copy(alpha = 0.78f)
         else -> colors.onSurface
     }
     val animatedBackground by animateColorAsState(numberBackground, MarbleMotion.fastEffects(), label = "dayCellBackground")
@@ -1315,9 +1321,10 @@ private fun DayCellView(
                 .background(background)
                 .then(
                     if (cell.isToday && !selected) {
-                        Modifier.border(1.5.dp, colors.primary.copy(alpha = 0.75f), CircleShape)
+                        Modifier.border(1.5.dp, colors.primary, CircleShape)
                     } else if (hasFavorite && cell.inDisplayedMonth && !selected) {
-                        Modifier.border(1.dp, colors.primary.copy(alpha = 0.35f), CircleShape)
+                        // A 1 dp hairline at 35% is a smudge on a light grid; 65% keeps it a ring.
+                        Modifier.border(1.dp, colors.primary.copy(alpha = 0.65f), CircleShape)
                     } else {
                         Modifier
                     },

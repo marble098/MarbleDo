@@ -190,6 +190,34 @@ class NotificationLayoutContractTest {
     }
 
     /**
+     * The card paints its own plate, so the id the builder targets must be an ImageView in every
+     * layout — and it must be the first child, or the content is drawn underneath it.
+     *
+     * A custom notification row is rendered inside SystemUI's shade. A plate the card owns is what
+     * makes its text readable under any wallpaper and any device theme; a `setImageViewResource`
+     * aimed at the wrong widget would abort the whole RemoteViews apply instead.
+     */
+    @Test
+    fun `every layout paints the card plate behind its content`() {
+        for (design in designs) {
+            for (expanded in listOf(false, true)) {
+                for (file in layouts(design, expanded)) {
+                    val source = file.readText(Charsets.UTF_8)
+                    val plateIndex = source.indexOf("@+id/notification_card_plate")
+                    assertTrue(plateIndex > 0, "${file.name}: no card plate")
+
+                    val owner = source.substring(0, plateIndex).substringAfterLast('<').substringBefore('\n').trim()
+                    assertEquals("ImageView", owner, "${file.name}: the plate must stay an ImageView")
+
+                    // First *element* after the root: nothing may be painted under it.
+                    val elements = ELEMENT.findAll(source).map { it.groupValues[1] }.toList()
+                    assertEquals("ImageView", elements.getOrNull(1), "${file.name}: the plate is not first")
+                }
+            }
+        }
+    }
+
+    /**
      * `CalendarNotificationViews` tints the banner rule with `setImageViewResource`, so the id has
      * to be an ImageView. A `setImageViewResource` on a plain View is the same all-or-nothing
      * apply failure the widget allowlist above guards against.

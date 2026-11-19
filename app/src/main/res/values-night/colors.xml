@@ -1,4 +1,13 @@
 <resources>
     <color name="marble_launcher_bg">#131A33</color>
     <color name="marble_splash_bg">#141319</color>
+
+    <!-- The night half of the mood accents. The light values are tuned for the light notification
+         card; on the dark one they would read as muddy near-blacks, so each mood keeps its hue at a
+         lightness that clears 4.5:1 against #26272E. -->
+    <color name="notification_holiday">#FFB4AB</color>
+    <color name="notification_religious">#7FE0C0</color>
+    <color name="notification_occasion">#C7C0FF</color>
+    <color name="notification_tasks">#A8C3FF</color>
+    <color name="notification_quiet">#C3CADA</color>
 </resources>

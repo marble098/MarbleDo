@@ -35,6 +35,10 @@ TITLE = "@color/notification_card_text"
 MUTED = "@color/notification_card_muted"
 ACCENT = "@color/notification_card_accent"
 TRACK = "@color/notification_card_track"
+# The plate the card paints behind itself. The builder swaps in the dark twin when the *app* theme
+# is dark, so a pinned dark theme keeps a dark card inside a light shade (and vice versa) and every
+# text colour on it stays readable.
+PLATE_LIGHT = "@drawable/notification_card_plate_light"
 
 TITLE_STYLE = "@style/TextAppearance.Compat.Notification.Title"
 INFO_STYLE = "@style/TextAppearance.Compat.Notification.Info"
@@ -113,6 +117,27 @@ def badge(size: int, *, margin_end: int = 10, margin_start: int | None = None) -
     attrs += [
         f'android:layout_marginEnd="{margin_end}dp"',
         'android:importantForAccessibility="no"',
+    ]
+    body = "\n".join(f"    {attr}" for attr in attrs)
+    return f"<ImageView\n{body} />"
+
+
+def card_plate() -> str:
+    """The opaque plate behind the whole card.
+
+    A RemoteViews layout is drawn inside SystemUI's shade, which follows the wallpaper or the
+    device theme rather than the app theme. Without a plate the card's text sat on whatever the
+    shade happened to show, so the same row could be low-contrast in one theme and fine in the
+    other — the "some parts never change colour" report. The plate is an ImageView and is painted
+    by a first-class ``setImageViewResource`` (never a reflective ``setInt``).
+    """
+    attrs = [
+        'android:id="@+id/notification_card_plate"',
+        'android:layout_width="match_parent"',
+        'android:layout_height="match_parent"',
+        'android:importantForAccessibility="no"',
+        'android:scaleType="fitXY"',
+        f'android:src="{PLATE_LIGHT}"',
     ]
     body = "\n".join(f"    {attr}" for attr in attrs)
     return f"<ImageView\n{body} />"
@@ -222,22 +247,23 @@ def compact(design: str) -> str:
     )
     children = leading + [column]
     inner = "\n".join(_indent(child, 4) for child in children)
-    root = "\n".join(
+    content = "\n".join(
         [
-            '<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"',
-            '    android:id="@+id/notification_root"',
+            '<LinearLayout',
             '    android:layout_width="match_parent"',
             '    android:layout_height="wrap_content"',
             f'    android:layoutDirection="{DIRECTION}"',
             '    android:gravity="start|center_vertical"',
             '    android:orientation="horizontal"',
-            '    android:paddingTop="2dp"',
-            '    android:paddingBottom="2dp">',
+            '    android:paddingStart="10dp"',
+            '    android:paddingEnd="10dp"',
+            '    android:paddingTop="4dp"',
+            '    android:paddingBottom="4dp">',
             inner,
             '</LinearLayout>',
         ]
     )
-    return header(design, "compact") + root + "\n"
+    return header(design, "compact") + card_root(content) + "\n"
 
 
 def expanded(design: str) -> str:
@@ -390,22 +416,48 @@ def expanded(design: str) -> str:
     )
 
     inner = "\n".join(_indent(block, 4) for block in (header_row, progress, next_card, occasions))
-    root = "\n".join(
+    content = "\n".join(
         [
-            '<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"',
-            '    android:id="@+id/notification_root"',
+            '<LinearLayout',
             '    android:layout_width="match_parent"',
             '    android:layout_height="wrap_content"',
             f'    android:layoutDirection="{DIRECTION}"',
             '    android:gravity="start"',
             '    android:orientation="vertical"',
-            '    android:paddingTop="2dp"',
-            '    android:paddingBottom="2dp">',
+            '    android:paddingStart="12dp"',
+            '    android:paddingEnd="12dp"',
+            '    android:paddingTop="8dp"',
+            '    android:paddingBottom="8dp">',
             inner,
             '</LinearLayout>',
         ]
     )
-    return header(design, "expanded") + root + "\n"
+    return header(design, "expanded") + card_root(content) + "\n"
+
+
+def card_root(content: str) -> str:
+    """A FrameLayout root whose first child is the card plate.
+
+    ``RemoteViews`` has no first-class way to set a view *background* colour: the only API is the
+    reflective ``setInt(id, "setBackgroundColor", colour)``, which a locked-down SystemUI may
+    reject and which takes the whole row — status-bar icon included — off the screen. A plate is an
+    ``ImageView`` instead, painted with ``setImageViewResource``, so the card can follow the app
+    theme's lightness with an ordinary first-class action.
+    """
+    return "\n".join(
+        [
+            '<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"',
+            '    android:id="@+id/notification_root"',
+            '    android:layout_width="match_parent"',
+            '    android:layout_height="wrap_content"',
+            # The root keeps the explicit direction as well as the content row: SystemUI walks the
+            # whole tree for the direction, and a root without one lets the shade decide.
+            f'    android:layoutDirection="{DIRECTION}">',
+            _indent(card_plate(), 4),
+            _indent(content, 4),
+            '</FrameLayout>',
+        ]
+    )
 
 
 def header(design: str, size: str) -> str:

@@ -68,10 +68,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.view.WindowCompat
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -81,6 +83,8 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.marbledo.core.designsystem.MarbleBoxBorder
+import com.marbledo.core.designsystem.MarblePalettes
 import com.marbledo.core.data.backup.BackupCodec
 import com.marbledo.core.data.backup.BackupEnvelope
 import com.marbledo.core.data.backup.LocalBackupWorker
@@ -202,6 +206,12 @@ fun MarbleDoApp(
     var restorePassphrase by remember { mutableStateOf("") }
     val configuration = LocalConfiguration.current
     val isLarge = configuration.screenWidthDp >= 600
+    // System bars: edge-to-edge draws the app under the status and navigation bars, and the icon
+    // colour there has to follow *the app theme*, not the device's night mode. `enableEdgeToEdge()`
+    // in the Activity can only infer it from the system setting, so a user on a pinned dark theme
+    // with a light device got dark icons on the dark app — invisible — and vice versa. The mode is
+    // reapplied whenever the resolved palette's lightness changes.
+    SystemBarIcons(dark = MarblePalettes.isDark(settings.themeMode.name, isSystemDark(context)))
     val notificationsGranted = rememberNotificationsGranted()
     val exactAlarmGranted = rememberExactAlarmGranted()
 
@@ -611,7 +621,7 @@ fun MarbleDoApp(
                     Scaffold(
                         bottomBar = {
                             Column {
-                                HorizontalDivider(color = colors.outlineVariant.copy(alpha = 0.35f))
+                                HorizontalDivider(color = MarbleBoxBorder(MaterialTheme.colorScheme.surfaceContainerLow))
                                 NavigationBar(
                                     containerColor = colors.surface,
                                     tonalElevation = 2.dp,
@@ -896,3 +906,41 @@ private fun InputStream.readBounded(maxBytes: Int): ByteArray {
     }
     return output.toByteArray()
 }
+
+/**
+ * Tints the status- and navigation-bar icons for the app theme's lightness.
+ *
+ * The window is edge-to-edge, so these icons sit on top of the app's own background. Android only
+ * offers "light icons" / "dark icons" as a flag, which `enableEdgeToEdge()` derives from the
+ * *device* night mode; when the app theme is pinned the other way round the icons end up
+ * dark-on-dark or white-on-white. This side effect re-applies the flag from the resolved palette.
+ */
+@Composable
+private fun SystemBarIcons(dark: Boolean) {
+    val view = LocalView.current
+    if (view.isInEditMode) return
+    // LocalView's context is a ContextThemeWrapper, not the Activity itself.
+    val window = view.context.findActivity()?.window ?: return
+    DisposableEffect(dark) {
+        WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
+        onDispose { }
+    }
+}
+
+/** Walks the ContextWrapper chain the way every Android library has to. */
+private fun Context.findActivity(): android.app.Activity? {
+    var context: Context? = this
+    while (context is android.content.ContextWrapper) {
+        if (context is android.app.Activity) return context
+        context = context.baseContext
+    }
+    return context as? android.app.Activity
+}
+
+/** Mirrors `MarblePalettes.isDark` for the system half of an "AUTO" theme. */
+private fun isSystemDark(context: Context): Boolean =
+    context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+        android.content.res.Configuration.UI_MODE_NIGHT_YES

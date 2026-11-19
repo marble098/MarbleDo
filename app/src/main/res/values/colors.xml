@@ -4,10 +4,24 @@
     <color name="marble_launcher_bg">#1B2447</color>
     <color name="marble_splash_bg">#F7F5FB</color>
     <color name="marble_splash_bg_night">#141319</color>
-    <!-- Mood accents for the persistent calendar notification artwork. -->
-    <color name="notification_holiday">#D93A4B</color>
-    <color name="notification_religious">#2E9E7C</color>
-    <color name="notification_occasion">#6258C8</color>
-    <color name="notification_tasks">#3E6DD8</color>
-    <color name="notification_quiet">#5B6478</color>
+    <!-- Mood accents for the persistent calendar notification artwork.
+
+         These carry meaning (a holiday is red, a religious date is green), so they are not taken
+         from the app theme; but they are drawn as text and as a hairline on the notification card,
+         which is light here and dark in values-night. The light values are deep enough to read on
+         the light card (>= 4.5:1 against #F2F1F6) and the night values are lifted to read on the
+         dark one, exactly as Material does with its own semantic colours. -->
+    <color name="notification_holiday">#B3261E</color>
+    <color name="notification_religious">#176B54</color>
+    <color name="notification_occasion">#453C9C</color>
+    <color name="notification_tasks">#2A4FA8</color>
+    <color name="notification_quiet">#4A5262</color>
+
+    <!-- The plate behind the mood chip on the generated date badge, where the mood mark is drawn
+         in white; dark enough on every theme that the white glyph stays legible. -->
+    <color name="notification_badge_chip_holiday">#8C1D18</color>
+    <color name="notification_badge_chip_religious">#12513F</color>
+    <color name="notification_badge_chip_occasion">#3A3193</color>
+    <color name="notification_badge_chip_tasks">#22438F</color>
+    <color name="notification_badge_chip_quiet">#3C4352</color>
 </resources>
