@@ -46,13 +46,10 @@
     <string name="planning_added_count">%1$d کار ساخته شد. با «برگرداندن» می‌توانی همه را برگردانی.</string>
     <string name="planning_save_failed">ذخیره نشد و کاری اضافه نشد. دوباره امتحان کن.</string>
     <!-- واژه‌های بازطراحی: یک واژه برای هر سطر، نه جمله. -->
-    <string name="notification_mood_holiday">تعطیل رسمی</string>
-    <string name="notification_mood_religious">مناسبت مذهبی</string>
-    <string name="notification_mood_occasion">مناسبت</string>
-    <string name="notification_mood_tasks">کارهای امروز</string>
-    <string name="notification_mood_today">امروز</string>
     <string name="notification_focus_next">بعدی</string>
     <string name="notification_focus_overdue">عقب‌افتاده</string>
     <string name="notification_progress_pair">%1$s از %2$s</string>
     <string name="notification_occasions_overflow">+%1$s</string>
+    <!-- سطر مقایسهٔ کارت بازشده: دو تقویمی که تاریخ جلالی نیست. -->
+    <string name="notification_secondary_dates">میلادی %1$s · قمری %2$s</string>
 </resources>

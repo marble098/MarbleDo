@@ -9,4 +9,12 @@
          so they have to be the dark card's ink rather than a second colour of their own. -->
     <color name="notification_card_section">#1AEFECF6</color>
     <color name="notification_card_track">#38EFECF6</color>
+
+    <!-- Lifted for the dark plate (#26272E): the same hues, light enough to clear 4.5:1. -->
+    <color name="notification_state_overdue">#FF9C85</color>
+    <color name="notification_state_today">#BBC5FF</color>
+    <color name="notification_state_occasion">#CDB6F8</color>
+    <color name="notification_state_overdue_soft">#4A211B</color>
+    <color name="notification_state_occasion_soft">#332A46</color>
+    <color name="notification_occasion_icon">#CDB6F8</color>
 </resources>

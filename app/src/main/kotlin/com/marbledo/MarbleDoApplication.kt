@@ -47,6 +47,7 @@ class MarbleDoApplication : Application() {
         val settingsRepository = org.koin.java.KoinJavaComponent.getKoin().get<SettingsRepository>()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             var lastPersistentEnabled: Boolean? = null
+            var lastOccasionHour: Int? = null
             settingsRepository.settings.collect { settings ->
                 ReminderPreferences.write(this@MarbleDoApplication, settings)
                 if (lastPersistentEnabled != settings.persistentDateNotificationEnabled) {
@@ -56,6 +57,13 @@ class MarbleDoApplication : Application() {
                     } else {
                         PersistentCalendarNotificationWorker.cancelScheduled(this@MarbleDoApplication)
                     }
+                }
+                // The morning briefing hour is honoured by re-arming the daily request whenever it
+                // moves; `UPDATE` replaces the previous schedule, so there is never an 08:00 and a
+                // 20:00 briefing running side by side.
+                if (lastOccasionHour != settings.occasionNotificationHour) {
+                    lastOccasionHour = settings.occasionNotificationHour
+                    CalendarNotificationWorkInitializer.ensureDaily(this@MarbleDoApplication, settings.occasionNotificationHour)
                 }
             }
         }

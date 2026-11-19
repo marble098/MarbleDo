@@ -13,4 +13,17 @@
          are now a low-alpha version of the card's own ink, which stays neutral under any accent. -->
     <color name="notification_card_section">#121C1B22</color>
     <color name="notification_card_track">#2E1C1B22</color>
+
+    <!-- The three states the card carries as a word. Each is a hue, not a shade of the brand
+         accent: "overdue" is a warning red-orange and "occasion" a calm purple, so the two can
+         never be confused for the same brown chip. Both clear 4.5:1 on the light plate (#F2F1F6)
+         and are re-checked and lifted by NotificationPalette at paint time. -->
+    <color name="notification_state_overdue">#B02A12</color>
+    <color name="notification_state_today">#4355A5</color>
+    <color name="notification_state_occasion">#5B3F94</color>
+    <!-- The warning disc behind the overdue icon: the hue as a fill, with white ink on it. -->
+    <color name="notification_state_overdue_soft">#F7DCD4</color>
+    <color name="notification_state_occasion_soft">#E7DFF6</color>
+    <!-- Priority-2 section labels and their star mark, kept quieter than the task section. -->
+    <color name="notification_occasion_icon">#5B3F94</color>
 </resources>

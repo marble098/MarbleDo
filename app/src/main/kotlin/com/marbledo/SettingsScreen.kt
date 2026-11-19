@@ -90,7 +90,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.marble098.marbledo.notifications.NotificationArtwork
 import com.marble098.marbledo.notifications.NotificationMood
+import com.marble098.marbledo.notifications.NotificationState
 import com.marble098.marbledo.notifications.PersistentCalendarNotification
+import com.marble098.marbledo.notifications.iconRes
 import com.marble098.marbledo.notifications.notificationPalette
 import com.marbledo.core.data.backup.AutomaticBackupStatus
 import com.marbledo.core.designsystem.MarbleBoxBorder
@@ -109,7 +111,6 @@ import com.marbledo.domain.util.HiddenTapSequence
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionCultureSelector
-import com.marbledo.feature.calendar.OccasionPlanner
 import com.marbledo.feature.calendar.OccasionSourceStatus
 import com.marbledo.feature.calendar.OccasionState
 import com.marbledo.feature.calendar.PersianDateUtils
@@ -147,6 +148,7 @@ fun SettingsScreen(
     var countdownCalendarMenu by remember { mutableStateOf(false) }
     var statusCalendarMenu by remember { mutableStateOf(false) }
     var leadMenu by remember { mutableStateOf(false) }
+    var occasionHourMenu by remember { mutableStateOf(false) }
     var quietEdge by remember { mutableStateOf<QuietEdge?>(null) }
     val context = LocalContext.current
     val lastBackup by produceState<LastBackup?>(initialValue = null) {
@@ -538,6 +540,60 @@ fun SettingsScreen(
                     tasks = tasks,
                     catalog = listedCatalog,
                 )
+            }
+
+            Spacer(Modifier.height(10.dp))
+            SettingsDivider()
+            Spacer(Modifier.height(4.dp))
+
+            // 2b. One switch per channel. The three reminder kinds arrive with different volume
+            // and different urgency, so switching one off must not silence the others — which is
+            // exactly what the old single "task reminders" channel did.
+            SettingSwitchRow(
+                text = stringResource(R.string.settings_overdue_notifications),
+                subtitle = stringResource(R.string.settings_overdue_notifications_hint),
+                checked = settings.overdueNotificationsEnabled,
+                onCheckedChange = { onUpdate(settings.copy(overdueNotificationsEnabled = it)) },
+            )
+            SettingSwitchRow(
+                text = stringResource(R.string.settings_today_reminders),
+                subtitle = stringResource(R.string.settings_today_reminders_hint),
+                checked = settings.todayRemindersEnabled,
+                onCheckedChange = { onUpdate(settings.copy(todayRemindersEnabled = it)) },
+            )
+            SettingSwitchRow(
+                text = stringResource(R.string.settings_occasion_channel),
+                subtitle = stringResource(R.string.settings_occasion_channel_hint),
+                checked = settings.calendarNotificationsEnabled,
+                onCheckedChange = { onUpdate(settings.copy(calendarNotificationsEnabled = it)) },
+            )
+            if (settings.calendarNotificationsEnabled) {
+                // The briefing is once a day and the user chose the morning; a fixed hour would
+                // make the switch a half-truth.
+                SettingMenuRow(
+                    label = stringResource(R.string.notification_occasion_hour_title),
+                    value = TextNormalizer.formatDigits(
+                        stringResource(R.string.notification_occasion_hour_value, settings.occasionNotificationHour.toString()),
+                        settings.numeralMode,
+                    ),
+                    icon = Icons.Outlined.Alarm,
+                    expanded = occasionHourMenu,
+                    onExpandedChange = { occasionHourMenu = it },
+                ) {
+                    OCCASION_HOUR_OPTIONS.forEach { hour ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    TextNormalizer.formatDigits(
+                                        stringResource(R.string.notification_occasion_hour_value, hour.toString()),
+                                        settings.numeralMode,
+                                    ),
+                                )
+                            },
+                            onClick = { onUpdate(settings.copy(occasionNotificationHour = hour)); occasionHourMenu = false },
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(10.dp))
@@ -988,8 +1044,9 @@ private fun NotificationDesignSelector(
  * The in-app twin of the delivered card.
  *
  * It reads the same [PersistentCalendarNotification.NotificationBoxContent] as the shade, so the
- * Settings preview cannot describe a layout the notification no longer draws: a date header, one
- * progress reading, one next-step surface and one line of occasions.
+ * Settings preview cannot describe a layout the notification no longer draws: the Jalali date, the
+ * state chip, the task section on its one filled surface, and — only when the day has any — the
+ * occasions under their hairline.
  */
 @Composable
 private fun NotificationLivePreviewCard(
@@ -1037,7 +1094,16 @@ private fun NotificationLivePreviewCard(
         },
     )
     val focusShape = RoundedCornerShape(if (isEditorial) 6.dp else 14.dp)
-    val progressHeight = if (isEditorial) 2.dp else 4.dp
+    // The chip is read the way the shade paints it: a fill from the same palette and the ink
+    // that wins on that fill. Enumerated once so the preview cannot pick a fill and an ink that
+    // the card does not use.
+    val chipFill = when (content.state) {
+        NotificationState.OVERDUE -> shade.overdueSoft
+        NotificationState.TODAY, NotificationState.QUIET -> shade.accentFill
+        NotificationState.OCCASION -> shade.occasionFill
+    }
+    val stateFill = Color(chipFill)
+    val chipInk = Color(MarbleContrast.bestInk(chipFill))
     CompositionLocalProvider(LocalLayoutDirection provides previewDirection) {
         Surface(
             shape = outerShape,
@@ -1048,138 +1114,140 @@ private fun NotificationLivePreviewCard(
                 .border(1.dp, cardHairline, outerShape),
         ) {
             Column(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-                // Clear hierarchy: header → progress → next-step card → occasions, each with
-                // breathing room so the eye lands on the filled surface first (issue #3).
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                // The same hierarchy as the shade: date → state chip → tasks (priority 1) →
+                // occasions (priority 2). The occasions keep the bottom of the card because they
+                // are the part the reader can skip.
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     if (!isMinimal && badgeBitmap != null) {
                         Image(
                             bitmap = badgeBitmap.asImageBitmap(),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(if (isEditorial) 48.dp else 44.dp)
-                                .clip(RoundedCornerShape(if (isEditorial) 6.dp else 12.dp)),
+                                .size(if (isEditorial) 38.dp else 32.dp)
+                                .clip(RoundedCornerShape(if (isEditorial) 6.dp else 10.dp)),
                         )
                     }
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Text(
-                                content.title,
-                                style = MarbleTextStyles.itemTitle,
-                                color = cardInk,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                            )
-                            // The mood word is an accent label on the shade card; a filled chip
-                            // here promised a pill the notification does not draw.
-                            Text(
-                                content.moodLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = cardAccent,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp),
-                            )
-                        }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            content.secondaryDatesLine,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = cardMuted,
+                            content.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = cardInk,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                    }
-                }
-                if (content.hasProgress) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            content.progressLabel,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = cardMuted,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (content.todayTotal > 0) {
-                            androidx.compose.material3.LinearProgressIndicator(
-                                progress = { content.todayCompleted.toFloat() / content.todayTotal },
-                                color = cardAccent,
-                                trackColor = cardAccent.copy(alpha = if (shade.isDark) 0.28f else 0.20f),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(progressHeight)
-                                    .clip(if (isEditorial) RoundedCornerShape(1.dp) else CircleShape),
-                            )
-                        }
-                    }
-                }
-                if (content.hasNextTask || !content.hasOccasions) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(focusShape)
-                            .background(cardAccent.copy(alpha = if (shade.isDark) 0.10f else 0.08f))
-                            .then(
-                                if (isEditorial) {
-                                    Modifier.border(1.dp, cardAccent.copy(alpha = 0.18f), focusShape)
-                                } else {
-                                    Modifier.border(1.dp, cardHairline.copy(alpha = 0.0f), focusShape)
-                                },
-                            )
-                            .padding(horizontal = 13.dp, vertical = 11.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        // The chip, not a progress bar: one word in the state's own colour.
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = stateFill,
+                            contentColor = chipInk,
                         ) {
-                            Text(
-                                content.nextTaskLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = cardAccent,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                            )
-                            content.nextTaskTime?.let {
+                            Row(
+                                Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Icon(
+                                    painterResource(content.state.iconRes()),
+                                    contentDescription = null,
+                                    tint = chipInk,
+                                    modifier = Modifier.size(12.dp),
+                                )
                                 Text(
-                                    it,
+                                    content.stateLabel,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = cardMuted,
+                                    fontWeight = FontWeight.Bold,
+                                    color = chipInk,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
+                    }
+                }
+                // Priority 1: the tasks, on the card's one filled surface.
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(focusShape)
+                        // The same composited accent fill the card paints, so the preview's one
+                        // filled surface is the shade's, not an approximation of it.
+                        .background(Color(shade.accentFill))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        content.tasksLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = cardAccent,
+                        maxLines = 1,
+                    )
+                    Text(
+                        content.taskTitle ?: content.emptyTaskText,
+                        style = MarbleTextStyles.itemTitle,
+                        color = cardInk,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    content.taskMetaLine?.let { meta ->
                         Text(
-                            content.nextTaskTitle ?: content.fallbackTaskText,
-                            style = MarbleTextStyles.itemTitle,
+                            meta,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cardMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    content.secondTaskTitle?.let { second ->
+                        Text(
+                            second,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = cardInk,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    content.moreTasksLine?.let { more ->
+                        Text(
+                            more,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cardMuted,
                         )
                     }
                 }
                 if (content.hasOccasions) {
-                    // Organized information hierarchy: occasions are secondary to the next step,
-                    // shown in the same muted ink as secondary dates for consistency (issue #3).
+                    // Priority 2: a hairline, a star and the occasions — hidden when the day has
+                    // none, so the card never carries an empty labelled section.
+                    HorizontalDivider(color = cardHairline)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.ic_notification_occasion_star),
+                            contentDescription = null,
+                            tint = Color(shade.occasion),
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Text(
+                            content.occasionsLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(shade.occasion),
+                            maxLines = 1,
+                        )
+                    }
                     Text(
                         content.occasionsLine,
                         style = MaterialTheme.typography.bodySmall,
                         color = cardMuted,
-                        maxLines = 1,
+                        maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -1686,6 +1754,13 @@ private enum class QuietEdge { START, END }
 private class LastBackup(val millis: Long?)
 
 private val REMINDER_LEAD_OPTIONS = listOf(0, 5, 10, 15, 30, 60)
+
+/**
+ * The hours the morning briefing can be pinned to. A full 24-hour list is a scroll wheel nobody
+ * wants in a settings sheet; the redesign's promise is "one morning briefing", so the choices are
+ * the morning hours people actually read a calendar in, plus noon and the evening.
+ */
+private val OCCASION_HOUR_OPTIONS = listOf(6, 7, 8, 9, 10, 12, 18, 20)
 
 @Composable
 private fun leadLabel(minutes: Int, numeralMode: NumeralMode): String =

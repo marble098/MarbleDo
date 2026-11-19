@@ -9,6 +9,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
@@ -374,8 +375,8 @@ object NotificationArtwork {
 
     // ---------------------------------------------------------------------------------------
     // Themed notification chrome. The RemoteViews card may not run reflective tint calls, so the
-    // mood rule, the progress line and the next-step plate arrive as ready-painted bitmaps in the
-    // palette of the app theme; each shape stays a first-class `setImageViewBitmap()`.
+    // mood rule, the state pill and the task plate arrive as ready-painted bitmaps in the palette
+    // of the app theme; each shape stays a first-class `setImageViewBitmap()`.
     // ---------------------------------------------------------------------------------------
 
     /**
@@ -409,34 +410,69 @@ object NotificationArtwork {
     }.getOrNull()
 
     /**
-     * The progress line as a rounded track + fill, in the theme accent.
+     * The pill behind the state word of the card ("۳ عقب‌افتاده" / "امروز").
      *
-     * [dark] is the **card's** lightness, which follows the app theme rather than the device; the
-     * track alpha depends on the plate behind it, not on the system's night mode.
+     * The progress bar this replaced was the confusing half of the old card: a track that read
+     * "۰ از ۱۰۱ عقب‌افتاده" and moved nowhere. One rounded pill in the state's own colour says the
+     * same thing in three words. It is drawn as a bitmap and applied with `setImageViewBitmap`,
+     * which — unlike a reflective `setBackgroundColor` — cannot abort the RemoteViews apply.
+     *
+     * [fill] is the opaque state fill from the palette and [ink] the state hue that draws the
+     * pill's hairline: the *word* on the pill is not painted here, so its ink is chosen separately
+     * (against [fill], not against the card) by the builder.
      */
-    fun progressBitmap(
+    fun chipPill(
         context: Context,
-        completed: Int,
-        total: Int,
-        accentColor: Int,
+        fill: Int,
+        ink: Int,
         dark: Boolean = isNightMode(context),
     ): Bitmap? = runCatching {
         val metrics = context.resources.displayMetrics
-        val width = 512
-        val height = 16
+        val width = 240
+        val height = 44
+        val key = "chip:$fill:$ink:$dark"
+        synchronized(tintCache) { tintCache.get(key)?.takeIf { !it.isRecycled }?.let { return@runCatching it } }
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val radius = height / 2f
-        val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 64 else 46)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fill }
+        canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, paint)
+        // A hairline of the ink keeps the pill an edge on a plate of the same family (the light
+        // theme's soft red on a near-white card is otherwise a very quiet shape).
+        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 1.5f
+            color = ColorUtils.setAlphaComponent(ink, if (dark) 90 else 62)
         }
-        canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, track)
-        val fraction = (completed.toFloat() / total.coerceAtLeast(1)).coerceIn(0f, 1f)
-        if (fraction > 0f) {
-            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
-            canvas.drawRoundRect(RectF(0f, 0f, width * fraction, height.toFloat()), radius, radius, fill)
-        }
+        canvas.drawRoundRect(RectF(1f, 1f, width - 1f, height - 1f), radius, radius, stroke)
         bitmap.density = metrics.densityDpi
+        synchronized(tintCache) { tintCache.put(key, bitmap) }
+        bitmap
+    }.getOrNull()
+
+    /**
+     * A vector drawable recoloured to [color] and returned as a bitmap.
+     *
+     * The card needs a tinted star for the occasion heading, and a `setInt("setColorFilter", …)`
+     * is a reflective RemoteViews action that a locked-down SystemUI may reject — which takes the
+     * whole row (and the status-bar icon) with it. Painting the drawable here keeps every action
+     * on the card first-class.
+     */
+    fun tintedVector(context: Context, drawableRes: Int, color: Int): Bitmap? = runCatching {
+        val key = "vector:$drawableRes:$color"
+        synchronized(tintCache) { tintCache.get(key)?.takeIf { !it.isRecycled }?.let { return@runCatching it } }
+        val drawable = ResourcesCompat.getDrawable(context.resources, drawableRes, context.theme) ?: return@runCatching null
+        val width = (drawable.intrinsicWidth * 4).coerceAtLeast(48)
+        val height = (drawable.intrinsicHeight * 4).coerceAtLeast(48)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, width, height)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN) }
+        canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), paint)
+        drawable.draw(canvas)
+        canvas.restore()
+        bitmap.density = context.resources.displayMetrics.densityDpi
+        synchronized(tintCache) { tintCache.put(key, bitmap) }
         bitmap
     }.getOrNull()
 

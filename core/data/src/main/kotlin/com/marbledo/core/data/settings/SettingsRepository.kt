@@ -63,6 +63,12 @@ class SettingsRepository(context: Context) {
             occasionReminderLeadDays = proto.occasionReminderLeadDays.coerceIn(0, 30),
             dashboardViewMode = enumOrDefault(proto.dashboardViewMode, DashboardViewMode.LIST),
             occasionCultureIds = if (proto.hasOccasionCulturesConfigured()) proto.occasionCultureIdsList.distinct() else OccasionCulture.defaultIds,
+            overdueNotificationsEnabled =
+                if (proto.hasOverdueNotificationsEnabled()) proto.overdueNotificationsEnabled else true,
+            todayRemindersEnabled =
+                if (proto.hasTodayRemindersEnabled()) proto.todayRemindersEnabled else true,
+            occasionNotificationHour =
+                if (proto.hasOccasionNotificationHour()) proto.occasionNotificationHour.coerceIn(0, 23) else 8,
         )
     }
 
@@ -101,6 +107,9 @@ class SettingsRepository(context: Context) {
         .setDashboardViewMode(settings.dashboardViewMode.name)
         .addAllOccasionCultureIds(settings.occasionCultureIds.distinct())
         .setOccasionCulturesConfigured(true)
+        .setOverdueNotificationsEnabled(settings.overdueNotificationsEnabled)
+        .setTodayRemindersEnabled(settings.todayRemindersEnabled)
+        .setOccasionNotificationHour(settings.occasionNotificationHour)
         .build()
 
     private inline fun <reified T : Enum<T>> enumOrDefault(value: String, default: T): T =
