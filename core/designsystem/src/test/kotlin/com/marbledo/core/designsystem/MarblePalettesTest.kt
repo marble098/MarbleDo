@@ -34,6 +34,7 @@ class MarblePalettesTest {
                 withClue("$mode dark=$dark") {
                     assertEquals(scheme.primary.toArgbLong(), palette.primary)
                     assertEquals(scheme.surface.toArgbLong(), palette.surface)
+                    assertEquals(scheme.surfaceContainerLow.toArgbLong(), palette.surfaceContainerLow)
                     assertEquals(scheme.surfaceContainer.toArgbLong(), palette.surfaceContainer)
                     assertEquals(scheme.background.toArgbLong(), palette.background)
                     assertEquals(scheme.onSurfaceVariant.toArgbLong(), palette.onSurfaceVariant)
