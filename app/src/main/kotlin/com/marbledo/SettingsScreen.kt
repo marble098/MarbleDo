@@ -1036,8 +1036,8 @@ private fun NotificationLivePreviewCard(
             else -> 22.dp
         },
     )
-    val focusShape = RoundedCornerShape(if (isEditorial) 4.dp else 15.dp)
-    val progressHeight = if (isEditorial) 2.dp else 3.dp
+    val focusShape = RoundedCornerShape(if (isEditorial) 6.dp else 14.dp)
+    val progressHeight = if (isEditorial) 2.dp else 4.dp
     CompositionLocalProvider(LocalLayoutDirection provides previewDirection) {
         Surface(
             shape = outerShape,
@@ -1049,7 +1049,9 @@ private fun NotificationLivePreviewCard(
         ) {
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                // Clear hierarchy: header → progress → next-step card → occasions, each with
+                // breathing room so the eye lands on the filled surface first (issue #3).
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1100,11 +1102,12 @@ private fun NotificationLivePreviewCard(
                 if (content.hasProgress) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Text(
                             content.progressLabel,
                             style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
                             color = cardMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -1113,7 +1116,7 @@ private fun NotificationLivePreviewCard(
                             androidx.compose.material3.LinearProgressIndicator(
                                 progress = { content.todayCompleted.toFloat() / content.todayTotal },
                                 color = cardAccent,
-                                trackColor = cardAccent.copy(alpha = if (shade.isDark) 0.25f else 0.18f),
+                                trackColor = cardAccent.copy(alpha = if (shade.isDark) 0.28f else 0.20f),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(progressHeight)
@@ -1127,15 +1130,15 @@ private fun NotificationLivePreviewCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(focusShape)
-                            .background(cardAccent.copy(alpha = if (isBanner) 0.09f else 0.07f))
+                            .background(cardAccent.copy(alpha = if (shade.isDark) 0.10f else 0.08f))
                             .then(
                                 if (isEditorial) {
-                                    Modifier.border(1.dp, cardAccent.copy(alpha = 0.2f), focusShape)
+                                    Modifier.border(1.dp, cardAccent.copy(alpha = 0.18f), focusShape)
                                 } else {
-                                    Modifier
+                                    Modifier.border(1.dp, cardHairline.copy(alpha = 0.0f), focusShape)
                                 },
                             )
-                            .padding(horizontal = 11.dp, vertical = 9.dp),
+                            .padding(horizontal = 13.dp, vertical = 11.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Row(
@@ -1170,10 +1173,12 @@ private fun NotificationLivePreviewCard(
                     }
                 }
                 if (content.hasOccasions) {
+                    // Organized information hierarchy: occasions are secondary to the next step,
+                    // shown in the same muted ink as secondary dates for consistency (issue #3).
                     Text(
                         content.occasionsLine,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = cardMuted,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

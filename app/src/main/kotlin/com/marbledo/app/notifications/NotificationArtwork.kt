@@ -394,7 +394,12 @@ object NotificationArtwork {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val plate = if (dark) NOTIFICATION_PLATE_DARK else NOTIFICATION_PLATE_LIGHT
-        val blended = ColorUtils.blendARGB(accentColor, accentColor(context, mood), 0.55f)
+        // The date header (e.g. "۲۸ آبان") must follow the app theme, not a fixed mood colour.
+        // Previously the blend was 0.55 towards the mood colour, so an OCCASION day kept a purple
+        // cast (the old indigo) even after the user switched to Sunset/Forest/Rose. The rule now
+        // carries the theme, tinted only lightly by the mood so the semantic stays without stealing
+        // the palette.
+        val blended = ColorUtils.blendARGB(accentColor, accentColor(context, mood), 0.28f)
         val color = MarbleContrast.readable(blended.toLong() and 0xFFFFFFFFL, plate, MarbleContrast.UI_MINIMUM).toInt()
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
         val radius = width / 2f
@@ -446,20 +451,27 @@ object NotificationArtwork {
         accentColor: Int,
         dark: Boolean = isNightMode(context),
     ): Bitmap? = runCatching {
+        // The bitmap is stretched with fitXY inside a FrameLayout that already rounds its
+        // background drawable. A mismatched radius used to create a double-border where the
+        // drawable's 16dp/12dp/4dp corners peeked outside the bitmap's 40px corners — the
+        // "frames interfere with radius" report. The plate now matches the outer card radius
+        // (20dp → inset) and its stroke is inset by 0.5px so the hairline stays inside the
+        // rounded outline instead of bleeding into the corners.
         val width = 640
         val height = 176
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val rect = RectF(1f, 1f, width - 1f, height - 1f)
-        val radius = 40f
+        val inset = 2f
+        val rect = RectF(inset, inset, width - inset, height - inset)
+        val radius = 32f
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 34 else 22)
+            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 38 else 26)
         }
         canvas.drawRoundRect(rect, radius, radius, fill)
         val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 2f
-            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 78 else 54)
+            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 82 else 56)
         }
         canvas.drawRoundRect(rect, radius, radius, stroke)
         bitmap
