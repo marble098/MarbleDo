@@ -139,6 +139,44 @@ database whenever a task is completed from a notification, and disappears once n
 * The chip and its mark are `importantForAccessibility="no"` where the label beside them already
   says the same thing, so TalkBack reads the card once, not twice.
 
+## The four looks (second pass)
+
+The first pass left the four "designs" as one card with four badge sizes: `classic`, `minimal`,
+`editorial` and `banner` differed by 2 dp of badge and a drawable, and the Settings preview drew the
+same Compose layout for all of them. On top of that the card stacked a plate, a `@color` section
+background that followed the *device's* night mode, a bitmap plate stretched with `fitXY`, and a
+pill bitmap stretched to whatever width the word happened to have — three frames inside one
+another, with elliptical corners. The second pass gives each look its own anatomy and removes every
+stretched corner.
+
+| Look | Header | State | Tasks | Anything else |
+| --- | --- | --- | --- | --- |
+| `classic` | day badge + date | tonal pill, state mark | on a tonal panel (shape drawable) | — |
+| `minimal` | date | dot + word | plain, largest text on the card | — |
+| `editorial` | date set at 17/22 sp | dot + word | pull-quote beside a 3 dp accent rule | hairline closes the masthead |
+| `banner` | full-width accent band (bleeds to the card edge) | dot + word in the band's ink | plain | — |
+
+The table lives in three places that `test_notification_designs.py` and
+`NotificationLayoutContractTest` hold together: `scripts/generate_notification_layouts.py` (the
+XML), `NotificationLook.kt` (the builder's flags) and the Settings preview, which branches on the
+same flags.
+
+### No stretched corners
+
+* Everything with a corner that has to scale — card plate, task panel, state pill, hairlines — is a
+  **shape drawable** with literal colours and a light/dark twin picked by `setImageViewResource`.
+* Bitmaps are only used where stretching is harmless: the banner's flat fill, the editorial rule (a
+  plain rectangle) and the banner caps, which are drawn at exactly their 20 dp layout width and
+  shown with `scaleType="matrix"`, so they are clipped rather than scaled.
+* No layout paints an `android:background`; nothing is `@color`-referenced from a drawable the
+  builder picks by lightness.
+
+### Type scale
+
+Task title 14/16 sp (two lines compact, three expanded); meta, state, section labels 11 sp;
+occasions 12 sp; secondary dates 11 sp. Nothing on the card is below 11 sp — the old 10 sp labels
+were unreadable in Persian.
+
 ## Verification
 
 - `scripts/tests/test_notification_designs.py` — sixteen layouts from one table

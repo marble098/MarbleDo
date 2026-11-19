@@ -22,7 +22,6 @@ import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.IconCompat
 import com.marble098.marbledo.R
 import com.marble098.marbledo.core.designsystem.R as DesignR
-import com.marbledo.core.designsystem.MarbleContrast
 import com.marbledo.domain.model.StatusBarIconStyle
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
@@ -100,7 +99,7 @@ object NotificationArtwork {
 
     private val statusBitmapCache = LruCache<String, Bitmap>(28)
     private val dateBadgeCache = LruCache<String, Bitmap>(8)
-    private val tintCache = LruCache<String, Bitmap>(4)
+    private val tintCache = LruCache<String, Bitmap>(24)
     private val typefaceCache = ConcurrentHashMap<Int, Typeface>()
     @Volatile private var baseVazirTypeface: Typeface? = null
 
@@ -375,80 +374,67 @@ object NotificationArtwork {
 
     // ---------------------------------------------------------------------------------------
     // Themed notification chrome. The RemoteViews card may not run reflective tint calls, so the
-    // mood rule, the state pill and the task plate arrive as ready-painted bitmaps in the palette
-    // of the app theme; each shape stays a first-class `setImageViewBitmap()`.
+    // few shapes that must carry the *theme accent* (which no fixed drawable can know) arrive as
+    // ready-painted bitmaps; each one is applied with a first-class `setImageViewBitmap()`.
+    //
+    // Only shapes that survive stretching are bitmaps: the banner's flat fill, its two caps (which
+    // are never scaled, see `scaleType="matrix"` in the layout) and the editorial rule (a plain
+    // rectangle). Anything with a corner that has to scale — the card plate, the task panel, the
+    // state pill, the hairlines — is a shape drawable chosen with `setImageViewResource()`.
     // ---------------------------------------------------------------------------------------
 
-    /**
-     * The banner's leading rule, blended from the theme accent and the day's mood colour and then
-     * lifted until it reads as a shape on the card plate ([MarbleContrast.UI_MINIMUM]).
-     */
-    fun accentRule(
-        context: Context,
-        accentColor: Int,
-        mood: NotificationMood,
-        dark: Boolean = isNightMode(context),
-    ): Bitmap? = runCatching {
-        val metrics = context.resources.displayMetrics
-        val width = (3f * metrics.density).roundToInt().coerceAtLeast(2)
-        val height = (48f * metrics.density).roundToInt().coerceAtLeast(8)
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val plate = if (dark) NOTIFICATION_PLATE_DARK else NOTIFICATION_PLATE_LIGHT
-        // The date header (e.g. "۲۸ آبان") must follow the app theme, not a fixed mood colour.
-        // Previously the blend was 0.55 towards the mood colour, so an OCCASION day kept a purple
-        // cast (the old indigo) even after the user switched to Sunset/Forest/Rose. The rule now
-        // carries the theme, tinted only lightly by the mood so the semantic stays without stealing
-        // the palette.
-        val blended = ColorUtils.blendARGB(accentColor, accentColor(context, mood), 0.28f)
-        val color = MarbleContrast.readable(blended.toLong() and 0xFFFFFFFFL, plate, MarbleContrast.UI_MINIMUM).toInt()
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
-        val radius = width / 2f
-        canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, paint)
-        bitmap.density = metrics.densityDpi
-        bitmap
-    }.getOrNull()
+    /** The dp width of a banner cap in the layout; the bitmap is drawn at exactly this width. */
+    const val BAND_CAP_DP = 20f
 
     /**
-     * The pill behind the state word of the card ("۳ عقب‌افتاده" / "امروز").
-     *
-     * The progress bar this replaced was the confusing half of the old card: a track that read
-     * "۰ از ۱۰۱ عقب‌افتاده" and moved nowhere. One rounded pill in the state's own colour says the
-     * same thing in three words. It is drawn as a bitmap and applied with `setImageViewBitmap`,
-     * which — unlike a reflective `setBackgroundColor` — cannot abort the RemoteViews apply.
-     *
-     * [fill] is the opaque state fill from the palette and [ink] the state hue that draws the
-     * pill's hairline: the *word* on the pill is not painted here, so its ink is chosen separately
-     * (against [fill], not against the card) by the builder.
+     * One cap of the banner band: a [BAND_CAP_DP]-wide strip whose *outer* top corner is rounded
+     * at the card radius. Tall on purpose — the ImageView draws it unscaled from the top and clips
+     * the rest, so the corner stays a circle at any band height. [leading] is the cap on the left
+     * edge of the screen; the right one is its mirror.
      */
-    fun chipPill(
-        context: Context,
-        fill: Int,
-        ink: Int,
-        dark: Boolean = isNightMode(context),
-    ): Bitmap? = runCatching {
+    fun bandCap(context: Context, accentColor: Int, leading: Boolean): Bitmap? = runCatching {
         val metrics = context.resources.displayMetrics
-        val width = 240
-        val height = 44
-        val key = "chip:$fill:$ink:$dark"
+        val width = (BAND_CAP_DP * metrics.density).roundToInt().coerceAtLeast(4)
+        val height = (BAND_CAP_HEIGHT_DP * metrics.density).roundToInt()
+        val key = "bandcap:$accentColor:$leading:$width:$height"
         synchronized(tintCache) { tintCache.get(key)?.takeIf { !it.isRecycled }?.let { return@runCatching it } }
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val radius = height / 2f
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fill }
-        canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), radius, radius, paint)
-        // A hairline of the ink keeps the pill an edge on a plate of the same family (the light
-        // theme's soft red on a near-white card is otherwise a very quiet shape).
-        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 1.5f
-            color = ColorUtils.setAlphaComponent(ink, if (dark) 90 else 62)
-        }
-        canvas.drawRoundRect(RectF(1f, 1f, width - 1f, height - 1f), radius, radius, stroke)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
+        val radius = width.toFloat()
+        // A rounded rectangle twice as wide as the cap, positioned so that only the outer corner
+        // falls inside the bitmap; the inner edge is therefore straight and meets the fill.
+        val left = if (leading) 0f else -radius
+        canvas.drawRoundRect(RectF(left, 0f, left + 2 * radius, height + radius), radius, radius, paint)
         bitmap.density = metrics.densityDpi
         synchronized(tintCache) { tintCache.put(key, bitmap) }
         bitmap
     }.getOrNull()
+
+    /** The flat middle of the banner band: a solid colour, which `fitXY` cannot distort. */
+    fun bandFill(context: Context, accentColor: Int): Bitmap? = solid(context, "bandfill", accentColor, 4, 4)
+
+    /**
+     * The editorial rule beside the task block: a 3 dp-wide solid rectangle in the theme accent,
+     * stretched to the block's height. Square ends on purpose — a rounded end would distort.
+     */
+    fun verticalRule(context: Context, accentColor: Int): Bitmap? {
+        val density = context.resources.displayMetrics.density
+        return solid(context, "rule", accentColor, (3f * density).roundToInt().coerceAtLeast(2), (24f * density).roundToInt())
+    }
+
+    private fun solid(context: Context, kind: String, color: Int, width: Int, height: Int): Bitmap? = runCatching {
+        val key = "$kind:$color:$width:$height"
+        synchronized(tintCache) { tintCache.get(key)?.takeIf { !it.isRecycled }?.let { return@runCatching it } }
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        Canvas(bitmap).drawColor(color)
+        bitmap.density = context.resources.displayMetrics.densityDpi
+        synchronized(tintCache) { tintCache.put(key, bitmap) }
+        bitmap
+    }.getOrNull()
+
+    /** Taller than any band the layouts can produce; the ImageView clips the excess. */
+    private const val BAND_CAP_HEIGHT_DP = 160f
 
     /**
      * A vector drawable recoloured to [color] and returned as a bitmap.
@@ -475,47 +461,6 @@ object NotificationArtwork {
         synchronized(tintCache) { tintCache.put(key, bitmap) }
         bitmap
     }.getOrNull()
-
-    /**
-     * The next-step plate: the one filled surface of the card, in the theme accent.
-     *
-     * [dark] is the card's lightness (the app theme's, not the device's), so the fill and its
-     * hairline are tuned for the plate they actually land on.
-     */
-    fun focusPlate(
-        context: Context,
-        accentColor: Int,
-        dark: Boolean = isNightMode(context),
-    ): Bitmap? = runCatching {
-        // The bitmap is stretched with fitXY inside a FrameLayout that already rounds its
-        // background drawable. A mismatched radius used to create a double-border where the
-        // drawable's 16dp/12dp/4dp corners peeked outside the bitmap's 40px corners — the
-        // "frames interfere with radius" report. The plate now matches the outer card radius
-        // (20dp → inset) and its stroke is inset by 0.5px so the hairline stays inside the
-        // rounded outline instead of bleeding into the corners.
-        val width = 640
-        val height = 176
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val inset = 2f
-        val rect = RectF(inset, inset, width - inset, height - inset)
-        val radius = 32f
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 38 else 26)
-        }
-        canvas.drawRoundRect(rect, radius, radius, fill)
-        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 2f
-            color = ColorUtils.setAlphaComponent(accentColor, if (dark) 82 else 56)
-        }
-        canvas.drawRoundRect(rect, radius, radius, stroke)
-        bitmap
-    }.getOrNull()
-
-    private fun isNightMode(context: Context): Boolean =
-        context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
-            android.content.res.Configuration.UI_MODE_NIGHT_YES
 
     // ---------------------------------------------------------------------------------------
     // Looks. Every coordinate below is a fraction of the icon side, so the same code draws a

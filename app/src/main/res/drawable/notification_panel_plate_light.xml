@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Classic: the tonal panel under the tasks, light plate.
+     The colour is a literal on purpose: the card follows the *app* theme, so a `@color` that
+     re-resolves against the device's night mode would paint the wrong half of the card. The
+     builder picks the light or dark twin; NotificationTheme.kt holds the same value. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#E9E8EE" />
+    <corners android:radius="14dp" />
+</shape>

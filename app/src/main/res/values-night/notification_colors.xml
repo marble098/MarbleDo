@@ -1,20 +1,8 @@
 <resources>
-    <!-- The dark half of the same table, mirroring MarbleTheme's DarkColors. -->
-    <color name="notification_card_background">#26272E</color>
+    <!-- The dark half of the fallback table; see values/notification_colors.xml. -->
     <color name="notification_card_text">#EFECF6</color>
     <color name="notification_card_muted">#B7B2C6</color>
     <color name="notification_card_accent">#BBC5FF</color>
-    <!-- Neutral, matching the light half: a low-alpha version of this card's ink. These two paint
-         the next-step plate and its hairline *under* the themed bitmap the builder draws on top,
-         so they have to be the dark card's ink rather than a second colour of their own. -->
-    <color name="notification_card_section">#1AEFECF6</color>
-    <color name="notification_card_track">#38EFECF6</color>
-
-    <!-- Lifted for the dark plate (#26272E): the same hues, light enough to clear 4.5:1. -->
     <color name="notification_state_overdue">#FF9C85</color>
-    <color name="notification_state_today">#BBC5FF</color>
     <color name="notification_state_occasion">#CDB6F8</color>
-    <color name="notification_state_overdue_soft">#4A211B</color>
-    <color name="notification_state_occasion_soft">#332A46</color>
-    <color name="notification_occasion_icon">#CDB6F8</color>
 </resources>

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Banner's next step sits in a band that answers to the mood rule beside it.
-     Radius 10dp stays concentric inside the 20dp outer plate; no second stroke
-     here — NotificationArtwork.focusPlate already paints the themed hairline,
-     so a drawable stroke would create a double-frame at the corners. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/notification_card_section" />
-    <corners android:radius="10dp" />
-</shape>

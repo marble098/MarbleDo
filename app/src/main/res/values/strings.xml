@@ -366,10 +366,10 @@
     <string name="dash_no_upcoming_occasion">No starred occasion is coming up.</string>
     <string name="settings_notification_design">Notification design</string>
     <string name="settings_notification_preview">Live preview</string>
-    <string name="notification_design_classic">Card · one next step</string>
+    <string name="notification_design_classic">Card · badge and panel</string>
     <string name="notification_design_minimal">Line · text only</string>
     <string name="notification_design_editorial">Poster · large date</string>
-    <string name="notification_design_banner">Banner · mood rule</string>
+    <string name="notification_design_banner">Banner · accent band</string>
     <string name="dash_state_expanded">Expanded</string>
     <string name="dash_state_collapsed">Collapsed</string>
     <string name="settings_decrease">Less</string>
