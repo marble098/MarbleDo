@@ -406,7 +406,7 @@ fun TaskEditorSheet(
                         // one of a set so it is a radio option (docs/UI_COUNCIL_REVIEW.md, D-1 and S-5).
                         Box(
                             Modifier
-                                .size(MarbleSpacing.touch)
+                                .size(MarbleSpacing.touchTarget)
                                 .selectable(selected = selectedSwatch, role = Role.RadioButton) { colorArgb = option }
                                 .semantics { contentDescription = colorLabel },
                             contentAlignment = Alignment.Center,

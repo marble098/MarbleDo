@@ -152,6 +152,7 @@ class ResponsiveControlTests(unittest.TestCase):
     def test_colour_options_have_named_selected_states_in_both_languages(self):
         code = source(FEATURE / 'tasks/src/main/kotlin/com/marbledo/feature/tasks/TaskEditorSheet.kt')
         self.assertIn('.semantics { contentDescription = colorLabel }', code)
+        self.assertIn('.size(MarbleSpacing.touchTarget)', code)
         self.assertIn('role = Role.RadioButton', code)
         self.assertIn('Icons.Outlined.Check,', code)
         for values in ('values', 'values-fa'):
