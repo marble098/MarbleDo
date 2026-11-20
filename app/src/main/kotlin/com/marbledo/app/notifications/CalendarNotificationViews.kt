@@ -90,7 +90,6 @@ internal object CalendarNotificationViews {
 
         // The header's own ink: the plate's text, or the band's ink when the header is a band.
         val headerInk = if (look.band) onAccent else colors.text.toInt()
-        val headerMuted = if (look.band) onAccent else colors.muted.toInt()
         // The state's word and mark. On a pill both take the state hue re-checked against the
         // pill's fill; as a dot-and-word they take the hue checked against the plate; on the band
         // the word is the band's ink and only the dot keeps the hue (lifted until it reads there).
@@ -154,10 +153,14 @@ internal object CalendarNotificationViews {
             if (!expanded) return@apply
 
             setTextViewText(R.id.notification_secondary_dates, content.secondaryDatesLine)
-            setTextColor(R.id.notification_secondary_dates, headerMuted)
+            // The banner's cross-check dates sit BELOW the accent band, on the card plate.
+            // Using the band's onAccent ink here can turn them white on a light card.
+            setTextColor(R.id.notification_secondary_dates, colors.muted.toInt())
 
+            setViewVisibility(R.id.notification_task_second_row, if (content.secondTaskTitle == null) View.GONE else View.VISIBLE)
             setTextViewText(R.id.notification_tasks_label, content.tasksLabel)
             setTextColor(R.id.notification_tasks_label, accent)
+            setViewVisibility(R.id.notification_tasks_label, if (content.hasTask) View.VISIBLE else View.GONE)
             setTextViewText(R.id.notification_task_second_title, content.secondTaskTitle.orEmpty())
             setTextColor(R.id.notification_task_second_title, colors.text.toInt())
             setViewVisibility(R.id.notification_task_second_title, if (content.secondTaskTitle == null) View.GONE else View.VISIBLE)

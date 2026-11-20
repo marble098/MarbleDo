@@ -102,4 +102,5 @@
     <string name="tasks_repeat_needs_date">A repeating task needs a date.</string>
     <string name="tasks_color">Color</string>
     <string name="tasks_submit_hint">Add a title to save.</string>
+    <string name="tasks_color_option">Color %1$s</string>
 </resources>

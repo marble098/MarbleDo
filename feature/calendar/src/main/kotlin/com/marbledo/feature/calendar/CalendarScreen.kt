@@ -3,8 +3,6 @@ package com.marbledo.feature.calendar
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -1092,8 +1090,8 @@ private fun CalendarStepButton(icon: ImageVector, description: String, onClick: 
 /** Four equally weighted segments inside the command card. */
 @Composable
 private fun CalendarViewSwitch(selected: CalendarViewMode, onSelect: (CalendarViewMode) -> Unit) {
-    val colorSpec: androidx.compose.animation.core.AnimationSpec<Color> =
-        if (LocalReduceMotion.current) snap() else tween(220)
+    // One motion vocabulary: the theme's effect spec, and snap when the user asks for less.
+    val colorSpec: androidx.compose.animation.core.AnimationSpec<Color> = MarbleMotion.effects()
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -1309,7 +1307,7 @@ private fun DayCellView(
             .defaultMinSize(minHeight = 52.dp)
             .clip(MaterialTheme.shapes.medium)
             .semantics(mergeDescendants = true) { contentDescription = cellDescription; this.selected = selected }
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, role = Role.Button)
             .padding(vertical = 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp),

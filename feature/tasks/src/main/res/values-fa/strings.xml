@@ -102,4 +102,5 @@
     <string name="tasks_repeat_needs_date">کار تکراری به تاریخ نیاز دارد.</string>
     <string name="tasks_color">رنگ</string>
     <string name="tasks_submit_hint">برای ثبت، عنوان کار را بنویس.</string>
+    <string name="tasks_color_option">رنگ %1$s</string>
 </resources>

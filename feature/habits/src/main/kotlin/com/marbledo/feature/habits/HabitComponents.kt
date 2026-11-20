@@ -3,19 +3,18 @@ package com.marbledo.feature.habits
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +27,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -55,8 +58,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -347,23 +352,25 @@ fun HabitIconPicker(
     palette: HabitPalette,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        HABIT_ICONS.chunked(6).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { icon ->
-                    val isSelected = icon == selected
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .then(if (isSelected) Modifier.border(2.dp, palette.accent, RoundedCornerShape(14.dp)) else Modifier)
-                            .background(if (isSelected) palette.accentSoft else palette.track.copy(alpha = 0.4f))
-                            .clickable { onSelect(icon) },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(icon, fontSize = 20.sp)
-                    }
-                }
+    // Let the available width choose the number of columns: six 48dp icons plus gaps do not
+    // fit inside a 320dp phone's sheet. No shrinking the touch targets to make the grid fit.
+    FlowRow(
+        modifier = modifier.fillMaxWidth().selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        HABIT_ICONS.forEach { icon ->
+            val isSelected = icon == selected
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .then(if (isSelected) Modifier.border(2.dp, palette.accent, MaterialTheme.shapes.medium) else Modifier)
+                    .background(if (isSelected) palette.accentSoft else palette.track.copy(alpha = 0.4f))
+                    .selectable(selected = isSelected, role = Role.RadioButton) { onSelect(icon) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(icon, fontSize = 20.sp)
             }
         }
     }
@@ -378,7 +385,7 @@ fun HabitThemeSwatchRow(
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().selectableGroup(),
         contentPadding = PaddingValues(horizontal = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -403,7 +410,9 @@ fun HabitThemeSwatch(
             .clip(RoundedCornerShape(18.dp))
             .then(if (selected) Modifier.border(2.dp, palette.accent, RoundedCornerShape(18.dp)) else Modifier)
             .background(palette.card)
-            .clickable(onClick = onClick)
+            // A look is one of a set, so it is a radio option, not a bare button; TalkBack has to
+            // say which one is already selected (docs/UI_COUNCIL_REVIEW.md, S-5).
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -456,6 +465,9 @@ fun HabitDrawer(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    // Read in the composable scope, where stringResource is available; the semantics lambda below
+    // is not a composable context.
+    val drawerStateLabel = stringResource(if (expanded) R.string.habit_drawer_close else R.string.habit_drawer_open)
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -467,7 +479,10 @@ fun HabitDrawer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .clickable(onClick = onToggle),
+                    // The drawer is a disclosure, so the header says so and tells the service
+                    // whether it is open — a coloured chevron alone said nothing (D-4).
+                    .clickable(onClick = onToggle, role = Role.Button)
+                    .semantics { stateDescription = drawerStateLabel },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
@@ -516,8 +531,14 @@ fun HabitDrawer(
             }
             AnimatedVisibility(
                 visible = expanded,
-                enter = if (reduceMotion) EnterTransition.None else fadeIn(tween(160)) + expandVertically(tween(240)),
-                exit = if (reduceMotion) ExitTransition.None else fadeOut(tween(140)) + shrinkVertically(tween(200)),
+                // Effects and spatial movement come from the theme's motion scheme, so the drawer
+                // opens with the same timing as every other surface in the app (principle 6).
+                enter = if (reduceMotion) EnterTransition.None else {
+                    fadeIn(MarbleMotion.effects()) + expandVertically(MarbleMotion.spatial())
+                },
+                exit = if (reduceMotion) ExitTransition.None else {
+                    fadeOut(MarbleMotion.effects()) + shrinkVertically(MarbleMotion.spatial())
+                },
             ) {
                 Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     HabitRowDivider(palette)
@@ -550,7 +571,8 @@ fun HabitFolderRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onOpen)
+            // The whole folder opens the habit; TalkBack has to call it a button (D-4).
+            .clickable(onClick = onOpen, role = Role.Button)
             .padding(horizontal = 6.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp),
     ) {
@@ -645,9 +667,12 @@ private fun HabitDayControl(
             val slipped = stats.todayValue > 0
             Box(
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(14.dp))
                     .background(if (slipped) palette.track else palette.accentSoft)
-                    .clickable(onClick = onToggleDone)
+                    // "Slipped" is a state, not an action, so the pill reports it as one
+                    // (docs/UI_COUNCIL_REVIEW.md, D-4).
+                    .toggleable(value = slipped, role = Role.Checkbox) { onToggleDone() }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -678,11 +703,13 @@ private fun HabitDayControl(
         } else {
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    // 48dp target: 46dp was one of the smallest touch targets left in the app
+                    // (docs/UI_COUNCIL_REVIEW.md, D-1).
+                    .minimumInteractiveComponentSize()
                     .clip(CircleShape)
                     .then(if (!stats.todayDone) Modifier.border(1.5.dp, palette.track, CircleShape) else Modifier)
                     .background(if (stats.todayDone) palette.accent else palette.track.copy(alpha = 0.5f))
-                    .clickable(onClick = onToggleDone),
+                    .toggleable(value = stats.todayDone, role = Role.Checkbox) { onToggleDone() },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -703,15 +730,24 @@ private fun RoundIconButton(
     palette: HabitPalette,
     onClick: () -> Unit,
 ) {
+    // The 34dp disc is the visual; the tap area around it is a full 48dp. A `.size(34.dp)` with
+    // the clickable on the same box was the smallest touch target in the app, and the fix is not
+    // to draw a 48dp disc but to keep the disc and widen the target (docs/UI_COUNCIL_REVIEW.md, D-1).
     Box(
         modifier = Modifier
-            .size(34.dp)
-            .clip(CircleShape)
-            .background(palette.track.copy(alpha = 0.6f))
-            .clickable(onClick = onClick),
+            .minimumInteractiveComponentSize()
+            .clickable(onClick = onClick, role = Role.Button),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = description, tint = palette.onCard, modifier = Modifier.size(18.dp))
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(palette.track.copy(alpha = 0.6f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = description, tint = palette.onCard, modifier = Modifier.size(18.dp))
+        }
     }
 }
 
@@ -827,7 +863,7 @@ fun HabitThemeDotRow(
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().selectableGroup(),
         contentPadding = PaddingValues(vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -839,11 +875,13 @@ fun HabitThemeDotRow(
             val shape = CircleShape
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    // 48dp target, and the swatch is one of a set: a radio option, not a button
+                    // (docs/UI_COUNCIL_REVIEW.md, D-1 and S-5).
+                    .minimumInteractiveComponentSize()
                     .clip(shape)
                     .then(if (isSelected) Modifier.border(2.dp, palette.accent, shape) else Modifier)
                     .background(Brush.linearGradient(listOf(palette.accentSoft, palette.heat.last())))
-                    .clickable { onSelect(theme) }
+                    .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(theme) })
                     .semantics { contentDescription = label },
                 contentAlignment = Alignment.Center,
             ) {

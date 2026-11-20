@@ -82,9 +82,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -1909,7 +1907,10 @@ private fun DashboardModeSwitcher(mode: DashboardViewMode, onSelect: (DashboardV
                 val selected = value == mode
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        // The visual tab is the icon's own box; the *target* stays a full 48dp, so
+                        // the three stops do not shrink to the 40dp the old switcher used
+                        // (docs/UI_COUNCIL_REVIEW.md, D-1).
+                        .minimumInteractiveComponentSize()
                         .clip(CircleShape)
                         .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
                         .selectable(selected = selected, role = Role.Tab) { onSelect(value) },
@@ -1997,7 +1998,7 @@ private fun TaskGridCard(
         Color(task.colorArgb.toInt())
     }
     Card(
-        modifier = modifier.combinedClickable(onClick = onEdit, onLongClick = onLongPress),
+        modifier = modifier.combinedClickable(onClick = onEdit, onLongClick = onLongPress, role = Role.Button),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
@@ -2013,7 +2014,9 @@ private fun TaskGridCard(
                 // (docs/UI_COUNCIL_REVIEW.md, D-6).
                 Box(
                     Modifier
-                        .size(32.dp)
+                        // 48dp of touch target around a 20dp glyph: the old 32dp box was a
+                        // checkbox only a stylus could hit reliably (docs/UI_COUNCIL_REVIEW.md, D-6).
+                        .minimumInteractiveComponentSize()
                         .clip(CircleShape)
                         .toggleable(value = task.isCompleted, role = Role.Checkbox) { onToggle() }
                         .semantics(mergeDescendants = true) { contentDescription = task.title },
@@ -2132,7 +2135,7 @@ private fun RoadNode(
     Column(
         Modifier
             .clip(MaterialTheme.shapes.medium)
-            .combinedClickable(onClick = onClick, onLongClick = onLongPress)
+            .combinedClickable(onClick = onClick, onLongClick = onLongPress, role = Role.Button)
             .padding(horizontal = 3.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),

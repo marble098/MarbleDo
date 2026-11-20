@@ -305,13 +305,13 @@ class NotificationDesignTests(unittest.TestCase):
                 self.assertIn('@+id/notification_occasions_divider', expanded)
                 self.assertNotIn('@+id/notification_occasions_container', compact)
 
-    def test_the_task_title_is_never_clipped_to_one_line(self):
-        """Two lines compact, three expanded; and nothing on the card is set below 11 sp."""
+    def test_task_line_budgets_preserve_the_collapsed_card_and_expanded_reading(self):
+        """One line collapsed (48dp host budget), three expanded; never below 11sp."""
         for design in LOOKS:
             for direction in ('rtl', 'ltr'):
                 compact = ET.parse(ROOT / f'app/src/main/res/layout/notification_{design}_compact_{direction}.xml')
                 expanded = ET.parse(ROOT / f'app/src/main/res/layout/notification_{design}_expanded_{direction}.xml')
-                for tree, minimum in ((compact, 2), (expanded, 3)):
+                for tree, minimum in ((compact, 1), (expanded, 3)):
                     titles = [v for v in tree.iter('TextView') if (v.get(ANDROID + 'id') or '').endswith('/notification_task_title')]
                     with self.subTest(design=design, direction=direction, minimum=minimum):
                         self.assertEqual(1, len(titles), 'exactly one task title per card')

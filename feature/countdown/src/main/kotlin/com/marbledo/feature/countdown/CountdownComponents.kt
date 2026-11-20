@@ -51,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -101,7 +102,7 @@ fun CountdownFocusDialog(
                 ) {
                     Text(
                         task.title,
-                        style = MarbleTextStyles.screenTitle.copy(fontSize = MaterialTheme.typography.headlineSmall.fontSize),
+                        style = MarbleTextStyles.screenTitle,
                         textAlign = TextAlign.Center,
                     )
                     task.dueAtEpochMillis?.let { due ->
@@ -210,8 +211,11 @@ fun CountdownMiniCard(
         modifier = (
             if (fillWidth) modifier.fillMaxWidth() else modifier.width(184.dp)
             ).then(
-                if (onLongPress != null) Modifier.combinedClickable(onClick = onClick, onLongClick = onLongPress)
-                else Modifier.clickable(onClick = onClick),
+                if (onLongPress != null) {
+                    Modifier.combinedClickable(onClick = onClick, onLongClick = onLongPress, role = Role.Button)
+                } else {
+                    Modifier.clickable(onClick = onClick, role = Role.Button)
+                },
             ),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surface,

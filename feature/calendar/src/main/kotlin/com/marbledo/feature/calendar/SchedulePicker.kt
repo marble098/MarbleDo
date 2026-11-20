@@ -43,11 +43,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.marbledo.core.designsystem.MarbleTextStyles
@@ -185,7 +185,7 @@ fun SchedulePickerDialog(
                             YearStep(-1) { months -> viewIso = SchedulingCalendar.shiftMonths(viewDate, months, calendarMode, zone).toString() }
                             Text(
                                 TextNormalizer.formatDigits(viewFields.year.toString(), numeralMode),
-                                style = MarbleTextStyles.yearDigits.copy(fontSize = 22.sp, lineHeight = 28.sp),
+                                style = MarbleTextStyles.pickerYear,
                             )
                             YearStep(1) { months -> viewIso = SchedulingCalendar.shiftMonths(viewDate, months, calendarMode, zone).toString() }
                             YearStep(10) { months -> viewIso = SchedulingCalendar.shiftMonths(viewDate, months, calendarMode, zone).toString() }
@@ -308,7 +308,7 @@ fun SchedulePickerField(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick, role = Role.Button),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
