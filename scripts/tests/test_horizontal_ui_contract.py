@@ -70,28 +70,46 @@ class HorizontalNotificationTests(unittest.TestCase):
                 self.assertEqual('LinearLayout', ancestor.tag)
                 self.assertEqual('horizontal', ancestor.get(ANDROID + 'orientation'))
 
-    def test_task_and_metadata_share_a_row_with_a_guaranteed_title_budget(self):
+    def test_task_and_metadata_share_a_row_with_a_fixed_time_column(self):
+        """The time is a *column*, not a share of the row.
+
+        A weighted metadata cell moved with the length of the title beside it, so the two rows'
+        times did not line up and the RTL rows read as scattered. A fixed dp column puts every time
+        at the same distance from the row's edge on every card and in both sizes, which is the
+        alignment the redesign asked for; the title takes the rest of the row.
+        """
         for name, _, ids, parents in layouts():
             stems = ['notification_task']
             if '_expanded_' in name:
                 stems.append('notification_task_second')
+            expanded = '_expanded_' in name
             for stem in stems:
                 title, meta = ids[stem + '_title'], ids[stem + '_meta']
                 with self.subTest(layout=name, task=stem):
                     self.assertIs(parents[title], parents[meta])
                     self.assertEqual('horizontal', parents[title].get(ANDROID + 'orientation'))
-                    self.assertEqual('0dp', meta.get(ANDROID + 'layout_width'))
-                    self.assertEqual(3, int(title.get(ANDROID + 'layout_weight')))
-                    self.assertEqual(2, int(meta.get(ANDROID + 'layout_weight')))
+                    self.assertEqual('0dp', title.get(ANDROID + 'layout_width'))
+                    self.assertEqual('1', title.get(ANDROID + 'layout_weight'))
+                    # One column width for both rows of a card, and a single line for the time.
+                    self.assertEqual('52dp' if expanded else '46dp', meta.get(ANDROID + 'layout_width'))
+                    self.assertEqual('1', meta.get(ANDROID + 'maxLines'))
 
-    def test_occasion_heading_and_value_share_one_row(self):
+    def test_the_occasion_heading_gets_a_row_of_its_own(self):
+        """Side by side, the heading ate the value's width and the value arrived cut off.
+
+        "مناسبت‌های امروز" in a fixed box next to the value left "بین‌الملل…" — a truncated word in
+        the one place the card has spare width, since the pair is only two short lines.
+        """
         for name, _, ids, parents in layouts('expanded'):
             label, value = ids['notification_occasions_label'], ids['notification_occasions_text']
             with self.subTest(layout=name):
-                self.assertIs(parents[label], parents[value])
-                self.assertEqual('horizontal', parents[value].get(ANDROID + 'orientation'))
-                self.assertEqual('0dp', value.get(ANDROID + 'layout_width'))
+                self.assertIsNot(parents[label], parents[value])
+                self.assertEqual('match_parent', value.get(ANDROID + 'layout_width'))
                 self.assertEqual('2', value.get(ANDROID + 'maxLines'))
+                # The heading row is the icon and the label, full width.
+                self.assertIs(parents[label], parents[ids['notification_occasions_icon']])
+                self.assertEqual('horizontal', parents[label].get(ANDROID + 'orientation'))
+                self.assertEqual('0dp', label.get(ANDROID + 'layout_width'))
 
     def test_collapsed_geometry_budgets_the_whole_card_not_just_the_badge(self):
         for name, root, ids, _ in layouts('compact'):
@@ -122,12 +140,19 @@ class HorizontalNotificationTests(unittest.TestCase):
         for name, _, ids, _ in layouts('expanded'):
             self.assertIn('notification_task_second_row', ids, name)
 
-    def test_cross_check_dates_use_plate_ink_even_in_the_banner(self):
-        builder = source(APP / 'app/notifications/CalendarNotificationViews.kt')
-        self.assertIn('setTextColor(R.id.notification_secondary_dates, colors.muted.toInt())', builder)
-        self.assertNotIn('setTextColor(R.id.notification_secondary_dates, headerMuted)', builder)
-        preview = source(APP / 'SettingsScreen.kt')
-        self.assertIn('if (!look.band) {\n                    Text(\n                        content.secondaryDatesLine,', preview)
+    def test_the_card_states_one_calendar_in_both_the_shade_and_the_preview(self):
+        """No Gregorian/lunar line anywhere: not in the builder, not in the live preview.
+
+        It was the line that always truncated ("قمری ۹ ج…"), and the card is meant to be read in
+        two seconds rather than to carry a third calendar.
+        """
+        for path in (APP / 'app/notifications/CalendarNotificationViews.kt', APP / 'SettingsScreen.kt',
+                     APP / 'app/notifications/PersistentCalendarNotification.kt'):
+            text = source(path)
+            self.assertNotIn('secondaryDatesLine', text, path.name)
+            self.assertNotIn('notification_secondary_dates', text, path.name)
+        for name, _, ids, _ in layouts():
+            self.assertNotIn('notification_secondary_dates', ids, name)
 
 
 class ResponsiveControlTests(unittest.TestCase):

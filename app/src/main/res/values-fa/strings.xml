@@ -366,7 +366,7 @@
     <string name="dash_no_upcoming_occasion">مناسبت ستاره‌دار نزدیکی نداری.</string>
     <string name="settings_notification_design">طراحی اعلان</string>
     <string name="settings_notification_preview">پیش‌نمایش زنده</string>
-    <string name="notification_design_classic">کارت · نشان و پنل</string>
+    <string name="notification_design_classic">کارت · نشان روز</string>
     <string name="notification_design_minimal">خط · فقط نوشته</string>
     <string name="notification_design_editorial">پوستر · تاریخ درشت</string>
     <string name="notification_design_banner">نوار · باند رنگ تم</string>

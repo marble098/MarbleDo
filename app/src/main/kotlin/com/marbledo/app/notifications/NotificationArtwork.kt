@@ -414,15 +414,6 @@ object NotificationArtwork {
     /** The flat middle of the banner band: a solid colour, which `fitXY` cannot distort. */
     fun bandFill(context: Context, accentColor: Int): Bitmap? = solid(context, "bandfill", accentColor, 4, 4)
 
-    /**
-     * The editorial rule beside the task block: a 3 dp-wide solid rectangle in the theme accent,
-     * stretched to the block's height. Square ends on purpose — a rounded end would distort.
-     */
-    fun verticalRule(context: Context, accentColor: Int): Bitmap? {
-        val density = context.resources.displayMetrics.density
-        return solid(context, "rule", accentColor, (3f * density).roundToInt().coerceAtLeast(2), (24f * density).roundToInt())
-    }
-
     private fun solid(context: Context, kind: String, color: Int, width: Int, height: Int): Bitmap? = runCatching {
         val key = "$kind:$color:$width:$height"
         synchronized(tintCache) { tintCache.get(key)?.takeIf { !it.isRecycled }?.let { return@runCatching it } }

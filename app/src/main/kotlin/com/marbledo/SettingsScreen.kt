@@ -13,11 +13,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -1055,15 +1053,12 @@ private fun DesignSchematic(look: NotificationLook) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                if (look.accentRule) {
-                    Box(Modifier.width(2.dp).height(12.dp).background(colors.primary.copy(alpha = 0.95f)))
-                }
                 Box(
                     Modifier
                         .weight(1f)
                         .height(4.dp)
                         .clip(CircleShape)
-                        .background(if (look.taskPanel) colors.onSurface.copy(alpha = 0.55f) else colors.onSurface.copy(alpha = 0.45f)),
+                        .background(colors.onSurface.copy(alpha = 0.45f)),
                 )
                 Box(
                     Modifier
@@ -1193,30 +1188,25 @@ private fun NotificationLivePreviewCard(
                     modifier = Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)),
                 )
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    content.title,
-                    style = dateStyle,
-                    fontWeight = FontWeight.Bold,
-                    color = headerInk,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (!look.band) {
-                    Text(
-                        content.secondaryDatesLine,
-                        style = MarbleTextStyles.microLabel,
-                        color = cardMuted,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+            Text(
+                content.title,
+                style = dateStyle,
+                fontWeight = FontWeight.Bold,
+                color = headerInk,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
             StateChip()
         }
     }
 
-    /** One task as one horizontal row: the title keeps the width, the meta sits at the end. */
+    /**
+     * One task as one horizontal row: the title keeps the width, the time sits in a fixed column.
+     *
+     * The column is a width, not a weight, so both rows and every design line their times up under
+     * each other — the mirror of the generated layouts' `TASK_META_WIDTH`.
+     */
     @Composable
     fun TaskRow(
         title: String,
@@ -1243,9 +1233,9 @@ private fun NotificationLivePreviewCard(
                     meta,
                     style = MarbleTextStyles.microLabel,
                     color = cardMuted,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(2f),
+                    modifier = Modifier.widthIn(min = 46.dp),
                 )
             }
         }
@@ -1268,15 +1258,15 @@ private fun NotificationLivePreviewCard(
                 title = content.taskTitle ?: content.emptyTaskText,
                 meta = content.taskMetaLine,
                 titleStyle = MarbleTextStyles.itemTitle,
-                maxLines = 3,
+                maxLines = 2,
             )
             content.secondTaskTitle?.let { second ->
                 TaskRow(
                     title = second,
                     meta = content.secondTaskMetaLine,
                     titleStyle = MaterialTheme.typography.bodySmall,
-                    maxLines = 2,
-                    topPadding = 5.dp,
+                    maxLines = 1,
+                    topPadding = 10.dp,
                 )
             }
             content.moreTasksLine?.let { more ->
@@ -1286,7 +1276,7 @@ private fun NotificationLivePreviewCard(
                     color = cardMuted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 3.dp),
+                    modifier = Modifier.padding(top = 8.dp),
                 )
             }
         }
@@ -1295,11 +1285,11 @@ private fun NotificationLivePreviewCard(
     @Composable
     fun Occasions() {
         if (!content.hasOccasions) return
-        HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 10.dp))
+        HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 14.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
         ) {
             Icon(
                 painterResource(R.drawable.ic_notification_occasion_star),
@@ -1314,17 +1304,16 @@ private fun NotificationLivePreviewCard(
                 color = Color(shade.occasion),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 100.dp),
-            )
-            Text(
-                content.occasionsLine,
-                style = MaterialTheme.typography.bodySmall,
-                color = cardMuted,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
             )
         }
+        Text(
+            content.occasionsLine,
+            style = MaterialTheme.typography.bodySmall,
+            color = cardMuted,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 
     CompositionLocalProvider(LocalLayoutDirection provides previewDirection) {
@@ -1347,37 +1336,17 @@ private fun NotificationLivePreviewCard(
                             .padding(horizontal = 14.dp, vertical = 9.dp),
                     ) { HeaderRow() }
                 }
-                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
-                    if (look.band) {
-                        Text(
-                            content.secondaryDatesLine,
-                            style = MarbleTextStyles.microLabel,
-                            color = cardMuted,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    } else {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp)) {
+                    if (!look.band) {
                         HeaderRow()
                         if (look.headerDivider) {
-                            HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 8.dp))
+                            HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 10.dp))
                         }
                     }
-                    when {
-                        look.taskPanel -> Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(top = 10.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Color(shade.panel))
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                        ) { TaskRows() }
-                        look.accentRule -> Row(Modifier.fillMaxWidth().padding(top = 10.dp).height(IntrinsicSize.Min)) {
-                            Box(Modifier.width(3.dp).fillMaxHeight().background(cardAccent))
-                            Spacer(Modifier.width(12.dp))
-                            Box(Modifier.weight(1f)) { TaskRows() }
-                        }
-                        else -> Box(Modifier.fillMaxWidth().padding(top = 10.dp)) { TaskRows() }
-                    }
+                    // One surface only. The classic look's tonal panel and the editorial look's
+                    // vertical rule are gone: the panel read as a box stuck onto the card and the
+                    // rule fell on the first letter of the title in RTL.
+                    Box(Modifier.fillMaxWidth().padding(top = 6.dp)) { TaskRows() }
                     Occasions()
                 }
             }
