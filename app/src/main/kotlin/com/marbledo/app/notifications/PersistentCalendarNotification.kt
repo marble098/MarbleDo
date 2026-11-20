@@ -49,6 +49,10 @@ import java.util.Locale
  */
 object PersistentCalendarNotification {
     const val NOTIFICATION_ID = 8_412
+    private const val CALENDAR_GROUP = "marbledo.calendar"
+    // A tagged summary cannot replace an untagged task reminder with the same numeric ID.
+    private const val SUMMARY_TAG = "calendar.summary"
+
     enum class StatusIconState { ACTIVE, OFF, PERMISSION_MISSING, BLOCKED }
 
     data class NotificationBoxContent(
@@ -266,8 +270,9 @@ object PersistentCalendarNotification {
         val signature = listOf(content, settings.notificationDesign, settings.themeMode, shade, settings.languageTag, settings.statusBarIconStyle,
             notificationContext.resources.configuration.uiMode,
             notificationContext.resources.displayMetrics.densityDpi, notificationContext.resources.configuration.fontScale).hashCode()
-        val isVisible = notificationContext.getSystemService(NotificationManager::class.java)?.activeNotifications
-            ?.any { it.id == NOTIFICATION_ID } == true
+        val active = notificationContext.getSystemService(NotificationManager::class.java)?.activeNotifications.orEmpty()
+        val isVisible = active.any { it.tag == null && it.id == NOTIFICATION_ID && it.notification.group == CALENDAR_GROUP } &&
+            active.any { it.tag == SUMMARY_TAG && it.id == NOTIFICATION_ID }
         // "Active" is not "rendered": if SystemUI failed to expand the custom view it keeps the
         // notification registered while drawing nothing, and a signature-only guard would then
         // never post it again. Re-posting after [REPOST_AFTER_MILLIS] makes the icon heal itself
@@ -323,6 +328,7 @@ object PersistentCalendarNotification {
         // that already says it — the duplicate the redesign was asked to remove.
         val builder = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
             .setSmallIcon(smallIcon)
+            .setGroup(CALENDAR_GROUP)
             .setLargeIcon(largeIcon)
             .setColor(accent)
             .setContentTitle(content.title)
@@ -330,7 +336,7 @@ object PersistentCalendarNotification {
         if (expandedView != null) {
             builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomBigContentView(expandedView)
-                .setCustomHeadsUpContentView(headsUpView ?: expandedView)
+            headsUpView?.let { builder.setCustomHeadsUpContentView(it) }
         }
         builder.setContentIntent(cardIntent).setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
@@ -364,7 +370,16 @@ object PersistentCalendarNotification {
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ContextCompat.checkSelfPermission(notificationContext,
                 Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
-        NotificationManagerCompat.from(notificationContext).notify(NOTIFICATION_ID, builder.build())
+        val summary = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
+            .setGroup(CALENDAR_GROUP).setGroupSummary(true)
+            .setSmallIcon(smallIcon).setColor(accent)
+            .setContentTitle(notificationContext.getString(R.string.app_name)).setContentText(content.title)
+            .setContentIntent(calendarIntent).setPublicVersion(publicVersion)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setShowWhen(false)
+            .setOnlyAlertOnce(true).setSilent(true).setOngoing(true).setLocalOnly(true)
+        val manager = NotificationManagerCompat.from(notificationContext)
+        manager.notify(NOTIFICATION_ID, builder.build())
+        manager.notify(SUMMARY_TAG, NOTIFICATION_ID, summary.build())
         lastPostedSignature = signature
         lastPostedAtMillis = nowMillis
     }
@@ -372,7 +387,11 @@ object PersistentCalendarNotification {
     fun cancel(context: Context) {
         lastPostedSignature = 0
         lastPostedAtMillis = 0L
-        runCatching { NotificationManagerCompat.from(context.applicationContext).cancel(NOTIFICATION_ID) }
+        runCatching {
+            val manager = NotificationManagerCompat.from(context.applicationContext)
+            manager.cancel(NOTIFICATION_ID)
+            manager.cancel(SUMMARY_TAG, NOTIFICATION_ID)
+        }
     }
 
     /** What the status-bar icon currently needs, shown as a diagnostics line in Settings. */
