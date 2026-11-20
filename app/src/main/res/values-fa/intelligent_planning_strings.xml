@@ -50,6 +50,4 @@
     <string name="notification_focus_overdue">عقب‌افتاده</string>
     <string name="notification_progress_pair">%1$s از %2$s</string>
     <string name="notification_occasions_overflow">+%1$s</string>
-    <!-- سطر مقایسهٔ کارت بازشده: دو تقویمی که تاریخ جلالی نیست. -->
-    <string name="notification_secondary_dates">میلادی %1$s · قمری %2$s</string>
 </resources>

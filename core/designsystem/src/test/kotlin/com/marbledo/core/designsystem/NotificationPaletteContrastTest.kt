@@ -15,10 +15,11 @@ import org.junit.jupiter.api.Test
  */
 class NotificationPaletteContrastTest {
 
-    // The same plates and panels NotificationTheme paints, and the same hues it starts from.
+    // The two plates NotificationTheme can paint, and the hues it starts from. There is one surface
+    // on the card — the plate — so there is nothing else for a colour to have to read against.
     private val plates = listOf(
-        Triple("light", 0xFFF2F1F6L, 0xFFE9E8EEL),
-        Triple("dark", 0xFF26272EL, 0xFF2F3038L),
+        "light" to 0xFFF2F1F6L,
+        "dark" to 0xFF26272EL,
     )
     private val overdueHue = 0xFFC33A22L
     private val occasionHue = 0xFF6B4FA8L
@@ -31,38 +32,36 @@ class NotificationPaletteContrastTest {
 
     private fun resolved(dark: Boolean): MarblePalette = MarblePalettes.resolve(AppThemeMode.AUTO.name, dark, null)
 
-    /** The same two-step lift `notificationPalette` applies: readable on the plate, then on the panel. */
-    private fun ink(colour: Long, plate: Long, panel: Long): Long =
-        MarbleContrast.readable(MarbleContrast.readable(colour, plate), panel)
+    /** The same lift `notificationPalette` applies: readable on the plate. */
+    private fun ink(colour: Long, plate: Long): Long = MarbleContrast.readable(colour, plate)
 
-    private fun hues(plateName: String, plate: Long, panel: Long): Map<String, Long> {
+    private fun hues(plateName: String, plate: Long): Map<String, Long> {
         val app = resolved(plateName == "dark")
         return mapOf(
-            "overdue" to ink(overdueHue, plate, panel),
-            "occasion" to ink(occasionHue, plate, panel),
-            "neutral" to ink(app.onSurfaceVariant, plate, panel),
+            "overdue" to ink(overdueHue, plate),
+            "occasion" to ink(occasionHue, plate),
+            "neutral" to ink(app.onSurfaceVariant, plate),
         )
     }
 
     @Test
-    fun everyStateHueReadsOnThePlateAndOnThePanel() {
-        for ((plateName, plate, panel) in plates) {
-            for ((name, hue) in hues(plateName, plate, panel)) {
+    fun everyStateHueReadsOnThePlate() {
+        for ((plateName, plate) in plates) {
+            for ((name, hue) in hues(plateName, plate)) {
                 assertTrue(MarbleContrast.ratio(hue, plate) >= MarbleContrast.TEXT_MINIMUM, "$plateName $name does not read on the card")
-                assertTrue(MarbleContrast.ratio(hue, panel) >= MarbleContrast.TEXT_MINIMUM, "$plateName $name does not read on the task panel")
             }
             val app = resolved(plateName == "dark")
             for ((name, colour) in listOf("text" to app.onSurface, "muted" to app.onSurfaceVariant, "accent" to app.primary)) {
-                val lifted = ink(colour, plate, panel)
-                assertTrue(MarbleContrast.ratio(lifted, panel) >= MarbleContrast.TEXT_MINIMUM, "$plateName $name does not read on the task panel")
+                val lifted = ink(colour, plate)
+                assertTrue(MarbleContrast.ratio(lifted, plate) >= MarbleContrast.TEXT_MINIMUM, "$plateName $name does not read on the card")
             }
         }
     }
 
     @Test
     fun theStateWordReadsOnItsOwnPill() {
-        for ((plateName, plate, panel) in plates) {
-            val stateHues = hues(plateName, plate, panel)
+        for ((plateName, plate) in plates) {
+            val stateHues = hues(plateName, plate)
             for ((name, fill) in chipFills.getValue(plateName)) {
                 // The word on the pill is the state hue re-checked against the *pill*, the way
                 // NotificationChipFills.ink does it; the hue alone is only guaranteed on the card.
@@ -87,8 +86,7 @@ class NotificationPaletteContrastTest {
         for (mode in AppThemeMode.entries) {
             for (dark in listOf(false, true)) {
                 val plate = if (dark) 0xFF26272EL else 0xFFF2F1F6L
-                val panel = if (dark) 0xFF2F3038L else 0xFFE9E8EEL
-                val accent = ink(MarblePalettes.resolve(mode.name, dark, null).primary, plate, panel)
+                val accent = ink(MarblePalettes.resolve(mode.name, dark, null).primary, plate)
                 val onAccent = MarbleContrast.bestInk(accent)
                 assertTrue(
                     MarbleContrast.ratio(onAccent, accent) >= MarbleContrast.TEXT_MINIMUM,

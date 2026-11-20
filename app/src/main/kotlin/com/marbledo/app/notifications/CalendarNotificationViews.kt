@@ -58,9 +58,6 @@ internal object CalendarNotificationViews {
     private fun plateRes(dark: Boolean): Int =
         if (dark) R.drawable.notification_card_plate_dark else R.drawable.notification_card_plate_light
 
-    private fun panelRes(dark: Boolean): Int =
-        if (dark) R.drawable.notification_panel_plate_dark else R.drawable.notification_panel_plate_light
-
     private fun hairlineRes(dark: Boolean): Int =
         if (dark) R.drawable.notification_hairline_dark else R.drawable.notification_hairline_light
 
@@ -143,19 +140,8 @@ internal object CalendarNotificationViews {
             setTextViewText(R.id.notification_task_meta, content.taskMetaLine.orEmpty())
             setTextColor(R.id.notification_task_meta, colors.muted.toInt())
             setViewVisibility(R.id.notification_task_meta, if (content.taskMetaLine == null) View.GONE else View.VISIBLE)
-            if (look.taskPanel) {
-                setImageViewResource(R.id.notification_task_panel, panelRes(colors.isDark))
-            }
-            if (look.accentRule) {
-                NotificationArtwork.verticalRule(context, accent)?.let { setImageViewBitmap(R.id.notification_accent_rule, it) }
-            }
 
             if (!expanded) return@apply
-
-            setTextViewText(R.id.notification_secondary_dates, content.secondaryDatesLine)
-            // The banner's cross-check dates sit BELOW the accent band, on the card plate.
-            // Using the band's onAccent ink here can turn them white on a light card.
-            setTextColor(R.id.notification_secondary_dates, colors.muted.toInt())
 
             setViewVisibility(R.id.notification_task_second_row, if (content.secondTaskTitle == null) View.GONE else View.VISIBLE)
             setTextViewText(R.id.notification_tasks_label, content.tasksLabel)

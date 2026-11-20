@@ -50,6 +50,4 @@
     <string name="notification_focus_overdue">Overdue</string>
     <string name="notification_progress_pair">%1$s of %2$s</string>
     <string name="notification_occasions_overflow">+%1$s</string>
-    <!-- The expanded card's cross-check line: the two calendars the Jalali date is not. -->
-    <string name="notification_secondary_dates">Gregorian %1$s · Lunar %2$s</string>
 </resources>

@@ -34,16 +34,12 @@ internal data class NotificationPalette(
     val today: Long,
     /** "Occasion" is a calm neutral purple, deliberately the opposite of the warning red. */
     val occasion: Long,
-    /** The tonal panel the classic look paints under the tasks, as its drawable paints it. */
-    val panel: Long,
 ) {
     /** The ink that reads on a band filled with [accent]. */
     val onAccent: Long get() = MarbleContrast.bestInk(accent)
 }
 
 /** Literal twins of the drawables the card paints, so the palette can measure against them. */
-internal const val NOTIFICATION_PANEL_LIGHT = 0xFFE9E8EEL
-internal const val NOTIFICATION_PANEL_DARK = 0xFF2F3038L
 internal const val NOTIFICATION_HAIRLINE_LIGHT = 0x1F1C1B22L
 internal const val NOTIFICATION_HAIRLINE_DARK = 0x2EEFECF6L
 
@@ -93,12 +89,9 @@ internal fun notificationPalette(
     // The plate the card paints, not `surface`: the two differ by a few steps, and the whole point
     // of this palette is that its contrasts are measured against the pixels that end up on screen.
     val plate = if (dark) NOTIFICATION_PLATE_DARK else NOTIFICATION_PLATE_LIGHT
-    val panel = if (dark) NOTIFICATION_PANEL_DARK else NOTIFICATION_PANEL_LIGHT
-    // Text is checked against the *panel* as well as the plate: the classic look sets the task
-    // title on the panel, and the panel is the darker (or lighter) of the two.
-    fun ink(colour: Long) = MarbleContrast.readable(
-        MarbleContrast.readable(colour, plate, MarbleContrast.TEXT_MINIMUM), panel, MarbleContrast.TEXT_MINIMUM,
-    )
+    // There is one surface on the card — the plate — so every colour is checked against it and
+    // nothing else. The tonal panel the tasks used to sit on is gone with the redesign.
+    fun ink(colour: Long) = MarbleContrast.readable(colour, plate, MarbleContrast.TEXT_MINIMUM)
     val accent = ink(app.primary)
     // The three states the card colours: a warning red for what is late, the brand accent for
     // today, and a calm purple for occasions. They are *hues* that carry meaning, so each one
@@ -117,7 +110,6 @@ internal fun notificationPalette(
         overdue = overdue,
         today = accent,
         occasion = occasion,
-        panel = panel,
     )
 }
 

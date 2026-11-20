@@ -17,9 +17,7 @@ import androidx.core.text.BidiFormatter
 import com.marble098.marbledo.MainActivity
 import com.marble098.marbledo.R
 import com.marbledo.domain.model.AppSettings
-import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.Task
-import com.marbledo.domain.model.TaskPriority
 import com.marbledo.domain.model.enabledOccasionCultures
 import com.marbledo.domain.util.NotificationPlanBuilder
 import com.marbledo.domain.util.TextNormalizer
@@ -29,7 +27,6 @@ import com.marbledo.feature.calendar.OccasionCatalog
 import com.marbledo.feature.calendar.OccasionIndex
 import com.marbledo.feature.calendar.PersianDateUtils
 import com.marbledo.feature.calendar.dayOfMonthIn
-import com.marbledo.feature.tasks.R as TaskR
 import com.marbledo.feature.calendar.enabledOccasionCategories
 import java.time.Instant
 import java.time.ZoneId
@@ -44,25 +41,28 @@ import java.util.Locale
  * only when the day has any — the *occasions* that are merely interesting. Everything is derived
  * here so Settings can render the same model with Compose and the shade can render it with
  * `RemoteViews`; a string is formatted once and appears identically in both.
+ *
+ * The card states **one calendar only** — the Jalali date. The Gregorian and lunar cross-check
+ * line that used to sit under it was removed: it truncated ("قمری ۹ ج…") on every narrow phone,
+ * cost a line the task needed, and duplicated what the calendar screen already shows. A
+ * notification is a two-second summary, not a dashboard, so the second calendar lives in the app.
  */
 object PersistentCalendarNotification {
     const val NOTIFICATION_ID = 8_412
     enum class StatusIconState { ACTIVE, OFF, PERMISSION_MISSING, BLOCKED }
 
     data class NotificationBoxContent(
-        /** Day, month and year of the Jalali calendar: the compact card's primary date. */
+        /** Day, month and year of the Jalali calendar: the card's only date. */
         val title: String,
-        /** Gregorian and lunar dates, one line, for the reader who needs a cross-check. Expanded only. */
-        val secondaryDatesLine: String,
         /** The state the chip states: overdue first, then today, then an occasion-only day. */
         val state: NotificationState,
-        /** The chip's word: "۳ عقب‌افتاده" or "امروز". */
+        /** The chip's word: "۳ عقب‌افتاده" or "امروز". Stated once, in the header chip. */
         val stateLabel: String,
         /** The heading of the priority-1 section. */
         val tasksLabel: String,
         /** The task the card is about — the next overdue one, or the next one due today. */
         val taskTitle: String?,
-        /** Its due time and priority, in the metadata column beside the title. */
+        /** Its due time only ("۱۳:۰۰", or "تمام‌روز" for an all-day task), beside the title. */
         val taskMetaLine: String?,
         /** A second task, expanded only, so two things can be acted on without opening the app. */
         val secondTaskTitle: String?,
@@ -91,10 +91,14 @@ object PersistentCalendarNotification {
         val monthLabel: String,
         val hasOccasions: Boolean = occasionsLine.isNotBlank(),
     ) {
-        /** Everything a reader needs from the custom card, in the order it is drawn. */
+        /**
+         * Everything a reader needs from the custom card, in the order it is drawn.
+         *
+         * The state is spoken once, in the header: the card no longer repeats "۳ عقب‌افتاده" over
+         * the task list, so neither does TalkBack.
+         */
         fun accessibilityText(expanded: Boolean): String {
             val lines = mutableListOf(title, stateLabel)
-            if (expanded) lines += secondaryDatesLine
             if (hasTask) {
                 if (expanded) lines += tasksLabel
                 lines += taskTitle.orEmpty()
@@ -140,7 +144,6 @@ object PersistentCalendarNotification {
         val zone = ZoneId.systemDefault()
         val today = PersianDateUtils.today(zone, nowMillis)
         val now = Instant.ofEpochMilli(nowMillis)
-        val todayDate = now.atZone(zone).toLocalDate()
         val index = OccasionIndex.build(catalog, listOf(today.year), settings.lunarOffsetDays,
             settings.enabledOccasionCategories(), zone, settings.enabledOccasionCultures())
         val events = index.on(today.year, today.month, today.day)
@@ -148,7 +151,6 @@ object PersistentCalendarNotification {
         // Do not change the status-bar mark policy: holiday > religious > occasion > today's tasks.
         val mood = NotificationArtwork.mood(events.any(Occasion::isHoliday),
             events.any { it.category == OccasionCategory.RELIGIOUS }, events.isNotEmpty(), plan.todayOpen)
-        val locale = firstLocale(notificationContext)
         fun digits(value: String) = TextNormalizer.formatDigits(value, settings.numeralMode)
         val bidi = BidiFormatter.getInstance(settings.languageTag == "fa")
         // The Jalali date, with its year, exactly as the collapsed card shows it: "۲۸ آبان ۱۴۰۵".
@@ -157,12 +159,6 @@ object PersistentCalendarNotification {
         val title = digits(
             "${today.day} ${PersianDateUtils.monthName(today.month, settings.languageTag)} ${today.year}",
         )
-        val gregorian = PersianDateUtils.gregorianDate(nowMillis, locale, zone)
-        val lunar = PersianDateUtils.lunarDate(nowMillis, settings.languageTag, NumeralMode.LATIN,
-            settings.lunarOffsetDays, zone)
-        // The cross-check line, expanded only, labelled so nobody has to guess which calendar is
-        // which: "میلادی …  ·  قمری …".
-        val secondary = digits(notificationContext.getString(R.string.notification_secondary_dates, gregorian, lunar))
         val favorites = catalog.canonicalFavoriteIds(settings.favoriteOccasionIds)
         val sortedEvents = events.sortedWith(compareBy<Occasion> { if (it.id in favorites) 0 else 1 }
             .thenBy { if (it.isHoliday) 0 else 1 }.thenBy { it.id })
@@ -184,32 +180,22 @@ object PersistentCalendarNotification {
         val focus = plan.overdueTasks.firstOrNull() ?: plan.todayTasks.firstOrNull() ?: plan.nextTask
         val second = (plan.overdueTasks + plan.todayTasks).firstOrNull { it.id != focus?.id }
         val openToday = (plan.todayTasks.size + plan.overdueTasks.size)
+        /**
+         * The row's metadata is **the clock and nothing else**.
+         *
+         * It used to be "۲۷ آبان · ۱۳:۰۰ · فوری · بین‌الملل" — the date, the clock, the priority
+         * *and* the category — which needs a column wider than the title and still arrived cut to
+         * "بین‌الملل…". A clock is what a notification reader is looking for, and a short one always
+         * fits the fixed column the layout reserves for it, so nothing on the row is ever ellipsised
+         * for want of space. How late a task is lives in the header's chip ("۳ عقب‌افتاده") and the
+         * rest of the detail is one tap away on the task itself.
+         */
         fun taskTime(task: Task?): String? = task?.dueAtEpochMillis?.let { due ->
-            val instant = Instant.ofEpochMilli(due)
-            val date = instant.atZone(zone).toLocalDate()
-            val clock = if (task.isAllDay) notificationContext.getString(R.string.notification_all_day)
-                else digits(instant.atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)))
-            val dayLabel = when {
-                date == todayDate -> ""
-                date == todayDate.plusDays(1) -> notificationContext.getString(R.string.dash_days_tomorrow)
-                else -> {
-                    val jalali = PersianDateUtils.of(due, zone)
-                    digits("${jalali.day} ${PersianDateUtils.monthName(jalali.month, settings.languageTag)}")
-                }
-            }
-            listOf(dayLabel, clock).filter { it.isNotBlank() }.joinToString(" · ")
+            val at = Instant.ofEpochMilli(due).atZone(zone)
+            if (task.isAllDay) notificationContext.getString(R.string.notification_all_day)
+            else digits(at.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)))
         }
-        fun taskMeta(task: Task?): String? {
-            if (task == null) return null
-            val priority = notificationContext.getString(when (task.priority) {
-                TaskPriority.LOW -> TaskR.string.tasks_priority_low
-                TaskPriority.NORMAL -> TaskR.string.tasks_priority_normal
-                TaskPriority.HIGH -> TaskR.string.tasks_priority_high
-                TaskPriority.URGENT -> TaskR.string.tasks_priority_urgent
-            })
-            return listOf(taskTime(task), priority, task.category.takeIf { it.isNotBlank() })
-                .filterNotNull().filter { it.isNotBlank() }.joinToString(" · ")
-        }
+        fun taskMeta(task: Task?): String? = taskTime(task)?.takeIf { it.isNotBlank() }
         val taskTitle = focus?.let { bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(it.title)) }
         val taskMetaLine = taskMeta(focus)
         val secondTaskTitle = second?.let { bidi.unicodeWrap(NotificationPlanBuilder.previewTitle(it.title)) }
@@ -240,7 +226,6 @@ object PersistentCalendarNotification {
         val occasionsLabel = notificationContext.getString(R.string.notification_occasions_section)
         return NotificationBoxContent(
             title = title,
-            secondaryDatesLine = secondary,
             state = state,
             stateLabel = stateLabel,
             tasksLabel = tasksLabel,
@@ -333,13 +318,15 @@ object PersistentCalendarNotification {
         } else {
             calendarIntent
         }
+        // The platform header states the date and the next task; the state is *not* repeated here.
+        // `setSubText(stateLabel)` used to print "۳ عقب‌افتاده" a second time, right above the chip
+        // that already says it — the duplicate the redesign was asked to remove.
         val builder = NotificationCompat.Builder(notificationContext, NotificationChannels.PERSISTENT_DATE)
             .setSmallIcon(smallIcon)
             .setLargeIcon(largeIcon)
             .setColor(accent)
             .setContentTitle(content.title)
             .setContentText(content.taskTitle ?: content.stateLabel)
-            .setSubText(content.stateLabel)
         if (expandedView != null) {
             builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomBigContentView(expandedView)
@@ -420,12 +407,6 @@ object PersistentCalendarNotification {
             setLayoutDirection(locale)
         }
         return createConfigurationContext(configuration)
-    }
-
-    /** The primary locale, falling back to a sensible default instead of crashing on an empty list. */
-    private fun firstLocale(context: Context): Locale {
-        val locales = context.resources.configuration.locales
-        return if (!locales.isEmpty) locales[0] else Locale.forLanguageTag("fa")
     }
 
     private const val MAX_VISIBLE_EVENTS = 2

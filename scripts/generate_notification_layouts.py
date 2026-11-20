@@ -11,14 +11,18 @@ tower of stacked lines.
 The four looks
 --------------
 
-* **classic** — the Material card. A day badge leads the header, the state is a tonal pill, and
-  the task rows sit on one tonal panel. The most "notification-like" of the four.
-* **minimal** — text only. No badge, no pill, no panel: the state is a coloured dot and a word,
-  the task title is the largest text on the card, and the occasions hang under a hairline.
-* **editorial** — the poster. The Jalali date is set large, a hairline closes the masthead, and
-  the task rows are a pull-quote with a vertical accent rule at their start.
-* **banner** — the band. A full-width strip in the theme accent carries the date (and the state),
+* **classic** — the Material card. A day badge leads the header and the state is a tonal pill.
+* **minimal** — text only: no badge, no pill. A coloured dot and a word state the day, and the
+  task title is the largest text on the card.
+* **editorial** — the poster. The Jalali date is set large and a hairline closes the masthead.
+* **banner** — the band. A full-width strip in the theme accent carries the date and the state;
   the task rows read on the plain plate below it.
+
+The card is deliberately flat between these lines. Earlier revisions put the tasks on a tonal
+panel (classic) and beside a vertical accent rule (editorial); on a real phone the panel read as a
+second, brighter surface under the text — "a yellow box" — and the rule landed on the task's first
+character in RTL. Both are gone: the plate is the only fill, and the rows are separated by spacing
+and hairline rules instead.
 
 Rules every layout obeys
 ------------------------
@@ -63,10 +67,8 @@ OVERDUE = "@color/notification_state_overdue"
 OCCASION = "@color/notification_state_occasion"
 
 PLATE_LIGHT = "@drawable/notification_card_plate_light"
-PANEL_LIGHT = "@drawable/notification_panel_plate_light"
 HAIRLINE_LIGHT = "@drawable/notification_hairline_light"
 CHIP_NEUTRAL_LIGHT = "@drawable/notification_chip_neutral_light"
-RULE_FALLBACK = "@drawable/notification_rule_fallback"
 
 FONT = "@font/vazirmatn_variable"
 
@@ -79,7 +81,12 @@ CHIP = 11
 SECTION_LABEL = 11
 SECOND_TASK = 13
 OCCASIONS = 12
-SECONDARY_DATES = 11
+
+# The due time is the only metadata a task row carries, and it sits in a column of its own at the
+# row's end: every time keeps the same width, so the times line up under each other and the titles
+# all start from the same edge. Bounded in dp rather than by weight for exactly that reason — a
+# weighted column would move with every title on the card.
+TASK_META_WIDTH = (46, 52)   # compact, expanded
 
 
 @dataclass(frozen=True)
@@ -88,8 +95,6 @@ class Look:
     comment: str
     badge: bool
     chip_pill: bool
-    task_panel: bool
-    accent_rule: bool
     band: bool
     header_divider: bool
     title_sp: tuple[int, int]
@@ -99,26 +104,26 @@ class Look:
 LOOKS = {
     "classic": Look(
         key="classic",
-        comment="Classic: a day badge, a tonal state pill and the task rows on one tonal panel.",
-        badge=True, chip_pill=True, task_panel=True, accent_rule=False, band=False, header_divider=False,
+        comment="Classic: a day badge leads the header and the state is a tonal pill. Flat otherwise.",
+        badge=True, chip_pill=True, band=False, header_divider=False,
         title_sp=(12, 15),
     ),
     "minimal": Look(
         key="minimal",
-        comment="Minimal: text only. A dot and a word for the state, no badge, no panel.",
-        badge=False, chip_pill=False, task_panel=False, accent_rule=False, band=False, header_divider=False,
+        comment="Minimal: text only. A dot and a word for the state, no badge, no pill.",
+        badge=False, chip_pill=False, band=False, header_divider=False,
         title_sp=(12, 14),
     ),
     "editorial": Look(
         key="editorial",
-        comment="Editorial: a large date masthead over a hairline, the task rows as a pull-quote with a rule.",
-        badge=False, chip_pill=False, task_panel=False, accent_rule=True, band=False, header_divider=True,
+        comment="Editorial: a large date masthead closed by a hairline; the tasks read as plain rows.",
+        badge=False, chip_pill=False, band=False, header_divider=True,
         title_sp=(13, 22),
     ),
     "banner": Look(
         key="banner",
-        comment="Banner: a full-width accent band carries the date and the state; the task rows read below.",
-        badge=False, chip_pill=False, task_panel=False, accent_rule=False, band=True, header_divider=False,
+        comment="Banner: a full-width accent band carries the date and the state; the tasks read below it.",
+        badge=False, chip_pill=False, band=True, header_divider=False,
         title_sp=(12, 15),
     ),
 }
@@ -317,16 +322,13 @@ def title(look: Look, expanded: bool, *, paired: bool = True) -> str:
                 width="0dp" if paired else "match_parent", weight=1 if paired else None)
 
 
-def secondary_dates() -> str:
-    return text("notification_secondary_dates", size=SECONDARY_DATES, color=MUTED, max_lines=2, margin_top=2)
-
-
 def header(look: Look, expanded: bool) -> str:
     """One horizontal row: the date on the start, the state on the end.
 
-    The badge (classic) leads the row; the expanded card may carry the Gregorian/lunar
-    cross-check *under* the date, still inside the row, so the date and the state stay on one
-    line instead of the state dropping to a row of its own.
+    This is the whole header. There is no second date line under it any more: the Gregorian and
+    lunar cross-check truncated to "قمری ۹ ج…" on every narrow phone and made the reader choose
+    between three calendars in a two-second card, so the card states the Jalali date and the app's
+    calendar screen carries the rest.
     """
     if look.band:
         # The band: a full-width accent strip. The plate is a bitmap drawn at screen width and
@@ -338,16 +340,12 @@ def header(look: Look, expanded: bool) -> str:
         return frame([band_plate(), inner], view_id="notification_header")
 
     leading = [image("notification_badge", size=look.badge_dp[1 if expanded else 0], margin_end=10 if expanded else 6)] if look.badge else []
-    if expanded:
-        column = linear([title(look, expanded, paired=False), secondary_dates()], orientation="vertical", width="0dp", weight=1)
-        row = linear(leading + [column, state_chip(look, expanded)], orientation="horizontal", gravity="start|center_vertical")
-    else:
-        row = linear(leading + [title(look, expanded), state_chip(look, expanded)], orientation="horizontal",
-                     gravity="start|center_vertical")
+    row = linear(leading + [title(look, expanded), state_chip(look, expanded)], orientation="horizontal",
+                 gravity="center_vertical")
     if not look.header_divider:
         return row
-    divider = image("notification_header_divider", width="match_parent", height="1dp", margin_top=8 if expanded else 0,
-                    src=HAIRLINE_LIGHT)
+    divider = image("notification_header_divider", width="match_parent", height="1dp",
+                    margin_top=10 if expanded else 0, src=HAIRLINE_LIGHT)
     return linear([row, divider], orientation="vertical", view_id="notification_header")
 
 
@@ -358,22 +356,21 @@ def paired_task_row(
     title_size: int,
     title_lines: int,
     margin_top: int | None,
+    meta_width: int,
     title_color: str = TITLE,
-    expanded: bool = True,
     view_id: str | None = None,
 ) -> str:
-    """One horizontal row: the task title on the start, its meta on the end.
+    """One horizontal row: the task title filling the width, the due time in a fixed column.
 
-    This is the row that makes the card horizontal: the title keeps most of the width (it wraps
-    to three lines expanded) and the due time / priority / category sit at the end,
-    vertically centred, instead of costing a line of their own under the title.
+    The time column is a fixed dp width, not a weight, so it is the *same* column on both task
+    rows and on every card: the times stack under each other and the titles all end at the same
+    edge. With a weighted column the title's length moved the time around, which is what made the
+    old card's RTL rows read as scattered.
     """
     title_view = text(title_id, size=title_size, color=title_color, bold=True, max_lines=title_lines,
-                      width="0dp", weight=3)
-    # Reserve the title's share even when metadata contains a long category or an overdue date.
-    # Unbounded wrap_content here can measure the title down to zero on a narrow phone.
-    meta_view = text(meta_id, size=TASK_META, color=MUTED, max_lines=2 if expanded else 1,
-                     width="0dp", weight=2, margin_start=8)
+                      width="0dp", weight=1)
+    meta_view = text(meta_id, size=TASK_META, color=MUTED, max_lines=1,
+                     width=f"{meta_width}dp", margin_start=10)
     return linear([title_view, meta_view], orientation="horizontal", gravity="center_vertical",
                   margin_top=margin_top, view_id=view_id)
 
@@ -381,53 +378,57 @@ def paired_task_row(
 def task_rows(expanded: bool) -> str:
     """Priority 1: the tasks, as horizontal rows inside their container.
 
-    The collapsed card has two single-line rows within SystemUI's 48dp custom-content budget.
-    Expanding gives the task three lines, a second task and an overflow count. Trying to show all
+    The collapsed card has one single-line row within SystemUI's 48dp custom-content budget.
+    Expanding gives the task two lines, a second task and an overflow count. Trying to show all
     of that while collapsed simply lets SystemUI clip the task off the bottom.
+
+    The overflow is a *count* — "و ۲ کار دیگر" — never a shortened title: a task that has to be
+    cut to "برگزاری م…" is not worth the line it costs, so it is counted instead.
     """
     parts: list[str] = []
     if expanded:
         parts.append(text("notification_tasks_label", size=SECTION_LABEL, color=ACCENT, bold=True))
     parts.append(paired_task_row(
         "notification_task_title", "notification_task_meta",
-        title_size=TASK_TITLE[1 if expanded else 0], title_lines=3 if expanded else 1,
-        margin_top=3 if expanded else None, expanded=expanded,
+        title_size=TASK_TITLE[1 if expanded else 0], title_lines=2 if expanded else 1,
+        margin_top=4 if expanded else None, meta_width=TASK_META_WIDTH[1 if expanded else 0],
     ))
     if expanded:
         parts.append(paired_task_row(
             "notification_task_second_title", "notification_task_second_meta",
-            title_size=SECOND_TASK, title_lines=2, margin_top=8, title_color=TITLE,
-            view_id="notification_task_second_row",
+            title_size=SECOND_TASK, title_lines=1, margin_top=10,
+            meta_width=TASK_META_WIDTH[1], view_id="notification_task_second_row",
         ))
-        parts.append(text("notification_task_more", size=TASK_META, color=MUTED, margin_top=6))
+        parts.append(text("notification_task_more", size=TASK_META, color=MUTED, margin_top=8))
     return linear(parts, orientation="vertical", view_id="notification_tasks_container")
 
 
 def task_block(look: Look, expanded: bool) -> str:
-    gap = 10 if expanded else 2
-    rows = task_rows(expanded)
-    if look.task_panel:
-        plate = image("notification_task_panel", width="match_parent", height="match_parent", src=PANEL_LIGHT)
-        padded = linear([rows], orientation="vertical", padding=(12, 8) if expanded else (4, 0))
-        return frame([plate, padded], view_id="notification_next_container", margin_top=gap)
-    if look.accent_rule:
-        rule = image("notification_accent_rule", width="3dp", height="match_parent", margin_end=12, src=RULE_FALLBACK)
-        column = linear([rows], orientation="vertical", width="0dp", weight=1)
-        return linear([rule, column], orientation="horizontal", view_id="notification_next_container", margin_top=gap)
-    return linear([rows], orientation="vertical", view_id="notification_next_container", margin_top=gap)
+    """Priority 1 on the plain plate.
+
+    There is no panel under the tasks and no rule beside them any more. Both were second surfaces:
+    the panel was a brighter fill that read as a box stuck onto the card, and the rule landed on the
+    first character of the title in RTL. Spacing and the card's own padding separate the block now.
+    """
+    return linear([task_rows(expanded)], orientation="vertical", view_id="notification_next_container",
+                  margin_top=6 if expanded else 3)
 
 
 def occasion_section() -> str:
-    """Priority 2: one horizontal labelled row under a hairline; hidden on an empty day."""
-    divider = image("notification_occasions_divider", width="match_parent", height="1dp", margin_top=10, src=HAIRLINE_LIGHT)
+    """Priority 2: a heading row and the day's occasions under a hairline; hidden on an empty day.
+
+    The heading gets a row of its own instead of sharing one with the value. Side by side, the
+    heading's own box ("مناسبت‌های امروز") ate the width the value needed, so the value arrived cut
+    to "بین‌الملل…" — a truncated word is worse than no word, and the pair is short enough to stack.
+    """
+    divider = image("notification_occasions_divider", width="match_parent", height="1dp", margin_top=14, src=HAIRLINE_LIGHT)
     icon = image("notification_occasions_icon", size=13, src="@drawable/ic_notification_occasion_star", margin_end=6,
                  tint=OCCASION)
     label = text("notification_occasions_label", size=SECTION_LABEL, color=OCCASION, bold=True,
-                 width="wrap_content", max_width=100)
-    body = text("notification_occasions_text", size=OCCASIONS, color=MUTED, max_lines=2,
-                width="0dp", weight=1, margin_start=8)
-    row = linear([icon, label, body], orientation="horizontal", gravity="start|center_vertical", margin_top=8)
-    return linear([divider, row], orientation="vertical", view_id="notification_occasions_container")
+                 width="0dp", weight=1)
+    heading = linear([icon, label], orientation="horizontal", gravity="start|center_vertical", margin_top=10)
+    body = text("notification_occasions_text", size=OCCASIONS, color=MUTED, max_lines=2, margin_top=4)
+    return linear([divider, heading, body], orientation="vertical", view_id="notification_occasions_container")
 
 
 def card_root(content: str) -> str:
@@ -448,26 +449,34 @@ def card_root(content: str) -> str:
 
 def compact(look: Look) -> str:
     """The heads-up card: one header row, then one task row — the shortest card that still says
-    the date, the state and the next task."""
+    the date, the state and the next task.
+
+    The whole card stays inside 48 dp, which is where Android 12 clips a collapsed custom view.
+    """
     if look.band:
-        # The band bleeds to the card's edge horizontally and sits under a small top inset; the
-        # body keeps the normal side padding.
+        # The band bleeds to the card's edge; the body keeps the normal side padding.
         body = linear([task_block(look, False)], orientation="vertical", padding=(12, 0, 2))
         content = linear([header(look, False), body], orientation="vertical", padding=(0, 2, 0))
     else:
-        content = linear([header(look, False), task_block(look, False)], orientation="vertical", padding=(12, 2))
+        content = linear([header(look, False), task_block(look, False)], orientation="vertical", padding=(12, 1))
     return file_header(look, "compact") + card_root(content) + "\n"
 
 
 def expanded(look: Look) -> str:
+    """The opened card: header, the tasks, then the occasions when the day has any.
+
+    The padding is the one thing this card must not economise on — 16 dp on every side, and a
+    larger gap above the task block than below it, so the sections read as two groups rather than
+    as one wall of lines.
+    """
     if look.band:
         # The band is the header row; everything else reads on the plate below it.
-        body = linear([secondary_dates(), task_block(look, True), occasion_section()], orientation="vertical",
-                      padding=(16, 0, 14))
-        content = linear([header(look, True), body], orientation="vertical", padding=(0, 0, 0))
+        body = linear([task_block(look, True), occasion_section()], orientation="vertical",
+                      padding=(16, 0, 16))
+        content = linear([header(look, True), body], orientation="vertical", padding=(0, 6, 0))
     else:
         body = linear([task_block(look, True), occasion_section()], orientation="vertical")
-        content = linear([header(look, True), body], orientation="vertical", padding=(16, 14))
+        content = linear([header(look, True), body], orientation="vertical", padding=(16, 16))
     return file_header(look, "expanded") + card_root(content) + "\n"
 
 

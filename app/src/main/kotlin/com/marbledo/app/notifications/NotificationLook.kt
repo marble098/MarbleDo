@@ -14,11 +14,15 @@ import com.marbledo.core.designsystem.MarbleContrast
  *
  * The looks differ in *anatomy*, not in a couple of dp:
  *
- *  * [CLASSIC] — a day badge, a tonal state pill and the tasks on one tonal panel;
- *  * [MINIMAL] — text only: a coloured dot and a word for the state, no badge, no panel;
- *  * [EDITORIAL] — the date set large as a masthead over a hairline, the task as a pull-quote
- *    beside a vertical accent rule;
+ *  * [CLASSIC] — a day badge and a tonal state pill;
+ *  * [MINIMAL] — text only: a coloured dot and a word for the state, no badge;
+ *  * [EDITORIAL] — the date set large as a masthead over a hairline;
  *  * [BANNER] — a full-width accent band carrying the date and the state, the task below it.
+ *
+ * Two older flags, `taskPanel` (a tonal fill under the tasks) and `accentRule` (a vertical rule
+ * beside them), were removed with the redesign: the panel painted a second, brighter surface that
+ * read as a box stuck onto the card, and the rule landed on the task's first character in RTL. The
+ * card now has exactly one fill, its plate, and spacing does the separating.
  */
 enum class NotificationLook(
     val key: String,
@@ -26,19 +30,15 @@ enum class NotificationLook(
     val badge: Boolean,
     /** The state sits on a tonal pill; otherwise it is a dot and a word. */
     val chipPill: Boolean,
-    /** The tasks sit on a tonal panel. */
-    val taskPanel: Boolean,
-    /** A vertical accent rule leads the task block. */
-    val accentRule: Boolean,
     /** The header is a full-width band in the theme accent. */
     val band: Boolean,
     /** A hairline closes the header. */
     val headerDivider: Boolean,
 ) {
-    CLASSIC("classic", badge = true, chipPill = true, taskPanel = true, accentRule = false, band = false, headerDivider = false),
-    MINIMAL("minimal", badge = false, chipPill = false, taskPanel = false, accentRule = false, band = false, headerDivider = false),
-    EDITORIAL("editorial", badge = false, chipPill = false, taskPanel = false, accentRule = true, band = false, headerDivider = true),
-    BANNER("banner", badge = false, chipPill = false, taskPanel = false, accentRule = false, band = true, headerDivider = false),
+    CLASSIC("classic", badge = true, chipPill = true, band = false, headerDivider = false),
+    MINIMAL("minimal", badge = false, chipPill = false, band = false, headerDivider = false),
+    EDITORIAL("editorial", badge = false, chipPill = false, band = false, headerDivider = true),
+    BANNER("banner", badge = false, chipPill = false, band = true, headerDivider = false),
     ;
 
     companion object {

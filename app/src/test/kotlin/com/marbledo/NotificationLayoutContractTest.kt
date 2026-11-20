@@ -24,10 +24,10 @@ class NotificationLayoutContractTest {
 
     /** The anatomy table; `NotificationLook.kt` carries the same flags and the test checks that. */
     private val looks: Map<String, Map<String, Boolean>> = mapOf(
-        "classic" to mapOf("badge" to true, "chipPill" to true, "taskPanel" to true, "accentRule" to false, "band" to false, "headerDivider" to false),
-        "minimal" to mapOf("badge" to false, "chipPill" to false, "taskPanel" to false, "accentRule" to false, "band" to false, "headerDivider" to false),
-        "editorial" to mapOf("badge" to false, "chipPill" to false, "taskPanel" to false, "accentRule" to true, "band" to false, "headerDivider" to true),
-        "banner" to mapOf("badge" to false, "chipPill" to false, "taskPanel" to false, "accentRule" to false, "band" to true, "headerDivider" to false),
+        "classic" to mapOf("badge" to true, "chipPill" to true, "band" to false, "headerDivider" to false),
+        "minimal" to mapOf("badge" to false, "chipPill" to false, "band" to false, "headerDivider" to false),
+        "editorial" to mapOf("badge" to false, "chipPill" to false, "band" to false, "headerDivider" to true),
+        "banner" to mapOf("badge" to false, "chipPill" to false, "band" to true, "headerDivider" to false),
     )
 
     @Test
