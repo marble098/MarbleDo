@@ -73,3 +73,13 @@ Manual device acceptance matrix (not replaced by these tests):
 - TalkBack reading order, selected options, keyboard-open editor actions and reduced motion.
 
 No emulator/device screenshot validation is implied by the source checks or by a successful build.
+
+## Calendar in the notification shade
+
+The persistent calendar is a child of the MarbleDo calendar summary on the existing date
+channel. Expand the group, then the calendar row to see the horizontal task/time rows and
+occasions. A tap on the summary opens today's calendar; the child keeps its own task actions.
+SystemUI, not the app, decides the available width and initial expansion. Overdue reminders
+keep their separate alert group. When testing on device, disable the persistent calendar and
+confirm both rows disappear without dismissing reminders; re-enable it and check that repeated
+refreshes update the same pair rather than adding rows.
