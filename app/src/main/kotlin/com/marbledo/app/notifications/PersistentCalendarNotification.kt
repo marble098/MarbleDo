@@ -50,7 +50,7 @@ object PersistentCalendarNotification {
     enum class StatusIconState { ACTIVE, OFF, PERMISSION_MISSING, BLOCKED }
 
     data class NotificationBoxContent(
-        /** Weekday, day, month **and year** of the Jalali calendar: the only date the card shows. */
+        /** Day, month and year of the Jalali calendar: the compact card's primary date. */
         val title: String,
         /** Gregorian and lunar dates, one line, for the reader who needs a cross-check. Expanded only. */
         val secondaryDatesLine: String,
@@ -62,7 +62,7 @@ object PersistentCalendarNotification {
         val tasksLabel: String,
         /** The task the card is about — the next overdue one, or the next one due today. */
         val taskTitle: String?,
-        /** Its due time and priority, one muted line under the title. */
+        /** Its due time and priority, in the metadata column beside the title. */
         val taskMetaLine: String?,
         /** A second task, expanded only, so two things can be acted on without opening the app. */
         val secondTaskTitle: String?,
@@ -72,7 +72,7 @@ object PersistentCalendarNotification {
         /** What the card says instead of a title when nothing is due. */
         val emptyTaskText: String,
         val hasTask: Boolean = taskTitle != null,
-        /** The day's occasions as one value line, never a labelled section of their own. */
+        /** The day's occasions, in the value column beside the occasion label. */
         val occasionsLine: String,
         /** The heading of the priority-2 section ("مناسبت‌های امروز"). */
         val occasionsLabel: String,
@@ -94,12 +94,16 @@ object PersistentCalendarNotification {
         /** Everything a reader needs from the custom card, in the order it is drawn. */
         fun accessibilityText(expanded: Boolean): String {
             val lines = mutableListOf(title, stateLabel)
+            if (expanded) lines += secondaryDatesLine
             if (hasTask) {
-                lines += tasksLabel
+                if (expanded) lines += tasksLabel
                 lines += taskTitle.orEmpty()
                 taskMetaLine?.let { lines += it }
-                secondTaskTitle?.let { lines += it }
-                moreTasksLine?.let { lines += it }
+                if (expanded) {
+                    secondTaskTitle?.let { lines += it }
+                    secondTaskMetaLine?.let { lines += it }
+                    moreTasksLine?.let { lines += it }
+                }
             } else {
                 lines += emptyTaskText
             }

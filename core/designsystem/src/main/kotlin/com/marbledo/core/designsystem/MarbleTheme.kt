@@ -451,6 +451,14 @@ object MarbleTextStyles {
         fontSize = 11.sp,
         lineHeight = 15.sp,
     )
+
+    /** The year in the schedule picker's month grid — Vazirmatn ExtraLight (wght 200). */
+    val pickerYear: TextStyle = TextStyle(
+        fontFamily = MarbleFontFamily,
+        fontWeight = FontWeight.ExtraLight,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+    )
 }
 
 private val defaultTypography = Typography()

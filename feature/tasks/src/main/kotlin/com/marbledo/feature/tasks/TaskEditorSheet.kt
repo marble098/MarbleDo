@@ -8,10 +8,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +23,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -32,6 +35,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Timer
@@ -43,6 +47,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -69,11 +74,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
+import com.marbledo.core.designsystem.MarbleSpacing
+import com.marbledo.core.designsystem.MarbleContrast
 import com.marbledo.domain.model.CalendarDisplayMode
 import com.marbledo.domain.model.ChecklistItem
 import com.marbledo.domain.model.RecurrenceRule
@@ -192,250 +202,310 @@ fun TaskEditorSheet(
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier.imePadding()) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp)
-                .padding(bottom = 26.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(stringResource(R.string.tasks_edit_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Column(Modifier.fillMaxWidth()) {
+            // The form scrolls, but Save and Cancel remain reachable with a keyboard open.
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = MarbleSpacing.lg)
+                    .padding(bottom = MarbleSpacing.lg),
+                verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
+            ) {
+                Text(stringResource(R.string.tasks_edit_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text(stringResource(R.string.tasks_task_title_hint)) },
-                singleLine = true,
-                isError = title.isBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            )
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(stringResource(R.string.tasks_task_title_hint)) },
+                    singleLine = true,
+                    isError = title.isBlank(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-            Text(stringResource(R.string.tasks_when), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            SchedulePickerField(
-                label = stringResource(R.string.tasks_schedule_field),
-                value = scheduleText,
-                onClick = { showPicker = true },
-            )
-            ScheduleQuickChips(
-                schedule = schedule,
-                zone = zone,
-                numeralMode = numeralMode,
-                onPickDate = { pickDate(it) },
-                onPickTime = { pickTime(it) },
-                onClear = { clearSchedule() },
-                onPickTomorrowSameTime = {
-                    pickDate(LocalDate.now(zone).plusDays(1))
-                    pickTime(LocalTime.now(zone).withSecond(0).withNano(0))
-                },
-            )
+                Text(stringResource(R.string.tasks_when), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                SchedulePickerField(
+                    label = stringResource(R.string.tasks_schedule_field),
+                    value = scheduleText,
+                    onClick = { showPicker = true },
+                )
+                ScheduleQuickChips(
+                    schedule = schedule,
+                    zone = zone,
+                    numeralMode = numeralMode,
+                    onPickDate = { pickDate(it) },
+                    onPickTime = { pickTime(it) },
+                    onClear = { clearSchedule() },
+                    onPickTomorrowSameTime = {
+                        pickDate(LocalDate.now(zone).plusDays(1))
+                        pickTime(LocalTime.now(zone).withSecond(0).withNano(0))
+                    },
+                )
 
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text(stringResource(R.string.tasks_notes_hint)) },
-                minLines = 2,
-                modifier = Modifier.fillMaxWidth(),
-            )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text(stringResource(R.string.tasks_notes_hint)) },
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-            Text(stringResource(R.string.tasks_checklist), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            checklist.forEachIndexed { index, item ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = item.isDone,
-                        onCheckedChange = { checked -> checklist[index] = item.copy(isDone = checked) },
-                    )
-                    OutlinedTextField(
-                        value = item.text,
-                        onValueChange = { text -> checklist[index] = item.copy(text = text) },
-                        placeholder = { Text(stringResource(R.string.tasks_checklist_item_hint)) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                    IconButton(onClick = { checklist.removeAt(index) }) {
-                        Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.tasks_checklist_remove))
-                    }
-                }
-            }
-            TextButton(onClick = { checklist.add(ChecklistItem(id = UUID.randomUUID().toString(), text = "")) }) {
-                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.tasks_checklist_add))
-            }
-
-            OutlinedTextField(
-                value = link,
-                onValueChange = { link = it },
-                label = { Text(stringResource(R.string.tasks_link_hint)) },
-                placeholder = { Text("https://") },
-                singleLine = true,
-                isError = !linkValid,
-                supportingText = {
-                    Text(
-                        stringResource(if (linkValid) R.string.tasks_link_help else R.string.tasks_link_invalid),
-                        color = if (linkValid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-                    )
-                },
-                trailingIcon = {
-                    if (linkValid && link.isNotBlank()) {
-                        IconButton(onClick = { runCatching { uriHandler.openUri(link.trim()) } }) {
-                            Icon(Icons.Outlined.OpenInNew, contentDescription = stringResource(R.string.tasks_link_open))
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            attachment?.let { uriString ->
-                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceVariant) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.AttachFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                        Text(
-                            attachmentName(uriString, stringResource(R.string.tasks_attachment_default)),
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                Text(stringResource(R.string.tasks_checklist), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                checklist.forEachIndexed { index, item ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = item.isDone,
+                            onCheckedChange = { checked -> checklist[index] = item.copy(isDone = checked) },
                         )
-                        IconButton(onClick = { openAttachment(context, uriString) }) {
-                            Icon(Icons.Outlined.OpenInNew, contentDescription = stringResource(R.string.tasks_attachment_open))
-                        }
-                        IconButton(onClick = { attachment = null }) {
-                            Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.tasks_attachment_remove))
+                        OutlinedTextField(
+                            value = item.text,
+                            onValueChange = { text -> checklist[index] = item.copy(text = text) },
+                            placeholder = { Text(stringResource(R.string.tasks_checklist_item_hint)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = { checklist.removeAt(index) }) {
+                            Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.tasks_checklist_remove))
                         }
                     }
                 }
-            }
-            TextButton(onClick = { attachmentPicker.launch(arrayOf("*/*")) }) {
-                Icon(Icons.Outlined.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(stringResource(if (attachment == null) R.string.tasks_attach_file else R.string.tasks_attach_replace))
-            }
-
-            OutlinedTextField(
-                value = focusText,
-                onValueChange = { raw -> focusText = TextNormalizer.digitsToLatin(raw).filter(Char::isDigit).take(4) },
-                label = { Text(stringResource(R.string.tasks_focus_minutes)) },
-                supportingText = { Text(stringResource(R.string.tasks_focus_help)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Text(stringResource(R.string.tasks_priority), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                TaskPriority.entries.forEach { option ->
-                    FilterChip(selected = priority == option, onClick = { priority = option }, label = { Text(priorityLabel(option)) })
-                }
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.tasks_category), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = { categoryDraft = ""; showCategoryDialog = true }) {
+                TextButton(onClick = { checklist.add(ChecklistItem(id = UUID.randomUUID().toString(), text = "")) }) {
                     Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.tasks_create_category))
+                    Text(stringResource(R.string.tasks_checklist_add))
                 }
-            }
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding = PaddingValues(start = 1.dp, end = 12.dp),
-            ) {
-                item {
-                    FilterChip(selected = category.isBlank(), onClick = { category = "" }, label = { Text(stringResource(R.string.tasks_category_none)) })
-                }
-                items(availableCategories) { name ->
-                    FilterChip(selected = category == name, onClick = { category = name }, label = { Text(name, maxLines = 1) })
-                }
-            }
 
-            Text(stringResource(R.string.tasks_repeat), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding = PaddingValues(start = 1.dp, end = 12.dp),
-            ) {
-                items(RepeatFrequency.entries.filter { it != RepeatFrequency.CUSTOM }) { option ->
-                    FilterChip(selected = frequency == option, onClick = { frequency = option }, label = { Text(repeatLabel(option)) })
-                }
-            }
-            if (frequency == RepeatFrequency.MONTHLY || frequency == RepeatFrequency.YEARLY) {
-                FilterChip(
-                    selected = persianRepeat,
-                    onClick = { persianRepeat = !persianRepeat },
-                    label = { Text(stringResource(R.string.tasks_repeat_persian_monthly)) },
+                OutlinedTextField(
+                    value = link,
+                    onValueChange = { link = it },
+                    label = { Text(stringResource(R.string.tasks_link_hint)) },
+                    placeholder = { Text("https://") },
+                    singleLine = true,
+                    isError = !linkValid,
+                    supportingText = {
+                        Text(
+                            stringResource(if (linkValid) R.string.tasks_link_help else R.string.tasks_link_invalid),
+                            color = if (linkValid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    trailingIcon = {
+                        if (linkValid && link.isNotBlank()) {
+                            IconButton(onClick = { runCatching { uriHandler.openUri(link.trim()) } }) {
+                                Icon(Icons.Outlined.OpenInNew, contentDescription = stringResource(R.string.tasks_link_open))
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                 )
-            }
-            if (frequency != RepeatFrequency.NONE && schedule.isEmpty) {
-                Text(stringResource(R.string.tasks_repeat_needs_date), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            }
 
-            Text(stringResource(R.string.tasks_color), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(start = 1.dp, end = 12.dp),
-            ) {
-                items(taskColorOptions) { option ->
-                    val selectedSwatch = colorArgb == option
-                    Box(
-                        Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(Color(option.toInt()))
-                            .border(
-                                width = if (selectedSwatch) 3.dp else 0.dp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                shape = CircleShape,
+                attachment?.let { uriString ->
+                    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceVariant) {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.AttachFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                            Text(
+                                attachmentName(uriString, stringResource(R.string.tasks_attachment_default)),
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                             )
-                            .clickable { colorArgb = option },
+                            IconButton(onClick = { openAttachment(context, uriString) }) {
+                                Icon(Icons.Outlined.OpenInNew, contentDescription = stringResource(R.string.tasks_attachment_open))
+                            }
+                            IconButton(onClick = { attachment = null }) {
+                                Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.tasks_attachment_remove))
+                            }
+                        }
+                    }
+                }
+                TextButton(onClick = { attachmentPicker.launch(arrayOf("*/*")) }) {
+                    Icon(Icons.Outlined.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(if (attachment == null) R.string.tasks_attach_file else R.string.tasks_attach_replace))
+                }
+
+                OutlinedTextField(
+                    value = focusText,
+                    onValueChange = { raw -> focusText = TextNormalizer.digitsToLatin(raw).filter(Char::isDigit).take(4) },
+                    label = { Text(stringResource(R.string.tasks_focus_minutes)) },
+                    supportingText = { Text(stringResource(R.string.tasks_focus_help)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Text(stringResource(R.string.tasks_priority), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth().selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+                ) {
+                    TaskPriority.entries.forEach { option ->
+                        FilterChip(selected = priority == option, onClick = { priority = option }, label = { Text(priorityLabel(option)) })
+                    }
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.tasks_category),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { categoryDraft = ""; showCategoryDialog = true }) {
+                        Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.tasks_create_category))
+                    }
+                }
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    contentPadding = PaddingValues(start = 1.dp, end = 12.dp),
+                ) {
+                    item {
+                        FilterChip(selected = category.isBlank(), onClick = { category = "" }, label = { Text(stringResource(R.string.tasks_category_none)) })
+                    }
+                    items(availableCategories) { name ->
+                        FilterChip(selected = category == name, onClick = { category = name }, label = { Text(name, maxLines = 1) })
+                    }
+                }
+
+                Text(stringResource(R.string.tasks_repeat), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    contentPadding = PaddingValues(start = 1.dp, end = 12.dp),
+                ) {
+                    items(RepeatFrequency.entries.filter { it != RepeatFrequency.CUSTOM }) { option ->
+                        FilterChip(selected = frequency == option, onClick = { frequency = option }, label = { Text(repeatLabel(option)) })
+                    }
+                }
+                if (frequency == RepeatFrequency.MONTHLY || frequency == RepeatFrequency.YEARLY) {
+                    FilterChip(
+                        selected = persianRepeat,
+                        onClick = { persianRepeat = !persianRepeat },
+                        label = { Text(stringResource(R.string.tasks_repeat_persian_monthly)) },
                     )
                 }
-            }
+                if (frequency != RepeatFrequency.NONE && schedule.isEmpty) {
+                    Text(stringResource(R.string.tasks_repeat_needs_date), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
 
-            OutlinedTextField(
-                value = tags,
-                onValueChange = { tags = it },
-                label = { Text(stringResource(R.string.tasks_tag_hint)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = project,
-                onValueChange = { project = it },
-                label = { Text(stringResource(R.string.tasks_project_hint)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+                Text(stringResource(R.string.tasks_color), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                LazyRow(
+                    modifier = Modifier.selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(start = 1.dp, end = 12.dp),
+                ) {
+                    itemsIndexed(taskColorOptions) { index, option ->
+                        val selectedSwatch = colorArgb == option
+                        val colorLabel = stringResource(
+                            R.string.tasks_color_option,
+                            TextNormalizer.formatDigits((index + 1).toString(), numeralMode),
+                        )
+                        // The 34dp dot is the visual; the tap area is a full 48dp, and the swatch is
+                        // one of a set so it is a radio option (docs/UI_COUNCIL_REVIEW.md, D-1 and S-5).
+                        Box(
+                            Modifier
+                                .size(MarbleSpacing.touch)
+                                .selectable(selected = selectedSwatch, role = Role.RadioButton) { colorArgb = option }
+                                .semantics { contentDescription = colorLabel },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(option.toInt()))
+                                    .border(
+                                        width = if (selectedSwatch) 3.dp else 0.dp,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        shape = CircleShape,
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (selectedSwatch) {
+                                    Icon(
+                                        Icons.Outlined.Check,
+                                        contentDescription = null,
+                                        tint = Color(MarbleContrast.bestInk(option)),
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
 
-            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
-                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                        Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
-                            Text(stringResource(R.string.tasks_countdown_toggle_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                if (dueMillis == null) stringResource(R.string.tasks_countdown_needs_date) else stringResource(R.string.tasks_countdown_toggle_body),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                OutlinedTextField(
+                    value = tags,
+                    onValueChange = { tags = it },
+                    label = { Text(stringResource(R.string.tasks_tag_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = project,
+                    onValueChange = { project = it },
+                    label = { Text(stringResource(R.string.tasks_project_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
+                    Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+                                Text(stringResource(R.string.tasks_countdown_toggle_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    if (dueMillis == null) stringResource(R.string.tasks_countdown_needs_date) else stringResource(R.string.tasks_countdown_toggle_body),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Switch(
+                                checked = countdownEnabled && dueMillis != null,
+                                enabled = dueMillis != null,
+                                onCheckedChange = { countdownEnabled = it },
                             )
                         }
-                        Switch(
-                            checked = countdownEnabled && dueMillis != null,
-                            enabled = dueMillis != null,
-                            onCheckedChange = { countdownEnabled = it },
-                        )
+                        if (countdownEnabled && dueMillis != null) {
+                            Text(
+                                stringResource(R.string.tasks_countdown_theme, countdownThemeLabel(themeId)),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                            countdownThemePicker(themeId) { selected -> themeId = selected }
+                        }
                     }
-                    if (countdownEnabled && dueMillis != null) {
-                        Text(
-                            stringResource(R.string.tasks_countdown_theme, countdownThemeLabel(themeId)),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        countdownThemePicker(themeId) { selected -> themeId = selected }
+                }
+
+                if (task.id != 0L) Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (task.isArchived) {
+                        TextButton(onClick = onUnarchive) {
+                            Icon(Icons.Outlined.Unarchive, contentDescription = null, modifier = Modifier.size(17.dp))
+                            Spacer(Modifier.width(5.dp))
+                            Text(stringResource(R.string.tasks_unarchive))
+                        }
+                    } else {
+                        TextButton(onClick = onArchive) {
+                            Icon(Icons.Outlined.Archive, contentDescription = null, modifier = Modifier.size(17.dp))
+                            Spacer(Modifier.width(5.dp))
+                            Text(stringResource(R.string.tasks_archive))
+                        }
+                    }
+                    TextButton(onClick = onDelete) {
+                        Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(17.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text(stringResource(R.string.tasks_delete))
                     }
                 }
             }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            HorizontalDivider()
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = MarbleSpacing.lg, vertical = MarbleSpacing.sm),
+            ) {
                 Button(
                     onClick = {
                         onSave(
@@ -474,26 +544,6 @@ fun TaskEditorSheet(
                     ),
                 ) { Text(stringResource(R.string.tasks_save)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.tasks_cancel)) }
-            }
-            if (task.id != 0L) Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                if (task.isArchived) {
-                    TextButton(onClick = onUnarchive) {
-                        Icon(Icons.Outlined.Unarchive, contentDescription = null, modifier = Modifier.size(17.dp))
-                        Spacer(Modifier.width(5.dp))
-                        Text(stringResource(R.string.tasks_unarchive))
-                    }
-                } else {
-                    TextButton(onClick = onArchive) {
-                        Icon(Icons.Outlined.Archive, contentDescription = null, modifier = Modifier.size(17.dp))
-                        Spacer(Modifier.width(5.dp))
-                        Text(stringResource(R.string.tasks_archive))
-                    }
-                }
-                TextButton(onClick = onDelete) {
-                    Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(17.dp))
-                    Spacer(Modifier.width(5.dp))
-                    Text(stringResource(R.string.tasks_delete))
-                }
             }
         }
     }

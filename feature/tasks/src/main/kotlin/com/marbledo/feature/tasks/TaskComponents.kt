@@ -58,6 +58,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -66,8 +67,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,13 +87,22 @@ import java.time.ZoneId
 /** Colour a task starts with. Tasks that keep it use the theme's primary colour instead of this fixed violet. */
 const val DEFAULT_TASK_COLOR_ARGB = 0xFF6E61D8L
 
-/** Colour used for a priority across rows, chips and rails. */
+/**
+ * Colour used for a priority across rows, chips and rails.
+ *
+ * "High" is the one priority without a Material role, so it carries a light/dark pair chosen for
+ * legibility instead of one hard-coded amber that read as ~3:1 on the light themes
+ * (docs/UI_COUNCIL_REVIEW.md, DS-4). The pair is the same one the occasion categories use.
+ */
 @Composable
-fun priorityColor(priority: TaskPriority): Color = when (priority) {
-    TaskPriority.LOW -> MaterialTheme.colorScheme.tertiary
-    TaskPriority.NORMAL -> MaterialTheme.colorScheme.primary
-    TaskPriority.HIGH -> Color(0xFFDB8C27)
-    TaskPriority.URGENT -> MaterialTheme.colorScheme.error
+fun priorityColor(priority: TaskPriority): Color {
+    val darkSurface = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    return when (priority) {
+        TaskPriority.LOW -> MaterialTheme.colorScheme.tertiary
+        TaskPriority.NORMAL -> MaterialTheme.colorScheme.primary
+        TaskPriority.HIGH -> if (darkSurface) Color(0xFFE3B65C) else Color(0xFF8A5A12)
+        TaskPriority.URGENT -> MaterialTheme.colorScheme.error
+    }
 }
 
 @Composable
@@ -271,7 +281,9 @@ fun TaskRowCard(
                         },
                     )
                 }
-                .combinedClickable(onClick = onEdit, onLongClick = onLongPress),
+                // A role, not a bare clickable: TalkBack has to say "button" for the row, and the
+                // long-press has to stay discoverable (docs/UI_COUNCIL_REVIEW.md, D-4).
+                .combinedClickable(onClick = onEdit, onLongClick = onLongPress, role = Role.Button),
             shape = MaterialTheme.shapes.large,
             border = BorderStroke(1.dp, MarbleBoxBorder(MaterialTheme.colorScheme.surfaceContainerLow)),
             colors = CardDefaults.cardColors(

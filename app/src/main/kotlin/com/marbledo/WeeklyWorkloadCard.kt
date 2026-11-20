@@ -28,6 +28,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.marbledo.core.designsystem.LocalNumeralMode
@@ -108,8 +110,9 @@ internal fun WeeklyWorkloadCard(
                         shape = CircleShape,
                         color = if (review.overdue > 0) colors.errorContainer else colors.secondaryContainer,
                         modifier = Modifier
+                            .minimumInteractiveComponentSize()
                             .clip(CircleShape)
-                            .clickable { showBacklog = true; selectedDateIso = null },
+                            .clickable(role = Role.Button) { showBacklog = true; selectedDateIso = null },
                     ) {
                         Text(
                             stringResource(R.string.weekly_backlog),
@@ -134,13 +137,13 @@ internal fun WeeklyWorkloadCard(
                         color = if (isToday) colors.primaryContainer.copy(alpha = 0.72f)
                         else colors.surfaceVariant.copy(alpha = 0.50f),
                         modifier = Modifier
-                            .widthIn(min = 104.dp)
+                            .widthIn(min = 104.dp, max = 160.dp)
                             .then(
                                 if (isToday) Modifier.border(1.5.dp, colors.primary.copy(alpha = 0.65f), tileShape)
                                 else Modifier,
                             )
                             .clip(tileShape)
-                            .clickable { selectedDateIso = day.date.toString(); showBacklog = false },
+                            .clickable(role = Role.Button) { selectedDateIso = day.date.toString(); showBacklog = false },
                     ) {
                         Column(
                             Modifier.padding(horizontal = 12.dp, vertical = 10.dp),

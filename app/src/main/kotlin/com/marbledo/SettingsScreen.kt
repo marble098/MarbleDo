@@ -24,7 +24,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -83,19 +86,24 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.marble098.marbledo.notifications.NotificationArtwork
 import com.marble098.marbledo.notifications.NotificationChipFills
 import com.marble098.marbledo.notifications.NotificationLook
 import com.marble098.marbledo.notifications.NotificationMood
-import com.marble098.marbledo.notifications.NotificationState
 import com.marble098.marbledo.notifications.PersistentCalendarNotification
 import com.marble098.marbledo.notifications.iconRes
 import com.marble098.marbledo.notifications.notificationPalette
@@ -928,63 +936,58 @@ private fun NotificationDesignSelector(
         "editorial" to R.string.notification_design_editorial,
         "banner" to R.string.notification_design_banner,
     )
-    // Four looks fit a two-by-two grid, so each tile keeps a full-size touch target.
-    Column(
+    // The four looks read as one horizontal strip of tiles — the same shape the cards themselves
+    // now have — and every tile keeps a full-size touch target.
+    LazyRow(
         modifier = Modifier.fillMaxWidth().selectableGroup(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        options.chunked(2).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+        items(options) { (design, labelRes) ->
+            val selected = selectedDesign == design
+            val shape = MaterialTheme.shapes.medium
+            Column(
+                modifier = Modifier
+                    .width(144.dp)
+                    .clip(shape)
+                    .background(
+                        if (selected) colors.primaryContainer.copy(alpha = 0.65f)
+                        else colors.surfaceVariant.copy(alpha = 0.45f),
+                    )
+                    .border(
+                        width = if (selected) 2.dp else 1.dp,
+                        color = if (selected) colors.primary else colors.outline.copy(alpha = 0.16f),
+                        shape = shape,
+                    )
+                    .selectable(selected = selected, role = Role.RadioButton) { onSelectDesign(design) }
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                row.forEach { (design, labelRes) ->
-                    val selected = selectedDesign == design
-                    val shape = MaterialTheme.shapes.medium
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(shape)
-                            .background(
-                                if (selected) colors.primaryContainer.copy(alpha = 0.65f)
-                                else colors.surfaceVariant.copy(alpha = 0.45f),
-                            )
-                            .border(
-                                width = if (selected) 2.dp else 1.dp,
-                                color = if (selected) colors.primary else colors.outline.copy(alpha = 0.16f),
-                                shape = shape,
-                            )
-                            .selectable(selected = selected, role = Role.RadioButton) { onSelectDesign(design) }
-                            .padding(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(
-                                stringResource(labelRes),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (selected) colors.primary else colors.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            if (selected) {
-                                Icon(
-                                    Icons.Outlined.CheckCircle,
-                                    contentDescription = null,
-                                    tint = colors.primary,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            }
-                        }
-                        // Mini schematic of the look's anatomy, drawn from the same flags the
-                        // layouts and the live preview use.
-                        DesignSchematic(NotificationLook.from(design))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        stringResource(labelRes),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (selected) colors.primary else colors.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (selected) {
+                        Icon(
+                            Icons.Outlined.CheckCircle,
+                            contentDescription = null,
+                            tint = colors.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
                     }
                 }
+                // Mini schematic of the look's anatomy, drawn from the same flags the layouts and
+                // the live preview use.
+                DesignSchematic(NotificationLook.from(design))
             }
         }
     }
@@ -993,51 +996,90 @@ private fun NotificationDesignSelector(
 @Composable
 private fun DesignSchematic(look: NotificationLook) {
     val colors = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(9.dp)
-    Surface(shape = shape, color = colors.surface.copy(alpha = 0.88f), modifier = Modifier.fillMaxWidth().height(44.dp)) {
-        Column {
+    val shape = MaterialTheme.shapes.small
+    Surface(shape = shape, color = colors.surface.copy(alpha = 0.88f), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (look.band) {
-                Box(Modifier.fillMaxWidth().height(11.dp).background(colors.primary.copy(alpha = 0.9f)))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(colors.primary.copy(alpha = 0.9f)),
+                )
             }
+            // The header row: badge/date on the start, the state on the end.
             Row(
-                modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (look.badge) {
-                    Box(Modifier.size(18.dp).clip(RoundedCornerShape(5.dp)).background(colors.primary.copy(alpha = 0.85f)))
-                }
-                if (look.accentRule) {
-                    Box(Modifier.width(2.dp).height(22.dp).background(colors.primary.copy(alpha = 0.95f)))
-                }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    if (!look.band) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Box(
-                                Modifier
-                                    .weight(1f)
-                                    .height(if (look == NotificationLook.EDITORIAL) 6.dp else 4.dp)
-                                    .clip(CircleShape)
-                                    .background(colors.onSurface.copy(alpha = 0.65f)),
-                            )
-                            if (look.chipPill) {
-                                Box(Modifier.width(14.dp).height(6.dp).clip(CircleShape).background(colors.primary.copy(alpha = 0.22f)))
-                            } else {
-                                Box(Modifier.size(4.dp).clip(CircleShape).background(colors.primary))
-                            }
-                        }
-                        if (look.headerDivider) HorizontalDivider(color = colors.outline.copy(alpha = 0.3f))
-                    }
                     Box(
                         Modifier
-                            .fillMaxWidth()
-                            .height(if (look.taskPanel) 9.dp else 4.dp)
+                            .size(12.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            .background(if (look.taskPanel) colors.onSurface.copy(alpha = 0.08f) else colors.onSurface.copy(alpha = 0.5f)),
+                            .background(colors.primary.copy(alpha = 0.85f)),
                     )
-                    Box(Modifier.fillMaxWidth(0.45f).height(3.dp).clip(CircleShape).background(colors.onSurfaceVariant.copy(alpha = 0.4f)))
+                }
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(if (look == NotificationLook.EDITORIAL) 5.dp else 4.dp)
+                        .clip(CircleShape)
+                        .background(colors.onSurface.copy(alpha = 0.6f)),
+                )
+                if (look.chipPill) {
+                    Box(
+                        Modifier
+                            .width(12.dp)
+                            .height(5.dp)
+                            .clip(CircleShape)
+                            .background(colors.primary.copy(alpha = 0.22f)),
+                    )
+                } else {
+                    Box(
+                        Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(colors.primary),
+                    )
                 }
             }
+            if (look.headerDivider) {
+                HorizontalDivider(color = colors.outline.copy(alpha = 0.3f))
+            }
+            // The task row: the title keeps the width, the meta sits at the end.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (look.accentRule) {
+                    Box(Modifier.width(2.dp).height(12.dp).background(colors.primary.copy(alpha = 0.95f)))
+                }
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(4.dp)
+                        .clip(CircleShape)
+                        .background(if (look.taskPanel) colors.onSurface.copy(alpha = 0.55f) else colors.onSurface.copy(alpha = 0.45f)),
+                )
+                Box(
+                    Modifier
+                        .width(10.dp)
+                        .height(3.dp)
+                        .clip(CircleShape)
+                        .background(colors.onSurfaceVariant.copy(alpha = 0.4f)),
+                )
+            }
+            Box(
+                Modifier
+                    .fillMaxWidth(0.55f)
+                    .height(3.dp)
+                    .clip(CircleShape)
+                    .background(colors.onSurfaceVariant.copy(alpha = 0.35f)),
+            )
         }
     }
 }
@@ -1048,8 +1090,9 @@ private fun DesignSchematic(look: NotificationLook) {
  * It reads the same [PersistentCalendarNotification.NotificationBoxContent], the same
  * [notificationPalette] and the same [NotificationLook] flags as the shade, so the preview cannot
  * describe a card the notification no longer draws. Each look is rendered with its own anatomy —
- * badge and pill and panel, dot-and-word, masthead and rule, or band — exactly as the generated
- * layouts do, which is what makes picking a look in Settings a real choice.
+ * badge and pill and panel, dot-and-word, masthead and rule, or band — and every section is a
+ * horizontal row, exactly as the generated layouts do, which is what makes picking a look in
+ * Settings a real choice.
  */
 @Composable
 private fun NotificationLivePreviewCard(
@@ -1059,10 +1102,15 @@ private fun NotificationLivePreviewCard(
     catalog: com.marbledo.feature.calendar.OccasionCatalog,
 ) {
     val configuration = LocalConfiguration.current
-    val now by produceState(System.currentTimeMillis()) {
-        while (true) {
-            kotlinx.coroutines.delay(60_000L)
-            value = System.currentTimeMillis()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val now by produceState(initialValue = System.currentTimeMillis(), key1 = lifecycle) {
+        // Refresh immediately after returning to Settings; do no background preview work.
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                val current = System.currentTimeMillis()
+                value = current
+                kotlinx.coroutines.delay(60_000L - current % 60_000L)
+            }
         }
     }
     val content = remember(settings, tasks, catalog, now, configuration) {
@@ -1099,10 +1147,12 @@ private fun NotificationLivePreviewCard(
     val headerInk = if (look.band) onAccent else cardInk
     val previewDirection = if (settings.languageTag == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr
     val outerShape = RoundedCornerShape(20.dp)
-    val titleSize = when (look) {
-        NotificationLook.EDITORIAL -> 22.sp
-        NotificationLook.CLASSIC, NotificationLook.BANNER -> 15.sp
-        NotificationLook.MINIMAL -> 14.sp
+    // The date is the hero of the editorial look and a title everywhere else, so it takes the
+    // roles the type scale already reserves instead of improvising a size.
+    val dateStyle = when (look) {
+        NotificationLook.EDITORIAL -> MarbleTextStyles.dateDigits
+        NotificationLook.CLASSIC, NotificationLook.BANNER -> MarbleTextStyles.cardTitle
+        NotificationLook.MINIMAL -> MarbleTextStyles.itemTitle
     }
 
     @Composable
@@ -1127,12 +1177,14 @@ private fun NotificationLivePreviewCard(
                 fontWeight = FontWeight.Bold,
                 color = stateInk,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = 112.dp),
             )
         }
     }
 
     @Composable
-    fun Header() {
+    fun HeaderRow() {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (look.badge && badgeBitmap != null) {
                 Image(
@@ -1144,50 +1196,98 @@ private fun NotificationLivePreviewCard(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     content.title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontSize = titleSize, lineHeight = titleSize * 1.35f),
+                    style = dateStyle,
                     fontWeight = FontWeight.Bold,
                     color = headerInk,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    content.secondaryDatesLine,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (look.band) onAccent else cardMuted,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (!look.band) {
+                    Text(
+                        content.secondaryDatesLine,
+                        style = MarbleTextStyles.microLabel,
+                        color = cardMuted,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             StateChip()
         }
     }
 
+    /** One task as one horizontal row: the title keeps the width, the meta sits at the end. */
     @Composable
-    fun TaskLines() {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(content.tasksLabel, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = cardAccent, maxLines = 1)
+    fun TaskRow(
+        title: String,
+        meta: String?,
+        titleStyle: TextStyle,
+        maxLines: Int,
+        topPadding: Dp = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = topPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Text(
-                content.taskTitle ?: content.emptyTaskText,
-                style = MarbleTextStyles.itemTitle,
+                title,
+                style = titleStyle,
                 color = cardInk,
-                maxLines = 3,
+                maxLines = maxLines,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(3f),
             )
-            content.taskMetaLine?.let { meta ->
-                Text(meta, style = MaterialTheme.typography.labelSmall, color = cardMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            content.secondTaskTitle?.let { second ->
+            if (meta != null) {
                 Text(
-                    second,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = cardInk,
+                    meta,
+                    style = MarbleTextStyles.microLabel,
+                    color = cardMuted,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 5.dp),
+                    modifier = Modifier.weight(2f),
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun TaskRows() {
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            if (content.hasTask) {
+                Text(
+                    content.tasksLabel,
+                    style = MarbleTextStyles.metaLabel,
+                    fontWeight = FontWeight.Bold,
+                    color = cardAccent,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            TaskRow(
+                title = content.taskTitle ?: content.emptyTaskText,
+                meta = content.taskMetaLine,
+                titleStyle = MarbleTextStyles.itemTitle,
+                maxLines = 3,
+            )
+            content.secondTaskTitle?.let { second ->
+                TaskRow(
+                    title = second,
+                    meta = content.secondTaskMetaLine,
+                    titleStyle = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    topPadding = 5.dp,
                 )
             }
             content.moreTasksLine?.let { more ->
-                Text(more, style = MaterialTheme.typography.labelSmall, color = cardMuted, modifier = Modifier.padding(top = 3.dp))
+                Text(
+                    more,
+                    style = MarbleTextStyles.microLabel,
+                    color = cardMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
             }
         }
     }
@@ -1195,11 +1295,11 @@ private fun NotificationLivePreviewCard(
     @Composable
     fun Occasions() {
         if (!content.hasOccasions) return
-        HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 12.dp))
+        HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 10.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.padding(top = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         ) {
             Icon(
                 painterResource(R.drawable.ic_notification_occasion_star),
@@ -1207,16 +1307,24 @@ private fun NotificationLivePreviewCard(
                 tint = Color(shade.occasion),
                 modifier = Modifier.size(13.dp),
             )
-            Text(content.occasionsLabel, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(shade.occasion), maxLines = 1)
+            Text(
+                content.occasionsLabel,
+                style = MarbleTextStyles.metaLabel,
+                fontWeight = FontWeight.Bold,
+                color = Color(shade.occasion),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = 100.dp),
+            )
+            Text(
+                content.occasionsLine,
+                style = MaterialTheme.typography.bodySmall,
+                color = cardMuted,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
         }
-        Text(
-            content.occasionsLine,
-            style = MaterialTheme.typography.bodySmall,
-            color = cardMuted,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 3.dp),
-        )
     }
 
     CompositionLocalProvider(LocalLayoutDirection provides previewDirection) {
@@ -1224,39 +1332,51 @@ private fun NotificationLivePreviewCard(
             shape = outerShape,
             color = cardPlate,
             contentColor = cardInk,
-            modifier = Modifier.fillMaxWidth().border(1.dp, cardHairline, outerShape),
+            modifier = Modifier.fillMaxWidth().border(1.dp, cardHairline, outerShape)
+                .clearAndSetSemantics { contentDescription = content.accessibilityText(expanded = true) },
         ) {
             Column(Modifier.fillMaxWidth()) {
                 if (look.band) {
-                    // The band bleeds to the card's edge; the body keeps the side padding.
+                    // The band bleeds to the card's edge and carries the header row; the rest of
+                    // the card keeps the side padding.
                     Box(
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                             .background(cardAccent)
                             .padding(horizontal = 14.dp, vertical = 9.dp),
-                    ) { Header() }
+                    ) { HeaderRow() }
                 }
                 Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
-                    if (!look.band) {
-                        Header()
-                        if (look.headerDivider) HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 8.dp))
+                    if (look.band) {
+                        Text(
+                            content.secondaryDatesLine,
+                            style = MarbleTextStyles.microLabel,
+                            color = cardMuted,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    } else {
+                        HeaderRow()
+                        if (look.headerDivider) {
+                            HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 8.dp))
+                        }
                     }
                     when {
                         look.taskPanel -> Box(
                             Modifier
                                 .fillMaxWidth()
-                                .padding(top = if (look.band) 0.dp else 10.dp)
+                                .padding(top = 10.dp)
                                 .clip(RoundedCornerShape(14.dp))
                                 .background(Color(shade.panel))
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
-                        ) { TaskLines() }
+                        ) { TaskRows() }
                         look.accentRule -> Row(Modifier.fillMaxWidth().padding(top = 10.dp).height(IntrinsicSize.Min)) {
                             Box(Modifier.width(3.dp).fillMaxHeight().background(cardAccent))
                             Spacer(Modifier.width(12.dp))
-                            Box(Modifier.weight(1f)) { TaskLines() }
+                            Box(Modifier.weight(1f)) { TaskRows() }
                         }
-                        else -> Box(Modifier.fillMaxWidth().padding(top = if (look.band) 0.dp else 10.dp)) { TaskLines() }
+                        else -> Box(Modifier.fillMaxWidth().padding(top = 10.dp)) { TaskRows() }
                     }
                     Occasions()
                 }
@@ -1354,28 +1474,6 @@ private fun QuietTimeTile(
                 color = MaterialTheme.colorScheme.primary,
             )
         }
-    }
-}
-
-@Composable
-private fun FilledTonalActionPill(
-    text: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    Surface(
-        shape = CircleShape,
-        color = if (enabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier
-            .clip(CircleShape)
-            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
-    ) {
-        Text(
-            text,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-        )
     }
 }
 
