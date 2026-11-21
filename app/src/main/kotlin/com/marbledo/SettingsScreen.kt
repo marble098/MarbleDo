@@ -139,16 +139,12 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SettingsScreen(
     settings: AppSettings,
-    notificationsGranted: Boolean,
-    exactAlarmGranted: Boolean,
     occasionState: OccasionState,
     onUpdate: (AppSettings) -> Unit,
     onAddWidget: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onRestoreAutomatic: () -> Unit,
-    onRequestNotifications: () -> Unit,
-    onRequestExactAlarm: () -> Unit,
     onRefreshOccasions: () -> Unit = {},
     onCheckUpdates: () -> Unit,
     modifier: Modifier = Modifier,
@@ -497,136 +493,13 @@ fun SettingsScreen(
 
         // Redesigned minimal Notification Box: structured sub-cards, status pill, live preview,
         // side-by-side quiet hours tiles, and zero wall-of-text stacking.
-        if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.NOTIFICATIONS) {
-        item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
-        SettingsSection(
-            title = stringResource(R.string.settings_notifications),
-            icon = Icons.Outlined.NotificationsActive,
+        
+
+                SettingsSection(
+            title = stringResource(R.string.settings_status_calendar),
+            icon = Icons.Outlined.CalendarMonth,
             showHeader = selectedCategory == SettingsCategoryFilter.ALL,
         ) {
-            val statusState = remember(settings.persistentDateNotificationEnabled, notificationsGranted) {
-                PersistentCalendarNotification.statusIconState(context, settings.persistentDateNotificationEnabled)
-            }
-            val statusError = statusState == PersistentCalendarNotification.StatusIconState.PERMISSION_MISSING ||
-                statusState == PersistentCalendarNotification.StatusIconState.BLOCKED
-
-            // 1. Toggle + integrated subtitle + clean minimal status badge pill
-            SettingSwitchRow(
-                text = stringResource(R.string.settings_persistent_date_notification),
-                subtitle = stringResource(R.string.settings_persistent_date_notification_hint),
-                checked = settings.persistentDateNotificationEnabled,
-                onCheckedChange = { enabled ->
-                    onUpdate(settings.copy(persistentDateNotificationEnabled = enabled))
-                    if (enabled && !notificationsGranted) onRequestNotifications()
-                },
-            )
-            Spacer(Modifier.height(6.dp))
-            NotificationStatusBadge(
-                text = stringResource(statusStateTextRes(statusState)),
-                state = statusState,
-                isError = statusError,
-            )
-            Spacer(Modifier.height(10.dp))
-            Text(
-                stringResource(R.string.settings_notification_design),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(Modifier.height(8.dp))
-            NotificationDesignSelector(
-                selectedDesign = settings.notificationDesign,
-                onSelectDesign = { design -> onUpdate(settings.copy(notificationDesign = design)) },
-            )
-
-            // 2. Minimal Live Notification Preview Card so the user sees the clean notification layout
-            if (settings.persistentDateNotificationEnabled) {
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    stringResource(R.string.settings_notification_preview),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                NotificationLivePreviewCard(
-                    context = context,
-                    settings = settings,
-                    tasks = tasks,
-                    catalog = listedCatalog,
-                )
-            }
-
-            Spacer(Modifier.height(10.dp))
-            SettingsDivider()
-            Spacer(Modifier.height(4.dp))
-
-            // 2b. One switch per channel. The three reminder kinds arrive with different volume
-            // and different urgency, so switching one off must not silence the others — which is
-            // exactly what the old single "task reminders" channel did.
-            SettingSwitchRow(
-                text = stringResource(R.string.settings_overdue_notifications),
-                subtitle = stringResource(R.string.settings_overdue_notifications_hint),
-                checked = settings.overdueNotificationsEnabled,
-                onCheckedChange = { onUpdate(settings.copy(overdueNotificationsEnabled = it)) },
-            )
-            SettingSwitchRow(
-                text = stringResource(R.string.settings_today_reminders),
-                subtitle = stringResource(R.string.settings_today_reminders_hint),
-                checked = settings.todayRemindersEnabled,
-                onCheckedChange = { onUpdate(settings.copy(todayRemindersEnabled = it)) },
-            )
-            SettingSwitchRow(
-                text = stringResource(R.string.settings_occasion_channel),
-                subtitle = stringResource(R.string.settings_occasion_channel_hint),
-                checked = settings.calendarNotificationsEnabled,
-                onCheckedChange = { onUpdate(settings.copy(calendarNotificationsEnabled = it)) },
-            )
-            if (settings.calendarNotificationsEnabled) {
-                // The briefing is once a day and the user chose the morning; a fixed hour would
-                // make the switch a half-truth.
-                SettingMenuRow(
-                    label = stringResource(R.string.notification_occasion_hour_title),
-                    value = TextNormalizer.formatDigits(
-                        stringResource(R.string.notification_occasion_hour_value, settings.occasionNotificationHour.toString()),
-                        settings.numeralMode,
-                    ),
-                    icon = Icons.Outlined.Alarm,
-                    expanded = occasionHourMenu,
-                    onExpandedChange = { occasionHourMenu = it },
-                ) {
-                    OCCASION_HOUR_OPTIONS.forEach { hour ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    TextNormalizer.formatDigits(
-                                        stringResource(R.string.notification_occasion_hour_value, hour.toString()),
-                                        settings.numeralMode,
-                                    ),
-                                )
-                            },
-                            onClick = { onUpdate(settings.copy(occasionNotificationHour = hour)); occasionHourMenu = false },
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(10.dp))
-            SettingsDivider()
-            Spacer(Modifier.height(4.dp))
-
-            // 3. Status bar calendar + icon style picker
-            SettingMenuRow(
-                label = stringResource(R.string.settings_status_calendar),
-                value = countdownCalendarLabel(settings.statusBarCalendar),
-                icon = Icons.Outlined.CalendarMonth,
-                expanded = statusCalendarMenu,
-                onExpandedChange = { statusCalendarMenu = it },
-            ) {
-                CalendarDisplayMode.entries.forEach { mode ->
-                    DropdownMenuItem(
-                        text = { Text(countdownCalendarLabel(mode)) },
-                        onClick = { onUpdate(settings.copy(statusBarCalendar = mode)); statusCalendarMenu = false },
-                    )
-                }
-            }
             Spacer(Modifier.height(8.dp))
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
@@ -635,7 +508,7 @@ fun SettingsScreen(
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    stringResource(R.string.settings_status_icon_style_hint),
+                    stringResource(R.string.settings_status_icon_style),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -646,27 +519,15 @@ fun SettingsScreen(
                 numeralMode = settings.numeralMode,
                 onSelect = { onUpdate(settings.copy(statusBarIconStyle = it)) },
             )
+        }
 
-            Spacer(Modifier.height(12.dp))
+        SettingsSection(
+            title = stringResource(R.string.settings_quiet_hours),
+            icon = Icons.Outlined.Alarm,
+            showHeader = selectedCategory == SettingsCategoryFilter.ALL,
+        ) {
             SettingsDivider()
             Spacer(Modifier.height(4.dp))
-
-            // 4. Reminder lead & Quiet hours with side-by-side time tiles
-            SettingMenuRow(
-                label = stringResource(R.string.settings_reminder_lead),
-                value = leadLabel(settings.reminderLeadMinutes, settings.numeralMode),
-                icon = Icons.Outlined.Alarm,
-                expanded = leadMenu,
-                onExpandedChange = { leadMenu = it },
-            ) {
-                REMINDER_LEAD_OPTIONS.forEach { minutes ->
-                    DropdownMenuItem(
-                        text = { Text(leadLabel(minutes, settings.numeralMode)) },
-                        onClick = { onUpdate(settings.copy(reminderLeadMinutes = minutes)); leadMenu = false },
-                    )
-                }
-            }
-            SettingsDivider()
             SettingSwitchRow(
                 text = stringResource(R.string.settings_quiet_hours),
                 subtitle = stringResource(R.string.settings_quiet_hint),
@@ -722,22 +583,10 @@ fun SettingsScreen(
                     allowAnyTime = false,
                 )
             }
-            if (!notificationsGranted || !exactAlarmGranted) {
-                Spacer(Modifier.height(10.dp))
-                SettingsDivider()
-                Spacer(Modifier.height(6.dp))
-                if (!notificationsGranted) {
-                    SettingsActionRow(stringResource(R.string.settings_request_notifications), onRequestNotifications)
-                }
-                if (!exactAlarmGranted) {
-                    SettingsActionRow(stringResource(R.string.settings_request_exact_alarm), onRequestExactAlarm)
-                }
-            }
         }
-        } }
         }
 
-        if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.BACKUP) {
+if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.BACKUP) {
         item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
         SettingsSection(
             title = stringResource(R.string.settings_backup),
@@ -923,75 +772,6 @@ private fun SettingsCommandCard(
 }
 
 @Composable
-private fun NotificationDesignSelector(
-    selectedDesign: String,
-    onSelectDesign: (String) -> Unit,
-) {
-    val colors = MaterialTheme.colorScheme
-    val options = listOf(
-        "classic" to R.string.notification_design_classic,
-        "minimal" to R.string.notification_design_minimal,
-        "editorial" to R.string.notification_design_editorial,
-        "banner" to R.string.notification_design_banner,
-    )
-    // The four looks read as one horizontal strip of tiles — the same shape the cards themselves
-    // now have — and every tile keeps a full-size touch target.
-    LazyRow(
-        modifier = Modifier.fillMaxWidth().selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(options) { (design, labelRes) ->
-            val selected = selectedDesign == design
-            val shape = MaterialTheme.shapes.medium
-            Column(
-                modifier = Modifier
-                    .width(144.dp)
-                    .clip(shape)
-                    .background(
-                        if (selected) colors.primaryContainer.copy(alpha = 0.65f)
-                        else colors.surfaceVariant.copy(alpha = 0.45f),
-                    )
-                    .border(
-                        width = if (selected) 2.dp else 1.dp,
-                        color = if (selected) colors.primary else colors.outline.copy(alpha = 0.16f),
-                        shape = shape,
-                    )
-                    .selectable(selected = selected, role = Role.RadioButton) { onSelectDesign(design) }
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        stringResource(labelRes),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (selected) colors.primary else colors.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (selected) {
-                        Icon(
-                            Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            tint = colors.primary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                }
-                // Mini schematic of the look's anatomy, drawn from the same flags the layouts and
-                // the live preview use.
-                DesignSchematic(NotificationLook.from(design))
-            }
-        }
-    }
-}
-
-@Composable
 private fun DesignSchematic(look: NotificationLook) {
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.small
@@ -1089,317 +869,6 @@ private fun DesignSchematic(look: NotificationLook) {
  * horizontal row, exactly as the generated layouts do, which is what makes picking a look in
  * Settings a real choice.
  */
-@Composable
-private fun NotificationLivePreviewCard(
-    context: Context,
-    settings: AppSettings,
-    tasks: List<Task>,
-    catalog: com.marbledo.feature.calendar.OccasionCatalog,
-) {
-    val configuration = LocalConfiguration.current
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val now by produceState(initialValue = System.currentTimeMillis(), key1 = lifecycle) {
-        // Refresh immediately after returning to Settings; do no background preview work.
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (true) {
-                val current = System.currentTimeMillis()
-                value = current
-                kotlinx.coroutines.delay(60_000L - current % 60_000L)
-            }
-        }
-    }
-    val content = remember(settings, tasks, catalog, now, configuration) {
-        PersistentCalendarNotification.buildContent(context, settings, tasks, catalog, now)
-    }
-    val shade = remember(settings.themeMode, configuration) {
-        notificationPalette(context, settings.themeMode)
-    }
-    val look = NotificationLook.from(settings.notificationDesign)
-    val themeAccent = shade.accent.toInt()
-    val badgeBitmap = remember(context, content.badgeDayDigits, content.monthLabel, content.mood, configuration, themeAccent, look) {
-        if (look.badge) NotificationArtwork.dateBadge(context, content.badgeDayDigits, content.monthLabel, content.mood, themeAccent) else null
-    }
-    val cardPlate = Color(shade.background)
-    val cardInk = Color(shade.text)
-    val cardMuted = Color(shade.muted)
-    val cardAccent = Color(shade.accent)
-    val cardHairline = Color(shade.hairline)
-    val onAccent = Color(shade.onAccent)
-    val stateHue = Color(shade.stateHue(content.state))
-    // The same three ink rules as the builder: on a pill, the hue re-checked against the pill's
-    // fill; on the band, the band's ink; otherwise the hue as it reads on the plate.
-    val chipFill = Color(NotificationChipFills.fill(content.state, shade.isDark))
-    val stateInk = when {
-        look.chipPill -> Color(NotificationChipFills.ink(shade, content.state))
-        look.band -> onAccent
-        else -> stateHue
-    }
-    val stateMarkColor = when {
-        look.chipPill -> stateInk
-        look.band -> Color(MarbleContrast.readable(shade.stateHue(content.state), shade.accent, MarbleContrast.UI_MINIMUM))
-        else -> stateHue
-    }
-    val headerInk = if (look.band) onAccent else cardInk
-    val previewDirection = if (settings.languageTag == "fa") LayoutDirection.Rtl else LayoutDirection.Ltr
-    val outerShape = RoundedCornerShape(20.dp)
-    // The date is the hero of the editorial look and a title everywhere else, so it takes the
-    // roles the type scale already reserves instead of improvising a size.
-    val dateStyle = when (look) {
-        NotificationLook.EDITORIAL -> MarbleTextStyles.dateDigits
-        NotificationLook.CLASSIC, NotificationLook.BANNER -> MarbleTextStyles.cardTitle
-        NotificationLook.MINIMAL -> MarbleTextStyles.itemTitle
-    }
-
-    @Composable
-    fun StateChip() {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(if (look.chipPill) 4.dp else 5.dp),
-            modifier = if (look.chipPill) {
-                Modifier.clip(RoundedCornerShape(12.dp)).background(chipFill).padding(horizontal = 8.dp, vertical = 3.dp)
-            } else {
-                Modifier
-            },
-        ) {
-            if (look.chipPill) {
-                Icon(painterResource(content.state.iconRes()), contentDescription = null, tint = stateMarkColor, modifier = Modifier.size(12.dp))
-            } else {
-                Box(Modifier.size(7.dp).clip(CircleShape).background(stateMarkColor))
-            }
-            Text(
-                content.stateLabel,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = stateInk,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 112.dp),
-            )
-        }
-    }
-
-    @Composable
-    fun HeaderRow() {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (look.badge && badgeBitmap != null) {
-                Image(
-                    bitmap = badgeBitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)),
-                )
-            }
-            Text(
-                content.title,
-                style = dateStyle,
-                fontWeight = FontWeight.Bold,
-                color = headerInk,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            StateChip()
-        }
-    }
-
-    /**
-     * One task as one horizontal row: the title keeps the width, the time sits in a fixed column.
-     *
-     * The column is a width, not a weight, so both rows and every design line their times up under
-     * each other — the mirror of the generated layouts' `TASK_META_WIDTH`.
-     */
-    @Composable
-    fun TaskRow(
-        title: String,
-        meta: String?,
-        titleStyle: TextStyle,
-        maxLines: Int,
-        topPadding: Dp = 0.dp,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = topPadding),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                title,
-                style = titleStyle,
-                color = cardInk,
-                maxLines = maxLines,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(3f),
-            )
-            if (meta != null) {
-                Text(
-                    meta,
-                    style = MarbleTextStyles.microLabel,
-                    color = cardMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.widthIn(min = 46.dp),
-                )
-            }
-        }
-    }
-
-    @Composable
-    fun TaskRows() {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            if (content.hasTask) {
-                Text(
-                    content.tasksLabel,
-                    style = MarbleTextStyles.metaLabel,
-                    fontWeight = FontWeight.Bold,
-                    color = cardAccent,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            TaskRow(
-                title = content.taskTitle ?: content.emptyTaskText,
-                meta = content.taskMetaLine,
-                titleStyle = MarbleTextStyles.itemTitle,
-                maxLines = 2,
-            )
-            content.secondTaskTitle?.let { second ->
-                TaskRow(
-                    title = second,
-                    meta = content.secondTaskMetaLine,
-                    titleStyle = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    topPadding = 10.dp,
-                )
-            }
-            content.moreTasksLine?.let { more ->
-                Text(
-                    more,
-                    style = MarbleTextStyles.microLabel,
-                    color = cardMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
-        }
-    }
-
-    @Composable
-    fun Occasions() {
-        if (!content.hasOccasions) return
-        HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 14.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-        ) {
-            Icon(
-                painterResource(R.drawable.ic_notification_occasion_star),
-                contentDescription = null,
-                tint = Color(shade.occasion),
-                modifier = Modifier.size(13.dp),
-            )
-            Text(
-                content.occasionsLabel,
-                style = MarbleTextStyles.metaLabel,
-                fontWeight = FontWeight.Bold,
-                color = Color(shade.occasion),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Text(
-            content.occasionsLine,
-            style = MaterialTheme.typography.bodySmall,
-            color = cardMuted,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
-
-    CompositionLocalProvider(LocalLayoutDirection provides previewDirection) {
-        Surface(
-            shape = outerShape,
-            color = cardPlate,
-            contentColor = cardInk,
-            modifier = Modifier.fillMaxWidth().border(1.dp, cardHairline, outerShape)
-                .clearAndSetSemantics { contentDescription = content.accessibilityText(expanded = true) },
-        ) {
-            Column(Modifier.fillMaxWidth()) {
-                if (look.band) {
-                    // The band bleeds to the card's edge and carries the header row; the rest of
-                    // the card keeps the side padding.
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                            .background(cardAccent)
-                            .padding(horizontal = 14.dp, vertical = 9.dp),
-                    ) { HeaderRow() }
-                }
-                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp)) {
-                    if (!look.band) {
-                        HeaderRow()
-                        if (look.headerDivider) {
-                            HorizontalDivider(color = cardHairline, modifier = Modifier.padding(top = 10.dp))
-                        }
-                    }
-                    // One surface only. The classic look's tonal panel and the editorial look's
-                    // vertical rule are gone: the panel read as a box stuck onto the card and the
-                    // rule fell on the first letter of the title in RTL.
-                    Box(Modifier.fillMaxWidth().padding(top = 6.dp)) { TaskRows() }
-                    Occasions()
-                }
-            }
-        }
-    }
-    Text(
-        stringResource(R.string.notification_preview_hint),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-
-@Composable
-private fun NotificationStatusBadge(
-    text: String,
-    state: PersistentCalendarNotification.StatusIconState,
-    isError: Boolean,
-) {
-    val dotColor = when {
-        isError -> MaterialTheme.colorScheme.error
-        state == PersistentCalendarNotification.StatusIconState.ACTIVE -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.outline
-    }
-    val containerColor = when {
-        isError -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.65f)
-        state == PersistentCalendarNotification.StatusIconState.ACTIVE -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-    }
-    val contentColor = when {
-        isError -> MaterialTheme.colorScheme.onErrorContainer
-        state == PersistentCalendarNotification.StatusIconState.ACTIVE -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = containerColor,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(dotColor))
-            Text(
-                text,
-                style = MaterialTheme.typography.labelMedium,
-                color = contentColor,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
 
 @Composable
 private fun QuietTimeTile(
@@ -1831,32 +1300,12 @@ private class LastBackup(val millis: Long?)
 
 private val REMINDER_LEAD_OPTIONS = listOf(0, 5, 10, 15, 30, 60)
 
-/**
- * The hours the morning briefing can be pinned to. A full 24-hour list is a scroll wheel nobody
- * wants in a settings sheet; the redesign's promise is "one morning briefing", so the choices are
- * the morning hours people actually read a calendar in, plus noon and the evening.
- */
-private val OCCASION_HOUR_OPTIONS = listOf(6, 7, 8, 9, 10, 12, 18, 20)
-
-@Composable
-private fun leadLabel(minutes: Int, numeralMode: NumeralMode): String =
-    if (minutes == 0) {
-        stringResource(R.string.settings_reminder_lead_off)
-    } else {
-        TextNormalizer.formatDigits(stringResource(R.string.settings_reminder_lead_value, minutes), numeralMode)
-    }
-
 private fun formatMinute(minuteOfDay: Int, numeralMode: NumeralMode): String {
     val clamped = minuteOfDay.coerceIn(0, 1439)
     return TextNormalizer.formatDigits(formatClock(LocalTime.of(clamped / 60, clamped % 60)), numeralMode)
 }
 
-private fun statusStateTextRes(state: PersistentCalendarNotification.StatusIconState): Int = when (state) {
-    PersistentCalendarNotification.StatusIconState.ACTIVE -> R.string.settings_status_icon_state_active
-    PersistentCalendarNotification.StatusIconState.OFF -> R.string.settings_status_icon_state_off
-    PersistentCalendarNotification.StatusIconState.PERMISSION_MISSING -> R.string.settings_status_icon_state_permission
-    PersistentCalendarNotification.StatusIconState.BLOCKED -> R.string.settings_status_icon_state_blocked
-}
+
 
 @Composable
 private fun countdownCalendarLabel(mode: CalendarDisplayMode): String = when (mode) {

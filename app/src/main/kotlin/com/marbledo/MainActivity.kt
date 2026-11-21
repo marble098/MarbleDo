@@ -1,6 +1,5 @@
 package com.marble098.marbledo
 
-import com.marble098.marbledo.notifications.PersistentCalendarNotificationWorker
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent

@@ -2,7 +2,6 @@ package com.marbledo.feature.tasks
 
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.repository.TaskBackupScheduler
-import com.marbledo.domain.repository.TaskReminderScheduler
 import com.marbledo.domain.repository.TaskRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,19 +24,16 @@ class TasksViewModelUndoTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val repository = InMemoryTaskRepository()
-            val reminders = RecordingReminderScheduler()
-            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, reminders)
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler)
 
             viewModel.addTask(Task(title = "New countdown"))
             advanceUntilIdle()
             assertEquals(1, repository.tasks.value.size)
-            val addedId = repository.tasks.value.single().id
 
             viewModel.undoLastChange()
             advanceUntilIdle()
 
             assertTrue(repository.tasks.value.isEmpty())
-            assertTrue(addedId in reminders.cancelled)
         } finally {
             Dispatchers.resetMain()
         }
@@ -50,7 +46,7 @@ class TasksViewModelUndoTest {
             val repository = InMemoryTaskRepository()
             val original = Task(id = 8L, title = "Original")
             repository.save(original)
-            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, RecordingReminderScheduler())
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler)
 
             viewModel.editTask(original.copy(title = "Changed"))
             advanceUntilIdle()
@@ -70,19 +66,16 @@ class TasksViewModelUndoTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val repository = InMemoryTaskRepository()
-            val reminders = RecordingReminderScheduler()
-            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, reminders)
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler)
             val tasks = listOf(Task(title = "Plan", tags = listOf("occasion-step:x:2026-12-25:plan")),
                 Task(title = "Prepare", tags = listOf("occasion-step:x:2026-12-25:prepare")))
             viewModel.addTasks(tasks)
             viewModel.addTasks(tasks)
             advanceUntilIdle()
             assertEquals(2, repository.tasks.value.size)
-            val ids = repository.tasks.value.map { it.id }
             viewModel.undoLastChange()
             advanceUntilIdle()
             assertTrue(repository.tasks.value.isEmpty())
-            assertTrue(reminders.cancelled.containsAll(ids))
         } finally { Dispatchers.resetMain() }
     }
 
@@ -90,7 +83,7 @@ class TasksViewModelUndoTest {
     fun `a batch confirmation waits for the Home collector instead of disappearing during navigation`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
-            val viewModel = TasksViewModel(InMemoryTaskRepository(), NoOpBackupScheduler, RecordingReminderScheduler())
+            val viewModel = TasksViewModel(InMemoryTaskRepository(), NoOpBackupScheduler)
             viewModel.addTasks(listOf(Task(title = "One"), Task(title = "Two")))
             advanceUntilIdle()
             val confirmation = viewModel.changes.first()
@@ -106,7 +99,7 @@ class TasksViewModelUndoTest {
             val repository = InMemoryTaskRepository()
             val saved = Task(title = "Renamed", isCompleted = true, tags = listOf("occasion-step:x:2026-12-25:plan"))
             repository.save(saved)
-            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, RecordingReminderScheduler())
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler)
             viewModel.addTasks(listOf(saved.copy(id = 0, isCompleted = false)))
             advanceUntilIdle()
             assertEquals(1, repository.tasks.value.size)
@@ -120,7 +113,7 @@ class TasksViewModelUndoTest {
         try {
             val repository = InMemoryTaskRepository(failBatch = true)
             repository.save(Task(title = "Kept"))
-            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, RecordingReminderScheduler())
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler)
             viewModel.addTasks(listOf(Task(title = "New one"), Task(title = "New two")))
             advanceUntilIdle()
             assertEquals(listOf("Kept"), repository.tasks.value.map { it.title })
@@ -129,43 +122,38 @@ class TasksViewModelUndoTest {
     }
 
     @Test
-    fun `editing a draft task assigns a real id, schedules its reminder and supports undo`() = runTest {
+    fun `editing a draft task assigns a real id and supports undo`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val repository = InMemoryTaskRepository()
-            val reminders = RecordingReminderScheduler()
-            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, reminders)
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler)
 
             viewModel.editTask(Task(id = 0L, title = "Draft from occasion", dueAtEpochMillis = 1_900_000_000_000L))
             advanceUntilIdle()
 
             val saved = repository.tasks.value.single()
             assertTrue(saved.id > 0L)
-            assertEquals(listOf(saved.id), reminders.scheduled)
             assertEquals(TaskChangeKind.ADDED, viewModel.changes.first().kind)
 
             viewModel.undoLastChange()
             advanceUntilIdle()
 
             assertTrue(repository.tasks.value.isEmpty())
-            assertTrue(saved.id in reminders.cancelled)
         } finally { Dispatchers.resetMain() }
     }
 
     @Test
-    fun `replacing all tasks from backup cancels reminders of removed tasks`() = runTest {
+    fun `replacing all tasks from backup replaces the stored tasks`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         try {
             val repository = InMemoryTaskRepository()
-            val oldId = repository.save(Task(id = 42L, title = "Old task", dueAtEpochMillis = 1_900_000_000_000L))
-            val reminders = RecordingReminderScheduler()
-            val viewModel = TasksViewModel(repository, NoOpBackupScheduler, reminders)
+            repository.save(Task(id = 42L, title = "Old task", dueAtEpochMillis = 1_900_000_000_000L))
+            val viewModel = TasksViewModel(repository, NoOpBackupScheduler)
 
             viewModel.restoreTasks(listOf(Task(id = 99L, title = "Restored task", dueAtEpochMillis = 1_900_000_000_000L)), merge = false)
             advanceUntilIdle()
 
-            assertTrue(oldId in reminders.cancelled)
-            assertEquals(listOf(99L), reminders.scheduled)
+            assertEquals(listOf(99L), repository.tasks.value.map { it.id })
         } finally { Dispatchers.resetMain() }
     }
 
@@ -205,13 +193,6 @@ class TasksViewModelUndoTest {
         }
     }
 
-    private class RecordingReminderScheduler : TaskReminderScheduler {
-        val scheduled = mutableListOf<Long>()
-        val cancelled = mutableListOf<Long>()
-
-        override fun schedule(task: Task) { scheduled += task.id }
-        override fun cancel(taskId: Long) { cancelled += taskId }
-    }
 
     private object NoOpBackupScheduler : TaskBackupScheduler {
         override fun scheduleDebounced() = Unit

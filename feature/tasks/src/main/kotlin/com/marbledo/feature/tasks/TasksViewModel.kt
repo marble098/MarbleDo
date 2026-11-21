@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.marbledo.domain.model.Task
 import com.marbledo.domain.model.TaskPriority
 import com.marbledo.domain.repository.TaskBackupScheduler
-import com.marbledo.domain.repository.TaskReminderScheduler
 import com.marbledo.domain.repository.TaskRepository
 import com.marbledo.domain.util.TextNormalizer
 import java.time.Instant
@@ -61,7 +60,6 @@ data class TasksUiState(
 class TasksViewModel(
     private val repository: TaskRepository,
     private val backupScheduler: TaskBackupScheduler,
-    private val reminderScheduler: TaskReminderScheduler,
 ) : ViewModel() {
     private val filter = MutableStateFlow(TaskFilter.TODAY)
     private val query = MutableStateFlow("")
@@ -141,7 +139,6 @@ class TasksViewModel(
     fun addTask(task: Task) {
         viewModelScope.launch {
             val id = repository.save(task)
-            scheduleOrCancel(task.copy(id = id))
             lastUndoAction = TaskUndoAction.Remove(listOf(id))
             backupScheduler.scheduleDebounced()
             changeEvents.send(TaskChange(TaskChangeKind.ADDED))
@@ -169,7 +166,6 @@ class TasksViewModel(
                     return@withLock
                 }
                 lastUndoAction = TaskUndoAction.Remove(ids)
-                newTasks.zip(ids).forEach { (task, id) -> runCatching { scheduleOrCancel(task.copy(id = id)) } }
                 runCatching { backupScheduler.scheduleDebounced() }
                 changeEvents.send(TaskChange(TaskChangeKind.ADDED, ids.size))
             }
@@ -186,7 +182,6 @@ class TasksViewModel(
             val saved = task.copy(updatedAtEpochMillis = System.currentTimeMillis())
             repository.save(saved)
             lastUndoAction = previous?.let { TaskUndoAction.Restore(listOf(it)) }
-            scheduleOrCancel(saved)
             backupScheduler.scheduleDebounced()
             changeEvents.send(TaskChange(TaskChangeKind.EDITED))
         }
@@ -197,7 +192,6 @@ class TasksViewModel(
             val now = System.currentTimeMillis()
             if (task.isCompleted) {
                 repository.setCompleted(task.id, false)
-                scheduleOrCancel(task.copy(isCompleted = false, updatedAtEpochMillis = now))
                 lastUndoAction = TaskUndoAction.Restore(listOf(task))
                 changeEvents.send(TaskChange(TaskChangeKind.REOPENED))
             } else {
@@ -212,19 +206,16 @@ class TasksViewModel(
     fun archive(task: Task) {
         viewModelScope.launch {
             repository.setArchived(task.id, true)
-            reminderScheduler.cancel(task.id)
             lastUndoAction = TaskUndoAction.Restore(listOf(task))
             backupScheduler.scheduleDebounced()
             changeEvents.send(TaskChange(TaskChangeKind.ARCHIVED))
         }
     }
 
-    /** Moves an archived task back to the active lists and schedules its reminder again. */
+    /** Moves an archived task back to the active lists. */
     fun unarchive(task: Task) {
         viewModelScope.launch {
             repository.setArchived(task.id, false)
-            val restored = task.copy(isArchived = false, updatedAtEpochMillis = System.currentTimeMillis())
-            scheduleOrCancel(restored)
             lastUndoAction = TaskUndoAction.Restore(listOf(task))
             backupScheduler.scheduleDebounced()
             changeEvents.send(TaskChange(TaskChangeKind.UNARCHIVED))
@@ -234,7 +225,6 @@ class TasksViewModel(
     fun delete(task: Task) {
         viewModelScope.launch {
             repository.delete(task.id)
-            reminderScheduler.cancel(task.id)
             lastUndoAction = TaskUndoAction.Restore(listOf(task))
             backupScheduler.scheduleDebounced()
             changeEvents.send(TaskChange(TaskChangeKind.DELETED))
@@ -265,7 +255,6 @@ class TasksViewModel(
 
     fun restoreTasks(incoming: List<Task>, merge: Boolean) {
         viewModelScope.launch {
-            val previousIds = repository.observeTasks().first().mapTo(mutableSetOf(), Task::id)
             if (!merge) {
                 repository.replaceAll(incoming)
             } else {
@@ -279,10 +268,6 @@ class TasksViewModel(
                     }
                 }
             }
-            val currentTasks = repository.observeTasks().first()
-            val currentIds = currentTasks.mapTo(mutableSetOf(), Task::id)
-            (previousIds - currentIds).forEach(reminderScheduler::cancel)
-            currentTasks.forEach(::scheduleOrCancel)
             backupScheduler.scheduleDebounced()
         }
     }
@@ -294,18 +279,15 @@ class TasksViewModel(
             when (action) {
                 is TaskUndoAction.Remove -> action.taskIds.forEach { taskId ->
                     repository.delete(taskId)
-                    reminderScheduler.cancel(taskId)
                 }
                 is TaskUndoAction.Restore -> {
                     action.removeTaskIds.forEach { taskId ->
                         repository.delete(taskId)
-                        reminderScheduler.cancel(taskId)
                     }
                     val now = System.currentTimeMillis()
                     action.tasks.forEach { task ->
                         val restored = task.copy(updatedAtEpochMillis = now)
                         repository.save(restored)
-                        scheduleOrCancel(restored)
                     }
                 }
             }
@@ -314,12 +296,11 @@ class TasksViewModel(
     }
 
     /**
-     * Marks [task] complete, cancels its reminder, and for repeating tasks creates the next occurrence.
+     * Marks [task] complete and for repeating tasks creates the next occurrence.
      * Returns the id of that next occurrence, if one was created.
      */
     private suspend fun completeTask(task: Task, now: Long): Long? {
         repository.setCompleted(task.id, true)
-        reminderScheduler.cancel(task.id)
         val repeat = task.recurrence ?: return null
         val previousDue = task.dueAtEpochMillis ?: return null
         val nextTask = task.copy(
@@ -331,14 +312,7 @@ class TasksViewModel(
             createdAtEpochMillis = now,
             updatedAtEpochMillis = now,
         )
-        val nextId = repository.save(nextTask)
-        scheduleOrCancel(nextTask.copy(id = nextId))
-        return nextId
-    }
-
-    /** Reminders only exist for open, active tasks with a due time. */
-    private fun scheduleOrCancel(task: Task) {
-        if (task.isArchived || task.isCompleted) reminderScheduler.cancel(task.id) else reminderScheduler.schedule(task)
+        return repository.save(nextTask)
     }
 
     private fun priorityRank(task: Task): Int = when (task.priority) {

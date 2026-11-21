@@ -1,16 +1,10 @@
 package com.marble098.marbledo
 
 import android.content.Context
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.marbledo.domain.model.CalendarDisplayMode
-import android.Manifest
-import android.app.AlarmManager
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.provider.Settings as AndroidSettings
 import android.widget.Toast
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -72,12 +66,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.WindowCompat
 import androidx.core.os.LocaleListCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -112,9 +102,6 @@ import com.marbledo.feature.countdown.CountdownWidgetPinResult
 import com.marbledo.feature.countdown.requestCountdownWidgetPin
 import com.marbledo.feature.countdown.updateMarbleCountdownWidgets
 import com.marbledo.feature.tasks.TasksViewModel
-import com.marble098.marbledo.notifications.NotificationChannels
-import com.marble098.marbledo.notifications.CalendarOccurrenceWorker
-import com.marble098.marbledo.notifications.PersistentCalendarNotification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -123,8 +110,6 @@ import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
-private const val UI_PREFS = "marbledo_ui"
-private const val KEY_NOTIFICATION_PROMPT_SHOWN = "notification_prompt_shown"
 
 @Serializable private data object HomeDestination : NavKey
 @Serializable private data object HabitsDestination : NavKey
@@ -139,7 +124,7 @@ private data class Destination(
     val unselectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
 )
 
-/** Deep-link aliases kept for shortcuts, the quick-settings tile and calendar notifications. */
+/** Deep-link aliases kept for shortcuts and the quick-settings tile. */
 private fun destinationForRoute(route: String): String = when (route) {
     "tasks", "countdown", "home" -> "home"
     "habits" -> "habits"
@@ -212,9 +197,6 @@ fun MarbleDoApp(
     // with a light device got dark icons on the dark app — invisible — and vice versa. The mode is
     // reapplied whenever the resolved palette's lightness changes.
     SystemBarIcons(dark = MarblePalettes.isDark(settings.themeMode.name, isSystemDark(context)))
-    val notificationsGranted = rememberNotificationsGranted()
-    val exactAlarmGranted = rememberExactAlarmGranted()
-
     val destinations = listOf(
         Destination("home", HomeDestination, R.string.nav_home, Icons.Filled.Home, Icons.Outlined.Home),
         Destination("habits", HabitsDestination, R.string.nav_habits, Icons.Filled.TrendingUp, Icons.Outlined.TrendingUp),
@@ -293,23 +275,6 @@ fun MarbleDoApp(
         }
     }
 
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (!granted) Toast.makeText(context, R.string.settings_notifications_denied, Toast.LENGTH_LONG).show()
-    }
-
-    // Ask once, on first launch, so the status-bar date icon and reminders can work without a trip to Settings.
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= 33) {
-            val prefs = context.getSharedPreferences(UI_PREFS, Context.MODE_PRIVATE)
-            val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
-            if (!granted && !prefs.getBoolean(KEY_NOTIFICATION_PROMPT_SHOWN, false)) {
-                prefs.edit().putBoolean(KEY_NOTIFICATION_PROMPT_SHOWN, true).apply()
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-    }
-
     fun navigateTo(key: NavKey) {
         val existingIndex = backStack.indexOf(key)
         if (existingIndex < 0) {
@@ -330,40 +295,6 @@ fun MarbleDoApp(
         // language and waits for DataStore, so a temporary default can never cause a second
         // recreation in the opposite direction.
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTag))
-    }
-
-    LaunchedEffect(persistedSettings?.languageTag) {
-        if (persistedSettings != null) NotificationChannels.create(context)
-    }
-
-    LaunchedEffect(persistedSettings?.educationModeEnabled) {
-        if (persistedSettings?.educationModeEnabled == false) {
-            CalendarOccurrenceWorker.clearEducationalNotifications(context.applicationContext)
-        }
-    }
-
-    LaunchedEffect(persistedSettings?.occasionCultureIds) {
-        persistedSettings?.let { CalendarOccurrenceWorker.clearHiddenCultureNotifications(context.applicationContext, it.enabledOccasionCultures()) }
-    }
-
-    LaunchedEffect(
-        persistedSettings,
-        settings,
-        taskState.allTasks,
-        occasionState.catalog,
-        occasionState.isLoaded,
-        notificationsGranted,
-    ) {
-        if (persistedSettings != null && occasionState.isLoaded) {
-            withContext(Dispatchers.Default) {
-                PersistentCalendarNotification.update(
-                    context = context.applicationContext,
-                    settings = settings,
-                    tasks = taskState.allTasks,
-                    catalog = occasionState.catalog,
-                )
-            }
-        }
     }
 
     LaunchedEffect(
@@ -535,8 +466,6 @@ fun MarbleDoApp(
                             entry<SettingsDestination> {
                                 SettingsScreen(
                                     settings = settings,
-                                    notificationsGranted = notificationsGranted,
-                                    exactAlarmGranted = exactAlarmGranted,
                                     occasionState = occasionState,
                                     onUpdate = { updated -> coroutineScope.launch { settingsRepository.update { updated } } },
                                     onAddWidget = {
@@ -568,11 +497,6 @@ fun MarbleDoApp(
                                             }
                                         }
                                     },
-                                    onRequestNotifications = {
-                                        if (Build.VERSION.SDK_INT >= 33) notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                        else requestNotificationPermission(context)
-                                    },
-                                    onRequestExactAlarm = { requestExactAlarmSettings(context) },
                                     onCheckUpdates = { openReleasePage(context) },
                                     tasks = taskState.allTasks,
                                 )
@@ -825,64 +749,6 @@ fun MarbleDoApp(
                 }) { Text(stringResource(R.string.settings_close)) }
             },
         )
-    }
-}
-
-/** Re-reads the notification grant on every resume so the settings screen can hide itself again. */
-@Composable
-private fun rememberNotificationsGranted(): Boolean {
-    val context = LocalContext.current
-    var granted by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, context) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) granted = NotificationManagerCompat.from(context).areNotificationsEnabled()
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-    return granted
-}
-
-/** Exact-alarm access is always considered granted below Android 12. */
-@Composable
-private fun rememberExactAlarmGranted(): Boolean {
-    val context = LocalContext.current
-    fun read(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
-        val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return false
-        return alarmManager.canScheduleExactAlarms()
-    }
-    var granted by remember { mutableStateOf(read()) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, context) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) granted = read()
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-    return granted
-}
-
-private fun requestNotificationPermission(context: android.content.Context) {
-    if (Build.VERSION.SDK_INT >= 33) {
-        val intent = Intent(AndroidSettings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(AndroidSettings.EXTRA_APP_PACKAGE, context.packageName)
-        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-    } else {
-        runCatching {
-            context.startActivity(Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        }
-    }
-}
-
-private fun requestExactAlarmSettings(context: android.content.Context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val alarmManager = context.getSystemService(AlarmManager::class.java)
-        if (alarmManager.canScheduleExactAlarms()) return
-        val intent = Intent(AndroidSettings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).setData(Uri.parse("package:${context.packageName}"))
-        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
 }
 

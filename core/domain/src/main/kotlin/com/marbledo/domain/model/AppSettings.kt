@@ -17,7 +17,6 @@ data class AppSettings(
     val countdownCalendar: CalendarDisplayMode = CalendarDisplayMode.PERSIAN,
     val taskCategories: List<String> = emptyList(),
     val weekStartsSaturday: Boolean = true,
-    val calendarNotificationsEnabled: Boolean = true,
     val officialEventsEnabled: Boolean = true,
     val religiousEventsEnabled: Boolean = true,
     val nationalEventsEnabled: Boolean = true,
@@ -27,42 +26,17 @@ data class AppSettings(
     val educationModeEnabled: Boolean = false,
     /** Friday is always excluded by the workday helper; optionally exclude Thursday too. */
     val thursdayWeekendEnabled: Boolean = false,
-    val quietHoursEnabled: Boolean = false,
-    val quietStartMinute: Int = 22 * 60,
-    val quietEndMinute: Int = 7 * 60,
     val fontScale: Float = 1f,
     val reduceMotion: Boolean = false,
     val lunarOffsetDays: Int = 0,
     /** When true, MarbleDo refreshes the occasion catalog from the internet in the background. */
     val occasionAutoUpdateEnabled: Boolean = true,
-    /**
-     * Shows today's date as a status-bar icon with a persistent, silent notification.
-     * Enabled by default so the icon is visible without extra setup.
-     */
-    val persistentDateNotificationEnabled: Boolean = true,
-    /** Calendar whose day number is drawn inside the status-bar date icon. */
-    val statusBarCalendar: CalendarDisplayMode = CalendarDisplayMode.PERSIAN,
-    /** Which look the status-bar icon uses for the day number; see [StatusBarIconStyle]. */
-    @Serializable(with = StatusBarIconStyleSerializer::class)
-    val statusBarIconStyle: StatusBarIconStyle = StatusBarIconStyle.DEFAULT,
-    /** Persistent notification layout. Unknown future ids fall back to classic. */
-    val notificationDesign: String = "classic",
     /** Look of the habit cabinet; individual habits can carry their own look. */
     val habitTheme: String = HabitTheme.DEFAULT.id,
-    /** Minutes before a task's due time that a heads-up reminder is shown; 0 disables it. */
-    val reminderLeadMinutes: Int = 10,
-    /** Occasion ids the user marked as important, so they are pinned and can be reminded. */
+    /** Occasion ids the user marked as important, so they are pinned. */
     val favoriteOccasionIds: List<String> = emptyList(),
-    /** Days before a favourite occasion that a preparation reminder is posted; 0 disables it. */
-    val occasionReminderLeadDays: Int = 0,
     /** How the dashboard lays out its task and countdown sections; see [DashboardViewMode]. */
     val dashboardViewMode: DashboardViewMode = DashboardViewMode.LIST,
-    /** The grouped "overdue" reminder on its own high-importance channel. */
-    val overdueNotificationsEnabled: Boolean = true,
-    /** Reminders for tasks that are due today, on their own channel. */
-    val todayRemindersEnabled: Boolean = true,
-    /** Morning hour (local time) of the once-a-day occasion briefing. */
-    val occasionNotificationHour: Int = 8,
     /** Independent discovery packs; an empty list intentionally hides all occasion packs. */
     val occasionCultureIds: List<String> = OccasionCulture.defaultIds,
 ) {
@@ -70,9 +44,5 @@ data class AppSettings(
         require(languageTag in setOf("fa", "en"))
         require(fontScale in 0.8f..1.5f)
         require(lunarOffsetDays in -2..2)
-        require(quietStartMinute in 0..1439 && quietEndMinute in 0..1439)
-        require(reminderLeadMinutes in 0..1440)
-        require(occasionReminderLeadDays in 0..30)
-        require(occasionNotificationHour in 0..23)
     }
 }

@@ -1,8 +1,0 @@
-<resources>
-    <!-- The dark half of the fallback table; see values/notification_colors.xml. -->
-    <color name="notification_card_text">#EFECF6</color>
-    <color name="notification_card_muted">#B7B2C6</color>
-    <color name="notification_card_accent">#BBC5FF</color>
-    <color name="notification_state_overdue">#FF9C85</color>
-    <color name="notification_state_occasion">#CDB6F8</color>
-</resources>

@@ -1,17 +1,8 @@
 package com.marble098.marbledo
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import com.marble098.marbledo.notifications.ReminderPreferences
 import android.app.Application
 import android.os.StrictMode
-import com.marble098.marbledo.notifications.AndroidTaskReminderScheduler
-import com.marble098.marbledo.notifications.CalendarNotificationWorkInitializer
-import com.marble098.marbledo.notifications.PersistentCalendarNotificationWorker
 import com.marble098.marbledo.app.sync.OccasionSyncWorker
-import com.marble098.marbledo.notifications.NotificationChannels
 import com.marbledo.core.data.backup.BackupWorkInitializer
 import com.marbledo.core.data.backup.WorkManagerBackupScheduler
 import com.marbledo.core.data.db.MarbleDatabase
@@ -36,37 +27,12 @@ class MarbleDoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         enableDebugStrictMode()
-        NotificationChannels.create(this)
         startKoin {
             androidContext(this@MarbleDoApplication)
             modules(marbleDoModule)
         }
         BackupWorkInitializer.ensureDailyBackup(this)
-        CalendarNotificationWorkInitializer.ensureDaily(this)
         OccasionSyncWorker.ensureDaily(this)
-        val settingsRepository = org.koin.java.KoinJavaComponent.getKoin().get<SettingsRepository>()
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            var lastPersistentEnabled: Boolean? = null
-            var lastOccasionHour: Int? = null
-            settingsRepository.settings.collect { settings ->
-                ReminderPreferences.write(this@MarbleDoApplication, settings)
-                if (lastPersistentEnabled != settings.persistentDateNotificationEnabled) {
-                    lastPersistentEnabled = settings.persistentDateNotificationEnabled
-                    if (settings.persistentDateNotificationEnabled) {
-                        PersistentCalendarNotificationWorker.ensurePeriodic(this@MarbleDoApplication)
-                    } else {
-                        PersistentCalendarNotificationWorker.cancelScheduled(this@MarbleDoApplication)
-                    }
-                }
-                // The morning briefing hour is honoured by re-arming the daily request whenever it
-                // moves; `UPDATE` replaces the previous schedule, so there is never an 08:00 and a
-                // 20:00 briefing running side by side.
-                if (lastOccasionHour != settings.occasionNotificationHour) {
-                    lastOccasionHour = settings.occasionNotificationHour
-                    CalendarNotificationWorkInitializer.ensureDaily(this@MarbleDoApplication, settings.occasionNotificationHour)
-                }
-            }
-        }
     }
 
     private fun enableDebugStrictMode() {
@@ -96,9 +62,7 @@ private val marbleDoModule = module {
     single { OccasionRepository(androidContext()) }
     single { WorkManagerBackupScheduler(androidContext()) }
     single<TaskBackupScheduler> { get<WorkManagerBackupScheduler>() }
-    single { AndroidTaskReminderScheduler(androidContext()) }
-    single<TaskReminderScheduler> { get<AndroidTaskReminderScheduler>() }
-    viewModel { TasksViewModel(get(), get(), get()) }
+    viewModel { TasksViewModel(get(), get()) }
     // The habits screen writes reminders and refreshes widgets, so it needs the app context.
     viewModel { HabitsViewModel(get(), androidContext()) }
 }

@@ -11,18 +11,6 @@
 
     <style name="Theme.MarbleDo" parent="Theme.MarbleDo.Base" />
 
-    <!--
-        The snooze picker: a floating dialog over whatever the user was doing. It is an activity only
-        because a notification action needs one; it paints no window of its own, so choosing "بعداً"
-        never feels like opening the app.
-    -->
-    <style name="Theme.MarbleDo.SnoozePicker" parent="Theme.AppCompat.DayNight.Dialog.Alert">
-        <item name="android:windowIsTranslucent">true</item>
-        <item name="android:backgroundDimAmount">0.42</item>
-        <item name="android:windowCloseOnTouchOutside">true</item>
-        <item name="android:windowNoTitle">true</item>
-    </style>
-
     <style name="Theme.MarbleDo.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/marble_splash_bg</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
