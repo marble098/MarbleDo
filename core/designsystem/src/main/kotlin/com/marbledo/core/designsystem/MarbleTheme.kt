@@ -67,27 +67,30 @@ val LocalReduceMotion = staticCompositionLocalOf { false }
 val LocalAppFontScale = staticCompositionLocalOf { 1f }
 val LocalNumeralMode = staticCompositionLocalOf { NumeralMode.PERSIAN }
 
+// The AUTO palette is the app's minimal, modern base: a soft neutral page, crisp white cards,
+// flat ink and a single expressive indigo. Everything else in the app reads these slots, so one
+// repaint flattens the whole product onto the same language.
 internal val LightColors: ColorScheme = lightColorScheme(
-    primary = Color(0xFF4355A5),
+    primary = Color(0xFF3B4CD0),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFDCE2FF),
-    onPrimaryContainer = Color(0xFF111E58),
-    secondary = Color(0xFF56617C),
+    primaryContainer = Color(0xFFE2E6FF),
+    onPrimaryContainer = Color(0xFF101C4E),
+    secondary = Color(0xFF525B7C),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFDEE3F5),
-    onSecondaryContainer = Color(0xFF171F36),
-    tertiary = Color(0xFF875675),
+    secondaryContainer = Color(0xFFE4E7F4),
+    onSecondaryContainer = Color(0xFF1A1E2F),
+    tertiary = Color(0xFF7E5A92),
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFFFD7EA),
-    onTertiaryContainer = Color(0xFF351126),
-    background = Color(0xFFF5F6FA),
-    surface = Color(0xFFFDFBFF),
-    surfaceVariant = Color(0xFFE3E5EF),
-    surfaceContainerLow = Color(0xFFF8F8FC),
-    surfaceContainer = Color(0xFFF0F1F7),
-    surfaceContainerHigh = Color(0xFFE9EAF2),
-    outline = Color(0xFF777C8D),
-    outlineVariant = Color(0xFFC4C8D8),
+    tertiaryContainer = Color(0xFFF1DCEF),
+    onTertiaryContainer = Color(0xFF2C0F2F),
+    background = Color(0xFFEEF0F6),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFE4E7F1),
+    surfaceContainerLow = Color(0xFFF5F6FC),
+    surfaceContainer = Color(0xFFEAEDF6),
+    surfaceContainerHigh = Color(0xFFDFE3EF),
+    outline = Color(0xFF5F6478),
+    outlineVariant = Color(0xFFC7CBD8),
     scrim = Color(0xFF1B1B1F).copy(alpha = 0.45f),
     error = Color(0xFFBA1A1A),
 )
@@ -102,32 +105,34 @@ internal val GlassColors = LightColors.copy(
     primaryContainer = Color(0xFFE2DEFF),
 )
 
+// The dark twin of the AUTO palette: a flat near-black page, light ink, and a soft periwinkle
+// accent with desaturated indigo containers. Calm, so screens stay readable long into the night.
 internal val DarkColors = darkColorScheme(
-    primary = Color(0xFFBBC5FF),
-    onPrimary = Color(0xFF202D72),
-    primaryContainer = Color(0xFF35438D),
-    onPrimaryContainer = Color(0xFFE0E4FF),
+    primary = Color(0xFFAAB3FF),
+    onPrimary = Color(0xFF1F2A66),
+    primaryContainer = Color(0xFF2E3370),
+    onPrimaryContainer = Color(0xFFE3E8FF),
     secondary = Color(0xFFC2C8E0),
-    onSecondary = Color(0xFF293047),
-    secondaryContainer = Color(0xFF3D455E),
-    onSecondaryContainer = Color(0xFFE0E5FF),
-    tertiary = Color(0xFFF3B5D5),
-    onTertiary = Color(0xFF4C203B),
-    tertiaryContainer = Color(0xFF663552),
+    onSecondary = Color(0xFF22273A),
+    secondaryContainer = Color(0xFF3B3F5C),
+    onSecondaryContainer = Color(0xFFE6E9FA),
+    tertiary = Color(0xFFEAB5D0),
+    onTertiary = Color(0xFF3D1A31),
+    tertiaryContainer = Color(0xFF4A2E43),
     onTertiaryContainer = Color(0xFFFFD8EA),
-    background = Color(0xFF111318),
-    surface = Color(0xFF181A21),
-    surfaceVariant = Color(0xFF393B48),
-    surfaceContainerLow = Color(0xFF15171E),
-    surfaceContainer = Color(0xFF20222B),
-    surfaceContainerHigh = Color(0xFF292B35),
-    outline = Color(0xFF9295A6),
-    outlineVariant = Color(0xFF474956),
+    background = Color(0xFF0F1016),
+    surface = Color(0xFF1A1C26),
+    surfaceVariant = Color(0xFF33364A),
+    surfaceContainerLow = Color(0xFF14151D),
+    surfaceContainer = Color(0xFF21232F),
+    surfaceContainerHigh = Color(0xFF2A2C3B),
+    outline = Color(0xFF9DA1B2),
+    outlineVariant = Color(0xFF474B61),
     scrim = Color.Black.copy(alpha = 0.55f),
 )
 
 // True black is the point of AMOLED, but nothing on it may *also* be black: the app draws every
-// block as a MarbleBox with a hairline border, so a black box on a black page with a near-black
+// block as a MarbleBox on a pure-black page, so a black card on a black page with a near-black
 // outline is a card nobody can see. The container greys stay within a few steps of black (so the
 // panel still reads as "off" pixels on an OLED panel) while giving each box an edge, and the
 // outline pair is lifted until the 1dp hairline is actually visible against the plate it borders.
@@ -305,15 +310,15 @@ fun MarbleTheme(
             typography = marbleTypography(languageTag),
             // Council review (docs/UI_COUNCIL_REVIEW.md, DS-1): the old 12/16/22/30/36 scale was
             // roughly double the Material 3 scale and made every card and field look inflated.
-            // 8/12/16/24/28 kept the soft identity without the bloat; the M3 Expressive pass now
-            // rounds the whole ladder up and tightens its steps (10/14/20/28/32) so cards, chips,
-            // fields and sheets all read as one family of rounded boxes.
+            // The minimal modern ladder keeps the soft M3 Expressive identity with wider,
+            // gentler steps (12/18/26/34/42) so cards, chips, fields and sheets all read as one
+            // family of rounded surfaces.
             shapes = Shapes(
-                extraSmall = RoundedCornerShape(10.dp),
-                small = RoundedCornerShape(14.dp),
-                medium = RoundedCornerShape(20.dp),
-                large = RoundedCornerShape(28.dp),
-                extraLarge = RoundedCornerShape(32.dp),
+                extraSmall = RoundedCornerShape(12.dp),
+                small = RoundedCornerShape(18.dp),
+                medium = RoundedCornerShape(26.dp),
+                large = RoundedCornerShape(34.dp),
+                extraLarge = RoundedCornerShape(42.dp),
             ),
             content = content,
         )

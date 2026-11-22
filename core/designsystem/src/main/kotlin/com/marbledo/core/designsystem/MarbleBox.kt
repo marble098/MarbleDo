@@ -18,10 +18,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * The one box every screen block lives in — Material 3 Expressive's card language applied to the
- * whole app. Each page element (a header, a tool row, a list, a form) sits inside its own rounded,
- * tonal surface with a hairline border, so nothing floats loose on the background and every item
- * reads as an object of its own.
+ * The one box every screen block lives in — M3 Expressive's minimal card language applied to the
+ * whole app. Cards are flat white surfaces on a soft neutral page, so nothing floats loose on the
+ * background and every item reads as an object of its own — without the hairline frame that turns
+ * a screen into a grid of boxed tiles.
  *
  * New layout code must put its blocks in a [MarbleBox] instead of stacking bare rows on the
  * screen background; take gaps and padding from [MarbleSpacing].
@@ -29,11 +29,11 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun MarbleBox(
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLow,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
-    borderColor: Color = MarbleBoxBorder(containerColor),
+    borderColor: Color? = null,
     shape: Shape = MaterialTheme.shapes.extraLarge,
-    tonalElevation: Dp = 1.dp,
+    tonalElevation: Dp = 0.dp,
     padding: Dp = MarbleSpacing.lg,
     gap: Dp = MarbleSpacing.md,
     content: @Composable ColumnScope.() -> Unit,
@@ -44,7 +44,7 @@ fun MarbleBox(
         color = containerColor,
         contentColor = contentColor,
         tonalElevation = tonalElevation,
-        border = BorderStroke(1.dp, borderColor),
+        border = borderColor?.let { BorderStroke(1.dp, it) },
     ) {
         Column(
             modifier = Modifier
@@ -57,13 +57,13 @@ fun MarbleBox(
 }
 
 /**
- * The hairline that gives a box its edge.
+ * The hairline that outlines a box, a divider or a standalone control that is not a [MarbleBox].
  *
- * Every block in the app is a card with a 1 dp border, so that border *is* the structure: when it
- * disappears the page turns into loose text on a background and the whole design reads as shapeless
- * — the "boxy but flat" report, worst on the AMOLED scheme, where 55% of a near-black outline over
- * near-black composited to 1.2:1. [MarbleContrast.separator] keeps the light themes' calm value and
- * only lifts the line where the composite would vanish.
+ * The minimal card language is flat, so this is opt-in — used for the explicit outlines, hairline
+ * dividers and framed controls that sit outside the box family. Wherever it is drawn, the line
+ * still has to exist: on the AMOLED scheme 55% of a near-black outline over a near-black card
+ * composites to 1.2:1, so the app lifts the line until it reads — [MarbleContrast.separator] keeps
+ * the light themes' calm value and only moves the ones whose composite would vanish.
  */
 @Composable
 fun MarbleBoxBorder(containerColor: Color): Color {

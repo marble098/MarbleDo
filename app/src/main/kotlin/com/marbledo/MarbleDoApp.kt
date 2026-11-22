@@ -40,7 +40,6 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -83,7 +82,6 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import com.marbledo.core.designsystem.MarbleBoxBorder
 import com.marbledo.core.designsystem.MarblePalettes
 import com.marbledo.core.data.backup.BackupCodec
 import com.marbledo.core.data.backup.BackupEnvelope
@@ -620,38 +618,35 @@ fun MarbleDoApp(
                     val colors = MaterialTheme.colorScheme
                     Scaffold(
                         bottomBar = {
-                            Column {
-                                HorizontalDivider(color = MarbleBoxBorder(MaterialTheme.colorScheme.surfaceContainerLow))
-                                NavigationBar(
-                                    containerColor = colors.surface,
-                                    tonalElevation = 2.dp,
-                                ) {
-                                    destinations.forEach { destination ->
-                                        val selected = selectedDestination.key == destination.key
-                                        NavigationBarItem(
-                                            selected = selected,
-                                            onClick = { navigateTo(destination.key) },
-                                            icon = {
-                                                Icon(
-                                                    if (selected) destination.selectedIcon else destination.unselectedIcon,
-                                                    contentDescription = stringResource(destination.label),
-                                                )
-                                            },
-                                            label = {
-                                                Text(
-                                                    stringResource(destination.label),
-                                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                                )
-                                            },
-                                            colors = NavigationBarItemDefaults.colors(
-                                                selectedIconColor = colors.primary,
-                                                selectedTextColor = colors.primary,
-                                                indicatorColor = colors.primaryContainer,
-                                                unselectedIconColor = colors.onSurfaceVariant,
-                                                unselectedTextColor = colors.onSurfaceVariant,
-                                            ),
-                                        )
-                                    }
+                            NavigationBar(
+                                containerColor = colors.surface,
+                            ) {
+                                destinations.forEach { destination ->
+                                    val selected = selectedDestination.key == destination.key
+                                    NavigationBarItem(
+                                        selected = selected,
+                                        onClick = { navigateTo(destination.key) },
+                                        icon = {
+                                            Icon(
+                                                if (selected) destination.selectedIcon else destination.unselectedIcon,
+                                                contentDescription = stringResource(destination.label),
+                                            )
+                                        },
+                                        label = {
+                                            Text(
+                                                stringResource(destination.label),
+                                                maxLines = 1,
+                                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                            )
+                                        },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = colors.primary,
+                                            selectedTextColor = colors.primary,
+                                            indicatorColor = colors.primaryContainer,
+                                            unselectedIconColor = colors.onSurfaceVariant,
+                                            unselectedTextColor = colors.onSurfaceVariant,
+                                        ),
+                                    )
                                 }
                             }
                         },

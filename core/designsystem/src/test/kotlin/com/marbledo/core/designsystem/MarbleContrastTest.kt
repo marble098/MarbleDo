@@ -178,18 +178,18 @@ class MarbleContrastTest {
     @Test
     fun aHairlineIsAlwaysAThinLineAndNeverNothing() {
         // The box border is `outlineVariant` at 55%. On a light page that composites to a calm
-        // 1.27:1 line; on the AMOLED page it used to composite to 1.22:1, which is no line at all.
+        // line; on the AMOLED page it used to composite to 1.22:1, which is no line at all.
         // `separator()` has to keep the calm value where it already reads as an edge and lift the
         // one that would vanish.
         for ((name, outline, plate) in listOf(
-            Triple("light", 0xFFC4C8D8L, 0xFFF8F8FCL),
-            Triple("dark", 0xFF474956L, 0xFF15171EL),
+            Triple("light", 0xFFC7CBD8L, 0xFFF5F6FCL),
+            Triple("dark", 0xFF474B61L, 0xFF14151DL),
             Triple("amoled", 0xFF67646FL, 0xFF101015L),
         )) {
             val line = MarbleContrast.separator(outline, plate, 0.55)
             val ratio = MarbleContrast.ratio(line, plate)
-            // The light and dark plates already composite to a calm line (1.27 and 1.42) and
-            // `separator()` leaves them alone; only the theme whose line would vanish is lifted.
+            // A calm hairline still clears the 1.2 bar after the lift and may never compete
+            // with body text.
             assertTrue(ratio >= 1.2, "$name: the 1 dp box hairline is only ${"%.2f".format(ratio)}:1")
             // Still a hairline, not a frame: it may not compete with body text.
             assertTrue(ratio < MarbleContrast.TEXT_MINIMUM, "$name: the hairline became a border")
