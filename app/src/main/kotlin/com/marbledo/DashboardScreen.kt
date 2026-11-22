@@ -107,9 +107,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -1384,11 +1382,8 @@ private fun DailyHeaderCard(
         else -> stringResource(R.string.dash_greeting_night)
     }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val aurora = auroraBrush(currentHour, isRtl)
+    val aurora = auroraBrush(isRtl)
     val colors = MaterialTheme.colorScheme
-    // Same rule the sky itself uses to choose its palette, so the legibility layer and the header
-    // agree on whether this is a night sky or a day sky.
-    val isSkyDark = colors.background.luminance() < 0.45f
     val shape = MaterialTheme.shapes.extraLarge
     val calendarLabel = stringResource(R.string.nav_calendar)
     // One plain sentence answers "how is today going?" before the counters are read.
@@ -1401,27 +1396,9 @@ private fun DailyHeaderCard(
         modifier = Modifier.fillMaxWidth(),
         shape = shape,
         color = colors.surface,
-        shadowElevation = 3.dp,
-        tonalElevation = 1.dp,
     ) {
         Box(Modifier.background(aurora, shape)) {
-            GreetingSky(hour = currentHour, modifier = Modifier.matchParentSize())
-            // The sky is decoration; the text is the content. A wash of the surface used to be laid
-            // *over* the whole card, which dimmed the greeting and the counters together with the
-            // clouds — and it dimmed them unevenly, since the 46%→14% vertical ramp left the top
-            // of the card paler than the bottom. The legibility layer now sits *under* the text and
-            // fades out towards the top, so it protects the small print without frosting the sky.
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.Transparent,
-                            0.55f to colors.surface.copy(alpha = 0.10f),
-                            1f to colors.surface.copy(alpha = if (isSkyDark) 0.42f else 0.52f),
-                        ),
-                    ),
-            )
+            GreetingSky(modifier = Modifier.matchParentSize())
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = MarbleSpacing.lg, vertical = MarbleSpacing.md),
                 verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
