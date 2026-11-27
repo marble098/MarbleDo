@@ -128,9 +128,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.marbledo.core.designsystem.LocalGlassNavInset
 import com.marbledo.core.designsystem.LocalReduceMotion
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.core.designsystem.MarbleBox
+import com.marbledo.core.designsystem.MarbleGlassSnackbar
 import com.marbledo.core.designsystem.MarbleMotion
 import com.marbledo.core.designsystem.MarbleSpacing
 import com.marbledo.core.designsystem.MarbleTextStyles
@@ -422,13 +424,15 @@ fun DashboardScreen(
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            // The list ends above the compact FAB with room to spare, so the last card can be
-            // read in full instead of sitting underneath a wide pill (docs/UI_REFRESH.md, V-4).
+            // The list ends above the floating glass bar (and, on the task stops, above the
+            // compact FAB) with room to spare, so the last card can be read in full instead of
+            // sitting underneath a wide pill (docs/UI_REFRESH.md, V-4).
             contentPadding = PaddingValues(
                 start = MarbleSpacing.lg,
                 end = MarbleSpacing.lg,
                 top = MarbleSpacing.md,
-                bottom = if (selectedTab == DashboardTab.FINANCE) MarbleSpacing.lg else 104.dp,
+                bottom = LocalGlassNavInset.current +
+                    if (selectedTab == DashboardTab.FINANCE) MarbleSpacing.lg else 72.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
         ) {
@@ -1051,7 +1055,9 @@ fun DashboardScreen(
                 color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shadowElevation = 6.dp,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(MarbleSpacing.lg),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(start = MarbleSpacing.lg, end = MarbleSpacing.lg, bottom = LocalGlassNavInset.current + MarbleSpacing.sm),
             ) {
                 Row(
                     Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
@@ -1070,7 +1076,12 @@ fun DashboardScreen(
 
         SnackbarHost(
             hostState = snackbarHost,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 84.dp),
+            snackbar = { notice ->
+                MarbleGlassSnackbar(notice, dismissLabel = stringResource(R.string.settings_close))
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = LocalGlassNavInset.current + MarbleSpacing.md),
         )
     }
 

@@ -44,19 +44,16 @@ import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,6 +81,31 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import androidx.compose.foundation.NestedScrollConnection
+import androidx.compose.foundation.NestedScrollSource
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.nestedScroll
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import com.marbledo.core.designsystem.FloatingGlassTabBar
+import com.marbledo.core.designsystem.GlassTabItem
+import com.marbledo.core.designsystem.LocalGlassNavInset
+import com.marbledo.core.designsystem.MarbleGlass
+import com.marbledo.core.designsystem.MarbleSpacing
+import com.marbledo.core.designsystem.TabBarAutoHide
+import com.marbledo.core.designsystem.glassBackdropSource
+import com.marbledo.core.designsystem.glassTintOnBackground
 import com.marbledo.core.designsystem.MarblePalettes
 import com.marbledo.core.data.backup.BackupCodec
 import com.marbledo.core.data.backup.BackupEnvelope
@@ -583,8 +605,31 @@ fun MarbleDoApp(
 
                 if (isLarge) {
                     val colors = MaterialTheme.colorScheme
-                    Row(Modifier.fillMaxSize()) {
-                        NavigationRail(containerColor = colors.surface) {
+                    val density = LocalDensity.current
+                    val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    val imeBottom = with(density) { WindowInsets.ime.getBottom(this).toDp() }
+                    val contentInset = maxOf(navBarsBottom + MarbleSpacing.xl, imeBottom)
+                    // Large screens get a floating glass rail instead of an edge-anchored bar:
+                    // the same material language as the compact tab bar, composited over the flat
+                    // page since nothing scrolls under a side rail (docs/UI_OVERHAUL_2025.md).
+                    Row(
+                        Modifier
+                            .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)),
+                    ) {
+                        Surface(
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(MarbleGlass.corner),
+                            color = glassTintOnBackground(),
+                            modifier = Modifier.padding(
+                                start = MarbleSpacing.sm,
+                                top = MarbleSpacing.sm,
+                                bottom = MarbleSpacing.sm,
+                            ),
+                        ) {
+                            NavigationRail(
+                                containerColor = Color.Transparent,
+                                windowInsets = WindowInsets(0.dp),
+                            ) {
                             // Give the rail a clear home and stronger hierarchy on tablets/foldables.
                             // The compact mark stays separate from destination icons so it is never
                             // mistaken for another selectable route.
@@ -640,50 +685,76 @@ fun MarbleDoApp(
                                     ),
                                 )
                             }
+                            }
                         }
                         Box(Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
-                            content(Modifier.widthIn(max = 880.dp).fillMaxSize())
+                            CompositionLocalProvider(LocalGlassNavInset provides contentInset) {
+                                content(Modifier.widthIn(max = 880.dp).fillMaxSize())
+                            }
                         }
                     }
                 } else {
-                    val colors = MaterialTheme.colorScheme
-                    Scaffold(
-                        bottomBar = {
-                            NavigationBar(
-                                containerColor = colors.surface,
-                            ) {
-                                destinations.forEach { destination ->
-                                    val selected = selectedDestination.key == destination.key
-                                    NavigationBarItem(
-                                        selected = selected,
-                                        onClick = { navigateTo(destination.key) },
-                                        icon = {
-                                            Icon(
-                                                if (selected) destination.selectedIcon else destination.unselectedIcon,
-                                                contentDescription = stringResource(destination.label),
-                                            )
-                                        },
-                                        label = {
-                                            Text(
-                                                stringResource(destination.label),
-                                                maxLines = 1,
-                                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                                            )
-                                        },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            selectedIconColor = colors.primary,
-                                            selectedTextColor = colors.primary,
-                                            indicatorColor = colors.primaryContainer,
-                                            unselectedIconColor = colors.onSurfaceVariant,
-                                            unselectedTextColor = colors.onSurfaceVariant,
-                                        ),
-                                    )
+                    // The compact shell: one floating liquid-glass tab bar over full-bleed content,
+                    // with a real capture of what scrolls underneath it (docs/UI_OVERHAUL_2025.md).
+                    val backdrop = rememberGraphicsLayer()
+                    val backdropOrigin = remember { mutableStateOf(Offset.Zero) }
+                    val autoHide = remember { mutableStateOf(TabBarAutoHide()) }
+                    val density = LocalDensity.current
+                    val thresholdPx = with(density) { MarbleGlass.scrollThreshold.toPx() }
+                    val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    val imeBottom = with(density) { WindowInsets.ime.getBottom(this).toDp() }
+                    val contentInset = maxOf(MarbleGlass.clearance(navBarsBottom), imeBottom)
+                    // The bar follows sustained scroll direction. Reduced-motion users and
+                    // touch-exploration (TalkBack) users get a bar that never moves.
+                    val autoHideEnabled = !settings.reduceMotion && !touchExploration(context)
+                    val scrollConnection = remember(autoHideEnabled, thresholdPx) {
+                        object : NestedScrollConnection {
+                            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                                if (autoHideEnabled && source == NestedScrollSource.UserInput) {
+                                    autoHide.value = autoHide.value.scrolled(available.y, thresholdPx)
+                                }
+                                return Offset.Zero
+                            }
+                        }
+                    }
+                    Box(Modifier.fillMaxSize().nestedScroll(scrollConnection)) {
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+                                .onGloballyPositioned { backdropOrigin.value = it.positionInWindow() }
+                                .glassBackdropSource(backdrop),
+                        ) {
+                            CompositionLocalProvider(LocalGlassNavInset provides contentInset) {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                                    content(Modifier.widthIn(max = 880.dp).fillMaxSize())
                                 }
                             }
-                        },
-                    ) { innerPadding ->
-                        Box(Modifier.padding(innerPadding), contentAlignment = Alignment.TopCenter) {
-                            content(Modifier.widthIn(max = 880.dp).fillMaxSize())
+                            FloatingGlassTabBar(
+                                items = destinations.map { destination ->
+                                    GlassTabItem(
+                                        label = stringResource(destination.label),
+                                        selectedIcon = destination.selectedIcon,
+                                        unselectedIcon = destination.unselectedIcon,
+                                    )
+                                },
+                                selectedIndex = destinations.indexOfFirst { it.key == selectedDestination.key },
+                                onSelect = { index ->
+                                    navigateTo(destinations[index].key)
+                                    autoHide.value = TabBarAutoHide()
+                                },
+                                backdrop = backdrop,
+                                backdropOrigin = backdropOrigin.value,
+                                visible = autoHide.value.visible && imeBottom <= 0.dp,
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .navigationBarsPadding()
+                                    .padding(
+                                        bottom = MarbleGlass.floatGap,
+                                        start = MarbleGlass.floatMargin,
+                                        end = MarbleGlass.floatMargin,
+                                    ),
+                            )
                         }
                     }
                 }
@@ -970,3 +1041,13 @@ private fun Context.findActivity(): android.app.Activity? {
 private fun isSystemDark(context: Context): Boolean =
     context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
         android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+/**
+ * Whether touch exploration (TalkBack and friends) is active. The floating tab bar never
+ * auto-hides under a screen reader — moving chrome away while the user is exploring the screen
+ * is hostile (docs/UI_OVERHAUL_2025.md, "Accessibility").
+ */
+private fun touchExploration(context: Context): Boolean {
+    val manager = context.getSystemService(android.view.accessibility.AccessibilityManager::class.java)
+    return manager?.isTouchExplorationEnabled == true
+}
