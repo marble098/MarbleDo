@@ -107,6 +107,7 @@ import com.marble098.marbledo.notifications.iconRes
 import com.marble098.marbledo.notifications.notificationPalette
 import com.marble098.marbledo.notifications.stateHue
 import com.marbledo.core.data.backup.AutomaticBackupStatus
+import com.marbledo.core.designsystem.LocalGlassNavInset
 import com.marbledo.core.designsystem.MarbleBoxBorder
 import com.marbledo.core.designsystem.MarbleContrast
 import com.marbledo.core.designsystem.MarblePalettes
@@ -181,7 +182,12 @@ fun SettingsScreen(
     // builds twelve) are only composed when scrolled to (docs/UI_COUNCIL_REVIEW.md, S-1).
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = MarbleSpacing.lg, vertical = MarbleSpacing.md),
+        contentPadding = PaddingValues(
+            start = MarbleSpacing.lg,
+            end = MarbleSpacing.lg,
+            top = MarbleSpacing.md,
+            bottom = MarbleSpacing.md + LocalGlassNavInset.current,
+        ),
         verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md),
     ) {
         item {

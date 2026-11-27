@@ -86,6 +86,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.marbledo.core.designsystem.LocalGlassNavInset
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.core.designsystem.LocalReduceMotion
 import com.marbledo.core.designsystem.MarbleSpacing
@@ -396,7 +397,7 @@ fun CalendarScreen(
                 // 42 fixed cells do not need a lazy grid, so the month is plain rows now.
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentPadding = PaddingValues(bottom = MarbleSpacing.lg),
+                    contentPadding = PaddingValues(bottom = MarbleSpacing.lg + LocalGlassNavInset.current),
                     verticalArrangement = Arrangement.spacedBy(MarbleSpacing.sm),
                 ) {
                     item { WeekdayHeader(weekStartsSaturday, thursdayWeekendEnabled) }
@@ -520,7 +521,7 @@ fun CalendarScreen(
                         }
                         LazyColumn(
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 4.dp + LocalGlassNavInset.current),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             items(agenda, key = { it.epochMillis }) { cell ->
@@ -707,7 +708,7 @@ fun CalendarScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 16.dp),
+                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 16.dp + LocalGlassNavInset.current),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             monthGroups.forEach { group ->
@@ -788,7 +789,7 @@ fun CalendarScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 108.dp),
                     modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
-                    contentPadding = PaddingValues(vertical = 10.dp),
+                    contentPadding = PaddingValues(top = 10.dp, bottom = 10.dp + LocalGlassNavInset.current),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {

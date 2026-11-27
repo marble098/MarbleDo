@@ -45,6 +45,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.marbledo.core.designsystem.LocalGlassNavInset
 import com.marbledo.core.designsystem.LocalNumeralMode
 import com.marbledo.domain.model.AppSettings
 import com.marbledo.domain.model.Habit
@@ -119,7 +120,12 @@ fun HabitsScreen(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 12.dp,
+            bottom = 12.dp + LocalGlassNavInset.current,
+        ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
