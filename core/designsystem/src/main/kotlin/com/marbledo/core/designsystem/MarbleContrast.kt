@@ -83,6 +83,26 @@ object MarbleContrast {
     fun readable(foreground: Int, background: Int, minimum: Double = TEXT_MINIMUM): Int =
         readable(foreground.toArgb(), background.toArgb(), minimum).toArgbInt()
 
+    /**
+     * Like [readable], but for surfaces that sit on top of *several* possible backgrounds — the
+     * liquid-glass bar can have any screen content behind it. The ink has to clear [minimum]
+     * against every composited sample at once, so the helper picks the pole (and the blend
+     * fraction) that raises the worst-case pair, not the average one.
+     */
+    fun readableAcross(foreground: Long, backgrounds: List<Long>, minimum: Double = TEXT_MINIMUM): Long {
+        if (backgrounds.isEmpty()) return readable(foreground, INK_DARK, minimum)
+        fun worst(candidate: Long): Double = backgrounds.minOf { ratio(candidate, it) }
+        if (worst(foreground) >= minimum) return foreground
+        val target = if (worst(INK_DARK) >= worst(INK_LIGHT)) INK_DARK else INK_LIGHT
+        var fraction = 0.0
+        while (fraction < 1.0) {
+            fraction = (fraction + 0.05).coerceAtMost(1.0)
+            val candidate = blend(foreground, target, fraction)
+            if (worst(candidate) >= minimum) return candidate
+        }
+        return target
+    }
+
     /** The ink that reads best on a filled [background]: near-black on light plates, white on dark. */
     fun bestInk(background: Long): Long =
         if (ratio(INK_DARK, background) >= ratio(INK_LIGHT, background)) INK_DARK else INK_LIGHT
