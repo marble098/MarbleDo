@@ -583,6 +583,35 @@ fun MarbleDoApp(
                     val colors = MaterialTheme.colorScheme
                     Row(Modifier.fillMaxSize()) {
                         NavigationRail(containerColor = colors.surface) {
+                            // Give the rail a clear home and stronger hierarchy on tablets/foldables.
+                            // The compact mark stays separate from destination icons so it is never
+                            // mistaken for another selectable route.
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp, bottom = 16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                            ) {
+                                Surface(
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                                    color = colors.primaryContainer,
+                                    contentColor = colors.onPrimaryContainer,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.GridView,
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(10.dp),
+                                    )
+                                }
+                                Text(
+                                    text = stringResource(R.string.app_name),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colors.onSurfaceVariant,
+                                    maxLines = 1,
+                                )
+                            }
                             destinations.forEach { destination ->
                                 val selected = selectedDestination.key == destination.key
                                 NavigationRailItem(
