@@ -1,9 +1,7 @@
 <resources>
     <string name="settings_thursday_weekend">Thursday is a day off too</string>
     <string name="settings_education_mode">School calendar</string>
-    <string name="settings_education_hint">School occasions join the Occasions tab (Mehr to Shahrivar). This phone only.</string>
-    <string name="settings_education_enable">Turn it on</string>
-    <string name="settings_education_disable">Turn off and hide</string>
+    <string name="settings_education_hint">Show school dates and programs (Mehr to Shahrivar). Everything stays on this phone; no account is needed.</string>
     <string name="calendar_export_saved">The calendar file is ready. Open it in your calendar app.</string>
     <string name="calendar_export_failed">The file was not made. Pick another place and try again.</string>
     <string name="weekly_title">The next seven days</string>

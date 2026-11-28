@@ -40,7 +40,7 @@
     <string name="notification_due_today">Today · %1$s</string>
     <string name="notification_private">Open MarbleDo to see your private plan.</string>
     <string name="notification_done_next">Mark task done</string>
-    <string name="notification_preview_hint">This preview is live. Your phone decides the final frame, colour and size.</string>
+    <string name="notification_preview_hint">This preview shows the full-width expanded card. Android controls how much of a notification is visible while collapsed.</string>
     <string name="notification_reminder_detail">Due %1$s</string>
     <string name="notification_checklist">%1$d of %2$d steps done</string>
     <string name="planning_added_count">%1$d tasks created. Use Undo to take them all back.</string>

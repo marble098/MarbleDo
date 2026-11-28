@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings as AndroidSettings
 import android.widget.Toast
+import android.view.accessibility.AccessibilityManager
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
@@ -707,7 +708,11 @@ fun MarbleDoApp(
                     val contentInset = maxOf(MarbleGlass.clearance(navBarsBottom), imeBottom)
                     // The bar follows sustained scroll direction. Reduced-motion users and
                     // touch-exploration (TalkBack) users get a bar that never moves.
-                    val autoHideEnabled = !settings.reduceMotion && !touchExploration(context)
+                    val touchExplorationEnabled = rememberTouchExplorationEnabled()
+                    val autoHideEnabled = !settings.reduceMotion && !touchExplorationEnabled
+                    LaunchedEffect(autoHideEnabled, imeBottom > 0.dp) {
+                        if (!autoHideEnabled || imeBottom > 0.dp) autoHide.value = autoHide.value.reset()
+                    }
                     val scrollConnection = remember(autoHideEnabled, thresholdPx) {
                         object : NestedScrollConnection {
                             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -742,11 +747,11 @@ fun MarbleDoApp(
                                 selectedIndex = destinations.indexOfFirst { it.key == selectedDestination.key },
                                 onSelect = { index ->
                                     navigateTo(destinations[index].key)
-                                    autoHide.value = TabBarAutoHide()
+                                    autoHide.value = autoHide.value.reset()
                                 },
                                 backdrop = backdrop,
                                 backdropOrigin = backdropOrigin.value,
-                                visible = autoHide.value.visible && imeBottom <= 0.dp,
+                                visible = autoHide.value.shouldShow(autoHideEnabled, imeBottom > 0.dp),
                                 modifier = Modifier
                                     .align(Alignment.BottomCenter)
                                     .navigationBarsPadding()
@@ -1044,11 +1049,19 @@ private fun isSystemDark(context: Context): Boolean =
         android.content.res.Configuration.UI_MODE_NIGHT_YES
 
 /**
- * Whether touch exploration (TalkBack and friends) is active. The floating tab bar never
- * auto-hides under a screen reader — moving chrome away while the user is exploring the screen
- * is hostile (docs/UI_OVERHAUL_2025.md, "Accessibility").
+ * Whether touch exploration (TalkBack and friends) is active. Observe the system setting instead
+ * of sampling it during composition: the bar must reappear immediately if accessibility is turned
+ * on while it is hidden (docs/UI_OVERHAUL_2025.md, "Accessibility").
  */
-private fun touchExploration(context: Context): Boolean {
-    val manager = context.getSystemService(android.view.accessibility.AccessibilityManager::class.java)
-    return manager?.isTouchExplorationEnabled == true
+@Composable
+private fun rememberTouchExplorationEnabled(): Boolean {
+    val context = LocalContext.current
+    val manager = remember(context) { context.getSystemService(AccessibilityManager::class.java) }
+    var enabled by remember(manager) { mutableStateOf(manager?.isTouchExplorationEnabled == true) }
+    DisposableEffect(manager) {
+        val listener = AccessibilityManager.TouchExplorationStateChangeListener { enabled = it }
+        manager?.addTouchExplorationStateChangeListener(listener)
+        onDispose { manager?.removeTouchExplorationStateChangeListener(listener) }
+    }
+    return enabled
 }

@@ -298,16 +298,17 @@ object PersistentCalendarNotification {
         // icon is part of the notification, so "no custom view" still looks far better than
         // "no notification".
         //
-        // The *compact* card is used as the heads-up view, not as the collapsed row: Android caps
-        // a collapsed custom view at 48 dp, which cannot hold a date, a chip and two lines of
-        // task. The collapsed row therefore keeps the platform template (title + one line + the
-        // date badge), which is also the row the shade draws with its own touch feedback.
-        val headsUpView = runCatching {
+        // Use the compact, full-available-width card in the collapsed slot as well as heads-up;
+        // otherwise the notification initially looks like a title-only system row. Its layout stays
+        // inside Android's 48 dp collapsed-content budget (one task line), while the user-controlled
+        // expanded card carries the second task and occasions. SystemUI still owns the outer frame,
+        // app header and expansion affordance, so the app cannot force a notification to stay open.
+        val compactView = runCatching {
             CalendarNotificationViews.create(
                 notificationContext, content, largeIcon, false, settings.notificationDesign,
                 settings.languageTag == "fa", accent, shade,
             )
-        }.onFailure { Log.w(TAG, "heads-up ${settings.notificationDesign} view failed; falling back to text", it) }.getOrNull()
+        }.onFailure { Log.w(TAG, "compact ${settings.notificationDesign} view failed; falling back to text", it) }.getOrNull()
         val expandedView = runCatching {
             CalendarNotificationViews.create(
                 notificationContext, content, largeIcon, true, settings.notificationDesign,
@@ -336,7 +337,10 @@ object PersistentCalendarNotification {
         if (expandedView != null) {
             builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomBigContentView(expandedView)
-            headsUpView?.let { builder.setCustomHeadsUpContentView(it) }
+            compactView?.let {
+                builder.setCustomContentView(it)
+                    .setCustomHeadsUpContentView(it)
+            }
         }
         builder.setContentIntent(cardIntent).setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)

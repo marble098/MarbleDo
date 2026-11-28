@@ -2,7 +2,6 @@ package com.marble098.marbledo
 
 import android.content.Context
 import android.os.Build
-import android.os.SystemClock
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -120,7 +119,6 @@ import com.marbledo.domain.model.CountdownTheme
 import com.marbledo.domain.model.NumeralMode
 import com.marbledo.domain.model.StatusBarIconStyle
 import com.marbledo.domain.model.Task
-import com.marbledo.domain.util.HiddenTapSequence
 import com.marbledo.domain.util.TextNormalizer
 import com.marbledo.feature.calendar.OccasionCategory
 import com.marbledo.feature.calendar.OccasionCultureSelector
@@ -169,9 +167,7 @@ fun SettingsScreen(
     }
     var showCountdownThemeGallery by rememberSaveable { mutableStateOf(false) }
     var showBatteryHelp by remember { mutableStateOf(false) }
-    var showEducationControls by rememberSaveable { mutableStateOf(false) }
     var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategoryFilter.ALL) }
-    val educationGesture = remember { HiddenTapSequence() }
     val listedCatalog = remember(occasionState.catalog, settings.educationModeEnabled) {
         if (settings.educationModeEnabled) occasionState.catalog else occasionState.catalog.copy(
             occasions = occasionState.catalog.occasions.filter { it.category != OccasionCategory.EDUCATIONAL },
@@ -374,14 +370,13 @@ fun SettingsScreen(
             OccasionCultureSelector(settings.occasionCultureIds) { onUpdate(settings.copy(occasionCultureIds = it)) }
             SettingsDivider()
             SettingSwitchRow(stringResource(R.string.settings_thursday_weekend), settings.thursdayWeekendEnabled) { onUpdate(settings.copy(thursdayWeekendEnabled = it)) }
-            if (settings.educationModeEnabled) {
-                SettingsDivider()
-                SettingSwitchRow(
-                    text = stringResource(R.string.settings_education_mode),
-                    subtitle = stringResource(R.string.settings_education_hint),
-                    checked = true,
-                ) { onUpdate(settings.copy(educationModeEnabled = it)) }
-            }
+            SettingsDivider()
+            SettingSwitchRow(
+                text = stringResource(R.string.settings_education_mode),
+                subtitle = stringResource(R.string.settings_education_hint),
+                checked = settings.educationModeEnabled,
+                onCheckedChange = { onUpdate(settings.copy(educationModeEnabled = it)) },
+            )
         }
 
         SettingsSection(title = stringResource(R.string.settings_occasion_sources), icon = Icons.Outlined.Language) {
@@ -501,8 +496,8 @@ fun SettingsScreen(
         } }
         }
 
-        // Redesigned minimal Notification Box: structured sub-cards, status pill, live preview,
-        // side-by-side quiet hours tiles, and zero wall-of-text stacking.
+        // Notification controls stay grouped, but the live card preview sits outside the nested
+        // settings panel so it can use more of the page width.
         if (selectedCategory == SettingsCategoryFilter.ALL || selectedCategory == SettingsCategoryFilter.NOTIFICATIONS) {
         item { Column(verticalArrangement = Arrangement.spacedBy(MarbleSpacing.md)) {
         SettingsSection(
@@ -543,22 +538,6 @@ fun SettingsScreen(
                 selectedDesign = settings.notificationDesign,
                 onSelectDesign = { design -> onUpdate(settings.copy(notificationDesign = design)) },
             )
-
-            // 2. Minimal Live Notification Preview Card so the user sees the clean notification layout
-            if (settings.persistentDateNotificationEnabled) {
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    stringResource(R.string.settings_notification_preview),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                NotificationLivePreviewCard(
-                    context = context,
-                    settings = settings,
-                    tasks = tasks,
-                    catalog = listedCatalog,
-                )
-            }
 
             Spacer(Modifier.height(10.dp))
             SettingsDivider()
@@ -740,6 +719,24 @@ fun SettingsScreen(
                 }
             }
         }
+        if (settings.persistentDateNotificationEnabled) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    stringResource(R.string.settings_notification_preview),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                NotificationLivePreviewCard(
+                    context = context,
+                    settings = settings,
+                    tasks = tasks,
+                    catalog = listedCatalog,
+                )
+            }
+        }
         } }
         }
 
@@ -802,9 +799,6 @@ fun SettingsScreen(
                     stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
                     modifier = Modifier
                         .clip(CircleShape)
-                        .clickable {
-                            if (educationGesture.tap(SystemClock.elapsedRealtime())) showEducationControls = true
-                        }
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -814,20 +808,6 @@ fun SettingsScreen(
         }
     }
 
-    if (showEducationControls) {
-        AlertDialog(
-            onDismissRequest = { showEducationControls = false },
-            title = { Text(stringResource(R.string.settings_education_mode)) },
-            text = { Text(stringResource(R.string.settings_education_hint)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    onUpdate(settings.copy(educationModeEnabled = !settings.educationModeEnabled))
-                    showEducationControls = false
-                }) { Text(stringResource(if (settings.educationModeEnabled) R.string.settings_education_disable else R.string.settings_education_enable)) }
-            },
-            dismissButton = { TextButton(onClick = { showEducationControls = false }) { Text(stringResource(android.R.string.cancel)) } },
-        )
-    }
     if (showCountdownThemeGallery) {
         CountdownThemeGallerySheet(
             selectedThemeId = settings.countdownTheme,
@@ -1342,7 +1322,7 @@ private fun NotificationLivePreviewCard(
                             .padding(horizontal = 14.dp, vertical = 9.dp),
                     ) { HeaderRow() }
                 }
-                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp)) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 20.dp)) {
                     if (!look.band) {
                         HeaderRow()
                         if (look.headerDivider) {

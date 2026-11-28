@@ -121,10 +121,10 @@
             android:layout_height="wrap_content"
             android:layoutDirection="ltr"
             android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
             android:paddingTop="0dp"
-            android:paddingBottom="16dp">
+            android:paddingBottom="20dp">
             <LinearLayout
                 android:id="@+id/notification_next_container"
                 android:layout_width="match_parent"
