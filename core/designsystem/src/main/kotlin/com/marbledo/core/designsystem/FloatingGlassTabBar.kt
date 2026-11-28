@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
@@ -84,6 +84,7 @@ fun FloatingGlassTabBar(
     val scheme = MaterialTheme.colorScheme
     val recipe = glassRecipe()
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val activeIndex = selectedIndex.coerceIn(items.indices)
     val samples = listOf(
         scheme.background,
         scheme.surface,
@@ -141,21 +142,22 @@ fun FloatingGlassTabBar(
         backdropOrigin = backdropOrigin,
     ) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val targetCenter = MarbleGlass.indicatorCenterFraction(selectedIndex, items.size, rtl)
+            val targetCenter = MarbleGlass.indicatorCenterFraction(activeIndex, items.size, rtl)
             val center by animateFloatAsState(
                 targetValue = targetCenter,
                 animationSpec = MarbleMotion.spatial(),
                 label = "glassTabIndicator",
             )
             val pillWidth = maxWidth * MarbleGlass.indicatorWidthFraction(center, items.size)
-            // The morphing selection pill, behind the cells: it squeezes between slots and
-            // settles on the selected one.
+            // The pill is centered first, so translate from that anchor in physical screen
+            // coordinates. `absoluteOffset` is important here: a direction-aware offset would
+            // mirror the already RTL-mirrored slot a second time.
             Box(
                 Modifier
                     .align(Alignment.Center)
-                    .offset {
+                    .absoluteOffset {
                         IntOffset(
-                            (center * constraints.maxWidth - pillWidth.toPx() / 2f).roundToInt(),
+                            (MarbleGlass.indicatorOffsetFraction(center) * constraints.maxWidth).roundToInt(),
                             0,
                         )
                     }
@@ -165,7 +167,7 @@ fun FloatingGlassTabBar(
             )
             Row(Modifier.fillMaxSize().selectableGroup()) {
                 items.forEachIndexed { index, item ->
-                    val selected = index == selectedIndex
+                    val selected = index == activeIndex
                     val iconScale by animateFloatAsState(
                         targetValue = if (selected) MarbleGlass.SELECTED_ICON_SCALE else 1f,
                         animationSpec = MarbleMotion.effects(),

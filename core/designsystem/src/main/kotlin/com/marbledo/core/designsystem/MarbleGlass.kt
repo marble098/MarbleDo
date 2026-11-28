@@ -143,6 +143,15 @@ object MarbleGlass {
     }
 
     /**
+     * Physical x translation from a horizontally centered anchor to [centerFraction].
+     *
+     * The indicator is laid out at the bar's center first. The returned fraction therefore needs
+     * to be relative to that center, not the bar's left edge; using an absolute left-edge position
+     * as an offset makes the pill drift toward the middle and can push it off-screen in RTL.
+     */
+    fun indicatorOffsetFraction(centerFraction: Float): Float = centerFraction - 0.5f
+
+    /**
      * Width of the travelling pill as a fraction of one slot: full at rest, squeezed at the
      * midpoint between two slots. The squeeze is the morph — the pill behaves like a drop of
      * liquid pulled between two anchors instead of a box that teleports.

@@ -101,6 +101,23 @@ class MarbleGlassMathTest {
     }
 
     @Test
+    fun indicatorOffsetsAreRelativeToTheCenteredAnchorInBothDirections() {
+        val count = 4
+        for (index in 0 until count) {
+            val ltrCenter = MarbleGlass.indicatorCenterFraction(index, count, rtl = false)
+            val rtlCenter = MarbleGlass.indicatorCenterFraction(index, count, rtl = true)
+            val ltrOffset = MarbleGlass.indicatorOffsetFraction(ltrCenter)
+            val rtlOffset = MarbleGlass.indicatorOffsetFraction(rtlCenter)
+
+            assertEquals(ltrCenter, ltrOffset + 0.5f, 0.0001f)
+            assertEquals(rtlCenter, rtlOffset + 0.5f, 0.0001f)
+            assertEquals(-ltrOffset, rtlOffset, 0.0001f)
+        }
+        assertEquals(-0.375f, MarbleGlass.indicatorOffsetFraction(0.125f), 0.0001f)
+        assertEquals(0.375f, MarbleGlass.indicatorOffsetFraction(0.875f), 0.0001f)
+    }
+
+    @Test
     fun theIndicatorSqueezesMidTravelAndSettlesAtRest() {
         val base = MarbleGlass.INDICATOR_WIDTH_BASE
         val squeezed = base - MarbleGlass.INDICATOR_SQUEEZE

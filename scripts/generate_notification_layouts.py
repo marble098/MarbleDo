@@ -465,18 +465,18 @@ def compact(look: Look) -> str:
 def expanded(look: Look) -> str:
     """The opened card: header, the tasks, then the occasions when the day has any.
 
-    The padding is the one thing this card must not economise on — 16 dp on every side, and a
-    larger gap above the task block than below it, so the sections read as two groups rather than
-    as one wall of lines.
+    The expanded card uses the available width deliberately — 12 dp side insets and 20 dp vertical
+    breathing room — with a larger gap above the task block than below it, so the sections read as
+    two groups rather than as one wall of lines.
     """
     if look.band:
         # The band is the header row; everything else reads on the plate below it.
         body = linear([task_block(look, True), occasion_section()], orientation="vertical",
-                      padding=(16, 0, 16))
+                      padding=(12, 0, 20))
         content = linear([header(look, True), body], orientation="vertical", padding=(0, 6, 0))
     else:
         body = linear([task_block(look, True), occasion_section()], orientation="vertical")
-        content = linear([header(look, True), body], orientation="vertical", padding=(16, 16))
+        content = linear([header(look, True), body], orientation="vertical", padding=(12, 20))
     return file_header(look, "expanded") + card_root(content) + "\n"
 
 

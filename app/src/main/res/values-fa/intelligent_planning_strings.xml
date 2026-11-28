@@ -40,7 +40,7 @@
     <string name="notification_due_today">امروز · %1$s</string>
     <string name="notification_private">برای دیدن برنامهٔ خصوصی‌ات، ماربل‌دو را باز کن.</string>
     <string name="notification_done_next">انجام شد</string>
-    <string name="notification_preview_hint">این پیش‌نمایش زنده است. قاب، رنگ و اندازهٔ نهایی را گوشی تعیین می‌کند.</string>
+    <string name="notification_preview_hint">این پیش‌نمایش، کارت بازشده را در تمام عرضِ در دسترس نشان می‌دهد. اندازهٔ اعلان در حالت جمع‌شده را اندروید تعیین می‌کند.</string>
     <string name="notification_reminder_detail">موعد: %1$s</string>
     <string name="notification_checklist">%1$d از %2$d مرحله انجام شده</string>
     <string name="planning_added_count">%1$d کار ساخته شد. با «برگرداندن» می‌توانی همه را برگردانی.</string>

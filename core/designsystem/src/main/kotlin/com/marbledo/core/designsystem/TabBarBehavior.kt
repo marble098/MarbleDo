@@ -31,6 +31,14 @@ data class TabBarAutoHide(
         }
     }
 
-    /** Back to visible with a clean accumulator — used when the user switches tabs. */
+    /**
+     * Final visibility policy for the shell. The keyboard always owns the bottom edge; when
+     * auto-hide is disabled, however, accessibility/reduced-motion users must never be stranded
+     * with a previously hidden bar.
+     */
+    fun shouldShow(autoHideEnabled: Boolean, imeVisible: Boolean): Boolean =
+        !imeVisible && (visible || !autoHideEnabled)
+
+    /** Back to visible with a clean accumulator — used when the user switches tabs or policy changes. */
     fun reset(): TabBarAutoHide = TabBarAutoHide()
 }

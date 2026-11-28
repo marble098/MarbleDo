@@ -74,6 +74,20 @@ class NotificationDesignTests(unittest.TestCase):
                 with self.subTest(design=design, direction=direction):
                     self.assertLessEqual(height, 48, str(path))
 
+    def test_cards_fill_system_width_and_expanded_layouts_get_roomy_content_insets(self):
+        for path in sorted((ROOT / 'app/src/main/res/layout').glob('notification_*.xml')):
+            root = ET.parse(path).getroot()
+            with self.subTest(layout=path.name):
+                self.assertEqual('match_parent', root.get(ANDROID + 'layout_width'))
+            if '_expanded_' not in path.name:
+                continue
+            content = list(root)[1]  # the plate is the first child, the card content is the second
+            if '_banner_' in path.name:
+                content = list(content)[1]  # banner header, then the padded body
+            self.assertEqual('12dp', content.get(ANDROID + 'paddingStart'), path.name)
+            self.assertEqual('12dp', content.get(ANDROID + 'paddingEnd'), path.name)
+            self.assertEqual('20dp', content.get(ANDROID + 'paddingBottom'), path.name)
+
     def test_the_card_paints_its_own_plate(self):
         """A custom row sits inside SystemUI's shade, so it has to own its background.
 

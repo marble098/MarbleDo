@@ -32,39 +32,44 @@ heads-up (88 dp budget)                      expanded
 │  ۲۲,۳۰ · بالا                      │       │ │ ۲۲,۳۰ · بالا                   │ │
 └────────────────────────────────────┘       │ │ تماس با dentist               │ │
                                              │ │ و ۲ کار دیگر                   │ │
-collapsed (platform template)                │ └────────────────────────────────┘ │
+collapsed custom content (48 dp system budget)
 ┌────────────────────────────────────┐       │ ─────────────────────────────────  │
 │ [۲۸]  ۲۸ آبان ۱۴۰۵                │       │ ★ مناسبت‌های امروز                │
-│        خرید نان و شیر…             │       │ روز جهانی مرد · روز جهانی فلسفه    │
+│        کار بعدی، یک خط             │       │ روز جهانی مرد · روز جهانی فلسفه    │
 └────────────────────────────────────┘       └────────────────────────────────────┘
 ```
 
-### Why the collapsed row is the platform template
+### A larger card without fighting Android's notification shade
 
-Android limits a *collapsed* custom view to **48 dp** and says so in the docs ("collapsed view
-layouts are limited to as little as 48 dp"). Forty-eight dp cannot hold a date, a chip and two
-lines of task. The redesign therefore spends its `RemoteViews` where there is room:
+Android can cap collapsed custom content at **48 dp** and owns the notification's outer frame and
+available width. The app cannot force a persistent notification to stay expanded. The compact
+RemoteViews now fills the width SystemUI gives it in both the collapsed and heads-up slots, so the
+initial row is a proper branded card instead of a title-only summary; the decorated system header
+and expansion affordance remain in place. Its one task line stays inside the collapsed-height
+budget. Expanding the notification reveals the taller full-width card with the second task and
+occasions. The Settings preview shows that expanded card at the widest width available in the app.
 
-* **collapsed** — the platform's own template: title, one text line, the large date badge. It also
-  keeps SystemUI's touch ripple and expand affordance, which a custom row loses.
-* **heads-up** (88 dp) — the *compact* card: Jalali date, state chip, task title with **two lines**.
-* **expanded** (252 dp+) — the *expanded* card: both calendars, the state chip, the task section on
-  the card's one filled surface, then the occasion section under a hairline.
+* **collapsed** — full-width compact card: date, state and one task line.
+* **heads-up** (when the system chooses to show one) — the same compact card.
+* **expanded** — the detailed card: state, tasks and occasions on one filled surface, with
+  12 dp side insets and 20 dp vertical breathing room.
 
-That is the "use `RemoteViews` only where it is needed" half of the requirement.
+The system chooses when to expand and how much of the expanded card fits; this is a platform
+constraint, not a setting the app can override.
 
 ### Rules, in order of importance
 
 1. **Two sections, in priority order.** The task section is always present; the occasion section is
    second, quieter, and hidden whole (`notification_occasions_container` → `GONE`) when the day has
    no occasion. A labelled section that says "nothing" was half the clutter.
-2. **The task title gets two lines, then four.** `maxLines="2"` in the heads-up card and `4` when
-   expanded; `ellipsize="end"` stays only as the last-resort overflow of a line that ran out of room.
+2. **The task title gets one line while collapsed, then two when expanded.** The compact card
+   stays inside Android's 48 dp collapsed budget; the expanded view gives the title a second line,
+   with `ellipsize="end"` only for text that still runs out of room.
 3. **One date in the compact card.** `۲۸ آبان ۱۴۰۵` — day, month **and year** — with no weekday
    pushing it out. Gregorian and lunar appear only expanded, and labelled: `میلادی … · قمری …`.
 4. **The state is a chip, not a bar.** One pill with a mark and a word: `⚠ ۳ عقب‌افتاده` or
    `امروز`. The progress bar and its `۰ از ۱۰۱` label are gone.
-5. **The day badge is small and lives in the header.** 28 dp compact, 34 dp expanded — the old
+5. **The day badge is small and lives in the header.** 20 dp compact, 36 dp expanded — the old
    38–48 dp plate was taking the width the title needed.
 6. **No section headings for occasions on the collapsed card**; the expanded one gets a hairline, a
    star and `مناسبت‌های امروز`, which is a *priority* marker, not a restatement.

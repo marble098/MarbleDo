@@ -131,6 +131,16 @@ class NotificationBehaviourTest {
         assertTrue(screen.contains("settings.copy(occasionNotificationHour = hour)"))
     }
 
+    // ---- custom card sizing ----------------------------------------------------------------
+
+    @Test
+    fun `the compact full-width card is used collapsed and expanded content stays user-controlled`() {
+        val notification = read("PersistentCalendarNotification.kt")
+        assertTrue(notification.contains(".setCustomContentView(it)"), "the compact card should replace the title-only collapsed row")
+        assertTrue(notification.contains(".setCustomHeadsUpContentView(it)"), "heads-up should use the same compact card")
+        assertTrue(notification.contains(".setCustomBigContentView(expandedView)"), "the detailed card should be available when expanded")
+    }
+
     // ---- actions and grouping -------------------------------------------------------------
 
     @Test

@@ -165,29 +165,30 @@ API. Toast-based flows elsewhere are deliberately left alone this pass (they are
 chrome, and a toast is not a design surface we can guarantee).
 
 **Notification system (push) and widgets:** the RemoteViews notification pipeline and both Glance
-widgets were redesigned in the immediately preceding pass under hard device-verified contracts
-([NOTIFICATION_WIDGET_REDESIGN.md](NOTIFICATION_WIDGET_REDESIGN.md)), including the guards that
-keep the clutter from returning. They already paint from the same `MarblePalettes` table the new
-glass reads, so every theme (including the glass tint) repushes them unchanged. Reworking
-RemoteViews art without a device would violate the no-regression rule; the honest call is:
-**kept, audited, unified through the palette**, not rewritten. A dedicated notification *centre*
-(history) is a data feature (new tables, retention policy, product copy) and gets its own pass.
+widgets are guarded by the layout and palette contracts in
+[NOTIFICATION_WIDGET_REDESIGN.md](NOTIFICATION_WIDGET_REDESIGN.md). The notification card keeps its
+shared palette and design choices; the compact card now fills the available system width, while the
+expanded content has wider text lanes and more vertical breathing room. Android still owns the
+outer notification frame and collapsed-height limit, so the app cannot force the shade to remain
+expanded. The Settings preview is separated from its inner settings panel to give the card more
+width. Both Glance widgets remain unchanged. A dedicated notification *centre* (history) is a data
+feature (new tables, retention policy, product copy) and gets its own pass.
 
 ## 9. Self-review checklist (evidence)
 
 | # | Item | Status | Evidence |
 | --- | --- | --- | --- |
 | 1 | Every new surface derives from tokens; no hardcoded glass geometry | ✅ | `MarbleGlass` object is the only source; grep shows call sites only reference it |
-| 2 | Floating tab bar: liquid glass + morphing indicator + auto-hide + RTL | ✅ | `FloatingGlassTabBar.kt`, `TabBarBehavior.kt`; geometry RTL-mirrored and tested (`indicatorCentersMirrorInRtl`) |
+| 2 | Floating tab bar: liquid glass + morphing indicator + auto-hide + RTL | ✅ | `FloatingGlassTabBar.kt`, `TabBarBehavior.kt`; physical indicator offsets mirror correctly in both directions (`indicatorOffsetsAreRelativeToTheCenteredAnchorInBothDirections`) |
 | 3 | Backdrop blur is real, with a defined older-Android fallback | ✅ | `glassBackdropSource` + `BlurEffect`; documented degrade path (tint + grain) |
 | 4 | Contrast of every ink on glass ≥ its WCAG bar across all nine themes | ✅ | `MarbleGlassMathTest.labelAndIconInkOnGlassReadOverEveryThemeAndEveryBackdrop` |
 | 5 | Hairline visible on AMOLED | ✅ | `MarbleGlassMathTest.theHairlineSurvivesTheAmoledPlate` |
-| 6 | Auto-hide behaviour (thresholds, flip, wobble, reset) | ✅ | `TabBarBehaviorTest` (8 cases) |
+| 6 | Auto-hide behaviour (thresholds, flip, wobble, reset, accessibility and IME visibility) | ✅ | `TabBarBehaviorTest` (9 cases) |
 | 7 | Reduced motion collapses all glass motion and disables auto-hide | ✅ | `MarbleMotion` snap path + `autoHideEnabled` gate in `MarbleDoApp` |
-| 8 | Screen-reader safety (no auto-hide under touch exploration, roles, labels) | ✅ | `touchExploration()` in `MarbleDoApp`; `Role.Tab` + `selectableGroup`; live-region notice |
+| 8 | Screen-reader safety (no auto-hide under touch exploration, roles, labels) | ✅ | `rememberTouchExplorationEnabled()` in `MarbleDoApp`; `Role.Tab` + `selectableGroup`; live-region notice |
 | 9 | Responsive: compact bar / large rail / landscape / safe areas / IME | ✅ | Shell branches in `MarbleDoApp`; IME hides the bar and grows the inset |
 | 10 | In-app notices share the material and keep semantics | ✅ | `MarbleGlassSnackbar` wired at the Dashboard host |
-| 11 | Notifications and widgets stay on the shared palette; contracts untouched | ✅ | No RemoteViews/Glance code changed; `NotificationPaletteContrastTest` and the layout contract tests still green |
+| 11 | Notification card fills its available width; expanded view is roomier; widgets stay unchanged | ✅ | Generated layout-width/spacing guards, `NotificationLayoutContractTest`, `NotificationPaletteContrastTest`; Glance code unchanged |
 | 12 | Unit tests for every new pure decision | ✅ | `MarbleGlassMathTest`, `TabBarBehaviorTest`, `MarbleContrastTest.readableAcross` |
 | 13 | Lint / type-check / build green | ✅ | CI `verify` job (tests + lint + debug + release build check) on this branch/PR |
 | 14 | No TODO/FIXME/placeholder in the new code | ✅ | Grep over the diff |

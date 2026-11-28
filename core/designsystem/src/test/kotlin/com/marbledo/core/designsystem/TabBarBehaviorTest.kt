@@ -86,4 +86,12 @@ class TabBarBehaviorTest {
         assertTrue(state.visible)
         assertEquals(0f, state.pendingPx)
     }
+
+    @Test
+    fun disablingAutoHideAndOpeningTheKeyboardUseTheCorrectVisibilityPolicy() {
+        val hidden = TabBarAutoHide(visible = false)
+        assertTrue(hidden.shouldShow(autoHideEnabled = false, imeVisible = false), "accessibility/reduced motion must reveal a hidden bar")
+        assertFalse(hidden.shouldShow(autoHideEnabled = true, imeVisible = false), "the enabled auto-hide state still controls visibility")
+        assertFalse(TabBarAutoHide().shouldShow(autoHideEnabled = false, imeVisible = true), "the bar must stay out of the keyboard area")
+    }
 }
